@@ -1,0 +1,11 @@
+{
+  "name": "perovskite-workbench",
+  "version": "0.1.0",
+  "description": "Browser tool for layered metal-halide perovskite CIFs: 3D view, layer descriptors, transition-dipole axes, multi-structure comparison",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "build": "python3 build.py",
+    "test": "node tests/run.js"
+  }
+}

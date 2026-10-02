@@ -1,0 +1,89 @@
+
+#######################################################################
+#
+#                 Cambridge Crystallographic Data Centre
+#                                CCDC 
+#
+#######################################################################
+#
+# If this CIF has been generated from an entry in the Cambridge 
+# Structural Database, then it will include bibliographic, chemical, 
+# crystal, experimental, refinement or atomic coordinate data resulting 
+# from the CCDC's data processing and validation procedures.
+#
+#######################################################################
+
+data_tz2pbcl4_2wb
+_symmetry_cell_setting           monoclinic
+_symmetry_space_group_name_H-M   'P 21/c'
+_symmetry_Int_Tables_number      14
+_space_group_name_Hall           '-P 2ybc'
+loop_
+_symmetry_equiv_pos_site_id
+_symmetry_equiv_pos_as_xyz
+1 x,y,z
+2 -x,1/2+y,1/2-z
+3 -x,-y,-z
+4 x,1/2-y,1/2+z
+_cell_length_a                   19.052(7)
+_cell_length_b                   7.750(3)
+_cell_length_c                   8.289(3)
+_cell_angle_alpha                90
+_cell_angle_beta                 93.016(18)
+_cell_angle_gamma                90
+_cell_volume                     1222.2
+loop_
+_atom_site_label
+_atom_site_type_symbol
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+_atom_site_occupancy
+_atom_site_disorder_assembly
+_atom_site_disorder_group
+Pb1 Pb 0.500000 0.000000 0.500000 1 . .
+Cl1 Cl 0.50296(15) 0.1858(3) 0.8064(3) 1 . .
+Cl2 Cl 0.35183(14) -0.0188(3) 0.5131(4) 1 . .
+Cl1 Cl 0.49704(15) -0.1858(3) 0.1936(3) 1 . .
+Cl2 Cl 0.64817(14) 0.0188(3) 0.4869(4) 1 . .
+Pb1 Pb 0.500000 -0.500000 0.000000 1 . .
+Pb1 Pb 0.500000 0.500000 1.000000 1 . .
+Cl1 Cl 0.49704(15) -0.3142(3) 0.6936(3) 1 . .
+Cl1 Cl 0.50296(15) 0.3142(3) 0.3064(3) 1 . .
+C1 C 0.9704(10) 0.535(2) -0.304(2) 1 . .
+H1A H 1.010968 0.468949 -0.269116 1 . .
+H1B H 0.985044 0.640661 -0.352561 1 . .
+H1C H 0.942343 0.469645 -0.382086 1 . .
+C2 C 0.9281(8) 0.5747(19) -0.1632(18) 1 . .
+H2A H 0.956082 0.642160 -0.084989 1 . .
+H2B H 0.887297 0.642535 -0.198144 1 . .
+O3 O 0.9058(5) 0.4178(11) -0.0893(11) 1 . .
+C4 C 0.8618(5) 0.4311(15) 0.0239(13) 1 . .
+N5 N 0.8490(6) 0.5815(13) 0.0893(14) 1 . .
+N6 N 0.8031(6) 0.5875(13) 0.2081(14) 1 . .
+C7 C 0.7751(6) 0.4396(12) 0.2482(11) 1 . .
+N8 N 0.7899(5) 0.2805(11) 0.1852(11) 1 . .
+N9 N 0.8355(5) 0.2778(13) 0.0710(12) 1 . .
+O10 O 0.7277(4) 0.4282(10) 0.3588(9) 1 . .
+C11A C 0.6996(15) 0.592(3) 0.419(2) 0.65 A 1
+H11A H 0.657554 0.624681 0.355329 0.65 A 1
+H11B H 0.734171 0.682941 0.411785 0.65 A 1
+C12A C 0.6832(11) 0.562(2) 0.590(2) 0.65 A 1
+H12A H 0.660606 0.663267 0.632290 0.65 A 1
+H12B H 0.726015 0.539900 0.654618 0.65 A 1
+N13A N 0.634(3) 0.407(3) 0.594(3) 0.65 A 1
+H13A H 0.639304 0.342429 0.507127 0.65 A 1
+H13B H 0.590022 0.443719 0.595911 0.65 A 1
+H13C H 0.644948 0.345493 0.682633 0.65 A 1
+
+C11B C 0.7116 0.6420 0.3890 0.35 A 2
+H11AX H 0.6696 0.6747 0.3253 0.35 A 2
+H11BX H 0.7462 0.7329 0.3818 0.35 A 2
+C12B C 0.6952 0.6120 0.5600 0.35 A 2
+H12AX H 0.6726 0.7133 0.6023 0.35 A 2
+H12BX H 0.7380 0.5899 0.6246 0.35 A 2
+N13B N 0.6460 0.4570 0.5640 0.35 A 2
+H13AX H 0.6513 0.3924 0.4771 0.35 A 2
+H13BX H 0.6020 0.4937 0.5659 0.35 A 2
+H13CX H 0.6569 0.3955 0.6526 0.35 A 2
+#END

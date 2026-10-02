@@ -1,0 +1,1242 @@
+<title>2D Perovskite Workbench</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: an instrument console. One large stage for the crystal, a comparison strip under it,
+   and a narrow rail of controls and data sheets that read like the tables of a structure paper. */
+:root {
+  --bg: #f3f1f4;
+  --panel: #fbfafc;
+  --stage: #ebe8ee;
+  --ink: #1e1a22;
+  --muted: #655e6c;
+  --line: #d9d3de;
+  --accent: #b0126a;
+  --accent-soft: #f6dcea;
+  --on-accent: #ffffff;
+  --warn: #9a3a00;
+  --atom-pb: #4b5669;
+  --atom-c: #6d727b;
+  --font-ui: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-display: "IBM Plex Sans Condensed", "IBM Plex Sans", "Arial Narrow", sans-serif;
+  --font-data: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #141216; --panel: #1c191f; --stage: #0f0d11; --ink: #ece8ef; --muted: #a59dac;
+    --line: #35303b; --accent: #f2569f; --accent-soft: #3c1a2c; --on-accent: #1a0a12; --warn: #ffab70;
+    --atom-pb: #93a0ba; --atom-c: #8b9099;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #141216; --panel: #1c191f; --stage: #0f0d11; --ink: #ece8ef; --muted: #a59dac;
+  --line: #35303b; --accent: #f2569f; --accent-soft: #3c1a2c; --on-accent: #1a0a12; --warn: #ffab70;
+  --atom-pb: #93a0ba; --atom-c: #8b9099;
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-ui); font-size: 14px; line-height: 1.45; }
+.app { display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 14px; height: 100%; min-height: 640px;
+  max-width: 1640px; margin-inline: auto; padding-inline: 20px; padding-block: 16px; }
+
+.head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 8px 24px; }
+.head > div { min-width: 0; }
+.eyebrow { font-family: var(--font-data); font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
+h1 { font-family: var(--font-display); font-weight: 600; font-size: 28px; line-height: 1.1; margin: 2px 0 0; text-wrap: balance; overflow-wrap: anywhere; }
+.sub { display: flex; flex-wrap: wrap; gap: 4px 18px; font-size: 13px; color: var(--muted); margin-top: 4px; }
+.sub b { color: var(--ink); font-weight: 500; }
+.bar { text-decoration: overline; }
+.tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+.main { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 14px; min-height: 0; }
+.main.solo { grid-template-columns: minmax(0, 1fr); }
+.stage-col { display: grid; grid-template-rows: minmax(280px, 1fr) auto auto; gap: 8px; min-width: 0; min-height: 0; }
+.stage { position: relative; background: var(--stage); border: 1px solid var(--line); border-radius: 6px; overflow: hidden; min-height: 280px; }
+.stage.drag { outline: 2px dashed var(--accent); outline-offset: -6px; }
+#gl { position: absolute; inset: 0; }
+.overlay { position: absolute; display: flex; gap: 6px; align-items: center; pointer-events: none; }
+.overlay > * { pointer-events: auto; }
+.overlay.tl { top: 10px; left: 10px; flex-wrap: wrap; right: 10px; }
+.overlay.bl { bottom: 10px; left: 10px; right: 10px; flex-wrap: wrap; }
+.ovl-label { font-size: 12px; color: var(--muted); pointer-events: none; }
+.chip { display: inline-flex; align-items: center; gap: 5px; font-family: var(--font-data); font-size: 12px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px 1px 5px; pointer-events: none; }
+.chip i { width: 10px; height: 10px; border-radius: 50%; border: 1px solid var(--line); }
+.stage-msg { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 12px; padding: 24px; text-align: center; color: var(--muted); }
+.stage-msg strong { font-family: var(--font-display); font-size: 22px; font-weight: 600; color: var(--ink); }
+.stage-msg p { margin: 0; max-width: 52ch; }
+
+.readout { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 8px 12px;
+  font-family: var(--font-data); font-size: 12.5px; font-variant-numeric: tabular-nums; min-height: 44px;
+  display: grid; gap: 4px; align-content: start; }
+.readout .hint { color: var(--muted); font-family: var(--font-ui); font-size: 13px; }
+.readout .meas, .readout .pickbar { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: center; }
+.readout .pickbar { font-family: var(--font-ui); font-size: 13px; }
+.readout .alert { color: var(--warn); font-family: var(--font-ui); font-size: 13px; }
+
+.rail { display: flex; flex-direction: column; gap: 12px; min-width: 0; min-height: 0; overflow-y: auto; padding-right: 2px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px 14px; display: grid; gap: 10px; min-width: 0; }
+.cmp { max-height: 30vh; overflow-y: auto; }
+h2 { font-size: 11.5px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; color: var(--muted); margin: 0; }
+.row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.between { justify-content: space-between; }
+
+button, .filebtn { font: inherit; font-size: 13px; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 4px; padding: 4px 10px; cursor: pointer; }
+button:hover, .filebtn:hover { border-color: var(--accent); }
+button:focus-visible, input:focus-visible, select:focus-visible, .filebtn:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+button[aria-pressed="true"], button.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+button:disabled { opacity: 0.45; cursor: default; border-color: var(--line); }
+button.mini { padding: 1px 8px; font-size: 12px; }
+.seg { display: inline-flex; }
+.seg button { border-radius: 0; margin-left: -1px; }
+.seg button:first-child { border-radius: 4px 0 0 4px; margin-left: 0; }
+.seg button:last-child { border-radius: 0 4px 4px 0; }
+.axis-btn { font-family: var(--font-data); font-style: italic; min-width: 32px; }
+.filebtn { display: inline-block; position: relative; }
+.filebtn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
+
+.checks { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; }
+.checks label { display: flex; align-items: center; gap: 7px; font-size: 13px; cursor: pointer; }
+input[type="checkbox"] { accent-color: var(--accent); width: 15px; height: 15px; margin: 0; flex: none; }
+.checks label.off { color: var(--muted); cursor: default; }
+.sw { width: 12px; height: 12px; border-radius: 2px; flex: none; }
+input[type="number"], input[type="text"], select { font-family: var(--font-data); font-size: 13px; color: var(--ink); background: var(--bg);
+  border: 1px solid var(--line); border-radius: 4px; padding: 3px 4px 3px 7px; font-variant-numeric: tabular-nums; }
+input[type="number"] { width: 62px; }
+select { font-family: var(--font-ui); padding: 3px 4px; max-width: 100%; }
+.ranges { display: grid; grid-template-columns: auto auto auto auto 1fr; gap: 6px 8px; align-items: center; font-size: 13px; }
+.ranges em, .idx em { font-family: var(--font-data); font-style: italic; }
+.ranges span { color: var(--muted); }
+.idx { display: flex; flex-wrap: wrap; gap: 6px 12px; }
+.idx label { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; color: var(--muted); }
+.idx input { width: 54px; }
+.planes { display: grid; gap: 4px; }
+.plane { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; font-family: var(--font-data); font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.plane button { margin-left: auto; }
+.small { font-size: 12.5px; color: var(--muted); }
+
+.chromo { display: grid; gap: 8px; border-top: 1px solid var(--line); padding-top: 10px; }
+.chromo:first-child { border-top: 0; padding-top: 0; }
+.chromo .cname { flex: 1 1 120px; min-width: 0; font-family: var(--font-ui); font-weight: 500; }
+.state { display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto; gap: 5px 7px; align-items: center; }
+.state .sname { min-width: 0; width: 100%; }
+.state .smode { grid-column: 2 / 4; display: flex; flex-wrap: wrap; gap: 5px; align-items: center; min-width: 0; }
+.state .srep { grid-column: 2 / 5; }
+
+dl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 3px 14px; margin: 0; font-size: 13px; }
+dt { color: var(--muted); }
+dd { margin: 0; font-family: var(--font-data); font-size: 12.5px; font-variant-numeric: tabular-nums; text-align: right; overflow-wrap: anywhere; }
+dd.txt { font-family: var(--font-ui); font-size: 13px; }
+sub, sup { font-size: 0.75em; line-height: 0; }
+.tbl-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-family: var(--font-data); font-size: 12.5px; font-variant-numeric: tabular-nums; }
+th { font-family: var(--font-ui); font-weight: 500; color: var(--muted); font-size: 12px; text-align: right; padding: 0 0 4px 12px; white-space: nowrap; }
+td { text-align: right; padding: 3px 0 3px 12px; border-top: 1px solid var(--line); white-space: nowrap; }
+th:first-child, td:first-child { text-align: left; padding-left: 0; }
+#tblCmp td:first-child { position: sticky; left: 0; background: var(--panel); }
+#tblCmp tr.on td { background: var(--accent-soft); }
+#tblCmp tr.on td:first-child { background: var(--accent-soft); }
+.linkbtn { border: 0; background: none; padding: 0; font-family: var(--font-ui); font-weight: 500; text-decoration: underline; text-underline-offset: 2px; }
+#tsvBox { width: 100%; height: 90px; font-family: var(--font-data); font-size: 12px; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 4px; }
+.foot { font-size: 12px; color: var(--muted); }
+
+@media (max-width: 900px) {
+  html, body { height: auto; }
+  .app { height: auto; min-height: 0; padding-inline: 16px; }
+  .main { grid-template-columns: minmax(0, 1fr); }
+  .stage-col { grid-template-rows: auto auto auto; }
+  .stage { height: clamp(340px, 62vh, 560px); }
+  .rail { overflow: visible; }
+  .cmp { max-height: none; }
+  h1 { font-size: 24px; }
+}
+</style>
+
+<div class="app">
+  <header class="head">
+    <div>
+      <div class="eyebrow" id="eyebrow">Layered metal-halide structures from CIF</div>
+      <h1 id="title">2D Perovskite Workbench</h1>
+      <div class="sub" id="sub"></div>
+    </div>
+    <div class="tools">
+      <label class="filebtn">Open CIF files<input type="file" id="fileIn" multiple accept=".cif,.txt,chemical/x-cif,text/plain"></label>
+      <button type="button" id="btnExample">Load the tetrazine example</button>
+    </div>
+  </header>
+
+  <div class="main solo" id="main">
+    <div class="stage-col">
+      <div class="stage" id="stage">
+        <div id="gl"></div>
+        <div class="stage-msg" id="stageMsg">
+          <strong>Drop CIF files here</strong>
+          <p>Each file is expanded by its symmetry, split into the inorganic framework and whole organic molecules, and analysed as a layered perovskite. Load several to compare them in one table.</p>
+        </div>
+        <div class="overlay tl" id="ovlView" hidden>
+          <span class="ovl-label">View down</span>
+          <span class="seg" role="group" aria-label="View along a cell axis">
+            <button type="button" class="axis-btn" id="viewA">a</button>
+            <button type="button" class="axis-btn" id="viewB">b</button>
+            <button type="button" class="axis-btn" id="viewC">c</button>
+          </span>
+          <button type="button" id="viewLayer">Layer normal</button>
+          <button type="button" id="viewReset">Reset view</button>
+        </div>
+        <div class="overlay bl" id="legend" aria-label="Element colours"></div>
+      </div>
+      <div class="readout" id="readout" aria-live="polite"></div>
+      <section class="card cmp" id="cardCmp" hidden>
+        <div class="row between">
+          <h2>Structures</h2>
+          <div class="row"><span class="small" id="copyMsg"></span><button type="button" id="btnCopy">Copy table for a spreadsheet</button></div>
+        </div>
+        <div class="tbl-wrap"><table id="tblCmp"></table></div>
+        <textarea id="tsvBox" hidden readonly aria-label="Table as tab-separated text"></textarea>
+      </section>
+    </div>
+
+    <aside class="rail" id="rail" hidden>
+      <section class="card">
+        <h2>Display</h2>
+        <div class="seg" role="group" aria-label="Atom style">
+          <button type="button" id="styleBS" aria-pressed="true">Ball and stick</button>
+          <button type="button" id="styleSF" aria-pressed="false">Space-filling</button>
+          <button type="button" id="styleST" aria-pressed="false">Sticks</button>
+        </div>
+        <div class="checks">
+          <label><input type="checkbox" id="chkOrg" checked>Organic</label>
+          <label><input type="checkbox" id="chkInorg" checked>Inorganic</label>
+          <label><input type="checkbox" id="chkPoly" checked><span id="polyName">Octahedra</span></label>
+          <label><input type="checkbox" id="chkCell" checked>Unit cell</label>
+          <label id="lblH"><input type="checkbox" id="chkH" checked>Hydrogens</label>
+          <label id="lblHB"><input type="checkbox" id="chkHB" checked>Hydrogen bonds</label>
+          <label><input type="checkbox" id="chkPersp">Perspective</label>
+          <label><input type="checkbox" id="chkSpin">Spin</label>
+          <label id="lblMinor" hidden><input type="checkbox" id="chkMinor">Minor disorder parts</label>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Packing</h2>
+        <div class="ranges" id="ranges"></div>
+        <div class="row"><button type="button" id="btnPackReset">Reset</button></div>
+        <div class="small">Limits are in cell fractions along each axis. Molecules are kept whole and placed by their centroid.</div>
+      </section>
+
+      <section class="card">
+        <h2>Directions and planes</h2>
+        <div class="idx">
+          <label><em>h</em>, <em>u</em><input type="number" id="ixH" step="1" value="1"></label>
+          <label><em>k</em>, <em>v</em><input type="number" id="ixK" step="1" value="0"></label>
+          <label><em>l</em>, <em>w</em><input type="number" id="ixL" step="1" value="0"></label>
+        </div>
+        <div class="row">
+          <button type="button" id="btnViewUVW">View down [<i>uvw</i>]</button>
+          <button type="button" id="btnViewHKL">View down (<i>hkl</i>) normal</button>
+        </div>
+        <div class="row idx">
+          <button type="button" id="btnPlane">Draw (<i>hkl</i>) planes</button>
+          <label>offset<input type="number" id="ixOff" step="0.05" min="0" max="1" value="0"><em>d</em></label>
+        </div>
+        <div class="planes" id="planeList"></div>
+      </section>
+
+      <section class="card" id="cardChromo">
+        <h2>Chromophores and transition dipoles</h2>
+        <div id="chromoList"></div>
+        <div class="row">
+          <button type="button" id="btnDefine">Define a chromophore</button>
+          <label class="small">arrow half-length <input type="number" id="arrowLen" step="0.1" min="0.5" max="6" value="1.9"> Å</label>
+        </div>
+        <div class="small">A chromophore is a plane through atoms you pick on one molecule, plus an in-plane reference axis. It is copied to every symmetry-equivalent molecule. Arrows are double-headed because the sign of a transition dipole is arbitrary.</div>
+      </section>
+
+      <section class="card">
+        <h2>Crystal data</h2>
+        <dl id="dlCrystal"></dl>
+      </section>
+
+      <section class="card" id="cardFw" hidden>
+        <h2>Inorganic framework</h2>
+        <dl id="dlFw"></dl>
+        <div class="tbl-wrap" id="brWrap" hidden><table id="tblBr"></table></div>
+        <div class="small" id="fwNote"></div>
+      </section>
+
+      <section class="card" id="cardHB" hidden>
+        <h2 id="hbTitle">Hydrogen bonds</h2>
+        <div class="tbl-wrap"><table id="tblHB"></table></div>
+        <div class="small" id="hbNote"></div>
+      </section>
+
+      <div class="foot">2D Perovskite Workbench __VERSION__. Drawn with 3Dmol.js. Symmetry expansion, molecule assembly and every distance and angle are computed in this page from the CIF.</div>
+    </aside>
+  </div>
+</div>
+
+<script type="text/plain" id="cif-example">__CIF__</script>
+<script type="application/json" id="sg-table">__SGTABLE__</script>
+<!--LIB-->
+<script>
+/*__CORE__*/
+</script>
+<script>
+(function () {
+  'use strict';
+  const C = window.XtalCore;
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  try { C.setSgTable(JSON.parse($('sg-table').textContent)); } catch (err) { /* symbol-only files fall back to P1 */ }
+  const EXAMPLE = { text: $('cif-example').textContent, name: 'Tetrazine PbCl4 (example).cif' };
+  const PAL = {
+    H: '#e6e6ec', N: '#3d64d8', O: '#e2463d', F: '#86cf3a', Cl: '#2fae52', Br: '#a9582c', I: '#7b41ad',
+    S: '#dfbe1d', P: '#e58a1f', Sn: '#6f8ea6', Cd: '#d9a93f', Mn: '#9a78c6', Cu: '#c7742f', Ca: '#3f9e8c',
+    Bi: '#8a5a9a', Ge: '#5f8f8f', Ag: '#9aa3ad', Cs: '#6a3fb0', Rb: '#8a4fc0', K: '#9a6fd0', Zn: '#7d80b0', Fe: '#d0672b', Co: '#e0708f', Ni: '#4fb357'
+  };
+  const MAX_ATOMS = 15000;
+  const MAX_PLANES = 60;
+  const PLANE_COLORS = ['#8a63ff', '#d1a800', '#00a3a3', '#d4577b'];
+  const STATE_COLORS = ['#d95f00', '#0077b6', '#7a3fb5', '#1a9a5a', '#c2185b', '#8a6d00'];
+  const MODES = [['normal', 'perpendicular to the plane'], ['along', 'in plane, along the axis'], ['perp', 'in plane, perpendicular to the axis'], ['angle', 'in plane, at an angle to the axis']];
+  const st = {
+    docs: [], cur: -1,
+    style: 'bs', poly: true, cellBox: true, H: true, hb: true, org: true, inorg: true,
+    arrow: 1.9, notice: '', shown: 0, picking: null
+  };
+  let viewer = null;
+  let hoverLabel = null;
+  const D = () => st.docs[st.cur] || null;
+
+  const cssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  function colorOf(el) {
+    if (el === 'Pb') return cssVar('--atom-pb');
+    if (el === 'C') return cssVar('--atom-c');
+    if (PAL[el]) return PAL[el];
+    const j = window.$3Dmol && $3Dmol.elementColors && $3Dmol.elementColors.Jmol && $3Dmol.elementColors.Jmol[el];
+    return typeof j === 'number' ? '#' + j.toString(16).padStart(6, '0') : '#b477b4';
+  }
+  const hexInt = (h) => parseInt(h.slice(1), 16);
+  const fmt = (x, d) => x.toFixed(d);
+  const V3 = (p) => ({ x: p[0], y: p[1], z: p[2] });
+  const mean = (a) => a.reduce((t, x) => t + x, 0) / a.length;
+
+  /* ---------- documents ---------- */
+  function makeDoc(src) {
+    const struct = C.readStructure(src.text);
+    const d = { src, struct, minor: false, planes: [], chromos: [], measures: [], pick: null, name: src.name.replace(/\.[^.]+$/, '') };
+    rebuildCell(d);
+    const L = [struct.cell.a, struct.cell.b, struct.cell.c];
+    const n = L.map((x) => Math.max(1, Math.min(3, Math.ceil(14 / x))));
+    while (d.uc.atoms.length * n[0] * n[1] * n[2] > MAX_ATOMS && n.some((x) => x > 1)) n[n.indexOf(Math.max(...n))]--;
+    d.def = n;
+    d.lo = [0, 0, 0];
+    d.hi = n.slice();
+    // preset: 1,2,4,5-tetrazine rings carry an out-of-plane n-pi* and an in-plane pi-pi* transition
+    C.tetrazineDefs(d.uc).forEach((def, i) => {
+      d.chromos.push({
+        name: 'Tetrazine ring' + (i ? ' ' + (i + 1) : ''), plane: def.plane, axis: def.axis,
+        states: [
+          { name: 'S1 (n–π*)', mode: 'normal', phi: 0, on: true, color: STATE_COLORS[0] },
+          { name: 'S2 (π–π*)', mode: 'perp', phi: 0, on: true, color: STATE_COLORS[1] }
+        ]
+      });
+    });
+    refreshChromos(d);
+    return d;
+  }
+
+  function rebuildCell(d) {
+    d.uc = C.buildCell(d.struct, { minor: d.minor });
+    d.info = C.analyse(d.uc);
+    // unique hydrogen bonds, searched in a 3x3x3 block so every acceptor is present
+    const big = d.uc.atoms.length <= 400 ? C.assemble(d.uc, [-1, -1, -1], [2, 2, 2]) : C.assemble(d.uc, [0, 0, 0], [1, 1, 1]);
+    const seen = new Map();
+    for (const h of big.hbonds) {
+      const A = big.atoms;
+      const key = A[h.d].label + '|' + (h.h >= 0 ? A[h.h].label : '') + '|' + A[h.a].label + '|' + h.dDA.toFixed(2);
+      if (!seen.has(key)) seen.set(key, { D: A[h.d].label, H: h.h >= 0 ? A[h.h].label : null, A: A[h.a].label, dHA: h.dHA, dDA: h.dDA, angle: h.angle });
+    }
+    d.hbRows = Array.from(seen.values()).sort((p, q) => p.dDA - q.dDA);
+    d.hbFromH = big.hasH;
+    if (d.chromos) refreshChromos(d);
+  }
+  function refreshChromos(d) {
+    for (const c of d.chromos) c.inst = C.chromoInstances(d.uc, c);
+  }
+
+  function addFiles(list) {
+    const errors = [];
+    let first = -1;
+    for (const src of list) {
+      try {
+        st.docs.push(makeDoc(src));
+        if (first < 0) first = st.docs.length - 1;
+      } catch (err) {
+        errors.push('Could not read ' + src.name + '. ' + err.message);
+      }
+    }
+    st.notice = errors.join(' ');
+    if (first >= 0) activate(first); else drawReadout();
+  }
+  function activate(i) {
+    st.cur = i;
+    st.picking = null;
+    const d = D();
+    $('main').classList.toggle('solo', !d);
+    $('rail').hidden = !d;
+    $('cardCmp').hidden = !st.docs.length;
+    $('stageMsg').hidden = !!d && !!viewer;
+    $('ovlView').hidden = !d;
+    if (!d) {
+      $('eyebrow').textContent = 'Layered metal-halide structures from CIF';
+      $('title').textContent = '2D Perovskite Workbench';
+      $('sub').innerHTML = '';
+      $('legend').innerHTML = '';
+      if (viewer) { viewer.removeAllModels(); viewer.removeAllShapes(); viewer.removeAllLabels(); viewer.render(); }
+      $('stageMsg').hidden = false;
+      drawCompare();
+      drawReadout();
+      return;
+    }
+    $('chkMinor').checked = d.minor;
+    drawHeader();
+    drawSheet();
+    drawRanges();
+    drawPlanes();
+    drawChromos();
+    drawCompare();
+    if (viewer) viewer.resize();
+    render(false);
+  }
+
+  /* ---------- text panels ---------- */
+  function sgHtml(s) {
+    if (!s) return null;
+    return s.trim().split(/\s+/).map((tok, i) => {
+      if (i === 0) return '<i>' + esc(tok) + '</i>';
+      return esc(tok).replace(/[a-z]/g, '<i>$&</i>')
+        .replace(/^-(\d)/, '<span class="bar">$1</span>')
+        .replace(/^([2346])([1-5])(?=\/|$)/, '$1<sub>$2</sub>');
+    }).join('');
+  }
+  const formulaHtml = (f) => f.map((e) => esc(e.el) + (e.n === 1 ? '' : '<sub>' + e.n + '</sub>')).join('');
+  const formulaText = (f) => f.map((e) => e.el + (e.n === 1 ? '' : e.n)).join(' ');
+  function frameworkText(fw, layer) {
+    if (!fw) return null;
+    if (fw.dim === 3) return '3D framework';
+    if (fw.dim === 2) return '2D layers ∥ (' + fw.hkl.join(' ') + ')' + (layer ? ', n = ' + layer.n : '');
+    if (fw.dim === 1) return '1D chains ∥ [' + fw.uvw.join(' ') + ']';
+    return 'isolated units (0D)';
+  }
+
+  function drawHeader() {
+    const d = D();
+    const { struct, info } = d;
+    $('eyebrow').textContent = '2D Perovskite Workbench  ·  data_' + struct.meta.block;
+    $('title').textContent = d.name;
+    const bits = ['<b>' + formulaHtml(info.formula) + '</b>'];
+    const sg = sgHtml(struct.meta.spaceGroup);
+    if (sg) bits.push(sg);
+    const fw = info.framework;
+    if (fw) bits.push(frameworkText(fw, info.layer) + (fw.dim === 2 ? ', ' + fmt(fw.spacing, 2) + ' Å apart' : ''));
+    else bits.push('no metal–halide framework found');
+    $('sub').innerHTML = bits.map((b) => '<span>' + b + '</span>').join('');
+  }
+
+  function drawSheet() {
+    const d = D();
+    const { struct, info, uc } = d;
+    const m = struct.meta;
+    const rows = [];
+    const add = (k, v, txt) => rows.push('<dt>' + k + '</dt><dd' + (txt ? ' class="txt"' : '') + '>' + v + '</dd>');
+    add('Formula', formulaHtml(info.formula));
+    if (info.formulaMass) add('Formula mass', fmt(info.formulaMass, 2) + ' g mol<sup>−1</sup>');
+    if (m.spaceGroup) add('Space group', sgHtml(m.spaceGroup) + (m.sgNumber ? ' (no. ' + esc(m.sgNumber) + ')' : ''));
+    else if (m.sgNumber) add('Space group', 'no. ' + esc(m.sgNumber));
+    ['a', 'b', 'c'].forEach((k, i) => add('<i>' + k + '</i>', esc(m.cellRaw[i]) + ' Å'));
+    ['α', 'β', 'γ'].forEach((k, i) => add('<i>' + k + '</i>', esc(m.cellRaw[3 + i]) + '°'));
+    add('<i>V</i>', fmt(struct.cell.V, 1) + ' Å<sup>3</sup>');
+    add('<i>Z</i>', String(info.Z));
+    if (info.density) add('<i>ρ</i><sub>calc</sub>', fmt(info.density, 3) + ' g cm<sup>−3</sup>');
+    if (m.temperature) add('<i>T</i>', esc(m.temperature) + ' K');
+    if (m.R1) add('<i>R</i><sub>1</sub>', esc(m.R1));
+    add('Atoms per cell', String(info.nAtoms));
+    const symText = {
+      listed: struct.ops.length + ' operators listed in the file',
+      hall: struct.ops.length + ' operators generated from the Hall symbol',
+      hm: struct.ops.length + ' operators generated from the space-group symbol; standard setting assumed',
+      number: struct.ops.length + ' operators generated from the space-group number; standard setting assumed',
+      none: 'none found; P1 assumed'
+    }[m.symSource];
+    add('Symmetry', symText, true);
+    if (uc.hasMinor) {
+      const parts = [];
+      if (struct.sites.some((s) => s.minor)) parts.push('flagged minor parts ' + (d.minor ? 'shown' : 'hidden'));
+      if (uc.autoSplit.length) parts.push('unflagged split sites ' + uc.autoSplit.map(esc).join(', ') + (d.minor ? ' both shown' : '; first of each shown'));
+      add('Disorder', parts.join('; '), true);
+    }
+    $('dlCrystal').innerHTML = rows.join('');
+
+    // inorganic framework
+    const fwRows = [];
+    const addF = (k, v, txt) => fwRows.push('<dt>' + k + '</dt><dd' + (txt ? ' class="txt"' : '') + '>' + v + '</dd>');
+    const L = info.layer;
+    const notes = [];
+    if (info.metalSites.length) {
+      const fw = info.framework;
+      if (fw) {
+        addF('Connectivity', frameworkText(fw, null), true);
+        if (fw.dim === 2) {
+          if (L) addF('Layer thickness <i>n</i>', String(L.n) + (L.nUniform ? '' : ' (mixed)'));
+          addF('Layer spacing', fmt(fw.spacing, 3) + ' Å');
+          if (L && L.slabThickness !== undefined) {
+            addF('Slab, X<sub>ax</sub> to X<sub>ax</sub>', fmt(L.slabThickness, 3) + ' Å');
+            addF('Organic gallery', fmt(L.gallery, 3) + ' Å');
+          }
+        }
+      }
+      for (const s of info.metalSites) {
+        const groups = new Map();
+        for (const b of s.bonds) {
+          const key = b.label + '|' + b.d.toFixed(3);
+          groups.set(key, (groups.get(key) || 0) + 1);
+        }
+        for (const [key, mult] of groups) {
+          const [lab, dist] = key.split('|');
+          addF(esc(s.label) + '–' + esc(lab), dist + ' Å' + (mult > 1 ? ' ×' + mult : ''));
+        }
+        addF('Mean ' + esc(s.label) + '–X', fmt(s.mean, 3) + ' Å');
+        if (s.cn === 6) {
+          addF(esc(s.label) + ' cis X–M–X', fmt(s.cisMin, 1) + '–' + fmt(s.cisMax, 1) + '°');
+          addF(esc(s.label) + ' Δ<i>d</i>', fmt(s.deltaD * 1e4, 2) + ' × 10<sup>−4</sup>');
+          addF(esc(s.label) + ' <i>σ</i><sup>2</sup>', fmt(s.sigma2, 1) + ' deg<sup>2</sup>');
+        }
+      }
+      if (L) {
+        if (L.axialTilt) addF('Axial M–X to layer normal', (L.axialTilt.max - L.axialTilt.min < 0.05 ? fmt(L.axialTilt.mean, 1) : fmt(L.axialTilt.min, 1) + '–' + fmt(L.axialTilt.max, 1)) + '°');
+        for (const p of L.penetration) addF('N penetration, ' + esc(p.label), (p.depth >= 0 ? '+' : '−') + fmt(Math.abs(p.depth), 3) + ' Å');
+        if (L.offset) {
+          addF('Stacking offset', '(' + fmt(L.offset.s1, 2) + ', ' + fmt(L.offset.s2, 2) + ')');
+          addF('', esc(L.offset.kind), true);
+        }
+        if (L.penetration.length) notes.push('N penetration is the depth of the ammonium N below the plane of terminal (axial) halides; positive means inside the layer.');
+        if (L.offset) notes.push('Stacking offset is the in-plane shift between adjacent layers in units of the two in-plane M···M vectors: (½, ½) is the ideal Ruddlesden–Popper stacking, (0, 0) the ideal Dion–Jacobson stacking.');
+      }
+    }
+    $('cardFw').hidden = !fwRows.length;
+    $('dlFw').innerHTML = fwRows.join('');
+    const br = L ? L.bridges : info.bridges.map((b) => ({ x: b.x, m1: b.m1, m2: b.m2, theta: b.angle, equatorial: null, mm: b.mm }));
+    $('brWrap').hidden = !br.length;
+    if (br.length) {
+      $('tblBr').innerHTML = '<thead><tr><th>M–X–M</th><th><i>θ</i></th><th><i>θ</i><sub>in</sub></th><th><i>θ</i><sub>out</sub></th><th>M···M</th></tr></thead><tbody>' +
+        br.map((b) => '<tr><td>' + esc(b.m1) + '–' + esc(b.x) + '–' + esc(b.m2) + (b.equatorial === false ? ' (axial)' : '') + '</td><td>' + fmt(b.theta, 2) + '</td><td>' +
+          (b.thetaIn !== undefined ? fmt(b.thetaIn, 2) : '–') + '</td><td>' + (b.thetaOut !== undefined ? fmt(b.thetaOut, 2) : '–') + '</td><td>' + fmt(b.mm, 3) + '</td></tr>').join('') + '</tbody>';
+      if (L) notes.unshift('Angles in degrees, distances in Å. θ<sub>in</sub> is the M–X–M angle projected onto the layer plane; θ<sub>out</sub> is the same angle projected onto the plane that holds M···M and the layer normal.');
+    }
+    $('fwNote').innerHTML = notes.join(' ');
+    const allSix = info.metalSites.length && info.metalSites.every((s) => s.cn === 6);
+    $('polyName').textContent = allSix ? 'Octahedra' : 'Polyhedra';
+
+    // hydrogen bonds
+    const hb = d.hbRows;
+    $('cardHB').hidden = !hb.length;
+    if (hb.length) {
+      if (d.hbFromH) {
+        $('tblHB').innerHTML = '<thead><tr><th>D–H···A</th><th>H···A</th><th>D···A</th><th>∠DHA</th></tr></thead><tbody>' +
+          hb.map((r) => '<tr><td>' + esc(r.D) + '–' + esc(r.H) + '···' + esc(r.A) + '</td><td>' + fmt(r.dHA, 2) + '</td><td>' + fmt(r.dDA, 3) + '</td><td>' + fmt(r.angle, 0) + '°</td></tr>').join('') + '</tbody>';
+        $('hbNote').textContent = 'Distances in Å. Criteria: H···A at least 0.15 Å inside the van der Waals sum and D–H···A above 120°. H positions are as given in the CIF.';
+      } else {
+        $('tblHB').innerHTML = '<thead><tr><th>D···A</th><th>distance</th></tr></thead><tbody>' +
+          hb.map((r) => '<tr><td>' + esc(r.D) + '···' + esc(r.A) + '</td><td>' + fmt(r.dDA, 3) + '</td></tr>').join('') + '</tbody>';
+        $('hbNote').textContent = 'No H atoms in this CIF, so short N/O···halide contacts are listed instead (Å).';
+      }
+    }
+    $('hbTitle').textContent = d.hbFromH ? 'Hydrogen bonds' : 'Short donor–halide contacts';
+
+    $('lblMinor').hidden = !uc.hasMinor;
+    $('chkH').disabled = !info.hasH;
+    $('lblH').classList.toggle('off', !info.hasH);
+    $('chkHB').disabled = !hb.length;
+    $('lblHB').classList.toggle('off', !hb.length);
+    $('viewLayer').hidden = !(info.framework && info.framework.dim === 2);
+    drawLegend();
+  }
+
+  function drawLegend() {
+    const d = D();
+    if (!d) return;
+    const present = [];
+    for (const a of d.uc.atoms) if (!present.includes(a.el)) present.push(a.el);
+    present.sort((p, q) => (C.isMetal(q) - C.isMetal(p)) || (C.HALIDE.has(q) - C.HALIDE.has(p)) || p.localeCompare(q));
+    $('legend').innerHTML = present.map((el) => '<span class="chip"><i style="background:' + colorOf(el) + '"></i>' + esc(el) + '</span>').join('');
+  }
+
+  function drawRanges() {
+    const d = D();
+    $('ranges').innerHTML = ['a', 'b', 'c'].map((k, i) =>
+      '<em>' + k + '</em>' +
+      '<input type="number" id="rng' + i + '0" step="0.5" min="-6" max="6" value="' + d.lo[i] + '" aria-label="Lower limit along ' + k + '">' +
+      '<span>to</span>' +
+      '<input type="number" id="rng' + i + '1" step="0.5" min="-6" max="6" value="' + d.hi[i] + '" aria-label="Upper limit along ' + k + '">' +
+      '<span></span>').join('');
+  }
+
+  function drawPlanes() {
+    const d = D();
+    $('planeList').innerHTML = d.planes.map((p, i) => {
+      const r = C.planePolys(d.uc.cell, p.hkl, p.off, d.lo, d.hi, MAX_PLANES);
+      return '<div class="plane"><i class="sw" style="background:' + p.color + '"></i><span>(' + p.hkl.join(' ') + ')</span>' +
+        '<span><i>d</i> = ' + fmt(r.d, 3) + ' Å</span>' + (p.off ? '<span>offset ' + p.off + ' <i>d</i></span>' : '') +
+        '<span>' + r.polys.length + (r.polys.length === 1 ? ' plane' : ' planes') + '</span>' +
+        '<button type="button" class="mini" data-rm="' + i + '" aria-label="Remove the (' + p.hkl.join(' ') + ') planes">Remove</button></div>';
+    }).join('');
+  }
+
+  /* ---------- chromophores ---------- */
+  const siteLabel = (d, s) => d.struct.sites[s].label;
+  function stateReport(d, c, s) {
+    const r = C.orientReport(d.uc, d.info, c.inst.map((inst) => C.stateDir(inst, s)));
+    if (!r) return 'no copies found';
+    const bits = [];
+    if (r.toNormalMin !== undefined) {
+      bits.push((Math.abs(r.toNormalMax - r.toNormalMin) < 0.05 ? fmt(r.toNormalMin, 1) : fmt(r.toNormalMin, 1) + '–' + fmt(r.toNormalMax, 1)) + '° to the layer normal');
+    }
+    if (r.orientations === 1) bits.push('all copies parallel');
+    else if (r.between !== undefined) bits.push('2 orientations, ' + fmt(r.between, 1) + '° apart');
+    else bits.push(r.orientations + ' orientations');
+    return bits.join('; ');
+  }
+  function drawChromos() {
+    const d = D();
+    $('chromoList').innerHTML = d.chromos.map((c, ci) => {
+      const head = '<div class="row"><input type="text" class="cname" data-c="' + ci + '" data-f="cname" value="' + esc(c.name) + '" aria-label="Chromophore name">' +
+        '<button type="button" class="mini" data-crm="' + ci + '">Remove</button></div>';
+      const rms = c.inst.length ? Math.max(...c.inst.map((x) => x.rms)) : 0;
+      const info = '<div class="small">Plane: ' + c.plane.map((s) => esc(siteLabel(d, s))).join(' ') + '. Axis: ' +
+        (c.axis && c.axis.length === 2 ? esc(siteLabel(d, c.axis[0])) + '···' + esc(siteLabel(d, c.axis[1])) : 'longest span of the plane atoms') +
+        '. ' + c.inst.length + (c.inst.length === 1 ? ' copy' : ' copies') + ' per cell' + (c.inst.length ? ', planar to ' + fmt(rms, 3) + ' Å' : '') + '.</div>';
+      const states = c.states.map((s, si) => {
+        const key = 'data-c="' + ci + '" data-s="' + si + '"';
+        return '<div class="state">' +
+          '<input type="checkbox" ' + key + ' data-f="on"' + (s.on ? ' checked' : '') + ' aria-label="Show ' + esc(s.name) + '">' +
+          '<i class="sw" style="background:' + s.color + '"></i>' +
+          '<input type="text" class="sname" ' + key + ' data-f="sname" value="' + esc(s.name) + '" aria-label="State name">' +
+          '<button type="button" class="mini" ' + key + ' data-srm="1" aria-label="Remove ' + esc(s.name) + '">Remove</button>' +
+          '<div class="smode"><select ' + key + ' data-f="mode" aria-label="Direction of ' + esc(s.name) + '">' +
+          MODES.map(([v, t]) => '<option value="' + v + '"' + (s.mode === v ? ' selected' : '') + '>' + t + '</option>').join('') + '</select>' +
+          (s.mode === 'angle' ? '<input type="number" ' + key + ' data-f="phi" step="5" value="' + s.phi + '" aria-label="Angle from the axis in degrees">°' : '') + '</div>' +
+          '<div class="small srep">' + stateReport(d, c, s) + '</div></div>';
+      }).join('');
+      return '<div class="chromo">' + head + info + states + '<div class="row"><button type="button" class="mini" data-cadd="' + ci + '">Add a state</button></div></div>';
+    }).join('');
+  }
+  function startPicking() {
+    st.picking = { step: 1, plane: [], axis: [] };
+    const d = D();
+    d.pick = null;
+    render(true);
+  }
+  function finishPicking() {
+    const d = D();
+    const pk = st.picking;
+    st.picking = null;
+    if (pk && pk.plane.length >= 3) {
+      d.chromos.push({
+        name: 'Chromophore ' + (d.chromos.length + 1), plane: pk.plane.map((a) => a.site), axis: pk.axis.length === 2 ? pk.axis.map((a) => a.site) : null,
+        states: [{ name: 'State 1', mode: 'normal', phi: 0, on: true, color: STATE_COLORS[0] }]
+      });
+      refreshChromos(d);
+      st.notice = d.chromos[d.chromos.length - 1].inst.length ? '' : 'No copy of that chromophore could be built. Pick atoms that belong to one molecule.';
+      drawChromos();
+    }
+    render(true);
+  }
+  function pickAtom(atom) {
+    const pk = st.picking;
+    const entry = { site: atom.xs, label: atom.xl, group: atom.xg, p: [atom.x, atom.y, atom.z] };
+    const all = pk.plane.concat(pk.axis);
+    if (atom.xk !== 'organic') { st.notice = 'Pick atoms of an organic molecule.'; return; }
+    if (all.length && all[0].group !== entry.group) { st.notice = 'Keep to one molecule: that atom belongs to a different one.'; return; }
+    st.notice = '';
+    const list = pk.step === 1 ? pk.plane : pk.axis;
+    const at = list.findIndex((a) => a.site === entry.site);
+    if (at >= 0) list.splice(at, 1);
+    else if (pk.step === 2 && list.length >= 2) list.splice(0, 1, entry);
+    else list.push(entry);
+  }
+
+  /* ---------- comparison table ---------- */
+  function summary(d) {
+    const { struct, info } = d;
+    const c = struct.cell;
+    const fw = info.framework, L = info.layer;
+    const eq = L ? L.bridges.filter((b) => b.equatorial) : [];
+    const ms = info.metalSites;
+    const six = ms.filter((s) => s.cn === 6);
+    const num = (x, dd) => (x === null || x === undefined || !isFinite(x) ? '' : fmt(x, dd));
+    return [
+      ['Structure', d.name],
+      ['Formula', formulaText(info.formula)],
+      ['Space group', struct.meta.spaceGroup || (struct.meta.sgNumber ? 'no. ' + struct.meta.sgNumber : '')],
+      ['a (Å)', num(c.a, 4)], ['b (Å)', num(c.b, 4)], ['c (Å)', num(c.c, 4)],
+      ['α (°)', num(c.al, 3)], ['β (°)', num(c.be, 3)], ['γ (°)', num(c.ga, 3)],
+      ['V (Å³)', num(c.V, 1)], ['Z', String(info.Z)], ['ρ (g cm⁻³)', num(info.density, 3)],
+      ['Framework', fw ? frameworkText(fw, null) : 'none'],
+      ['n', L ? String(L.n) : ''],
+      ['Layer spacing (Å)', fw && fw.dim === 2 ? num(fw.spacing, 3) : ''],
+      ['Slab (Å)', L ? num(L.slabThickness, 3) : ''],
+      ['Gallery (Å)', L ? num(L.gallery, 3) : ''],
+      ['Mean M–X (Å)', ms.length ? num(mean(ms.map((s) => s.mean)), 3) : ''],
+      ['Δd (10⁻⁴)', six.length ? num(mean(six.map((s) => s.deltaD)) * 1e4, 2) : ''],
+      ['σ² (deg²)', six.length ? num(mean(six.map((s) => s.sigma2)), 1) : ''],
+      ['M–X–M (°)', eq.length ? num(mean(eq.map((b) => b.theta)), 2) : (info.bridges.length ? num(mean(info.bridges.map((b) => b.angle)), 2) : '')],
+      ['θ in (°)', eq.length ? num(mean(eq.map((b) => b.thetaIn)), 2) : ''],
+      ['θ out (°)', eq.length ? num(mean(eq.map((b) => b.thetaOut)), 2) : ''],
+      ['Axial tilt (°)', L && L.axialTilt ? num(L.axialTilt.mean, 1) : ''],
+      ['N penetration (Å)', L && L.penetration.length ? num(mean(L.penetration.map((p) => p.depth)), 3) : ''],
+      ['Stacking offset', L && L.offset ? '(' + fmt(L.offset.s1, 2) + ', ' + fmt(L.offset.s2, 2) + ')' : ''],
+      ['Workbench version', '__VERSION__']
+    ];
+  }
+  function drawCompare() {
+    if (!st.docs.length) { $('tblCmp').innerHTML = ''; return; }
+    const rows = st.docs.map(summary);
+    const head = rows[0].map((c) => '<th>' + esc(c[0]) + '</th>').join('') + '<th></th>';
+    $('tblCmp').innerHTML = '<thead><tr>' + head + '</tr></thead><tbody>' + rows.map((r, i) =>
+      '<tr class="' + (i === st.cur ? 'on' : '') + '">' + r.map((c, k) => '<td>' + (k === 0 ? '<button type="button" class="linkbtn" data-open="' + i + '">' + esc(c[1]) + '</button>' : esc(c[1])) + '</td>').join('') +
+      '<td><button type="button" class="mini" data-close="' + i + '" aria-label="Remove ' + esc(r[0][1]) + '">Remove</button></td></tr>').join('') + '</tbody>';
+    $('tsvBox').hidden = true;
+    $('copyMsg').textContent = st.docs.length > 1 ? 'Means over the independent sites of each structure.' : '';
+  }
+  function tsv() {
+    const rows = st.docs.map(summary);
+    return [rows[0].map((c) => c[0]).join('\t')].concat(rows.map((r) => r.map((c) => c[1]).join('\t'))).join('\n');
+  }
+
+  function drawReadout(hoverText) {
+    const d = D();
+    const lines = [];
+    if (st.notice) lines.push('<div class="alert" role="alert">' + esc(st.notice) + '</div>');
+    if (!d) {
+      if (!st.notice) lines.push('<div class="hint">No structure loaded yet.</div>');
+      $('readout').innerHTML = lines.join('');
+      return;
+    }
+    if (st.picking) {
+      const pk = st.picking;
+      if (pk.step === 1) {
+        lines.push('<div class="pickbar"><span>Step 1 of 2. Click three or more atoms of one molecule to set the chromophore plane.</span><span>' +
+          (pk.plane.length ? 'Picked: ' + pk.plane.map((a) => esc(a.label)).join(' ') : 'Nothing picked yet.') + '</span>' +
+          '<button type="button" class="primary" id="pickNext"' + (pk.plane.length < 3 ? ' disabled' : '') + '>Next</button><button type="button" id="pickCancel">Cancel</button></div>');
+      } else {
+        lines.push('<div class="pickbar"><span>Step 2 of 2. Click two atoms for the in-plane reference axis, or finish without one.</span><span>' +
+          (pk.axis.length ? 'Axis: ' + pk.axis.map((a) => esc(a.label)).join('···') : 'No axis yet.') + '</span>' +
+          '<button type="button" class="primary" id="pickDone">Done</button><button type="button" id="pickCancel">Cancel</button></div>');
+      }
+    }
+    if (hoverText) lines.push('<div>' + hoverText + '</div>');
+    if (d.pick) lines.push('<div>From ' + esc(d.pick.label) + ': click a second atom for the distance.</div>');
+    if (d.measures.length) {
+      lines.push('<div class="meas">' + d.measures.map((m) => '<span>' + esc(m.l1) + '···' + esc(m.l2) + ' ' + fmt(m.d, 3) + ' Å</span>').join('') +
+        '<button type="button" class="mini" id="btnClear">Clear</button></div>');
+    }
+    if (!hoverText && !d.pick && !d.measures.length && !st.picking) {
+      lines.push('<div class="hint">Drag to rotate, scroll or pinch to zoom, Ctrl-drag to pan. Hover an atom for its label; click two atoms to measure a distance.</div>');
+    }
+    $('readout').innerHTML = lines.join('');
+  }
+
+  /* ---------- 3D scene ---------- */
+  function render(keepView) {
+    const d = D();
+    if (!viewer || !d) { drawReadout(); return; }
+    const view = keepView ? viewer.getView() : null;
+    viewer.removeAllModels();
+    viewer.removeAllShapes();
+    viewer.removeAllLabels();
+    hoverLabel = null;
+    const uc = d.uc;
+    const blk = C.assemble(uc, d.lo, d.hi);
+    const visible = (a) => (a.el !== 'H' || st.H) && (a.kind === 'organic' ? st.org : st.inorg);
+    const ink = cssVar('--ink'), muted = cssVar('--muted'), accent = cssVar('--accent'), panel = cssVar('--panel');
+    viewer.setBackgroundColor(cssVar('--stage'), 1);
+
+    const map = new Map();
+    const list = [];
+    blk.atoms.forEach((a, i) => {
+      if (!visible(a)) return;
+      map.set(i, list.length);
+      list.push({ elem: a.el, x: a.xyz[0], y: a.xyz[1], z: a.xyz[2], bonds: [], bondOrder: [], xl: a.label, xf: a.f, xk: a.kind, xs: a.site, xg: a.group });
+    });
+    blk.atoms.forEach((a, i) => {
+      if (!map.has(i)) return;
+      const me = list[map.get(i)];
+      for (const j of a.bonds) if (map.has(j)) { me.bonds.push(map.get(j)); me.bondOrder.push(1); }
+    });
+    st.shown = list.length;
+    st.pts = list.map((a) => ({ x: a.x, y: a.y, z: a.z }));
+    const model = viewer.addModel();
+    if (list.length) model.addAtoms(list);
+
+    const elMap = {};
+    for (const a of list) elMap[a.elem] = hexInt(colorOf(a.elem));
+    const cs = { prop: 'elem', map: elMap };
+    const metals = Object.keys(elMap).filter((e) => C.isMetal(e));
+    const halides = Object.keys(elMap).filter((e) => C.HALIDE.has(e));
+    if (st.style === 'sf') {
+      model.setStyle({}, { sphere: { colorscheme: cs } });
+    } else if (st.style === 'st') {
+      model.setStyle({}, { stick: { radius: 0.13, colorscheme: cs } });
+      if (metals.length) model.setStyle({ elem: metals }, { stick: { radius: 0.13, colorscheme: cs }, sphere: { radius: 0.3, colorscheme: cs } });
+      if (halides.length) model.setStyle({ elem: halides }, { stick: { radius: 0.13, colorscheme: cs }, sphere: { radius: 0.2, colorscheme: cs } });
+    } else {
+      model.setStyle({}, { stick: { radius: 0.1, colorscheme: cs }, sphere: { radius: 0.3, colorscheme: cs } });
+      model.setStyle({ elem: 'H' }, { stick: { radius: 0.07, colorscheme: cs }, sphere: { radius: 0.16, colorscheme: cs } });
+      if (halides.length) model.setStyle({ elem: halides }, { stick: { radius: 0.1, colorscheme: cs }, sphere: { radius: 0.42, colorscheme: cs } });
+      if (metals.length) model.setStyle({ elem: metals }, { stick: { radius: 0.1, colorscheme: cs }, sphere: { radius: 0.55, colorscheme: cs } });
+    }
+
+    // coordination polyhedra, one mesh per metal element
+    if (st.poly && st.inorg && st.style !== 'sf') {
+      const meshes = {};
+      for (const p of blk.polyhedra) {
+        const el = blk.atoms[p.center].el;
+        const mesh = meshes[el] || (meshes[el] = { vertexArr: [], normalArr: [], faceArr: [] });
+        const pts = p.verts.map((i) => blk.atoms[i].xyz);
+        for (const f of C.hullFaces(pts)) {
+          const base = mesh.vertexArr.length;
+          for (const k of f.v) { mesh.vertexArr.push(V3(pts[k])); mesh.normalArr.push(V3(f.n)); }
+          mesh.faceArr.push(base, base + 1, base + 2);
+        }
+      }
+      for (const el of Object.keys(meshes)) viewer.addCustom(Object.assign(meshes[el], { color: colorOf(el), opacity: 0.5 }));
+    }
+
+    // unit cell outline with axis letters
+    if (st.cellBox) {
+      const c = uc.cell;
+      const P = (i, j, k) => V3([i * c.A[0] + j * c.B[0] + k * c.C[0], i * c.A[1] + j * c.B[1] + k * c.C[1], i * c.A[2] + j * c.B[2] + k * c.C[2]]);
+      const edges = [];
+      for (let u = 0; u < 2; u++) for (let v = 0; v < 2; v++) {
+        edges.push([P(0, u, v), P(1, u, v)], [P(u, 0, v), P(u, 1, v)], [P(u, v, 0), P(u, v, 1)]);
+      }
+      for (const [s, e] of edges) viewer.addCylinder({ start: s, end: e, radius: 0.035, color: muted, fromCap: 1, toCap: 1 });
+      const lab = { font: 'IBM Plex Mono, monospace', fontSize: 14, fontColor: ink, backgroundColor: panel, backgroundOpacity: 0.85, borderThickness: 0, inFront: true, alignment: 'center' };
+      viewer.addLabel('a', Object.assign({ position: P(1, 0, 0) }, lab));
+      viewer.addLabel('b', Object.assign({ position: P(0, 1, 0) }, lab));
+      viewer.addLabel('c', Object.assign({ position: P(0, 0, 1) }, lab));
+      viewer.addLabel('0', Object.assign({ position: P(0, 0, 0) }, lab));
+    }
+
+    // hydrogen bonds
+    if (st.hb && st.style !== 'sf') {
+      for (const h of blk.hbonds) {
+        if (!map.has(h.d) || !map.has(h.a)) continue;
+        const from = st.H && h.h >= 0 ? blk.atoms[h.h] : blk.atoms[h.d];
+        viewer.addCylinder({ start: V3(from.xyz), end: V3(blk.atoms[h.a].xyz), radius: 0.05, color: accent, dashed: true, dashLength: 0.16, gapLength: 0.12, fromCap: 1, toCap: 1 });
+      }
+    }
+
+    // lattice planes, cut to the packing block
+    let clipped = 0;
+    for (const p of d.planes) {
+      const res = C.planePolys(uc.cell, p.hkl, p.off, d.lo, d.hi, MAX_PLANES);
+      if (res.total > MAX_PLANES) clipped = res.total;
+      const mesh = { vertexArr: [], normalArr: [], faceArr: [] };
+      for (const poly of res.polys) {
+        for (const sgn of [1, -1]) {
+          const nv = V3(res.normal.map((x) => x * sgn));
+          for (let k = 0; k < poly.pts.length; k++) {
+            const q0 = poly.pts[k], q1 = poly.pts[(k + 1) % poly.pts.length];
+            const base = mesh.vertexArr.length;
+            mesh.vertexArr.push(V3(poly.cen), V3(sgn > 0 ? q0 : q1), V3(sgn > 0 ? q1 : q0));
+            mesh.normalArr.push(nv, nv, nv);
+            mesh.faceArr.push(base, base + 1, base + 2);
+          }
+        }
+        for (let k = 0; k < poly.pts.length; k++) {
+          viewer.addCylinder({ start: V3(poly.pts[k]), end: V3(poly.pts[(k + 1) % poly.pts.length]), radius: 0.03, color: p.color, fromCap: 1, toCap: 1 });
+        }
+      }
+      if (mesh.faceArr.length) viewer.addCustom(Object.assign(mesh, { color: p.color, opacity: 0.3 }));
+    }
+    if (clipped) st.notice = 'Only the first ' + MAX_PLANES + ' of ' + clipped + ' planes are drawn. Narrow the packing limits to see the rest.';
+    else if (st.notice.startsWith('Only the first')) st.notice = '';
+
+    // transition-dipole axes, one double-headed arrow per state and per chromophore copy
+    const L = st.arrow;
+    for (const c of d.chromos) {
+      const active = c.states.filter((s) => s.on);
+      if (!active.length || !c.inst.length) continue;
+      for (const m of blk.mols) {
+        for (const inst of c.inst) {
+          if (inst.mi !== m.mi) continue;
+          const cen = uc.cell.toCart([inst.f[0] + m.t[0], inst.f[1] + m.t[1], inst.f[2] + m.t[2]]);
+          for (const s of active) {
+            const v = C.stateDir(inst, s);
+            for (const sgn of [1, -1]) {
+              viewer.addArrow({ start: V3(cen), end: V3([cen[0] + sgn * L * v[0], cen[1] + sgn * L * v[1], cen[2] + sgn * L * v[2]]),
+                radius: 0.13, radiusRatio: 2.2, mid: 0.7, color: s.color, opacity: 0.78 });
+            }
+          }
+        }
+      }
+    }
+
+    // measurements and picks
+    for (const m of d.measures) {
+      viewer.addCylinder({ start: V3(m.p1), end: V3(m.p2), radius: 0.04, color: ink, dashed: true, dashLength: 0.12, gapLength: 0.1, fromCap: 1, toCap: 1 });
+      viewer.addLabel(fmt(m.d, 3) + ' Å', {
+        position: V3([(m.p1[0] + m.p2[0]) / 2, (m.p1[1] + m.p2[1]) / 2, (m.p1[2] + m.p2[2]) / 2]),
+        font: 'IBM Plex Mono, monospace', fontSize: 13, fontColor: panel, backgroundColor: ink, backgroundOpacity: 0.9, borderThickness: 0, inFront: true, alignment: 'center'
+      });
+    }
+    if (d.pick) viewer.addSphere({ center: V3(d.pick.p), radius: 0.75, color: accent, opacity: 0.4 });
+    if (st.picking) {
+      for (const a of st.picking.plane) viewer.addSphere({ center: V3(a.p), radius: 0.6, color: accent, opacity: 0.45 });
+      for (const a of st.picking.axis) viewer.addSphere({ center: V3(a.p), radius: 0.6, color: ink, opacity: 0.45 });
+    }
+
+    // hover and click
+    const describe = (atom) => {
+      const f = atom.xf.map((x) => fmt(x, 4)).join(', ');
+      return '<b>' + esc(atom.xl) + '</b> (' + esc(atom.elem) + ')  ·  x, y, z = ' + f;
+    };
+    if (list.length) model.setHoverable({}, true, (atom) => {
+      if (hoverLabel) viewer.removeLabel(hoverLabel);
+      hoverLabel = viewer.addLabel(atom.xl, {
+        position: { x: atom.x, y: atom.y, z: atom.z }, font: 'IBM Plex Mono, monospace', fontSize: 13, fontColor: cssVar('--on-accent'),
+        backgroundColor: accent, backgroundOpacity: 0.95, borderThickness: 0, inFront: true, alignment: 'bottomCenter', screenOffset: { x: 0, y: 12 }
+      });
+      drawReadout(describe(atom));
+      viewer.render();
+    }, () => {
+      if (hoverLabel) { viewer.removeLabel(hoverLabel); hoverLabel = null; }
+      drawReadout();
+      viewer.render();
+    });
+    if (list.length) model.setClickable({}, true, (atom) => {
+      if (st.picking) {
+        pickAtom(atom);
+        render(true);
+        return;
+      }
+      const p = [atom.x, atom.y, atom.z];
+      if (!d.pick) {
+        d.pick = { p, label: atom.xl };
+      } else {
+        const q = d.pick.p;
+        const dist = Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]);
+        if (dist > 0.01) {
+          d.measures.push({ p1: q, p2: p, l1: d.pick.label, l2: atom.xl, d: dist });
+          if (d.measures.length > 6) d.measures.shift();
+        }
+        d.pick = null;
+      }
+      render(true);
+      drawReadout(describe(atom));
+    });
+
+    if (view) viewer.setView(view); else axisView(defaultAxes());
+    viewer.render();
+    drawReadout();
+  }
+
+  /* camera: look down one direction with another pointing up the screen */
+  function defaultAxes() {
+    const c = D().uc.cell;
+    const L = [['a', c.a], ['b', c.b], ['c', c.c]].sort((p, q) => p[1] - q[1]);
+    return [L[0][0], L[2][0]];
+  }
+  function axisView(pair) {
+    const c = D().uc.cell;
+    const vec = { a: c.A, b: c.B, c: c.C };
+    viewAlong(vec[pair[0]], vec[pair[1]]);
+  }
+  function autoUp(z) {
+    const c = D().uc.cell;
+    const zl = Math.hypot(z[0], z[1], z[2]);
+    const cand = [[c.C, c.c], [c.A, c.a], [c.B, c.b]].map(([v, len]) => ({ v, len, cos: Math.abs(v[0] * z[0] + v[1] * z[1] + v[2] * z[2]) / (len * zl) }));
+    cand.sort((p, q) => (Math.abs(p.cos - q.cos) < 0.02 ? q.len - p.len : p.cos - q.cos));
+    return cand[0].v;
+  }
+  function viewAlong(zv, upv) {
+    const unit = (v) => { const n = Math.hypot(v[0], v[1], v[2]); return [v[0] / n, v[1] / n, v[2] / n]; };
+    const z = unit(zv);
+    let u = upv;
+    const k = u[0] * z[0] + u[1] * z[1] + u[2] * z[2];
+    u = unit([u[0] - k * z[0], u[1] - k * z[1], u[2] - k * z[2]]);
+    const x = [u[1] * z[2] - u[2] * z[1], u[2] * z[0] - u[0] * z[2], u[0] * z[1] - u[1] * z[0]];
+    const m = [x, u, z];
+    const tr = m[0][0] + m[1][1] + m[2][2];
+    let qw, qx, qy, qz;
+    if (tr > 0) {
+      const s = Math.sqrt(tr + 1) * 2; qw = s / 4; qx = (m[2][1] - m[1][2]) / s; qy = (m[0][2] - m[2][0]) / s; qz = (m[1][0] - m[0][1]) / s;
+    } else if (m[0][0] > m[1][1] && m[0][0] > m[2][2]) {
+      const s = Math.sqrt(1 + m[0][0] - m[1][1] - m[2][2]) * 2; qw = (m[2][1] - m[1][2]) / s; qx = s / 4; qy = (m[0][1] + m[1][0]) / s; qz = (m[0][2] + m[2][0]) / s;
+    } else if (m[1][1] > m[2][2]) {
+      const s = Math.sqrt(1 + m[1][1] - m[0][0] - m[2][2]) * 2; qw = (m[0][2] - m[2][0]) / s; qx = (m[0][1] + m[1][0]) / s; qy = s / 4; qz = (m[1][2] + m[2][1]) / s;
+    } else {
+      const s = Math.sqrt(1 + m[2][2] - m[0][0] - m[1][1]) * 2; qw = (m[1][0] - m[0][1]) / s; qx = (m[0][2] + m[2][0]) / s; qy = (m[1][2] + m[2][1]) / s; qz = s / 4;
+    }
+    const v = viewer.getView();
+    v[4] = qx; v[5] = qy; v[6] = qz; v[7] = qw;
+    viewer.setView(v);
+    fit();
+  }
+  /* zoom so the drawn atoms fill the stage, leaving room for the two toolbars */
+  function fit() {
+    if (!st.shown) { viewer.render(); return; }
+    viewer.zoomTo();
+    const box = $('gl').getBoundingClientRect();
+    const W = box.width - 40, H = box.height - 110;
+    for (let pass = 0; pass < 2 && W > 50 && H > 50; pass++) {
+      let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+      for (const q of st.pts) {
+        const sc = viewer.modelToScreen(q);
+        if (!sc || !isFinite(sc.x) || !isFinite(sc.y)) continue;
+        if (sc.x < x0) x0 = sc.x; if (sc.x > x1) x1 = sc.x;
+        if (sc.y < y0) y0 = sc.y; if (sc.y > y1) y1 = sc.y;
+      }
+      const bw = Math.max(x1 - x0, 1), bh = Math.max(y1 - y0, 1);
+      if (!isFinite(bw) || !isFinite(bh)) break;
+      const f = Math.min(W / bw, H / bh);
+      if (!isFinite(f) || f <= 0) break;
+      viewer.zoom(Math.max(0.2, Math.min(5, f)));
+    }
+    viewer.render();
+  }
+
+  /* ---------- wiring ---------- */
+  function setStyle(s) {
+    st.style = s;
+    $('styleBS').setAttribute('aria-pressed', String(s === 'bs'));
+    $('styleSF').setAttribute('aria-pressed', String(s === 'sf'));
+    $('styleST').setAttribute('aria-pressed', String(s === 'st'));
+    render(true);
+  }
+  function readFiles(files) {
+    const arr = Array.from(files || []);
+    if (!arr.length) return;
+    const out = new Array(arr.length);
+    let left = arr.length;
+    arr.forEach((file, i) => {
+      const fr = new FileReader();
+      const done = () => { if (--left === 0) addFiles(out.filter(Boolean)); };
+      fr.onload = () => { out[i] = { text: String(fr.result), name: file.name }; done(); };
+      fr.onerror = () => { st.notice = 'Could not read ' + file.name + '.'; done(); };
+      fr.readAsText(file);
+    });
+  }
+
+  function init() {
+    const stage = $('stage');
+    let libMsg = '';
+    if (!window.$3Dmol) {
+      libMsg = 'The 3D library (3Dmol.js) did not load, so structures cannot be drawn. The tables are still computed from each CIF.';
+    } else {
+      try {
+        viewer = $3Dmol.createViewer($('gl'), { backgroundColor: cssVar('--stage'), orthographic: true, antialias: true, hoverDuration: 60 });
+      } catch (err) { viewer = null; }
+      if (!viewer) libMsg = 'This browser could not start WebGL, so structures cannot be drawn. The tables are still computed from each CIF.';
+    }
+    if (libMsg) $('stageMsg').innerHTML = '<strong>Drop CIF files here</strong><p>' + libMsg + '</p>';
+    activate(-1);
+
+    $('styleBS').onclick = () => setStyle('bs');
+    $('styleSF').onclick = () => setStyle('sf');
+    $('styleST').onclick = () => setStyle('st');
+    const bind = (id, key) => { $(id).onchange = (e) => { st[key] = e.target.checked; render(true); }; };
+    bind('chkPoly', 'poly'); bind('chkCell', 'cellBox'); bind('chkH', 'H'); bind('chkHB', 'hb'); bind('chkOrg', 'org'); bind('chkInorg', 'inorg');
+    $('chkPersp').onchange = (e) => { if (viewer) { viewer.setProjection(e.target.checked ? 'perspective' : 'orthographic'); viewer.render(); } };
+    $('chkSpin').onchange = (e) => { if (viewer) viewer.spin(e.target.checked ? 'y' : false, 0.6); };
+    $('chkMinor').onchange = (e) => {
+      const d = D();
+      d.minor = e.target.checked; d.measures = []; d.pick = null;
+      rebuildCell(d);
+      drawHeader(); drawSheet(); drawChromos(); drawCompare();
+      render(true);
+    };
+    $('arrowLen').onchange = (e) => { const v = parseFloat(e.target.value); if (isFinite(v) && v > 0) { st.arrow = v; render(true); } };
+
+    const applyRanges = (lo, hi) => {
+      const d = D();
+      const span = [0, 1, 2].map((i) => hi[i] - lo[i]);
+      if (lo.concat(hi).some((x) => !isFinite(x)) || span.some((x) => x <= 0)) {
+        st.notice = 'Each upper packing limit has to be above its lower limit.';
+      } else if (d.uc.atoms.length * (span[0] + 0.5) * (span[1] + 0.5) * (span[2] + 0.5) > MAX_ATOMS) {
+        st.notice = 'That block would hold more than about ' + MAX_ATOMS + ' atoms, so the limits were not changed.';
+      } else {
+        st.notice = '';
+        d.lo = lo; d.hi = hi;
+        drawRanges();
+        drawPlanes();
+        render(true);
+        if (viewer) fit();
+        return;
+      }
+      drawRanges();
+      drawReadout();
+    };
+    $('ranges').onchange = () => {
+      const val = (i, j) => parseFloat($('rng' + i + j).value);
+      const lo = [0, 1, 2].map((i) => val(i, 0)), hi = [0, 1, 2].map((i) => val(i, 1));
+      setTimeout(() => applyRanges(lo, hi), 0);
+    };
+    $('btnPackReset').onclick = () => applyRanges([0, 0, 0], D().def.slice());
+
+    const indices = () => {
+      const v = ['ixH', 'ixK', 'ixL'].map((id) => parseFloat($(id).value));
+      if (v.some((x) => !isFinite(x)) || v.every((x) => x === 0)) {
+        st.notice = 'Enter three indices, at least one of them non-zero.';
+        drawReadout();
+        return null;
+      }
+      return v;
+    };
+    const clearNotice = () => { if (st.notice) { st.notice = ''; drawReadout(); } };
+    $('btnViewUVW').onclick = () => {
+      const v = indices();
+      if (!v || !viewer) return;
+      clearNotice();
+      const c = D().uc.cell;
+      const z = [0, 1, 2].map((k) => v[0] * c.A[k] + v[1] * c.B[k] + v[2] * c.C[k]);
+      viewAlong(z, autoUp(z));
+    };
+    const viewNormal = (v) => {
+      const r = D().uc.cell.recip;
+      const z = [0, 1, 2].map((k) => v[0] * r[0][k] + v[1] * r[1][k] + v[2] * r[2][k]);
+      viewAlong(z, autoUp(z));
+    };
+    $('btnViewHKL').onclick = () => {
+      const v = indices();
+      if (!v || !viewer) return;
+      clearNotice();
+      viewNormal(v);
+    };
+    $('viewLayer').onclick = () => { const fw = D().info.framework; if (viewer && fw && fw.hkl) viewNormal(fw.hkl); };
+    $('btnPlane').onclick = () => {
+      const d = D();
+      const v = indices();
+      if (!v) return;
+      if (v.some((x) => x !== Math.round(x))) {
+        st.notice = 'Plane indices have to be whole numbers.';
+        drawReadout();
+        return;
+      }
+      let off = parseFloat($('ixOff').value);
+      if (!isFinite(off)) off = 0;
+      off = Math.round((off - Math.floor(off)) * 1000) / 1000;
+      if (d.planes.some((p) => p.hkl.join() === v.join() && p.off === off)) return;
+      const used = d.planes.map((p) => p.color);
+      const color = PLANE_COLORS.find((c) => !used.includes(c)) || PLANE_COLORS[d.planes.length % PLANE_COLORS.length];
+      st.notice = '';
+      d.planes.push({ hkl: v, off, color });
+      drawPlanes();
+      render(true);
+    };
+    $('planeList').onclick = (e) => {
+      const b = e.target.closest('button[data-rm]');
+      if (!b) return;
+      D().planes.splice(+b.dataset.rm, 1);
+      st.notice = '';
+      drawPlanes();
+      render(true);
+    };
+
+    // chromophores
+    $('btnDefine').onclick = () => startPicking();
+    $('chromoList').onclick = (e) => {
+      const d = D();
+      const b = e.target.closest('button');
+      if (!b) return;
+      if (b.dataset.crm !== undefined) d.chromos.splice(+b.dataset.crm, 1);
+      else if (b.dataset.cadd !== undefined) {
+        const c = d.chromos[+b.dataset.cadd];
+        const used = c.states.map((s) => s.color);
+        c.states.push({ name: 'State ' + (c.states.length + 1), mode: 'along', phi: 0, on: true, color: STATE_COLORS.find((x) => !used.includes(x)) || STATE_COLORS[c.states.length % STATE_COLORS.length] });
+      } else if (b.dataset.srm !== undefined) d.chromos[+b.dataset.c].states.splice(+b.dataset.s, 1);
+      else return;
+      drawChromos();
+      render(true);
+    };
+    $('chromoList').onchange = (e) => {
+      const d = D();
+      const t = e.target;
+      const c = d.chromos[+t.dataset.c];
+      if (!c) return;
+      const f = t.dataset.f;
+      if (f === 'cname') { c.name = t.value; return; }
+      const s = c.states[+t.dataset.s];
+      if (!s) return;
+      if (f === 'sname') { s.name = t.value; return; }
+      if (f === 'on') s.on = t.checked;
+      if (f === 'mode') s.mode = t.value;
+      if (f === 'phi') { const v = parseFloat(t.value); s.phi = isFinite(v) ? v : 0; }
+      // redraw after the event, so the control that fired it is not removed mid-change
+      setTimeout(() => { if (f !== 'on') drawChromos(); render(true); }, 0);
+    };
+
+    $('viewA').onclick = () => viewer && axisView(['a', 'c']);
+    $('viewB').onclick = () => viewer && axisView(['b', 'a']);
+    $('viewC').onclick = () => viewer && axisView(['c', 'a']);
+    $('viewReset').onclick = () => viewer && axisView(defaultAxes());
+    $('readout').onclick = (e) => {
+      const id = e.target.id;
+      const d = D();
+      if (id === 'btnClear') { d.measures = []; d.pick = null; render(true); }
+      if (id === 'pickNext') { st.picking.step = 2; render(true); }
+      if (id === 'pickDone') finishPicking();
+      if (id === 'pickCancel') { st.picking = null; st.notice = ''; render(true); }
+    };
+
+    // files and the structures table
+    $('fileIn').onchange = (e) => { readFiles(e.target.files); e.target.value = ''; };
+    $('btnExample').onclick = () => {
+      const at = st.docs.findIndex((x) => x.src === EXAMPLE);
+      if (at >= 0) activate(at); else addFiles([EXAMPLE]);
+    };
+    stage.addEventListener('dragover', (e) => { e.preventDefault(); stage.classList.add('drag'); });
+    stage.addEventListener('dragleave', () => stage.classList.remove('drag'));
+    stage.addEventListener('drop', (e) => { e.preventDefault(); stage.classList.remove('drag'); readFiles(e.dataTransfer.files); });
+    $('tblCmp').onclick = (e) => {
+      const b = e.target.closest('button');
+      if (!b) return;
+      if (b.dataset.open !== undefined) { st.notice = ''; activate(+b.dataset.open); }
+      if (b.dataset.close !== undefined) {
+        const i = +b.dataset.close;
+        st.docs.splice(i, 1);
+        st.notice = '';
+        activate(st.docs.length ? Math.min(st.cur > i ? st.cur - 1 : st.cur, st.docs.length - 1) : -1);
+      }
+    };
+    $('btnCopy').onclick = () => {
+      const text = tsv();
+      const fallback = () => {
+        const box = $('tsvBox');
+        box.hidden = false;
+        box.value = text;
+        box.focus();
+        box.select();
+        $('copyMsg').textContent = 'Copy the selected text.';
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => { $('copyMsg').textContent = 'Copied. Paste into a spreadsheet.'; }, fallback);
+      } else fallback();
+    };
+
+    if (viewer && window.ResizeObserver) new ResizeObserver(() => { viewer.resize(); viewer.render(); }).observe(stage);
+    const retheme = () => { drawLegend(); if (viewer && D()) render(true); };
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', retheme);
+    new MutationObserver(retheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(retheme);
+  }
+  init();
+  window.perovskiteWorkbench = { state: st, viewer: () => viewer };
+})();
+</script>

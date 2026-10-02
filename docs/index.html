@@ -1,0 +1,2475 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>body{margin:0}img{max-width:100%}</style>
+<title>2D Perovskite Workbench</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: an instrument console. One large stage for the crystal, a comparison strip under it,
+   and a narrow rail of controls and data sheets that read like the tables of a structure paper. */
+:root {
+  --bg: #f3f1f4;
+  --panel: #fbfafc;
+  --stage: #ebe8ee;
+  --ink: #1e1a22;
+  --muted: #655e6c;
+  --line: #d9d3de;
+  --accent: #b0126a;
+  --accent-soft: #f6dcea;
+  --on-accent: #ffffff;
+  --warn: #9a3a00;
+  --atom-pb: #4b5669;
+  --atom-c: #6d727b;
+  --font-ui: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --font-display: "IBM Plex Sans Condensed", "IBM Plex Sans", "Arial Narrow", sans-serif;
+  --font-data: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #141216; --panel: #1c191f; --stage: #0f0d11; --ink: #ece8ef; --muted: #a59dac;
+    --line: #35303b; --accent: #f2569f; --accent-soft: #3c1a2c; --on-accent: #1a0a12; --warn: #ffab70;
+    --atom-pb: #93a0ba; --atom-c: #8b9099;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #141216; --panel: #1c191f; --stage: #0f0d11; --ink: #ece8ef; --muted: #a59dac;
+  --line: #35303b; --accent: #f2569f; --accent-soft: #3c1a2c; --on-accent: #1a0a12; --warn: #ffab70;
+  --atom-pb: #93a0ba; --atom-c: #8b9099;
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-ui); font-size: 14px; line-height: 1.45; }
+.app { display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 14px; height: 100%; min-height: 640px;
+  max-width: 1640px; margin-inline: auto; padding-inline: 20px; padding-block: 16px; }
+
+.head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 8px 24px; }
+.head > div { min-width: 0; }
+.eyebrow { font-family: var(--font-data); font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
+h1 { font-family: var(--font-display); font-weight: 600; font-size: 28px; line-height: 1.1; margin: 2px 0 0; text-wrap: balance; overflow-wrap: anywhere; }
+.sub { display: flex; flex-wrap: wrap; gap: 4px 18px; font-size: 13px; color: var(--muted); margin-top: 4px; }
+.sub b { color: var(--ink); font-weight: 500; }
+.bar { text-decoration: overline; }
+.tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+.main { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 14px; min-height: 0; }
+.main.solo { grid-template-columns: minmax(0, 1fr); }
+.stage-col { display: grid; grid-template-rows: minmax(280px, 1fr) auto auto; gap: 8px; min-width: 0; min-height: 0; }
+.stage { position: relative; background: var(--stage); border: 1px solid var(--line); border-radius: 6px; overflow: hidden; min-height: 280px; }
+.stage.drag { outline: 2px dashed var(--accent); outline-offset: -6px; }
+#gl { position: absolute; inset: 0; }
+.overlay { position: absolute; display: flex; gap: 6px; align-items: center; pointer-events: none; }
+.overlay > * { pointer-events: auto; }
+.overlay.tl { top: 10px; left: 10px; flex-wrap: wrap; right: 10px; }
+.overlay.bl { bottom: 10px; left: 10px; right: 10px; flex-wrap: wrap; }
+.ovl-label { font-size: 12px; color: var(--muted); pointer-events: none; }
+.chip { display: inline-flex; align-items: center; gap: 5px; font-family: var(--font-data); font-size: 12px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px 1px 5px; pointer-events: none; }
+.chip i { width: 10px; height: 10px; border-radius: 50%; border: 1px solid var(--line); }
+.stage-msg { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 12px; padding: 24px; text-align: center; color: var(--muted); }
+.stage-msg strong { font-family: var(--font-display); font-size: 22px; font-weight: 600; color: var(--ink); }
+.stage-msg p { margin: 0; max-width: 52ch; }
+
+.readout { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 8px 12px;
+  font-family: var(--font-data); font-size: 12.5px; font-variant-numeric: tabular-nums; min-height: 44px;
+  display: grid; gap: 4px; align-content: start; }
+.readout .hint { color: var(--muted); font-family: var(--font-ui); font-size: 13px; }
+.readout .meas, .readout .pickbar { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: center; }
+.readout .pickbar { font-family: var(--font-ui); font-size: 13px; }
+.readout .alert { color: var(--warn); font-family: var(--font-ui); font-size: 13px; }
+
+.rail { display: flex; flex-direction: column; gap: 12px; min-width: 0; min-height: 0; overflow-y: auto; padding-right: 2px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px 14px; display: grid; gap: 10px; min-width: 0; }
+.cmp { max-height: 30vh; overflow-y: auto; }
+h2 { font-size: 11.5px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; color: var(--muted); margin: 0; }
+.row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.between { justify-content: space-between; }
+
+button, .filebtn { font: inherit; font-size: 13px; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 4px; padding: 4px 10px; cursor: pointer; }
+button:hover, .filebtn:hover { border-color: var(--accent); }
+button:focus-visible, input:focus-visible, select:focus-visible, .filebtn:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+button[aria-pressed="true"], button.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+button:disabled { opacity: 0.45; cursor: default; border-color: var(--line); }
+button.mini { padding: 1px 8px; font-size: 12px; }
+.seg { display: inline-flex; }
+.seg button { border-radius: 0; margin-left: -1px; }
+.seg button:first-child { border-radius: 4px 0 0 4px; margin-left: 0; }
+.seg button:last-child { border-radius: 0 4px 4px 0; }
+.axis-btn { font-family: var(--font-data); font-style: italic; min-width: 32px; }
+.filebtn { display: inline-block; position: relative; }
+.filebtn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
+
+.checks { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; }
+.checks label { display: flex; align-items: center; gap: 7px; font-size: 13px; cursor: pointer; }
+input[type="checkbox"] { accent-color: var(--accent); width: 15px; height: 15px; margin: 0; flex: none; }
+.checks label.off { color: var(--muted); cursor: default; }
+.sw { width: 12px; height: 12px; border-radius: 2px; flex: none; }
+input[type="number"], input[type="text"], select { font-family: var(--font-data); font-size: 13px; color: var(--ink); background: var(--bg);
+  border: 1px solid var(--line); border-radius: 4px; padding: 3px 4px 3px 7px; font-variant-numeric: tabular-nums; }
+input[type="number"] { width: 62px; }
+select { font-family: var(--font-ui); padding: 3px 4px; max-width: 100%; }
+.ranges { display: grid; grid-template-columns: auto auto auto auto 1fr; gap: 6px 8px; align-items: center; font-size: 13px; }
+.ranges em, .idx em { font-family: var(--font-data); font-style: italic; }
+.ranges span { color: var(--muted); }
+.idx { display: flex; flex-wrap: wrap; gap: 6px 12px; }
+.idx label { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; color: var(--muted); }
+.idx input { width: 54px; }
+.planes { display: grid; gap: 4px; }
+.plane { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; font-family: var(--font-data); font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.plane button { margin-left: auto; }
+.small { font-size: 12.5px; color: var(--muted); }
+
+.chromo { display: grid; gap: 8px; border-top: 1px solid var(--line); padding-top: 10px; }
+.chromo:first-child { border-top: 0; padding-top: 0; }
+.chromo .cname { flex: 1 1 120px; min-width: 0; font-family: var(--font-ui); font-weight: 500; }
+.state { display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto; gap: 5px 7px; align-items: center; }
+.state .sname { min-width: 0; width: 100%; }
+.state .smode { grid-column: 2 / 4; display: flex; flex-wrap: wrap; gap: 5px; align-items: center; min-width: 0; }
+.state .srep { grid-column: 2 / 5; }
+
+dl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 3px 14px; margin: 0; font-size: 13px; }
+dt { color: var(--muted); }
+dd { margin: 0; font-family: var(--font-data); font-size: 12.5px; font-variant-numeric: tabular-nums; text-align: right; overflow-wrap: anywhere; }
+dd.txt { font-family: var(--font-ui); font-size: 13px; }
+sub, sup { font-size: 0.75em; line-height: 0; }
+.tbl-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-family: var(--font-data); font-size: 12.5px; font-variant-numeric: tabular-nums; }
+th { font-family: var(--font-ui); font-weight: 500; color: var(--muted); font-size: 12px; text-align: right; padding: 0 0 4px 12px; white-space: nowrap; }
+td { text-align: right; padding: 3px 0 3px 12px; border-top: 1px solid var(--line); white-space: nowrap; }
+th:first-child, td:first-child { text-align: left; padding-left: 0; }
+#tblCmp td:first-child { position: sticky; left: 0; background: var(--panel); }
+#tblCmp tr.on td { background: var(--accent-soft); }
+#tblCmp tr.on td:first-child { background: var(--accent-soft); }
+.linkbtn { border: 0; background: none; padding: 0; font-family: var(--font-ui); font-weight: 500; text-decoration: underline; text-underline-offset: 2px; }
+#tsvBox { width: 100%; height: 90px; font-family: var(--font-data); font-size: 12px; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 4px; }
+.foot { font-size: 12px; color: var(--muted); }
+
+@media (max-width: 900px) {
+  html, body { height: auto; }
+  .app { height: auto; min-height: 0; padding-inline: 16px; }
+  .main { grid-template-columns: minmax(0, 1fr); }
+  .stage-col { grid-template-rows: auto auto auto; }
+  .stage { height: clamp(340px, 62vh, 560px); }
+  .rail { overflow: visible; }
+  .cmp { max-height: none; }
+  h1 { font-size: 24px; }
+}
+</style>
+
+</head>
+<body>
+<div class="app">
+  <header class="head">
+    <div>
+      <div class="eyebrow" id="eyebrow">Layered metal-halide structures from CIF</div>
+      <h1 id="title">2D Perovskite Workbench</h1>
+      <div class="sub" id="sub"></div>
+    </div>
+    <div class="tools">
+      <label class="filebtn">Open CIF files<input type="file" id="fileIn" multiple accept=".cif,.txt,chemical/x-cif,text/plain"></label>
+      <button type="button" id="btnExample">Load the tetrazine example</button>
+    </div>
+  </header>
+
+  <div class="main solo" id="main">
+    <div class="stage-col">
+      <div class="stage" id="stage">
+        <div id="gl"></div>
+        <div class="stage-msg" id="stageMsg">
+          <strong>Drop CIF files here</strong>
+          <p>Each file is expanded by its symmetry, split into the inorganic framework and whole organic molecules, and analysed as a layered perovskite. Load several to compare them in one table.</p>
+        </div>
+        <div class="overlay tl" id="ovlView" hidden>
+          <span class="ovl-label">View down</span>
+          <span class="seg" role="group" aria-label="View along a cell axis">
+            <button type="button" class="axis-btn" id="viewA">a</button>
+            <button type="button" class="axis-btn" id="viewB">b</button>
+            <button type="button" class="axis-btn" id="viewC">c</button>
+          </span>
+          <button type="button" id="viewLayer">Layer normal</button>
+          <button type="button" id="viewReset">Reset view</button>
+        </div>
+        <div class="overlay bl" id="legend" aria-label="Element colours"></div>
+      </div>
+      <div class="readout" id="readout" aria-live="polite"></div>
+      <section class="card cmp" id="cardCmp" hidden>
+        <div class="row between">
+          <h2>Structures</h2>
+          <div class="row"><span class="small" id="copyMsg"></span><button type="button" id="btnCopy">Copy table for a spreadsheet</button></div>
+        </div>
+        <div class="tbl-wrap"><table id="tblCmp"></table></div>
+        <textarea id="tsvBox" hidden readonly aria-label="Table as tab-separated text"></textarea>
+      </section>
+    </div>
+
+    <aside class="rail" id="rail" hidden>
+      <section class="card">
+        <h2>Display</h2>
+        <div class="seg" role="group" aria-label="Atom style">
+          <button type="button" id="styleBS" aria-pressed="true">Ball and stick</button>
+          <button type="button" id="styleSF" aria-pressed="false">Space-filling</button>
+          <button type="button" id="styleST" aria-pressed="false">Sticks</button>
+        </div>
+        <div class="checks">
+          <label><input type="checkbox" id="chkOrg" checked>Organic</label>
+          <label><input type="checkbox" id="chkInorg" checked>Inorganic</label>
+          <label><input type="checkbox" id="chkPoly" checked><span id="polyName">Octahedra</span></label>
+          <label><input type="checkbox" id="chkCell" checked>Unit cell</label>
+          <label id="lblH"><input type="checkbox" id="chkH" checked>Hydrogens</label>
+          <label id="lblHB"><input type="checkbox" id="chkHB" checked>Hydrogen bonds</label>
+          <label><input type="checkbox" id="chkPersp">Perspective</label>
+          <label><input type="checkbox" id="chkSpin">Spin</label>
+          <label id="lblMinor" hidden><input type="checkbox" id="chkMinor">Minor disorder parts</label>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Packing</h2>
+        <div class="ranges" id="ranges"></div>
+        <div class="row"><button type="button" id="btnPackReset">Reset</button></div>
+        <div class="small">Limits are in cell fractions along each axis. Molecules are kept whole and placed by their centroid.</div>
+      </section>
+
+      <section class="card">
+        <h2>Directions and planes</h2>
+        <div class="idx">
+          <label><em>h</em>, <em>u</em><input type="number" id="ixH" step="1" value="1"></label>
+          <label><em>k</em>, <em>v</em><input type="number" id="ixK" step="1" value="0"></label>
+          <label><em>l</em>, <em>w</em><input type="number" id="ixL" step="1" value="0"></label>
+        </div>
+        <div class="row">
+          <button type="button" id="btnViewUVW">View down [<i>uvw</i>]</button>
+          <button type="button" id="btnViewHKL">View down (<i>hkl</i>) normal</button>
+        </div>
+        <div class="row idx">
+          <button type="button" id="btnPlane">Draw (<i>hkl</i>) planes</button>
+          <label>offset<input type="number" id="ixOff" step="0.05" min="0" max="1" value="0"><em>d</em></label>
+        </div>
+        <div class="planes" id="planeList"></div>
+      </section>
+
+      <section class="card" id="cardChromo">
+        <h2>Chromophores and transition dipoles</h2>
+        <div id="chromoList"></div>
+        <div class="row">
+          <button type="button" id="btnDefine">Define a chromophore</button>
+          <label class="small">arrow half-length <input type="number" id="arrowLen" step="0.1" min="0.5" max="6" value="1.9"> Å</label>
+        </div>
+        <div class="small">A chromophore is a plane through atoms you pick on one molecule, plus an in-plane reference axis. It is copied to every symmetry-equivalent molecule. Arrows are double-headed because the sign of a transition dipole is arbitrary.</div>
+      </section>
+
+      <section class="card">
+        <h2>Crystal data</h2>
+        <dl id="dlCrystal"></dl>
+      </section>
+
+      <section class="card" id="cardFw" hidden>
+        <h2>Inorganic framework</h2>
+        <dl id="dlFw"></dl>
+        <div class="tbl-wrap" id="brWrap" hidden><table id="tblBr"></table></div>
+        <div class="small" id="fwNote"></div>
+      </section>
+
+      <section class="card" id="cardHB" hidden>
+        <h2 id="hbTitle">Hydrogen bonds</h2>
+        <div class="tbl-wrap"><table id="tblHB"></table></div>
+        <div class="small" id="hbNote"></div>
+      </section>
+
+      <div class="foot">2D Perovskite Workbench v0.1.0. Drawn with 3Dmol.js. Symmetry expansion, molecule assembly and every distance and angle are computed in this page from the CIF.</div>
+    </aside>
+  </div>
+</div>
+
+<script type="text/plain" id="cif-example">
+#######################################################################
+#
+#                 Cambridge Crystallographic Data Centre
+#                                CCDC 
+#
+#######################################################################
+#
+# If this CIF has been generated from an entry in the Cambridge 
+# Structural Database, then it will include bibliographic, chemical, 
+# crystal, experimental, refinement or atomic coordinate data resulting 
+# from the CCDC's data processing and validation procedures.
+#
+#######################################################################
+
+data_tz2pbcl4_2wb
+_symmetry_cell_setting           monoclinic
+_symmetry_space_group_name_H-M   'P 21/c'
+_symmetry_Int_Tables_number      14
+_space_group_name_Hall           '-P 2ybc'
+loop_
+_symmetry_equiv_pos_site_id
+_symmetry_equiv_pos_as_xyz
+1 x,y,z
+2 -x,1/2+y,1/2-z
+3 -x,-y,-z
+4 x,1/2-y,1/2+z
+_cell_length_a                   19.052(7)
+_cell_length_b                   7.750(3)
+_cell_length_c                   8.289(3)
+_cell_angle_alpha                90
+_cell_angle_beta                 93.016(18)
+_cell_angle_gamma                90
+_cell_volume                     1222.2
+loop_
+_atom_site_label
+_atom_site_type_symbol
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Pb1 Pb 0.500000 0.000000 0.500000
+Cl1 Cl 0.50296(15) 0.1858(3) 0.8064(3)
+Cl2 Cl 0.35183(14) -0.0188(3) 0.5131(4)
+Cl1 Cl 0.49704(15) -0.1858(3) 0.1936(3)
+Cl2 Cl 0.64817(14) 0.0188(3) 0.4869(4)
+Pb1 Pb 0.500000 -0.500000 0.000000
+Pb1 Pb 0.500000 0.500000 1.000000
+Cl1 Cl 0.49704(15) -0.3142(3) 0.6936(3)
+Cl1 Cl 0.50296(15) 0.3142(3) 0.3064(3)
+C1 C 0.9704(10) 0.535(2) -0.304(2)
+H1A H 1.010968 0.468949 -0.269116
+H1B H 0.985044 0.640661 -0.352561
+H1C H 0.942343 0.469645 -0.382086
+C2 C 0.9281(8) 0.5747(19) -0.1632(18)
+H2A H 0.956082 0.642160 -0.084989
+H2B H 0.887297 0.642535 -0.198144
+O3 O 0.9058(5) 0.4178(11) -0.0893(11)
+C4 C 0.8618(5) 0.4311(15) 0.0239(13)
+N5 N 0.8490(6) 0.5815(13) 0.0893(14)
+N6 N 0.8031(6) 0.5875(13) 0.2081(14)
+C7 C 0.7751(6) 0.4396(12) 0.2482(11)
+N8 N 0.7899(5) 0.2805(11) 0.1852(11)
+N9 N 0.8355(5) 0.2778(13) 0.0710(12)
+O10 O 0.7277(4) 0.4282(10) 0.3588(9)
+C11A C 0.6996(15) 0.592(3) 0.419(2)
+H11A H 0.657554 0.624681 0.355329
+H11B H 0.734171 0.682941 0.411785
+C12A C 0.6832(11) 0.562(2) 0.590(2)
+H12A H 0.660606 0.663267 0.632290
+H12B H 0.726015 0.539900 0.654618
+N13A N 0.634(3) 0.407(3) 0.594(3)
+H13A H 0.639304 0.342429 0.507127
+H13B H 0.590022 0.443719 0.595911
+H13C H 0.644948 0.345493 0.682633
+
+#END
+</script>
+<script type="application/json" id="sg-table">{"P1":"P 1","#1":"P 1","P-1":"-P 1","#2":"-P 1","P121":"P 2y","P2":"P 2y","#3":"P 2y","P112":"P 2","P211":"P 2x","P1211":"P 2yb","P21":"P 2yb","#4":"P 2yb","P1121":"P 2c","P2111":"P 2xa","C121":"C 2y","C2":"C 2y","#5":"C 2y","A121":"A 2y","A2":"A 2y","I121":"I 2y","I2":"I 2y","A112":"A 2","B112":"B 2","I112":"I 2","B211":"B 2x","C211":"C 2x","I211":"I 2x","P1m1":"P -2y","Pm":"P -2y","#6":"P -2y","P11m":"P -2","Pm11":"P -2x","P1c1":"P -2yc","Pc":"P -2yc","#7":"P -2yc","P1n1":"P -2yac","Pn":"P -2yac","P1a1":"P -2ya","Pa":"P -2ya","P11a":"P -2a","P11n":"P -2ab","P11b":"P -2b","Pb11":"P -2xb","Pn11":"P -2xbc","Pc11":"P -2xc","C1m1":"C -2y","Cm":"C -2y","#8":"C -2y","A1m1":"A -2y","Am":"A -2y","I1m1":"I -2y","Im":"I -2y","A11m":"A -2","B11m":"B -2","I11m":"I -2","Bm11":"B -2x","Cm11":"C -2x","Im11":"I -2x","C1c1":"C -2yc","Cc":"C -2yc","#9":"C -2yc","A1n1":"A -2yab","An":"A -2yab","I1a1":"I -2ya","Ia":"I -2ya","A1a1":"A -2ya","Aa":"A -2ya","C1n1":"C -2yac","Cn":"C -2yac","I1c1":"I -2yc","Ic":"I -2yc","A11a":"A -2a","B11n":"B -2ab","I11b":"I -2b","B11b":"B -2b","A11n":"A -2ab","I11a":"I -2a","Bb11":"B -2xb","Cn11":"C -2xac","Ic11":"I -2xc","Cc11":"C -2xc","Bn11":"B -2xab","Ib11":"I -2xb","P12/m1":"-P 2y","P2/m":"-P 2y","#10":"-P 2y","P112/m":"-P 2","P2/m11":"-P 2x","P121/m1":"-P 2yb","P21/m":"-P 2yb","#11":"-P 2yb","P1121/m":"-P 2c","P21/m11":"-P 2xa","C12/m1":"-C 2y","C2/m":"-C 2y","#12":"-C 2y","A12/m1":"-A 2y","A2/m":"-A 2y","I12/m1":"-I 2y","I2/m":"-I 2y","A112/m":"-A 2","B112/m":"-B 2","I112/m":"-I 2","B2/m11":"-B 2x","C2/m11":"-C 2x","I2/m11":"-I 2x","P12/c1":"-P 2yc","P2/c":"-P 2yc","#13":"-P 2yc","P12/n1":"-P 2yac","P2/n":"-P 2yac","P12/a1":"-P 2ya","P2/a":"-P 2ya","P112/a":"-P 2a","P112/n":"-P 2ab","P112/b":"-P 2b","P2/b11":"-P 2xb","P2/n11":"-P 2xbc","P2/c11":"-P 2xc","P121/c1":"-P 2ybc","P21/c":"-P 2ybc","#14":"-P 2ybc","P121/n1":"-P 2yn","P21/n":"-P 2yn","P121/a1":"-P 2yab","P21/a":"-P 2yab","P1121/a":"-P 2ac","P1121/n":"-P 2n","P1121/b":"-P 2bc","P21/b11":"-P 2xab","P21/n11":"-P 2xn","P21/c11":"-P 2xac","C12/c1":"-C 2yc","C2/c":"-C 2yc","#15":"-C 2yc","A12/n1":"-A 2yab","A2/n":"-A 2yab","I12/a1":"-I 2ya","I2/a":"-I 2ya","A12/a1":"-A 2ya","A2/a":"-A 2ya","C12/n1":"-C 2yac","C2/n":"-C 2yac","I12/c1":"-I 2yc","I2/c":"-I 2yc","A112/a":"-A 2a","B112/n":"-B 2ab","I112/b":"-I 2b","B112/b":"-B 2b","A112/n":"-A 2ab","I112/a":"-I 2a","B2/b11":"-B 2xb","C2/n11":"-C 2xac","I2/c11":"-I 2xc","C2/c11":"-C 2xc","B2/n11":"-B 2xab","I2/b11":"-I 2xb","P222":"P 2 2","#16":"P 2 2","P2221":"P 2c 2","#17":"P 2c 2","P2122":"P 2a 2a","P2212":"P 2 2b","P21212":"P 2 2ab","#18":"P 2 2ab","P22121":"P 2bc 2","P21221":"P 2ac 2ac","P212121":"P 2ac 2ab","#19":"P 2ac 2ab","C2221":"C 2c 2","#20":"C 2c 2","A2122":"A 2a 2a","B2212":"B 2 2b","C222":"C 2 2","#21":"C 2 2","A222":"A 2 2","B222":"B 2 2","F222":"F 2 2","#22":"F 2 2","I222":"I 2 2","#23":"I 2 2","I212121":"I 2b 2c","#24":"I 2b 2c","Pmm2":"P 2 -2","#25":"P 2 -2","P2mm":"P -2 2","Pm2m":"P -2 -2","Pmc21":"P 2c -2","#26":"P 2c -2","Pcm21":"P 2c -2c","P21ma":"P -2a 2a","P21am":"P -2 2a","Pb21m":"P -2 -2b","Pm21b":"P -2b -2","Pcc2":"P 2 -2c","#27":"P 2 -2c","P2aa":"P -2a 2","Pb2b":"P -2b -2b","Pma2":"P 2 -2a","#28":"P 2 -2a","Pbm2":"P 2 -2b","P2mb":"P -2b 2","P2cm":"P -2c 2","Pc2m":"P -2c -2c","Pm2a":"P -2a -2a","Pca21":"P 2c -2ac","#29":"P 2c -2ac","Pbc21":"P 2c -2b","P21ab":"P -2b 2a","P21ca":"P -2ac 2a","Pc21b":"P -2bc -2c","Pb21a":"P -2a -2ab","Pnc2":"P 2 -2bc","#30":"P 2 -2bc","Pcn2":"P 2 -2ac","P2na":"P -2ac 2","P2an":"P -2ab 2","Pb2n":"P -2ab -2ab","Pn2b":"P -2bc -2bc","Pmn21":"P 2ac -2","#31":"P 2ac -2","Pnm21":"P 2bc -2bc","P21mn":"P -2ab 2ab","P21nm":"P -2 2ac","Pn21m":"P -2 -2bc","Pm21n":"P -2ab -2","Pba2":"P 2 -2ab","#32":"P 2 -2ab","P2cb":"P -2bc 2","Pc2a":"P -2ac -2ac","Pna21":"P 2c -2n","#33":"P 2c -2n","Pbn21":"P 2c -2ab","P21nb":"P -2bc 2a","P21cn":"P -2n 2a","Pc21n":"P -2n -2ac","Pn21a":"P -2ac -2n","Pnn2":"P 2 -2n","#34":"P 2 -2n","P2nn":"P -2n 2","Pn2n":"P -2n -2n","Cmm2":"C 2 -2","#35":"C 2 -2","A2mm":"A -2 2","Bm2m":"B -2 -2","Cmc21":"C 2c -2","#36":"C 2c -2","Ccm21":"C 2c -2c","A21ma":"A -2a 2a","A21am":"A -2 2a","Bb21m":"B -2 -2b","Bm21b":"B -2b -2","Ccc2":"C 2 -2c","#37":"C 2 -2c","A2aa":"A -2a 2","Bb2b":"B -2b -2b","Amm2":"A 2 -2","#38":"A 2 -2","Bmm2":"B 2 -2","B2mm":"B -2 2","C2mm":"C -2 2","Cm2m":"C -2 -2","Am2m":"A -2 -2","Abm2":"A 2 -2b","#39":"A 2 -2b","Bma2":"B 2 -2a","B2cm":"B -2a 2","C2mb":"C -2a 2","Cm2a":"C -2a -2a","Ac2m":"A -2b -2b","Ama2":"A 2 -2a","#40":"A 2 -2a","Bbm2":"B 2 -2b","B2mb":"B -2b 2","C2cm":"C -2c 2","Cc2m":"C -2c -2c","Am2a":"A -2a -2a","Aba2":"A 2 -2ab","#41":"A 2 -2ab","Bba2":"B 2 -2ab","B2cb":"B -2ab 2","C2cb":"C -2ac 2","Cc2a":"C -2ac -2ac","Ac2a":"A -2ab -2ab","Fmm2":"F 2 -2","#42":"F 2 -2","F2mm":"F -2 2","Fm2m":"F -2 -2","Fdd2":"F 2 -2d","#43":"F 2 -2d","F2dd":"F -2d 2","Fd2d":"F -2d -2d","Imm2":"I 2 -2","#44":"I 2 -2","I2mm":"I -2 2","Im2m":"I -2 -2","Iba2":"I 2 -2c","#45":"I 2 -2c","I2cb":"I -2a 2","Ic2a":"I -2b -2b","Ima2":"I 2 -2a","#46":"I 2 -2a","Ibm2":"I 2 -2b","I2mb":"I -2b 2","I2cm":"I -2c 2","Ic2m":"I -2c -2c","Im2a":"I -2a -2a","Pmmm":"-P 2 2","#47":"-P 2 2","Pnnn:1":"P 2 2 -1n","Pnnn":"P 2 2 -1n","#48":"P 2 2 -1n","Pnnn:2":"-P 2ab 2bc","Pccm":"-P 2 2c","#49":"-P 2 2c","Pmaa":"-P 2a 2","Pbmb":"-P 2b 2b","Pban:1":"P 2 2 -1ab","Pban":"P 2 2 -1ab","#50":"P 2 2 -1ab","Pban:2":"-P 2ab 2b","Pncb:1":"P 2 2 -1bc","Pncb":"P 2 2 -1bc","Pncb:2":"-P 2b 2bc","Pcna:1":"P 2 2 -1ac","Pcna":"P 2 2 -1ac","Pcna:2":"-P 2a 2c","Pmma":"-P 2a 2a","#51":"-P 2a 2a","Pmmb":"-P 2b 2","Pbmm":"-P 2 2b","Pcmm":"-P 2c 2c","Pmcm":"-P 2c 2","Pmam":"-P 2 2a","Pnna":"-P 2a 2bc","#52":"-P 2a 2bc","Pnnb":"-P 2b 2n","Pbnn":"-P 2n 2b","Pcnn":"-P 2ab 2c","Pncn":"-P 2ab 2n","Pnan":"-P 2n 2bc","Pmna":"-P 2ac 2","#53":"-P 2ac 2","Pnmb":"-P 2bc 2bc","Pbmn":"-P 2ab 2ab","Pcnm":"-P 2 2ac","Pncm":"-P 2 2bc","Pman":"-P 2ab 2","Pcca":"-P 2a 2ac","#54":"-P 2a 2ac","Pccb":"-P 2b 2c","Pbaa":"-P 2a 2b","Pcaa":"-P 2ac 2c","Pbcb":"-P 2bc 2b","Pbab":"-P 2b 2ab","Pbam":"-P 2 2ab","#55":"-P 2 2ab","Pmcb":"-P 2bc 2","Pcma":"-P 2ac 2ac","Pccn":"-P 2ab 2ac","#56":"-P 2ab 2ac","Pnaa":"-P 2ac 2bc","Pbnb":"-P 2bc 2ab","Pbcm":"-P 2c 2b","#57":"-P 2c 2b","Pcam":"-P 2c 2ac","Pmca":"-P 2ac 2a","Pmab":"-P 2b 2a","Pbma":"-P 2a 2ab","Pcmb":"-P 2bc 2c","Pnnm":"-P 2 2n","#58":"-P 2 2n","Pmnn":"-P 2n 2","Pnmn":"-P 2n 2n","Pmmn:1":"P 2 2ab -1ab","Pmmn":"P 2 2ab -1ab","#59":"P 2 2ab -1ab","Pmmn:2":"-P 2ab 2a","Pnmm:1":"P 2bc 2 -1bc","Pnmm":"P 2bc 2 -1bc","Pnmm:2":"-P 2c 2bc","Pmnm:1":"P 2ac 2ac -1ac","Pmnm":"P 2ac 2ac -1ac","Pmnm:2":"-P 2c 2a","Pbcn":"-P 2n 2ab","#60":"-P 2n 2ab","Pcan":"-P 2n 2c","Pnca":"-P 2a 2n","Pnab":"-P 2bc 2n","Pbna":"-P 2ac 2b","Pcnb":"-P 2b 2ac","Pbca":"-P 2ac 2ab","#61":"-P 2ac 2ab","Pcab":"-P 2bc 2ac","Pnma":"-P 2ac 2n","#62":"-P 2ac 2n","Pmnb":"-P 2bc 2a","Pbnm":"-P 2c 2ab","Pcmn":"-P 2n 2ac","Pmcn":"-P 2n 2a","Pnam":"-P 2c 2n","Cmcm":"-C 2c 2","#63":"-C 2c 2","Ccmm":"-C 2c 2c","Amma":"-A 2a 2a","Amam":"-A 2 2a","Bbmm":"-B 2 2b","Bmmb":"-B 2b 2","Cmca":"-C 2ac 2","#64":"-C 2ac 2","Ccmb":"-C 2ac 2ac","Abma":"-A 2ab 2ab","Acam":"-A 2 2ab","Bbcm":"-B 2 2ab","Bmab":"-B 2ab 2","Cmmm":"-C 2 2","#65":"-C 2 2","Ammm":"-A 2 2","Bmmm":"-B 2 2","Cccm":"-C 2 2c","#66":"-C 2 2c","Amaa":"-A 2a 2","Bbmb":"-B 2b 2b","Cmma":"-C 2a 2","#67":"-C 2a 2","Cmmb":"-C 2a 2a","Abmm":"-A 2b 2b","Acmm":"-A 2 2b","Bmcm":"-B 2 2a","Bmam":"-B 2a 2","Ccca:1":"C 2 2 -1ac","Ccca":"C 2 2 -1ac","#68":"C 2 2 -1ac","Ccca:2":"-C 2a 2ac","Cccb:1":"C 2 2 -1ac","Cccb":"C 2 2 -1ac","Cccb:2":"-C 2a 2c","Abaa:1":"A 2 2 -1ab","Abaa":"A 2 2 -1ab","Abaa:2":"-A 2a 2b","Acaa:1":"A 2 2 -1ab","Acaa":"A 2 2 -1ab","Acaa:2":"-A 2ab 2b","Bbcb:1":"B 2 2 -1ab","Bbcb":"B 2 2 -1ab","Bbcb:2":"-B 2ab 2b","Bbab:1":"B 2 2 -1ab","Bbab":"B 2 2 -1ab","Bbab:2":"-B 2b 2ab","Fmmm":"-F 2 2","#69":"-F 2 2","Fddd:1":"F 2 2 -1d","Fddd":"F 2 2 -1d","#70":"F 2 2 -1d","Fddd:2":"-F 2uv 2vw","Immm":"-I 2 2","#71":"-I 2 2","Ibam":"-I 2 2c","#72":"-I 2 2c","Imcb":"-I 2a 2","Icma":"-I 2b 2b","Ibca":"-I 2b 2c","#73":"-I 2b 2c","Icab":"-I 2a 2b","Imma":"-I 2b 2","#74":"-I 2b 2","Immb":"-I 2a 2a","Ibmm":"-I 2c 2c","Icmm":"-I 2 2b","Imcm":"-I 2 2a","Imam":"-I 2c 2","P4":"P 4","#75":"P 4","P41":"P 4w","#76":"P 4w","P42":"P 4c","#77":"P 4c","P43":"P 4cw","#78":"P 4cw","I4":"I 4","#79":"I 4","I41":"I 4bw","#80":"I 4bw","P-4":"P -4","#81":"P -4","I-4":"I -4","#82":"I -4","P4/m":"-P 4","#83":"-P 4","P42/m":"-P 4c","#84":"-P 4c","P4/n:1":"P 4ab -1ab","P4/n":"P 4ab -1ab","#85":"P 4ab -1ab","P4/n:2":"-P 4a","P42/n:1":"P 4n -1n","P42/n":"P 4n -1n","#86":"P 4n -1n","P42/n:2":"-P 4bc","I4/m":"-I 4","#87":"-I 4","I41/a:1":"I 4bw -1bw","I41/a":"I 4bw -1bw","#88":"I 4bw -1bw","I41/a:2":"-I 4ad","P422":"P 4 2","#89":"P 4 2","P4212":"P 4ab 2ab","#90":"P 4ab 2ab","P4122":"P 4w 2c","#91":"P 4w 2c","P41212":"P 4abw 2nw","#92":"P 4abw 2nw","P4222":"P 4c 2","#93":"P 4c 2","P42212":"P 4n 2n","#94":"P 4n 2n","P4322":"P 4cw 2c","#95":"P 4cw 2c","P43212":"P 4nw 2abw","#96":"P 4nw 2abw","I422":"I 4 2","#97":"I 4 2","I4122":"I 4bw 2bw","#98":"I 4bw 2bw","P4mm":"P 4 -2","#99":"P 4 -2","P4bm":"P 4 -2ab","#100":"P 4 -2ab","P42cm":"P 4c -2c","#101":"P 4c -2c","P42nm":"P 4n -2n","#102":"P 4n -2n","P4cc":"P 4 -2c","#103":"P 4 -2c","P4nc":"P 4 -2n","#104":"P 4 -2n","P42mc":"P 4c -2","#105":"P 4c -2","P42bc":"P 4c -2ab","#106":"P 4c -2ab","I4mm":"I 4 -2","#107":"I 4 -2","I4cm":"I 4 -2c","#108":"I 4 -2c","I41md":"I 4bw -2","#109":"I 4bw -2","I41cd":"I 4bw -2c","#110":"I 4bw -2c","P-42m":"P -4 2","#111":"P -4 2","P-42c":"P -4 2c","#112":"P -4 2c","P-421m":"P -4 2ab","#113":"P -4 2ab","P-421c":"P -4 2n","#114":"P -4 2n","P-4m2":"P -4 -2","#115":"P -4 -2","P-4c2":"P -4 -2c","#116":"P -4 -2c","P-4b2":"P -4 -2ab","#117":"P -4 -2ab","P-4n2":"P -4 -2n","#118":"P -4 -2n","I-4m2":"I -4 -2","#119":"I -4 -2","I-4c2":"I -4 -2c","#120":"I -4 -2c","I-42m":"I -4 2","#121":"I -4 2","I-42d":"I -4 2bw","#122":"I -4 2bw","P4/mmm":"-P 4 2","#123":"-P 4 2","P4/mcc":"-P 4 2c","#124":"-P 4 2c","P4/nbm:1":"P 4 2 -1ab","P4/nbm":"P 4 2 -1ab","#125":"P 4 2 -1ab","P4/nbm:2":"-P 4a 2b","P4/nnc:1":"P 4 2 -1n","P4/nnc":"P 4 2 -1n","#126":"P 4 2 -1n","P4/nnc:2":"-P 4a 2bc","P4/mbm":"-P 4 2ab","#127":"-P 4 2ab","P4/mnc":"-P 4 2n","#128":"-P 4 2n","P4/nmm:1":"P 4ab 2ab -1ab","P4/nmm":"P 4ab 2ab -1ab","#129":"P 4ab 2ab -1ab","P4/nmm:2":"-P 4a 2a","P4/ncc:1":"P 4ab 2n -1ab","P4/ncc":"P 4ab 2n -1ab","#130":"P 4ab 2n -1ab","P4/ncc:2":"-P 4a 2ac","P42/mmc":"-P 4c 2","#131":"-P 4c 2","P42/mcm":"-P 4c 2c","#132":"-P 4c 2c","P42/nbc:1":"P 4n 2c -1n","P42/nbc":"P 4n 2c -1n","#133":"P 4n 2c -1n","P42/nbc:2":"-P 4ac 2b","P42/nnm:1":"P 4n 2 -1n","P42/nnm":"P 4n 2 -1n","#134":"P 4n 2 -1n","P42/nnm:2":"-P 4ac 2bc","P42/mbc":"-P 4c 2ab","#135":"-P 4c 2ab","P42/mnm":"-P 4n 2n","#136":"-P 4n 2n","P42/nmc:1":"P 4n 2n -1n","P42/nmc":"P 4n 2n -1n","#137":"P 4n 2n -1n","P42/nmc:2":"-P 4ac 2a","P42/ncm:1":"P 4n 2ab -1n","P42/ncm":"P 4n 2ab -1n","#138":"P 4n 2ab -1n","P42/ncm:2":"-P 4ac 2ac","I4/mmm":"-I 4 2","#139":"-I 4 2","I4/mcm":"-I 4 2c","#140":"-I 4 2c","I41/amd:1":"I 4bw 2bw -1bw","I41/amd":"I 4bw 2bw -1bw","#141":"I 4bw 2bw -1bw","I41/amd:2":"-I 4bd 2","I41/acd:1":"I 4bw 2aw -1bw","I41/acd":"I 4bw 2aw -1bw","#142":"I 4bw 2aw -1bw","I41/acd:2":"-I 4bd 2c","P3":"P 3","#143":"P 3","P31":"P 31","#144":"P 31","P32":"P 32","#145":"P 32","R3:H":"R 3","R3":"R 3","H3:H":"R 3","H3":"R 3","#146":"R 3","R3:R":"P 3*","P-3":"-P 3","#147":"-P 3","R-3:H":"-R 3","R-3":"-R 3","H-3:H":"-R 3","H-3":"-R 3","#148":"-R 3","R-3:R":"-P 3*","P312":"P 3 2","#149":"P 3 2","P321":"P 3 2\"","#150":"P 3 2\"","P3112":"P 31 2 (0 0 4)","#151":"P 31 2 (0 0 4)","P3121":"P 31 2\"","#152":"P 31 2\"","P3212":"P 32 2 (0 0 2)","#153":"P 32 2 (0 0 2)","P3221":"P 32 2\"","#154":"P 32 2\"","R32:H":"R 3 2\"","R32":"R 3 2\"","H32:H":"R 3 2\"","H32":"R 3 2\"","#155":"R 3 2\"","R32:R":"P 3* 2","P3m1":"P 3 -2\"","#156":"P 3 -2\"","P31m":"P 3 -2","#157":"P 3 -2","P3c1":"P 3 -2\"c","#158":"P 3 -2\"c","P31c":"P 3 -2c","#159":"P 3 -2c","R3m:H":"R 3 -2\"","R3m":"R 3 -2\"","H3m:H":"R 3 -2\"","H3m":"R 3 -2\"","#160":"R 3 -2\"","R3m:R":"P 3* -2","R3c:H":"R 3 -2\"c","R3c":"R 3 -2\"c","H3c:H":"R 3 -2\"c","H3c":"R 3 -2\"c","#161":"R 3 -2\"c","R3c:R":"P 3* -2n","P-31m":"-P 3 2","#162":"-P 3 2","P-31c":"-P 3 2c","#163":"-P 3 2c","P-3m1":"-P 3 2\"","#164":"-P 3 2\"","P-3c1":"-P 3 2\"c","#165":"-P 3 2\"c","R-3m:H":"-R 3 2\"","R-3m":"-R 3 2\"","H-3m:H":"-R 3 2\"","H-3m":"-R 3 2\"","#166":"-R 3 2\"","R-3m:R":"-P 3* 2","R-3c:H":"-R 3 2\"c","R-3c":"-R 3 2\"c","H-3c:H":"-R 3 2\"c","H-3c":"-R 3 2\"c","#167":"-R 3 2\"c","R-3c:R":"-P 3* 2n","P6":"P 6","#168":"P 6","P61":"P 61","#169":"P 61","P65":"P 65","#170":"P 65","P62":"P 62","#171":"P 62","P64":"P 64","#172":"P 64","P63":"P 6c","#173":"P 6c","P-6":"P -6","#174":"P -6","P6/m":"-P 6","#175":"-P 6","P63/m":"-P 6c","#176":"-P 6c","P622":"P 6 2","#177":"P 6 2","P6122":"P 61 2 (0 0 5)","#178":"P 61 2 (0 0 5)","P6522":"P 65 2 (0 0 1)","#179":"P 65 2 (0 0 1)","P6222":"P 62 2 (0 0 4)","#180":"P 62 2 (0 0 4)","P6422":"P 64 2 (0 0 2)","#181":"P 64 2 (0 0 2)","P6322":"P 6c 2c","#182":"P 6c 2c","P6mm":"P 6 -2","#183":"P 6 -2","P6cc":"P 6 -2c","#184":"P 6 -2c","P63cm":"P 6c -2","#185":"P 6c -2","P63mc":"P 6c -2c","#186":"P 6c -2c","P-6m2":"P -6 2","#187":"P -6 2","P-6c2":"P -6c 2","#188":"P -6c 2","P-62m":"P -6 -2","#189":"P -6 -2","P-62c":"P -6c -2c","#190":"P -6c -2c","P6/mmm":"-P 6 2","#191":"-P 6 2","P6/mcc":"-P 6 2c","#192":"-P 6 2c","P63/mcm":"-P 6c 2","#193":"-P 6c 2","P63/mmc":"-P 6c 2c","#194":"-P 6c 2c","P23":"P 2 2 3","#195":"P 2 2 3","F23":"F 2 2 3","#196":"F 2 2 3","I23":"I 2 2 3","#197":"I 2 2 3","P213":"P 2ac 2ab 3","#198":"P 2ac 2ab 3","I213":"I 2b 2c 3","#199":"I 2b 2c 3","Pm-3":"-P 2 2 3","#200":"-P 2 2 3","Pn-3:1":"P 2 2 3 -1n","Pn-3":"P 2 2 3 -1n","#201":"P 2 2 3 -1n","Pn-3:2":"-P 2ab 2bc 3","Fm-3":"-F 2 2 3","#202":"-F 2 2 3","Fd-3:1":"F 2 2 3 -1d","Fd-3":"F 2 2 3 -1d","#203":"F 2 2 3 -1d","Fd-3:2":"-F 2uv 2vw 3","Im-3":"-I 2 2 3","#204":"-I 2 2 3","Pa-3":"-P 2ac 2ab 3","#205":"-P 2ac 2ab 3","Ia-3":"-I 2b 2c 3","#206":"-I 2b 2c 3","P432":"P 4 2 3","#207":"P 4 2 3","P4232":"P 4n 2 3","#208":"P 4n 2 3","F432":"F 4 2 3","#209":"F 4 2 3","F4132":"F 4d 2 3","#210":"F 4d 2 3","I432":"I 4 2 3","#211":"I 4 2 3","P4332":"P 4acd 2ab 3","#212":"P 4acd 2ab 3","P4132":"P 4bd 2ab 3","#213":"P 4bd 2ab 3","I4132":"I 4bd 2c 3","#214":"I 4bd 2c 3","P-43m":"P -4 2 3","#215":"P -4 2 3","F-43m":"F -4 2 3","#216":"F -4 2 3","I-43m":"I -4 2 3","#217":"I -4 2 3","P-43n":"P -4n 2 3","#218":"P -4n 2 3","F-43c":"F -4a 2 3","#219":"F -4a 2 3","I-43d":"I -4bd 2c 3","#220":"I -4bd 2c 3","Pm-3m":"-P 4 2 3","#221":"-P 4 2 3","Pn-3n:1":"P 4 2 3 -1n","Pn-3n":"P 4 2 3 -1n","#222":"P 4 2 3 -1n","Pn-3n:2":"-P 4a 2bc 3","Pm-3n":"-P 4n 2 3","#223":"-P 4n 2 3","Pn-3m:1":"P 4n 2 3 -1n","Pn-3m":"P 4n 2 3 -1n","#224":"P 4n 2 3 -1n","Pn-3m:2":"-P 4bc 2bc 3","Fm-3m":"-F 4 2 3","#225":"-F 4 2 3","Fm-3c":"-F 4a 2 3","#226":"-F 4a 2 3","Fd-3m:1":"F 4d 2 3 -1d","Fd-3m":"F 4d 2 3 -1d","#227":"F 4d 2 3 -1d","Fd-3m:2":"-F 4vw 2vw 3","Fd-3c:1":"F 4d 2 3 -1ad","Fd-3c":"F 4d 2 3 -1ad","#228":"F 4d 2 3 -1ad","Fd-3c:2":"-F 4ud 2vw 3","Im-3m":"-I 4 2 3","#229":"-I 4 2 3","Ia-3d":"-I 4bd 2c 3","#230":"-I 4bd 2c 3","I1211":"I 2yb","I21":"I 2yb","C1211":"C 2yb","C21":"C 2yb","P21212(a)":"P 2ab 2a","C2221a)":"C 2ac 2","C222a":"C 2ab 2b","F222a":"F 2 2c","I222a":"I 2ab 2bc","P42212a":"P 4bc 2a","I23a":"I 2ab 2bc 3","A1":"A 1","B1":"B 1","C1":"C 1","F1":"F 1","I1":"I 1","A-1":"-A 1","B-1":"-B 1","C-1":"-C 1","F-1":"-F 1","I-1":"-I 1","B121":"B 2y","B2":"B 2y","C112":"C 2","B1211":"B 2yb","B21":"B 2yb","C1121":"C 2c","F121":"F 2y","F2":"F 2y","F1m1":"F -2y","Fm":"F -2y","F1d1":"F -2yuw","Fd":"F -2yuw","F12/m1":"-F 2y","F2/m":"-F 2y","Abam":"-A 2 2ab","C422":"C 4 2","C4221":"C 4a 2","F422":"F 4 2","C-42m":"C -4 2","C-42b":"C -4 2ya","F4/mmm":"-F 4 2"}</script>
+<script src="https://cdn.jsdelivr.net/npm/3dmol@2.5.5/build/3Dmol-min.js"></script>
+<script>
+/* Crystal core: CIF parsing, symmetry expansion, molecule assembly, geometry.
+   Pure functions, no DOM. Works in the browser (window.XtalCore) and in Node. */
+(function (root) {
+  'use strict';
+
+  // Covalent radii (Cordero et al., Dalton Trans. 2008), in angstrom
+  const RC = {
+    H: 0.31, D: 0.31, He: 0.28, Li: 1.28, Be: 0.96, B: 0.84, C: 0.76, N: 0.71, O: 0.66, F: 0.57,
+    Na: 1.66, Mg: 1.41, Al: 1.21, Si: 1.11, P: 1.07, S: 1.05, Cl: 1.02, K: 2.03, Ca: 1.76,
+    Sc: 1.70, Ti: 1.60, V: 1.53, Cr: 1.39, Mn: 1.39, Fe: 1.32, Co: 1.26, Ni: 1.24, Cu: 1.32,
+    Zn: 1.22, Ga: 1.22, Ge: 1.20, As: 1.19, Se: 1.20, Br: 1.20, Rb: 2.20, Sr: 1.95, Y: 1.90,
+    Zr: 1.75, Nb: 1.64, Mo: 1.54, Ru: 1.46, Rh: 1.42, Pd: 1.39, Ag: 1.45, Cd: 1.44, In: 1.42,
+    Sn: 1.39, Sb: 1.39, Te: 1.38, I: 1.39, Cs: 2.44, Ba: 2.15, La: 2.07, Ce: 2.04, Eu: 1.98,
+    Gd: 1.96, Tb: 1.94, Yb: 1.87, Hf: 1.75, Ta: 1.70, W: 1.62, Re: 1.51, Os: 1.44, Ir: 1.41,
+    Pt: 1.36, Au: 1.36, Hg: 1.32, Tl: 1.45, Pb: 1.46, Bi: 1.48
+  };
+  const MASS = {
+    H: 1.008, D: 2.014, He: 4.0026, Li: 6.94, Be: 9.0122, B: 10.81, C: 12.011, N: 14.007, O: 15.999,
+    F: 18.998, Na: 22.990, Mg: 24.305, Al: 26.982, Si: 28.085, P: 30.974, S: 32.06, Cl: 35.45,
+    K: 39.098, Ca: 40.078, Sc: 44.956, Ti: 47.867, V: 50.942, Cr: 51.996, Mn: 54.938, Fe: 55.845,
+    Co: 58.933, Ni: 58.693, Cu: 63.546, Zn: 65.38, Ga: 69.723, Ge: 72.630, As: 74.922, Se: 78.971,
+    Br: 79.904, Rb: 85.468, Sr: 87.62, Y: 88.906, Zr: 91.224, Nb: 92.906, Mo: 95.95, Ru: 101.07,
+    Rh: 102.91, Pd: 106.42, Ag: 107.87, Cd: 112.41, In: 114.82, Sn: 118.71, Sb: 121.76, Te: 127.60,
+    I: 126.90, Cs: 132.91, Ba: 137.33, La: 138.91, Ce: 140.12, Eu: 151.96, Gd: 157.25, Tb: 158.93,
+    Yb: 173.05, Hf: 178.49, Ta: 180.95, W: 183.84, Re: 186.21, Os: 190.23, Ir: 192.22, Pt: 195.08,
+    Au: 196.97, Hg: 200.59, Tl: 204.38, Pb: 207.2, Bi: 208.98
+  };
+  // Bondi van der Waals radii, used for hydrogen-bond cutoffs
+  const VDW = { H: 1.20, N: 1.55, O: 1.52, F: 1.47, S: 1.80, Cl: 1.75, Br: 1.85, I: 1.98 };
+  const NONMETAL = new Set(['H', 'D', 'He', 'B', 'C', 'N', 'O', 'F', 'Si', 'P', 'S', 'Cl', 'As', 'Se', 'Br', 'Te', 'I']);
+  const HALIDE = new Set(['F', 'Cl', 'Br', 'I']);
+  const ALKALI = new Set(['Li', 'Na', 'K', 'Rb', 'Cs']);
+  const isMetal = (el) => !NONMETAL.has(el);
+  /* metals that sit at the centre of a halide polyhedron; alkali ions are treated as A-site ions */
+  const isCenter = (el) => isMetal(el) && !ALKALI.has(el);
+
+  /* ---------- space-group operators from a Hall symbol ---------- */
+  let SG_TABLE = {};
+  const setSgTable = (t) => { SG_TABLE = t || {}; };
+  const HALL_ROT = {
+    z: { 1: [[1, 0, 0], [0, 1, 0], [0, 0, 1]], 2: [[-1, 0, 0], [0, -1, 0], [0, 0, 1]], 3: [[0, -1, 0], [1, -1, 0], [0, 0, 1]], 4: [[0, -1, 0], [1, 0, 0], [0, 0, 1]], 6: [[1, -1, 0], [1, 0, 0], [0, 0, 1]] },
+    x: { 1: [[1, 0, 0], [0, 1, 0], [0, 0, 1]], 2: [[1, 0, 0], [0, -1, 0], [0, 0, -1]], 3: [[1, 0, 0], [0, 0, -1], [0, 1, -1]], 4: [[1, 0, 0], [0, 0, -1], [0, 1, 0]], 6: [[1, 0, 0], [0, 1, -1], [0, 1, 0]] },
+    y: { 1: [[1, 0, 0], [0, 1, 0], [0, 0, 1]], 2: [[-1, 0, 0], [0, 1, 0], [0, 0, -1]], 3: [[-1, 0, 1], [0, 1, 0], [-1, 0, 0]], 4: [[0, 0, 1], [0, 1, 0], [-1, 0, 0]], 6: [[0, 0, 1], [0, 1, 0], [-1, 0, 1]] }
+  };
+  const HALL_DIAG = {
+    "'": { z: [[0, -1, 0], [-1, 0, 0], [0, 0, -1]], x: [[-1, 0, 0], [0, 0, -1], [0, -1, 0]], y: [[0, 0, -1], [0, -1, 0], [-1, 0, 0]] },
+    '"': { z: [[0, 1, 0], [1, 0, 0], [0, 0, -1]], x: [[-1, 0, 0], [0, 0, 1], [0, 1, 0]], y: [[0, 0, 1], [0, -1, 0], [1, 0, 0]] }
+  };
+  const HALL_LATT = {
+    P: [[0, 0, 0]], A: [[0, 0, 0], [0, 0.5, 0.5]], B: [[0, 0, 0], [0.5, 0, 0.5]], C: [[0, 0, 0], [0.5, 0.5, 0]], I: [[0, 0, 0], [0.5, 0.5, 0.5]],
+    R: [[0, 0, 0], [2 / 3, 1 / 3, 1 / 3], [1 / 3, 2 / 3, 2 / 3]], S: [[0, 0, 0], [1 / 3, 1 / 3, 2 / 3], [2 / 3, 2 / 3, 1 / 3]],
+    T: [[0, 0, 0], [1 / 3, 2 / 3, 1 / 3], [2 / 3, 1 / 3, 2 / 3]], F: [[0, 0, 0], [0, 0.5, 0.5], [0.5, 0, 0.5], [0.5, 0.5, 0]]
+  };
+  const HALL_TR = { a: [0.5, 0, 0], b: [0, 0.5, 0], c: [0, 0, 0.5], n: [0.5, 0.5, 0.5], u: [0.25, 0, 0], v: [0, 0.25, 0], w: [0, 0, 0.25], d: [0.25, 0.25, 0.25] };
+  const mod1 = (x) => { let y = x - Math.floor(x); if (y > 1 - 1e-7) y = 0; return y; };
+  function opMul(p, q) {
+    const R = [0, 1, 2].map((i) => [0, 1, 2].map((j) => p.R[i][0] * q.R[0][j] + p.R[i][1] * q.R[1][j] + p.R[i][2] * q.R[2][j]));
+    const T = [0, 1, 2].map((i) => mod1(p.R[i][0] * q.T[0] + p.R[i][1] * q.T[1] + p.R[i][2] * q.T[2] + p.T[i]));
+    return { R, T };
+  }
+  const opKey = (o) => o.R.map((r) => r.join(',')).join(';') + '|' + o.T.map((t) => Math.round(mod1(t) * 144) % 144).join(',');
+  function hallOps(symbol) {
+    let s = String(symbol).trim().replace(/_/g, ' ');
+    let shift = [0, 0, 0];
+    const sm = s.match(/\(\s*(-?\d+)\s+(-?\d+)\s+(-?\d+)\s*\)/);
+    if (sm) { shift = [+sm[1] / 12, +sm[2] / 12, +sm[3] / 12]; s = s.replace(sm[0], '').trim(); }
+    const parts = s.split(/\s+/);
+    let L = parts.shift();
+    if (!L) return null;
+    let centro = false;
+    if (L[0] === '-') { centro = true; L = L.slice(1); }
+    const latt = HALL_LATT[L.toUpperCase()];
+    if (!latt) return null;
+    const I3 = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
+    const gens = latt.slice(1).map((t) => ({ R: I3, T: t }));
+    if (centro) gens.push({ R: [[-1, 0, 0], [0, -1, 0], [0, 0, -1]], T: [0, 0, 0] });
+    let prevN = 0, prevAxis = 'z';
+    for (let i = 0; i < parts.length; i++) {
+      let p = parts[i];
+      let improper = false;
+      if (p[0] === '-') { improper = true; p = p.slice(1); }
+      const N = +p[0];
+      if (![1, 2, 3, 4, 6].includes(N)) return null;
+      let rest = p.slice(1);
+      let axis = null;
+      if (/^[xyz'"*]/.test(rest)) { axis = rest[0]; rest = rest.slice(1); }
+      if (!axis) {
+        if (i === 0) axis = 'z';
+        else if (i === 1) axis = N === 2 ? ((prevN === 2 || prevN === 4) ? 'x' : "'") : (N === 3 ? '*' : 'z');
+        else axis = N === 3 ? '*' : 'z';
+      }
+      let R;
+      if (axis === '*') R = [[0, 0, 1], [1, 0, 0], [0, 1, 0]];
+      else if (axis === "'" || axis === '"') R = HALL_DIAG[axis][prevAxis];
+      else R = HALL_ROT[axis][N];
+      if (!R) return null;
+      const T = [0, 0, 0];
+      for (const ch of rest) {
+        if (/[1-5]/.test(ch)) {
+          const k = 'xyz'.indexOf(axis);
+          if (k < 0) return null;
+          T[k] += (+ch) / N;
+        } else if (HALL_TR[ch]) {
+          for (let k = 0; k < 3; k++) T[k] += HALL_TR[ch][k];
+        } else return null;
+      }
+      gens.push({ R: improper ? R.map((r) => r.map((x) => -x)) : R, T: T.map(mod1) });
+      prevN = N;
+      if ('xyz'.includes(axis)) prevAxis = axis;
+    }
+    // origin shift: op' = (I, v) op (I, -v)
+    const moved = gens.map((g) => ({
+      R: g.R,
+      T: [0, 1, 2].map((i) => mod1(g.T[i] + shift[i] - (g.R[i][0] * shift[0] + g.R[i][1] * shift[1] + g.R[i][2] * shift[2])))
+    }));
+    const group = [{ R: I3, T: [0, 0, 0] }];
+    const seen = new Set([opKey(group[0])]);
+    for (let q = 0; q < group.length; q++) {
+      for (const g of moved) {
+        const n = opMul(g, group[q]);
+        const k = opKey(n);
+        if (!seen.has(k)) { seen.add(k); group.push(n); if (group.length > 200) return null; }
+      }
+    }
+    return group;
+  }
+  /* operators for a Hermann-Mauguin symbol or an IT number, through the symbol table */
+  function symbolOps(hm, number, cell) {
+    const tryKey = (k) => (SG_TABLE[k] ? { hall: SG_TABLE[k], ops: hallOps(SG_TABLE[k]) } : null);
+    if (hm) {
+      let k = String(hm).replace(/[\s_]/g, '');
+      let ext = '';
+      const c = k.indexOf(':');
+      if (c >= 0) { ext = k.slice(c).toUpperCase(); k = k.slice(0, c); }
+      k = k.charAt(0).toUpperCase() + k.slice(1).toLowerCase();
+      if (!ext && k[0] === 'R' && cell) ext = Math.abs(cell.ga - 120) < 0.5 && Math.abs(cell.al - 90) < 0.5 ? ':H' : ':R';
+      const r = tryKey(k + ext) || tryKey(k);
+      if (r && r.ops) { r.via = 'hm'; return r; }
+    }
+    if (number) { const r = tryKey('#' + parseInt(number, 10)); if (r && r.ops) { r.via = 'number'; return r; } }
+    return null;
+  }
+
+  /* ---------- CIF text -> blocks ---------- */
+  function tokenize(text) {
+    const lines = text.replace(/\r\n?/g, '\n').split('\n');
+    const toks = [];
+    for (let i = 0; i < lines.length; i++) {
+      let line = lines[i];
+      if (line[0] === ';') {
+        const buf = [line.slice(1)];
+        i++;
+        while (i < lines.length && lines[i][0] !== ';') { buf.push(lines[i]); i++; }
+        toks.push({ v: buf.join('\n').trim(), q: true });
+        line = i < lines.length ? lines[i].slice(1) : '';
+      }
+      let p = 0;
+      const n = line.length;
+      while (p < n) {
+        const ch = line[p];
+        if (ch === ' ' || ch === '\t') { p++; continue; }
+        if (ch === '#') break;
+        if (ch === "'" || ch === '"') {
+          let e = p + 1;
+          while (e < n && !(line[e] === ch && (e + 1 === n || line[e + 1] === ' ' || line[e + 1] === '\t'))) e++;
+          toks.push({ v: line.slice(p + 1, e), q: true });
+          p = e + 1;
+          continue;
+        }
+        let e = p;
+        while (e < n && line[e] !== ' ' && line[e] !== '\t') e++;
+        toks.push({ v: line.slice(p, e), q: false });
+        p = e;
+      }
+    }
+    return toks;
+  }
+
+  function parseBlocks(text) {
+    const t = tokenize(text);
+    const blocks = [];
+    let cur = null;
+    let i = 0;
+    const isTag = (k) => !k.q && k.v[0] === '_';
+    const isKw = (k) => !k.q && /^(data_|loop_$|save_|global_$|stop_$)/i.test(k.v);
+    while (i < t.length) {
+      const k = t[i];
+      if (!k.q && /^data_/i.test(k.v)) {
+        cur = { name: k.v.slice(5), items: {}, loops: [] };
+        blocks.push(cur);
+        i++;
+        continue;
+      }
+      if (!cur) { i++; continue; }
+      if (!k.q && /^loop_$/i.test(k.v)) {
+        i++;
+        const tags = [];
+        while (i < t.length && isTag(t[i])) { tags.push(t[i].v.toLowerCase()); i++; }
+        const vals = [];
+        while (i < t.length && !isTag(t[i]) && !isKw(t[i])) { vals.push(t[i].v); i++; }
+        const rows = [];
+        if (tags.length) for (let r = 0; r + tags.length <= vals.length; r += tags.length) rows.push(vals.slice(r, r + tags.length));
+        cur.loops.push({ tags, rows });
+        continue;
+      }
+      if (isTag(k)) {
+        const nx = t[i + 1];
+        if (nx && !isTag(nx) && !isKw(nx)) { cur.items[k.v.toLowerCase()] = nx.v; i += 2; } else i++;
+        continue;
+      }
+      i++;
+    }
+    return blocks;
+  }
+
+  function parseSymop(s) {
+    const parts = s.replace(/\s+/g, '').toLowerCase().split(',');
+    if (parts.length !== 3) return null;
+    const R = [[0, 0, 0], [0, 0, 0], [0, 0, 0]];
+    const T = [0, 0, 0];
+    for (let r = 0; r < 3; r++) {
+      const terms = parts[r].match(/[+-]?[^+-]+/g);
+      if (!terms) return null;
+      for (const term of terms) {
+        let sign = 1;
+        let body = term;
+        if (body[0] === '+') body = body.slice(1);
+        else if (body[0] === '-') { sign = -1; body = body.slice(1); }
+        const m = body.match(/^(?:(\d*\.?\d+)(?:\/(\d+))?\*?)?([xyz])?$/);
+        if (!m || (m[1] === undefined && m[3] === undefined)) return null;
+        const val = m[1] === undefined ? 1 : parseFloat(m[1]) / (m[2] ? parseFloat(m[2]) : 1);
+        if (m[3]) R[r]['xyz'.indexOf(m[3])] += sign * val;
+        else T[r] += sign * val;
+      }
+    }
+    return { R, T, text: s.trim() };
+  }
+
+  function elementOf(typeSymbol, label) {
+    const norm = (s) => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+    if (typeSymbol && typeSymbol !== '?' && typeSymbol !== '.') {
+      const m = typeSymbol.match(/^[A-Za-z]{1,2}/);
+      if (m) {
+        const two = norm(m[0]);
+        if (RC[two] !== undefined) return two === 'D' ? 'H' : two;
+        const one = two.charAt(0);
+        if (RC[one] !== undefined) return one === 'D' ? 'H' : one;
+      }
+    }
+    const m = (label || '').match(/^[A-Za-z]{1,2}/);
+    if (!m) return null;
+    const raw = m[0];
+    if (raw.length === 2) {
+      const two = norm(raw);
+      const secondLower = raw[1] === raw[1].toLowerCase();
+      if (RC[two] !== undefined && (secondLower || RC[raw[0].toUpperCase()] === undefined)) return two;
+    }
+    const one = raw[0].toUpperCase();
+    if (RC[one] !== undefined) return one === 'D' ? 'H' : one;
+    return null;
+  }
+
+  /* ---------- small vector helpers ---------- */
+  const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+  const add = (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+  const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+  const norm = (a) => Math.sqrt(dot(a, a));
+  const angleDeg = (u, v) => Math.acos(Math.max(-1, Math.min(1, dot(u, v) / (norm(u) * norm(v))))) * 180 / Math.PI;
+  const gcd = (a, b) => { a = Math.abs(a); b = Math.abs(b); while (b) { [a, b] = [b, a % b]; } return a; };
+
+  function makeCell(a, b, c, al, be, ga) {
+    const rad = Math.PI / 180;
+    const ca = Math.cos(al * rad), cb = Math.cos(be * rad), cg = Math.cos(ga * rad), sg = Math.sin(ga * rad);
+    const A = [a, 0, 0];
+    const B = [b * cg, b * sg, 0];
+    const cx = c * cb;
+    const cy = c * (ca - cb * cg) / sg;
+    const C = [cx, cy, Math.sqrt(Math.max(0, c * c - cx * cx - cy * cy))];
+    const V = dot(A, cross(B, C));
+    const recip = [cross(B, C), cross(C, A), cross(A, B)].map((v) => v.map((x) => x / V));
+    const toCart = (f) => [
+      f[0] * A[0] + f[1] * B[0] + f[2] * C[0],
+      f[0] * A[1] + f[1] * B[1] + f[2] * C[1],
+      f[0] * A[2] + f[1] * B[2] + f[2] * C[2]
+    ];
+    return { a, b, c, al, be, ga, A, B, C, V, recip, toCart };
+  }
+
+  /* ---------- blocks -> structure ---------- */
+  function readStructure(text) {
+    const blocks = parseBlocks(text);
+    let chosen = null;
+    let siteLoop = null;
+    for (const b of blocks) {
+      const lp = b.loops.find((l) => l.tags.includes('_atom_site_fract_x'));
+      if (lp && lp.rows.length) { chosen = b; siteLoop = lp; break; }
+    }
+    if (!chosen) throw new Error('No atom sites with fractional coordinates were found in this file.');
+    const it = chosen.items;
+    const pick = (...tags) => { for (const t of tags) if (it[t] !== undefined && it[t] !== '?' && it[t] !== '.') return it[t]; return null; };
+    const cellRaw = ['_cell_length_a', '_cell_length_b', '_cell_length_c', '_cell_angle_alpha', '_cell_angle_beta', '_cell_angle_gamma'].map((t) => it[t]);
+    const cellNum = cellRaw.map((s) => parseFloat(s));
+    if (cellNum.some((x) => !isFinite(x))) throw new Error('The unit cell parameters are missing or unreadable.');
+    const cell = makeCell(...cellNum);
+
+    let ops = [];
+    for (const l of chosen.loops) {
+      const idx = l.tags.findIndex((t) => t === '_symmetry_equiv_pos_as_xyz' || t === '_space_group_symop_operation_xyz' || t === '_space_group_symop.operation_xyz');
+      if (idx >= 0) { ops = l.rows.map((r) => parseSymop(r[idx])).filter(Boolean); break; }
+    }
+    const single = pick('_symmetry_equiv_pos_as_xyz', '_space_group_symop_operation_xyz');
+    if (!ops.length && single) { const o = parseSymop(single); if (o) ops = [o]; }
+    let symSource = ops.length ? 'listed' : 'none';
+    if (!ops.length) {
+      const hall = pick('_space_group_name_hall', '_symmetry_space_group_name_hall');
+      const hm = pick('_symmetry_space_group_name_h-m', '_space_group_name_h-m_alt', '_space_group_name_h-m');
+      const num = pick('_symmetry_int_tables_number', '_space_group_it_number');
+      const fromHall = hall ? hallOps(hall) : null;
+      if (fromHall) { ops = fromHall; symSource = 'hall'; } else {
+        const r = symbolOps(hm, num, cell);
+        if (r) { ops = r.ops; symSource = r.via; }
+      }
+    }
+    if (!ops.length) ops = [parseSymop('x,y,z')];
+
+    const col = (t) => siteLoop.tags.indexOf(t);
+    const cL = col('_atom_site_label'), cT = col('_atom_site_type_symbol');
+    const cX = col('_atom_site_fract_x'), cY = col('_atom_site_fract_y'), cZ = col('_atom_site_fract_z');
+    const cO = col('_atom_site_occupancy'), cD = col('_atom_site_disorder_group'), cA = col('_atom_site_disorder_assembly');
+    const sites = [];
+    for (const r of siteLoop.rows) {
+      const f = [parseFloat(r[cX]), parseFloat(r[cY]), parseFloat(r[cZ])];
+      if (f.some((x) => !isFinite(x))) continue;
+      const label = cL >= 0 ? r[cL] : (cT >= 0 ? r[cT] : '?');
+      const el = elementOf(cT >= 0 ? r[cT] : null, label);
+      if (!el) continue;
+      const occ = cO >= 0 && isFinite(parseFloat(r[cO])) ? parseFloat(r[cO]) : 1;
+      let dg = cD >= 0 ? r[cD] : '.';
+      if (dg === '?' || dg === '0' || dg === '') dg = '.';
+      let asm = cA >= 0 ? r[cA] : '.';
+      if (asm === '?' || asm === '') asm = '.';
+      sites.push({ label, el, f, occ, dg, asm, minor: false, symdis: dg !== '.' && /^-/.test(dg) });
+    }
+    // within each disorder assembly, the group with the highest mean occupancy is the major part
+    const groups = new Map();
+    for (const st of sites) {
+      if (st.dg === '.') continue;
+      const k = st.asm + '|' + st.dg;
+      const g = groups.get(k) || { asm: st.asm, dg: st.dg, sum: 0, n: 0 };
+      g.sum += st.occ; g.n++;
+      groups.set(k, g);
+    }
+    const best = new Map();
+    for (const g of groups.values()) {
+      const mean = g.sum / g.n;
+      const b = best.get(g.asm);
+      if (!b || mean > b.mean + 1e-6) best.set(g.asm, { dg: g.dg, mean });
+    }
+    for (const st of sites) if (st.dg !== '.' && best.get(st.asm).dg !== st.dg) st.minor = true;
+    if (!sites.length) throw new Error('No usable atom sites were found in this file.');
+
+    const meta = {
+      block: chosen.name,
+      spaceGroup: pick('_symmetry_space_group_name_h-m', '_space_group_name_h-m_alt', '_space_group_name_h-m'),
+      sgNumber: pick('_symmetry_int_tables_number', '_space_group_it_number'),
+      crystalSystem: pick('_symmetry_cell_setting', '_space_group_crystal_system'),
+      temperature: pick('_diffrn_ambient_temperature', '_cell_measurement_temperature'),
+      R1: pick('_refine_ls_r_factor_gt'),
+      Z: pick('_cell_formula_units_z'),
+      ccdc: pick('_database_code_depnum_ccdc_archive'),
+      symSource,
+      cellRaw
+    };
+    return { cell, ops, sites, meta };
+  }
+
+  /* ---------- structure -> unit cell contents, molecules, framework ---------- */
+  const compatible = (a, b) => a.dg === '.' || b.dg === '.' || a.dg === b.dg;
+
+  function buildCell(struct, opts) {
+    const showMinor = !!(opts && opts.minor);
+    const { cell, ops } = struct;
+    const wrap = (x) => { let y = x - Math.floor(x); if (y > 1 - 1e-6) y = 0; return y; };
+    const mi = (d) => [d[0] - Math.round(d[0]), d[1] - Math.round(d[1]), d[2] - Math.round(d[2])];
+
+    // 1. apply every operator, wrap into the cell, drop coincident copies
+    let atoms = [];
+    struct.sites.forEach((s, si) => {
+      ops.forEach((op, oi) => {
+        const f = [0, 1, 2].map((r) => wrap(op.R[r][0] * s.f[0] + op.R[r][1] * s.f[1] + op.R[r][2] * s.f[2] + op.T[r]));
+        for (const a of atoms) {
+          if (a.el !== s.el || a.dg !== s.dg) continue;
+          if (norm(cell.toCart(mi(sub(a.f, f)))) < 0.15) return;
+        }
+        atoms.push({ el: s.el, label: s.label, f, occ: s.occ, dg: s.dg, site: si, op: oi, symdis: s.symdis, minor: s.minor });
+      });
+    });
+
+    // 1b. split positions that the file does not flag: two non-H atoms of one element closer than 0.9 A
+    const dropSites = new Set();
+    const dropAtoms = new Set();
+    const autoSplit = [];
+    for (let i = 0; i < atoms.length; i++) {
+      const a = atoms[i];
+      if (a.el === 'H' || a.dg !== '.') continue;
+      for (let j = i + 1; j < atoms.length; j++) {
+        const b = atoms[j];
+        if (b.el !== a.el || b.dg !== '.') continue;
+        if (norm(cell.toCart(mi(sub(a.f, b.f)))) >= 0.9) continue;
+        if (a.site === b.site) dropAtoms.add(j);
+        else {
+          const later = Math.max(a.site, b.site);
+          if (!dropSites.has(later)) { dropSites.add(later); autoSplit.push(struct.sites[Math.min(a.site, b.site)].label + '/' + struct.sites[later].label); }
+        }
+      }
+    }
+    const hasMinor = struct.sites.some((s) => s.minor) || dropSites.size > 0 || dropAtoms.size > 0;
+    // cell contents for the formula: every part, weighted by occupancy; unflagged split copies counted once
+    const counts = {};
+    atoms.forEach((a, i) => { if (!dropSites.has(a.site) && !dropAtoms.has(i)) counts[a.el] = (counts[a.el] || 0) + a.occ; });
+    const hiddenMinor = atoms.filter((a, i) => a.minor || dropSites.has(a.site) || dropAtoms.has(i)).length;
+    if (!showMinor) atoms = atoms.filter((a, i) => !a.minor && !dropSites.has(a.site) && !dropAtoms.has(i));
+    const N = atoms.length;
+
+    // 2. metal-halide coordination, over neighbouring cells
+    const ligs = atoms.map(() => []);      // metal index -> [{j, off}]
+    const metalsOf = atoms.map(() => []);  // halide index -> [{i, off}]  (off = halide - metal, fractional)
+    const shifts = [];
+    for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) for (let k = -1; k <= 1; k++) shifts.push([i, j, k]);
+    for (let i = 0; i < N; i++) {
+      if (!isCenter(atoms[i].el)) continue;
+      for (let j = 0; j < N; j++) {
+        if (!HALIDE.has(atoms[j].el) || !compatible(atoms[i], atoms[j])) continue;
+        const cut = RC[atoms[i].el] + RC[atoms[j].el] + 0.75;
+        const base = sub(atoms[j].f, atoms[i].f);
+        for (const s of shifts) {
+          const off = add(base, s);
+          const d = norm(cell.toCart(off));
+          if (d < cut && d > 0.5) {
+            ligs[i].push({ j, off, d, s });
+            metalsOf[j].push({ i, off });
+          }
+        }
+      }
+    }
+
+    // 3. covalent bonds between non-metals (minimum image)
+    const adj = atoms.map(() => []);
+    for (let i = 0; i < N; i++) {
+      const a = atoms[i];
+      if (isMetal(a.el) || metalsOf[i].length) continue;
+      for (let j = i + 1; j < N; j++) {
+        const b = atoms[j];
+        if (isMetal(b.el) || metalsOf[j].length) continue;
+        if (a.el === 'H' && b.el === 'H') continue;
+        if (HALIDE.has(a.el) && (HALIDE.has(b.el) || b.el === 'H')) continue;
+        if (HALIDE.has(b.el) && a.el === 'H') continue;
+        if (!compatible(a, b)) continue;
+        if (a.symdis && b.symdis && a.op !== b.op) continue;
+        const d = mi(sub(b.f, a.f));
+        const dist = norm(cell.toCart(d));
+        if (dist > 0.4 && dist < RC[a.el] + RC[b.el] + 0.45) {
+          adj[i].push({ j, d });
+          adj[j].push({ j: i, d: [-d[0], -d[1], -d[2]] });
+        }
+      }
+    }
+
+    // 4. whole molecules: walk the bond graph, unwrapping across cell faces
+    const molecules = [];
+    const seen = new Array(N).fill(false);
+    for (let s = 0; s < N; s++) {
+      if (seen[s] || isCenter(atoms[s].el) || metalsOf[s].length) continue;
+      const pos = new Map();
+      pos.set(s, atoms[s].f.slice());
+      seen[s] = true;
+      const order = [s];
+      for (let q = 0; q < order.length; q++) {
+        const i = order[q];
+        for (const nb of adj[i]) {
+          if (seen[nb.j]) continue;
+          seen[nb.j] = true;
+          pos.set(nb.j, add(pos.get(i), nb.d));
+          order.push(nb.j);
+        }
+      }
+      let cen = [0, 0, 0];
+      for (const i of order) cen = add(cen, pos.get(i));
+      const shift = cen.map((x) => -Math.floor(x / order.length + 1e-9));
+      const local = new Map(order.map((i, k) => [i, k]));
+      const bonds = [];
+      for (const i of order) for (const nb of adj[i]) {
+        if (nb.j <= i || !local.has(nb.j)) continue;
+        const real = sub(pos.get(nb.j), pos.get(i));
+        if (norm(sub(real, nb.d)) < 1e-6) bonds.push([local.get(i), local.get(nb.j)]);
+      }
+      const mol = {
+        atoms: order.map((i) => ({ idx: i, f: add(pos.get(i), shift) })),
+        bonds,
+        ion: order.length === 1 && (HALIDE.has(atoms[s].el) || isMetal(atoms[s].el)),
+        symdis: order.some((i) => atoms[i].symdis)
+      };
+      mol.cen = cen.map((x, k) => x / order.length + shift[k]);
+      // a molecule disordered over a symmetry element: keep one orientation
+      if (mol.symdis && !showMinor && molecules.some((m) => m.symdis && norm(cell.toCart(mi(sub(m.cen, mol.cen)))) < 1.0)) continue;
+      molecules.push(mol);
+    }
+
+    const metals = [];
+    for (let i = 0; i < N; i++) if (isCenter(atoms[i].el)) metals.push(i);
+
+    return { cell, atoms, ligs, metalsOf, molecules, metals, hasMinor, autoSplit, counts, hiddenMinor, meta: struct.meta, ops: struct.ops };
+  }
+
+  /* ---------- geometry report ---------- */
+  function rankOf(vectors) {
+    const m = vectors.map((v) => v.slice());
+    let rank = 0;
+    const basis = [];
+    for (let c = 0; c < 3 && rank < m.length; c++) {
+      let p = -1;
+      for (let r = rank; r < m.length; r++) if (Math.abs(m[r][c]) > 1e-9) { p = r; break; }
+      if (p < 0) continue;
+      [m[rank], m[p]] = [m[p], m[rank]];
+      [vectors[rank], vectors[p]] = [vectors[p], vectors[rank]];
+      for (let r = rank + 1; r < m.length; r++) {
+        const k = m[r][c] / m[rank][c];
+        for (let cc = c; cc < 3; cc++) m[r][cc] -= k * m[rank][cc];
+      }
+      basis.push(rank);
+      rank++;
+    }
+    return rank;
+  }
+
+  /* unit normal of the best plane through a set of points (smallest principal axis) */
+  function planeNormal(P) {
+    let cen = [0, 0, 0];
+    for (const q of P) cen = add(cen, q);
+    cen = cen.map((v) => v / P.length);
+    const a = [[0, 0, 0], [0, 0, 0], [0, 0, 0]];
+    for (const q of P) { const d = sub(q, cen); for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) a[i][j] += d[i] * d[j]; }
+    const v = [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
+    for (let sweep = 0; sweep < 30; sweep++) {
+      let offd = 0;
+      for (let p = 0; p < 2; p++) for (let q = p + 1; q < 3; q++) {
+        offd += Math.abs(a[p][q]);
+        if (Math.abs(a[p][q]) < 1e-14) continue;
+        const th = 0.5 * Math.atan2(2 * a[p][q], a[q][q] - a[p][p]);
+        const c = Math.cos(th), sn = Math.sin(th);
+        for (let k = 0; k < 3; k++) { const x = a[k][p], y = a[k][q]; a[k][p] = c * x - sn * y; a[k][q] = sn * x + c * y; }
+        for (let k = 0; k < 3; k++) { const x = a[p][k], y = a[q][k]; a[p][k] = c * x - sn * y; a[q][k] = sn * x + c * y; }
+        for (let k = 0; k < 3; k++) { const x = v[k][p], y = v[k][q]; v[k][p] = c * x - sn * y; v[k][q] = sn * x + c * y; }
+      }
+      if (offd < 1e-12) break;
+    }
+    let m = 0;
+    for (let k = 1; k < 3; k++) if (a[k][k] < a[m][m]) m = k;
+    let n = [v[0][m], v[1][m], v[2][m]];
+    // a reproducible sign: follow the order in which the atoms were given
+    let ref = [0, 0, 0];
+    for (let k = 0; k < P.length; k++) ref = add(ref, cross(sub(P[k], cen), sub(P[(k + 1) % P.length], cen)));
+    if (Math.abs(dot(ref, n)) < 1e-3) {
+      ref = [0, 0, 0];
+      for (let k = 1; k < P.length && Math.abs(dot(ref, n)) < 1e-3; k++) ref = cross(sub(P[0], cen), sub(P[k], cen));
+    }
+    if (dot(ref, n) < 0) n = n.map((x) => -x);
+    const rms = Math.sqrt(P.reduce((t, q) => t + Math.pow(dot(sub(q, cen), n), 2), 0) / P.length);
+    return { n, cen, rms };
+  }
+
+  /* 1,2,4,5-tetrazine rings, returned as chromophore definitions (plane and axis by site index) */
+  function tetrazineDefs(uc) {
+    const { atoms, molecules } = uc;
+    const defs = [];
+    const seenDef = new Set();
+    for (const mol of molecules) {
+      const el = mol.atoms.map((a) => atoms[a.idx].el);
+      const site = mol.atoms.map((a) => atoms[a.idx].site);
+      const nb = mol.atoms.map(() => []);
+      for (const [p, q] of mol.bonds) { nb[p].push(q); nb[q].push(p); }
+      for (let c1 = 0; c1 < el.length; c1++) {
+        if (el[c1] !== 'C') continue;
+        const ns = nb[c1].filter((j) => el[j] === 'N');
+        for (let x = 0; x < ns.length; x++) for (let y = x + 1; y < ns.length; y++) {
+          const n1 = ns[x], n4 = ns[y];
+          for (const n2 of nb[n1]) {
+            if (el[n2] !== 'N' || n2 === n4) continue;
+            for (const n3 of nb[n4]) {
+              if (el[n3] !== 'N' || n3 === n1 || n3 === n2) continue;
+              for (const c2 of nb[n2]) {
+                if (el[c2] !== 'C' || c2 === c1 || !nb[n3].includes(c2)) continue;
+                const ring = [c1, n1, n2, c2, n3, n4];
+                const key = ring.map((k) => site[k]).sort((a, b) => a - b).join(',');
+                if (seenDef.has(key)) continue;
+                seenDef.add(key);
+                const s1 = nb[c1].find((j) => !ring.includes(j));
+                const s2 = nb[c2].find((j) => !ring.includes(j));
+                const ends = (s1 !== undefined && s2 !== undefined) ? [s1, s2] : [c1, c2];
+                defs.push({ plane: ring.map((k) => site[k]), axis: ends.map((k) => site[k]) });
+              }
+            }
+          }
+        }
+      }
+    }
+    return defs;
+  }
+
+  /* every copy of a chromophore in the cell: centre (fractional, molecule coordinates),
+     n = plane normal, e = in-plane reference axis, p = n x e */
+  function chromoInstances(uc, def) {
+    const { atoms, molecules, cell } = uc;
+    const out = [];
+    molecules.forEach((mol, mi) => {
+      const bySite = new Map();
+      mol.atoms.forEach((a, k) => {
+        const sidx = atoms[a.idx].site;
+        if (!bySite.has(sidx)) bySite.set(sidx, []);
+        bySite.get(sidx).push(k);
+      });
+      const first = bySite.get(def.plane[0]);
+      if (!first) return;
+      for (const k0 of first) {
+        const origin = cell.toCart(mol.atoms[k0].f);
+        const nearest = (sidx) => {
+          const c = bySite.get(sidx);
+          if (!c) return -1;
+          let best = c[0], bd = Infinity;
+          for (const k of c) { const d = norm(sub(cell.toCart(mol.atoms[k].f), origin)); if (d < bd) { bd = d; best = k; } }
+          return best;
+        };
+        const pl = def.plane.map((sidx, i) => (i === 0 ? k0 : nearest(sidx)));
+        if (pl.some((k) => k < 0)) continue;
+        const P = pl.map((k) => cell.toCart(mol.atoms[k].f));
+        const fit = planeNormal(P);
+        let e;
+        if (def.axis && def.axis.length === 2) {
+          const ax = def.axis.map(nearest);
+          if (ax.some((k) => k < 0)) continue;
+          e = sub(cell.toCart(mol.atoms[ax[1]].f), cell.toCart(mol.atoms[ax[0]].f));
+        } else {
+          let far = 1, fd = 0;
+          for (let k = 1; k < P.length; k++) { const d = norm(sub(P[k], P[0])); if (d > fd) { fd = d; far = k; } }
+          e = sub(P[far], P[0]);
+        }
+        const kk = dot(e, fit.n);
+        e = sub(e, fit.n.map((x) => x * kk));
+        if (norm(e) < 1e-6) continue;
+        e = e.map((x) => x / norm(e));
+        let fc = [0, 0, 0];
+        for (const k of pl) fc = add(fc, mol.atoms[k].f);
+        out.push({ mi, f: fc.map((x) => x / pl.length), n: fit.n, e, p: cross(fit.n, e), rms: fit.rms });
+      }
+    });
+    return out;
+  }
+  /* direction of one state on one chromophore copy */
+  function stateDir(inst, state) {
+    if (state.mode === 'normal') return inst.n;
+    if (state.mode === 'along') return inst.e;
+    if (state.mode === 'perp') return inst.p;
+    const a = (state.phi || 0) * Math.PI / 180;
+    return [0, 1, 2].map((k) => Math.cos(a) * inst.e[k] + Math.sin(a) * inst.p[k]);
+  }
+  /* orientation summary of a set of axes (sign-free) */
+  function orientReport(uc, info, vectors) {
+    if (!vectors.length) return null;
+    let normal = null;
+    const fw = info.framework;
+    if (fw && fw.dim === 2) {
+      const h = fw.hkl;
+      normal = [0, 1, 2].map((k) => h[0] * uc.cell.recip[0][k] + h[1] * uc.cell.recip[1][k] + h[2] * uc.cell.recip[2][k]);
+    }
+    const acute = (u, v) => { const a = angleDeg(u, v); return a > 90 ? 180 - a : a; };
+    const uniq = [];
+    for (const r of vectors) if (!uniq.some((u) => acute(u, r) < 0.05)) uniq.push(r);
+    const res = { orientations: uniq.length };
+    if (normal) {
+      const t = uniq.map((u) => acute(u, normal));
+      res.toNormalMin = Math.min(...t);
+      res.toNormalMax = Math.max(...t);
+    }
+    if (uniq.length === 2) res.between = acute(uniq[0], uniq[1]);
+    return res;
+  }
+
+  /* lattice planes (hkl), offset by a fraction of d, cut to the block lo..hi (fractional) */
+  function planePolys(cell, hkl, offset, lo, hi, maxPlanes) {
+    const G = [0, 1, 2].map((k) => hkl[0] * cell.recip[0][k] + hkl[1] * cell.recip[1][k] + hkl[2] * cell.recip[2][k]);
+    const gl = norm(G);
+    if (gl < 1e-12) return { polys: [], d: null, total: 0 };
+    const nrm = G.map((x) => x / gl);
+    const corners = [];
+    for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) for (let k = 0; k < 2; k++) corners.push([i ? hi[0] : lo[0], j ? hi[1] : lo[1], k ? hi[2] : lo[2]]);
+    const edges = [];
+    for (let p = 0; p < 8; p++) for (let q = p + 1; q < 8; q++) {
+      const diff = (p ^ q);
+      if (diff === 1 || diff === 2 || diff === 4) edges.push([p, q]);
+    }
+    const sv = corners.map((f) => dot(hkl, f));
+    const smin = Math.min(...sv), smax = Math.max(...sv);
+    const tol = 1e-7;
+    const all = [];
+    for (let m = Math.ceil(smin - offset - tol); m <= Math.floor(smax - offset + tol); m++) all.push(m);
+    const total = all.length;
+    const pick = all.length > maxPlanes ? all.slice(0, maxPlanes) : all;
+    // in-plane basis for ordering the corners of each polygon
+    let e1 = cross(nrm, Math.abs(nrm[0]) < 0.9 ? [1, 0, 0] : [0, 1, 0]);
+    e1 = e1.map((x) => x / norm(e1));
+    const e2 = cross(nrm, e1);
+    const polys = [];
+    for (const m of pick) {
+      const t = m + offset;
+      const pts = [];
+      const addPt = (f) => {
+        const c = cell.toCart(f);
+        if (!pts.some((q) => norm(sub(q, c)) < 1e-6)) pts.push(c);
+      };
+      for (const [p, q] of edges) {
+        const a = sv[p] - t, b = sv[q] - t;
+        if (Math.abs(a) < tol) addPt(corners[p]);
+        if (Math.abs(b) < tol) addPt(corners[q]);
+        if (Math.abs(a) >= tol && Math.abs(b) >= tol && a * b < 0) {
+          const w = a / (a - b);
+          addPt([0, 1, 2].map((k) => corners[p][k] + w * (corners[q][k] - corners[p][k])));
+        }
+      }
+      if (pts.length < 3) continue;
+      let cen = [0, 0, 0];
+      for (const q of pts) cen = add(cen, q);
+      cen = cen.map((x) => x / pts.length);
+      pts.sort((u, v) => Math.atan2(dot(sub(u, cen), e2), dot(sub(u, cen), e1)) - Math.atan2(dot(sub(v, cen), e2), dot(sub(v, cen), e1)));
+      polys.push({ pts, cen, m });
+    }
+    return { polys, d: 1 / gl, normal: nrm, total };
+  }
+
+  /* descriptors of a layered (2D) metal-halide framework */
+  function layerAnalysis(uc, fw, off, compOf) {
+    const { cell, atoms, ligs, metalsOf, metals, molecules } = uc;
+    const G = [0, 1, 2].map((k) => fw.hkl[0] * cell.recip[0][k] + fw.hkl[1] * cell.recip[1][k] + fw.hkl[2] * cell.recip[2][k]);
+    const nh = G.map((x) => x / norm(G));
+    const height = (f) => dot(cell.toCart(f), nh);
+    const mean = (a) => a.reduce((t, x) => t + x, 0) / a.length;
+    const inPlane = (v) => { const k = dot(v, nh); return sub(v, nh.map((x) => x * k)); };
+    const res = { normal: nh };
+
+    // slabs: metal planes and the planes of terminal halides on each face
+    const slabs = [];
+    for (let c = 0; c < fw.components; c++) {
+      const ms = metals.filter((m) => compOf.get(m) === c).map((m) => ({ m, f: add(atoms[m].f, off.get(m)) }));
+      for (const o of ms) o.h = height(o.f);
+      const hs = ms.map((o) => o.h).sort((a, b) => a - b);
+      const planes = [];
+      for (const x of hs) {
+        const last = planes[planes.length - 1];
+        if (last && x - last.max < 1.5) { last.sum += x; last.n++; last.max = x; } else planes.push({ sum: x, n: 1, max: x });
+      }
+      const ph = planes.map((p) => p.sum / p.n);
+      const top = [], bot = [];
+      for (const o of ms) for (const l of ligs[o.m]) {
+        if (metalsOf[l.j].length !== 1) continue;
+        const hx = height(add(o.f, l.off));
+        if (hx > ph[ph.length - 1] + 1.0) top.push(hx); else if (hx < ph[0] - 1.0) bot.push(hx);
+      }
+      slabs.push({ metals: ms, planes: ph, centre: mean(ph), top: top.length ? mean(top) : null, bot: bot.length ? mean(bot) : null });
+    }
+    const ns = slabs.map((sl) => sl.planes.length);
+    res.n = Math.max(...ns);
+    res.nUniform = ns.every((x) => x === ns[0]);
+    const s0 = slabs[0];
+    if (s0.top !== null && s0.bot !== null) {
+      res.slabThickness = s0.top - s0.bot;
+      res.gallery = fw.spacing - res.slabThickness;
+    }
+
+    // M-X-M bridges, split into in-plane and out-of-plane components
+    res.bridges = [];
+    const seenB = new Set();
+    for (let j = 0; j < atoms.length; j++) {
+      const ms = metalsOf[j];
+      for (let p = 0; p < ms.length; p++) for (let q = p + 1; q < ms.length; q++) {
+        const a = cell.toCart(ms[p].off).map((x) => -x);
+        const b = cell.toCart(ms[q].off).map((x) => -x);
+        const mm = sub(b, a);
+        const theta = angleDeg(a, b);
+        const equatorial = Math.abs(dot(mm, nh)) / norm(mm) < 0.5;
+        const entry = { x: atoms[j].label, m1: atoms[ms[p].i].label, m2: atoms[ms[q].i].label, theta, equatorial, mm: norm(mm) };
+        if (equatorial) {
+          entry.thetaIn = angleDeg(inPlane(a), inPlane(b));
+          let u = inPlane(mm);
+          u = u.map((x) => x / norm(u));
+          const w = cross(nh, u);
+          const strip = (v) => { const k = dot(v, w); return sub(v, w.map((x) => x * k)); };
+          entry.thetaOut = angleDeg(strip(a), strip(b));
+        }
+        const key = atoms[j].site + ':' + theta.toFixed(2) + ':' + (equatorial ? 'e' : 'a');
+        if (seenB.has(key)) continue;
+        seenB.add(key);
+        res.bridges.push(entry);
+      }
+    }
+
+    // tilt of the axial M-X bonds away from the layer normal
+    const ax = [];
+    const seenSite = new Set();
+    for (const m of metals) {
+      if (seenSite.has(atoms[m].site)) continue;
+      seenSite.add(atoms[m].site);
+      for (const l of ligs[m]) {
+        const v = cell.toCart(l.off);
+        const c = Math.abs(dot(v, nh)) / norm(v);
+        if (c > 0.7) ax.push(Math.acos(Math.min(1, c)) * 180 / Math.PI);
+      }
+    }
+    if (ax.length) res.axialTilt = { min: Math.min(...ax), max: Math.max(...ax), mean: mean(ax) };
+
+    // depth of each ammonium N below the plane of terminal halides (positive = inside the layer)
+    const hasH = atoms.some((a) => a.el === 'H');
+    const pens = new Map();
+    for (const mol of molecules) {
+      const nb = mol.atoms.map(() => []);
+      for (const [p, q] of mol.bonds) { nb[p].push(q); nb[q].push(p); }
+      mol.atoms.forEach((a, k) => {
+        if (atoms[a.idx].el !== 'N') return;
+        const nH = nb[k].filter((j) => atoms[mol.atoms[j].idx].el === 'H').length;
+        const heavy = nb[k].length - nH;
+        const ammonium = hasH ? (nb[k].length === 4 && nH >= 2) : heavy === 1;
+        if (!ammonium) return;
+        const hN = height(a.f);
+        let best = null;
+        for (const sl of slabs) for (let k2 = -2; k2 <= 2; k2++) {
+          const h = hN + k2 * fw.dhkl;
+          if (sl.top !== null) { const d = sl.top - h; if (best === null || Math.abs(d) < Math.abs(best)) best = d; }
+          if (sl.bot !== null) { const d = h - sl.bot; if (best === null || Math.abs(d) < Math.abs(best)) best = d; }
+        }
+        if (best === null || Math.abs(best) > 3.0) return;
+        const lab = atoms[a.idx].label;
+        if (!pens.has(lab)) pens.set(lab, []);
+        pens.get(lab).push(best);
+      });
+    }
+    res.penetration = Array.from(pens.entries()).map(([label, v]) => ({ label, depth: mean(v) }));
+
+    // in-plane offset between adjacent layers, in units of the in-plane M...M vectors
+    res.offset = null;
+    if (slabs.length && s0.metals.length) {
+      const topH = s0.planes[s0.planes.length - 1];
+      const M0 = s0.metals.find((o) => Math.abs(o.h - topH) < 1.5);
+      const ps = [];
+      for (const l of ligs[M0.m]) for (const mm of metalsOf[l.j]) {
+        const d = sub(l.off, mm.off);
+        if (norm(d) < 1e-6) continue;
+        const v = cell.toCart(d);
+        if (Math.abs(dot(v, nh)) / norm(v) < 0.5) ps.push(inPlane(v));
+      }
+      ps.sort((u, v) => norm(u) - norm(v));
+      const p1 = ps[0];
+      const p2 = p1 ? ps.find((v) => norm(cross(p1, v)) > 0.3 * norm(p1) * norm(v)) : null;
+      let target = null;
+      for (let c = 0; c < slabs.length && !target; c++) for (let k = -2; k <= 2 && !target; k++) {
+        if (Math.abs(slabs[c].centre + k * fw.dhkl - s0.centre - fw.spacing) < 0.25 * fw.spacing) target = { c, k };
+      }
+      if (p1 && p2 && target) {
+        let t = null;
+        for (let i = -2; i <= 2; i++) for (let j = -2; j <= 2; j++) for (let k = -2; k <= 2; k++) {
+          if (i * fw.hkl[0] + j * fw.hkl[1] + k * fw.hkl[2] !== target.k) continue;
+          if (!t || norm(cell.toCart([i, j, k])) < norm(cell.toCart(t))) t = [i, j, k];
+        }
+        const sb = slabs[target.c];
+        const M1 = sb.metals.find((o) => Math.abs(o.h - sb.planes[0]) < 1.5);
+        if (t && M1) {
+          const d = inPlane(sub(cell.toCart(add(M1.f, t)), cell.toCart(M0.f)));
+          const e1 = p1.map((x) => x / norm(p1));
+          const e2 = cross(nh, e1);
+          const a11 = dot(p1, e1), a12 = dot(p2, e1), a21 = dot(p1, e2), a22 = dot(p2, e2);
+          const det = a11 * a22 - a12 * a21;
+          const b1 = dot(d, e1), b2 = dot(d, e2);
+          let s1 = (b1 * a22 - a12 * b2) / det, s2 = (a11 * b2 - a21 * b1) / det;
+          s1 = Math.abs(s1 - Math.round(s1));
+          s2 = Math.abs(s2 - Math.round(s2));
+          const tol = 0.15;
+          const z = (x) => x < tol, hf = (x) => x > 0.5 - tol;
+          let kind = 'intermediate';
+          if (z(s1) && z(s2)) kind = 'near (0, 0), eclipsed';
+          else if (hf(s1) && hf(s2)) kind = 'near (½, ½), staggered';
+          else if ((hf(s1) && z(s2)) || (z(s1) && hf(s2))) kind = 'near (½, 0)';
+          res.offset = { s1: Math.max(s1, s2), s2: Math.min(s1, s2), kind, p1: norm(p1), p2: norm(p2) };
+        }
+      }
+    }
+    return res;
+  }
+
+  function analyse(uc) {
+    const { cell, atoms, ligs, metalsOf, metals } = uc;
+    const out = { metalSites: [], bridges: [], framework: null, layer: null };
+
+    // formula and density from cell contents
+    const counts = uc.counts;
+    let mass = 0;
+    let massKnown = true;
+    for (const e of Object.keys(counts)) {
+      if (MASS[e] === undefined) massKnown = false; else mass += MASS[e] * counts[e];
+    }
+    const els = Object.keys(counts);
+    const hill = els.includes('C')
+      ? ['C'].concat(els.includes('H') ? ['H'] : [], els.filter((e) => e !== 'C' && e !== 'H').sort())
+      : els.slice().sort();
+    const integral = els.every((e) => Math.abs(counts[e] - Math.round(counts[e])) < 0.02);
+    let Z = parseInt(uc.meta.Z, 10);
+    if (!(Z > 0)) Z = integral ? els.reduce((g, e) => gcd(g, Math.round(counts[e])), 0) : 1;
+    out.Z = Z;
+    out.formula = hill.map((e) => {
+      const n = counts[e] / Z;
+      const r = Math.round(n * 100) / 100;
+      return { el: e, n: r };
+    });
+    out.formulaMass = massKnown ? mass / Z : null;
+    out.density = massKnown ? mass / (0.602214076 * cell.V) : null;
+    out.nAtoms = atoms.length;
+    out.hasH = atoms.some((a) => a.el === 'H');
+
+    // metal coordination, one entry per crystallographic site
+    const seenSite = new Set();
+    for (const i of metals) {
+      const key = atoms[i].site;
+      if (seenSite.has(key) || !ligs[i].length) continue;
+      seenSite.add(key);
+      const L = ligs[i].slice().sort((p, q) => p.d - q.d);
+      const ds = L.map((l) => l.d);
+      const mean = ds.reduce((s, x) => s + x, 0) / ds.length;
+      const entry = {
+        label: atoms[i].label, el: atoms[i].el, cn: L.length,
+        bonds: L.map((l) => ({ label: atoms[l.j].label, el: atoms[l.j].el, d: l.d })),
+        mean, min: ds[0], max: ds[ds.length - 1]
+      };
+      if (L.length === 6) {
+        const vs = L.map((l) => cell.toCart(l.off));
+        const angs = [];
+        for (let p = 0; p < 6; p++) for (let q = p + 1; q < 6; q++) angs.push(angleDeg(vs[p], vs[q]));
+        angs.sort((x, y) => x - y);
+        const cis = angs.slice(0, 12);
+        entry.sigma2 = cis.reduce((s, t) => s + (t - 90) * (t - 90), 0) / 11;
+        entry.deltaD = ds.reduce((s, d) => s + Math.pow((d - mean) / mean, 2), 0) / 6;
+        entry.cisMin = cis[0];
+        entry.cisMax = cis[11];
+        entry.transMin = angs[12];
+      }
+      out.metalSites.push(entry);
+    }
+
+    // bridging angles M-X-M
+    const seenBridge = new Set();
+    for (let j = 0; j < atoms.length; j++) {
+      const ms = metalsOf[j];
+      for (let p = 0; p < ms.length; p++) for (let q = p + 1; q < ms.length; q++) {
+        const u = cell.toCart(ms[p].off).map((x) => -x);
+        const v = cell.toCart(ms[q].off).map((x) => -x);
+        const ang = angleDeg(u, v);
+        const key = atoms[j].site + ':' + ang.toFixed(2);
+        if (seenBridge.has(key)) continue;
+        seenBridge.add(key);
+        out.bridges.push({
+          x: atoms[j].label, m1: atoms[ms[p].i].label, m2: atoms[ms[q].i].label, angle: ang,
+          mm: norm(sub(u, v))
+        });
+      }
+    }
+
+    // periodicity of the metal-halide network
+    if (metals.some((i) => ligs[i].length)) {
+      const off = new Map();
+      const compOf = new Map();
+      const cycles = [];
+      let comps = 0;
+      for (const m0 of metals) {
+        if (off.has(m0) || !ligs[m0].length) continue;
+        comps++;
+        off.set(m0, [0, 0, 0]);
+        compOf.set(m0, comps - 1);
+        const queue = [m0];
+        for (let q = 0; q < queue.length; q++) {
+          const n = queue[q];
+          const edges = isMetal(atoms[n].el)
+            ? ligs[n].map((l) => ({ to: l.j, s: l.s }))
+            : metalsOf[n].map((mm) => {
+              const s = sub(mm.off, sub(atoms[n].f, atoms[mm.i].f)).map(Math.round);
+              return { to: mm.i, s: s.map((x) => -x) };
+            });
+          for (const e of edges) {
+            const target = add(off.get(n), e.s);
+            if (!off.has(e.to)) { off.set(e.to, target); compOf.set(e.to, comps - 1); queue.push(e.to); } else {
+              const c = sub(target, off.get(e.to));
+              if (c.some((x) => x !== 0)) cycles.push(c);
+            }
+          }
+        }
+      }
+      const vecs = cycles.map((c) => c.slice());
+      const dim = rankOf(vecs);
+      const fw = { dim, components: comps };
+      if (dim === 2) {
+        let h = cross(vecs[0], vecs[1]).map(Math.round);
+        const g = gcd(gcd(h[0], h[1]), h[2]) || 1;
+        h = h.map((x) => x / g);
+        const first = h.find((x) => x !== 0);
+        if (first < 0) h = h.map((x) => -x);
+        h = h.map((x) => x + 0);
+        const G = [0, 1, 2].map((k) => h[0] * cell.recip[0][k] + h[1] * cell.recip[1][k] + h[2] * cell.recip[2][k]);
+        fw.hkl = h;
+        fw.dhkl = 1 / norm(G);
+        fw.spacing = fw.dhkl / comps;
+        try { out.layer = layerAnalysis(uc, fw, off, compOf); } catch (err) { out.layer = null; }
+      } else if (dim === 1) {
+        let u = vecs[0].map(Math.round);
+        const g = gcd(gcd(u[0], u[1]), u[2]) || 1;
+        u = u.map((x) => x / g);
+        const first = u.find((x) => x !== 0);
+        if (first < 0) u = u.map((x) => -x);
+        fw.uvw = u.map((x) => x + 0);
+      }
+      out.framework = fw;
+    }
+    return out;
+  }
+
+  /* ---------- unit cell -> displayed block of n1 x n2 x n3 cells ---------- */
+  function assemble(uc, lo, hi) {
+    const { cell, atoms, ligs, molecules, metals } = uc;
+    const out = [];
+    const polyhedra = [];
+    const mols = [];
+    const push = (i, f, kind, group) => {
+      out.push({ el: atoms[i].el, label: atoms[i].label, dg: atoms[i].dg, f, xyz: cell.toCart(f), kind, group, bonds: [], src: i, site: atoms[i].site });
+      return out.length - 1;
+    };
+    const link = (p, q) => { out[p].bonds.push(q); out[q].bonds.push(p); };
+    const eps = 1e-4;
+    const t0 = lo.map((x) => Math.floor(x) - 1);
+    const t1 = hi.map((x) => Math.ceil(x));
+
+    // metals inside the block (faces included), each with its full coordination shell
+    const ligKey = new Map();
+    for (const m of metals) {
+      const f0 = atoms[m].f;
+      for (let i = t0[0]; i <= t1[0]; i++) for (let j = t0[1]; j <= t1[1]; j++) for (let k = t0[2]; k <= t1[2]; k++) {
+        const fm = add(f0, [i, j, k]);
+        if (fm.some((x, d) => x < lo[d] - eps || x > hi[d] + eps)) continue;
+        const im = push(m, fm, 'metal', -1);
+        const verts = [];
+        for (const l of ligs[m]) {
+          const fx = add(fm, l.off);
+          const key = l.j + ':' + fx.map((x) => Math.round(x * 2000)).join(',');
+          let ix = ligKey.get(key);
+          if (ix === undefined) { ix = push(l.j, fx, 'ligand', -1); ligKey.set(key, ix); }
+          link(im, ix);
+          verts.push(ix);
+        }
+        if (verts.length >= 4) polyhedra.push({ center: im, verts });
+      }
+    }
+
+    // molecules and free ions whose centroid lies inside the block
+    let group = 0;
+    for (let i = t0[0]; i <= t1[0]; i++) for (let j = t0[1]; j <= t1[1]; j++) for (let k = t0[2]; k <= t1[2]; k++) {
+      for (const mol of molecules) {
+        const c = add(mol.cen, [i, j, k]);
+        if (c.some((x, d) => x < lo[d] - eps || x >= hi[d] - eps)) continue;
+        const idx = mol.atoms.map((a) => push(a.idx, add(a.f, [i, j, k]), mol.ion ? 'ion' : 'organic', group));
+        for (const [p, q] of mol.bonds) link(idx[p], idx[q]);
+        mols.push({ mi: molecules.indexOf(mol), t: [i, j, k], group });
+        group++;
+      }
+    }
+
+    // hydrogen bonds: N-H...X / O-H...X (X = halide, O, N of another molecule)
+    const hbonds = [];
+    const hasH = out.some((a) => a.el === 'H');
+    const acceptors = [];
+    out.forEach((a, i) => {
+      if (((a.kind === 'ligand' || a.kind === 'ion') && HALIDE.has(a.el)) || (a.kind === 'organic' && (a.el === 'O' || a.el === 'N'))) acceptors.push(i);
+    });
+    const d3 = (p, q) => norm(sub(out[p].xyz, out[q].xyz));
+    if (hasH) {
+      out.forEach((h, ih) => {
+        if (h.el !== 'H' || h.bonds.length !== 1) return;
+        const id = h.bonds[0];
+        const D = out[id];
+        if (D.el !== 'N' && D.el !== 'O') return;
+        for (const ia of acceptors) {
+          const A = out[ia];
+          if (A.group === h.group && A.group >= 0) continue;
+          if (A.el === 'N' && A.bonds.length >= 4) continue;
+          const lim = VDW.H + VDW[A.el] - 0.15;
+          const dHA = d3(ih, ia);
+          if (dHA > lim) continue;
+          const ang = angleDeg(sub(D.xyz, h.xyz), sub(A.xyz, h.xyz));
+          if (ang < 120) continue;
+          hbonds.push({ d: id, h: ih, a: ia, dHA, dDA: d3(id, ia), angle: ang });
+        }
+      });
+    } else {
+      out.forEach((D, id) => {
+        if (D.kind !== 'organic' || (D.el !== 'N' && D.el !== 'O')) return;
+        for (const ia of acceptors) {
+          const A = out[ia];
+          if (!HALIDE.has(A.el)) continue;
+          const dDA = d3(id, ia);
+          if (dDA < VDW[D.el] + VDW[A.el] + 0.15) hbonds.push({ d: id, h: -1, a: ia, dHA: null, dDA, angle: null });
+        }
+      });
+    }
+    return { atoms: out, polyhedra, hbonds, hasH, mols };
+  }
+
+  /* triangles of the convex hull of a small point set (coordination polyhedron) */
+  function hullFaces(points) {
+    const n = points.length;
+    let cen = [0, 0, 0];
+    for (const p of points) cen = add(cen, p);
+    cen = cen.map((x) => x / n);
+    const faces = [];
+    for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) for (let k = j + 1; k < n; k++) {
+      let nrm = cross(sub(points[j], points[i]), sub(points[k], points[i]));
+      const len = norm(nrm);
+      if (len < 1e-6) continue;
+      nrm = nrm.map((x) => x / len);
+      let pos = 0, neg = 0;
+      for (let m = 0; m < n; m++) {
+        if (m === i || m === j || m === k) continue;
+        const s = dot(nrm, sub(points[m], points[i]));
+        if (s > 0.05) pos++; else if (s < -0.05) neg++;
+      }
+      if (pos && neg) continue;
+      const outward = dot(nrm, sub(points[i], cen)) >= 0;
+      faces.push(outward ? { v: [i, j, k], n: nrm } : { v: [i, k, j], n: nrm.map((x) => -x) });
+    }
+    return faces;
+  }
+
+  root.XtalCore = { readStructure, buildCell, analyse, assemble, hullFaces, planePolys, tetrazineDefs, chromoInstances, stateDir, orientReport, hallOps, symbolOps, setSgTable, isMetal, isCenter, HALIDE, RC, parseSymop };
+  if (typeof module !== 'undefined' && module.exports) module.exports = root.XtalCore;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+(function () {
+  'use strict';
+  const C = window.XtalCore;
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  try { C.setSgTable(JSON.parse($('sg-table').textContent)); } catch (err) { /* symbol-only files fall back to P1 */ }
+  const EXAMPLE = { text: $('cif-example').textContent, name: 'Tetrazine PbCl4 (example).cif' };
+  const PAL = {
+    H: '#e6e6ec', N: '#3d64d8', O: '#e2463d', F: '#86cf3a', Cl: '#2fae52', Br: '#a9582c', I: '#7b41ad',
+    S: '#dfbe1d', P: '#e58a1f', Sn: '#6f8ea6', Cd: '#d9a93f', Mn: '#9a78c6', Cu: '#c7742f', Ca: '#3f9e8c',
+    Bi: '#8a5a9a', Ge: '#5f8f8f', Ag: '#9aa3ad', Cs: '#6a3fb0', Rb: '#8a4fc0', K: '#9a6fd0', Zn: '#7d80b0', Fe: '#d0672b', Co: '#e0708f', Ni: '#4fb357'
+  };
+  const MAX_ATOMS = 15000;
+  const MAX_PLANES = 60;
+  const PLANE_COLORS = ['#8a63ff', '#d1a800', '#00a3a3', '#d4577b'];
+  const STATE_COLORS = ['#d95f00', '#0077b6', '#7a3fb5', '#1a9a5a', '#c2185b', '#8a6d00'];
+  const MODES = [['normal', 'perpendicular to the plane'], ['along', 'in plane, along the axis'], ['perp', 'in plane, perpendicular to the axis'], ['angle', 'in plane, at an angle to the axis']];
+  const st = {
+    docs: [], cur: -1,
+    style: 'bs', poly: true, cellBox: true, H: true, hb: true, org: true, inorg: true,
+    arrow: 1.9, notice: '', shown: 0, picking: null
+  };
+  let viewer = null;
+  let hoverLabel = null;
+  const D = () => st.docs[st.cur] || null;
+
+  const cssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  function colorOf(el) {
+    if (el === 'Pb') return cssVar('--atom-pb');
+    if (el === 'C') return cssVar('--atom-c');
+    if (PAL[el]) return PAL[el];
+    const j = window.$3Dmol && $3Dmol.elementColors && $3Dmol.elementColors.Jmol && $3Dmol.elementColors.Jmol[el];
+    return typeof j === 'number' ? '#' + j.toString(16).padStart(6, '0') : '#b477b4';
+  }
+  const hexInt = (h) => parseInt(h.slice(1), 16);
+  const fmt = (x, d) => x.toFixed(d);
+  const V3 = (p) => ({ x: p[0], y: p[1], z: p[2] });
+  const mean = (a) => a.reduce((t, x) => t + x, 0) / a.length;
+
+  /* ---------- documents ---------- */
+  function makeDoc(src) {
+    const struct = C.readStructure(src.text);
+    const d = { src, struct, minor: false, planes: [], chromos: [], measures: [], pick: null, name: src.name.replace(/\.[^.]+$/, '') };
+    rebuildCell(d);
+    const L = [struct.cell.a, struct.cell.b, struct.cell.c];
+    const n = L.map((x) => Math.max(1, Math.min(3, Math.ceil(14 / x))));
+    while (d.uc.atoms.length * n[0] * n[1] * n[2] > MAX_ATOMS && n.some((x) => x > 1)) n[n.indexOf(Math.max(...n))]--;
+    d.def = n;
+    d.lo = [0, 0, 0];
+    d.hi = n.slice();
+    // preset: 1,2,4,5-tetrazine rings carry an out-of-plane n-pi* and an in-plane pi-pi* transition
+    C.tetrazineDefs(d.uc).forEach((def, i) => {
+      d.chromos.push({
+        name: 'Tetrazine ring' + (i ? ' ' + (i + 1) : ''), plane: def.plane, axis: def.axis,
+        states: [
+          { name: 'S1 (n–π*)', mode: 'normal', phi: 0, on: true, color: STATE_COLORS[0] },
+          { name: 'S2 (π–π*)', mode: 'perp', phi: 0, on: true, color: STATE_COLORS[1] }
+        ]
+      });
+    });
+    refreshChromos(d);
+    return d;
+  }
+
+  function rebuildCell(d) {
+    d.uc = C.buildCell(d.struct, { minor: d.minor });
+    d.info = C.analyse(d.uc);
+    // unique hydrogen bonds, searched in a 3x3x3 block so every acceptor is present
+    const big = d.uc.atoms.length <= 400 ? C.assemble(d.uc, [-1, -1, -1], [2, 2, 2]) : C.assemble(d.uc, [0, 0, 0], [1, 1, 1]);
+    const seen = new Map();
+    for (const h of big.hbonds) {
+      const A = big.atoms;
+      const key = A[h.d].label + '|' + (h.h >= 0 ? A[h.h].label : '') + '|' + A[h.a].label + '|' + h.dDA.toFixed(2);
+      if (!seen.has(key)) seen.set(key, { D: A[h.d].label, H: h.h >= 0 ? A[h.h].label : null, A: A[h.a].label, dHA: h.dHA, dDA: h.dDA, angle: h.angle });
+    }
+    d.hbRows = Array.from(seen.values()).sort((p, q) => p.dDA - q.dDA);
+    d.hbFromH = big.hasH;
+    if (d.chromos) refreshChromos(d);
+  }
+  function refreshChromos(d) {
+    for (const c of d.chromos) c.inst = C.chromoInstances(d.uc, c);
+  }
+
+  function addFiles(list) {
+    const errors = [];
+    let first = -1;
+    for (const src of list) {
+      try {
+        st.docs.push(makeDoc(src));
+        if (first < 0) first = st.docs.length - 1;
+      } catch (err) {
+        errors.push('Could not read ' + src.name + '. ' + err.message);
+      }
+    }
+    st.notice = errors.join(' ');
+    if (first >= 0) activate(first); else drawReadout();
+  }
+  function activate(i) {
+    st.cur = i;
+    st.picking = null;
+    const d = D();
+    $('main').classList.toggle('solo', !d);
+    $('rail').hidden = !d;
+    $('cardCmp').hidden = !st.docs.length;
+    $('stageMsg').hidden = !!d && !!viewer;
+    $('ovlView').hidden = !d;
+    if (!d) {
+      $('eyebrow').textContent = 'Layered metal-halide structures from CIF';
+      $('title').textContent = '2D Perovskite Workbench';
+      $('sub').innerHTML = '';
+      $('legend').innerHTML = '';
+      if (viewer) { viewer.removeAllModels(); viewer.removeAllShapes(); viewer.removeAllLabels(); viewer.render(); }
+      $('stageMsg').hidden = false;
+      drawCompare();
+      drawReadout();
+      return;
+    }
+    $('chkMinor').checked = d.minor;
+    drawHeader();
+    drawSheet();
+    drawRanges();
+    drawPlanes();
+    drawChromos();
+    drawCompare();
+    if (viewer) viewer.resize();
+    render(false);
+  }
+
+  /* ---------- text panels ---------- */
+  function sgHtml(s) {
+    if (!s) return null;
+    return s.trim().split(/\s+/).map((tok, i) => {
+      if (i === 0) return '<i>' + esc(tok) + '</i>';
+      return esc(tok).replace(/[a-z]/g, '<i>$&</i>')
+        .replace(/^-(\d)/, '<span class="bar">$1</span>')
+        .replace(/^([2346])([1-5])(?=\/|$)/, '$1<sub>$2</sub>');
+    }).join('');
+  }
+  const formulaHtml = (f) => f.map((e) => esc(e.el) + (e.n === 1 ? '' : '<sub>' + e.n + '</sub>')).join('');
+  const formulaText = (f) => f.map((e) => e.el + (e.n === 1 ? '' : e.n)).join(' ');
+  function frameworkText(fw, layer) {
+    if (!fw) return null;
+    if (fw.dim === 3) return '3D framework';
+    if (fw.dim === 2) return '2D layers ∥ (' + fw.hkl.join(' ') + ')' + (layer ? ', n = ' + layer.n : '');
+    if (fw.dim === 1) return '1D chains ∥ [' + fw.uvw.join(' ') + ']';
+    return 'isolated units (0D)';
+  }
+
+  function drawHeader() {
+    const d = D();
+    const { struct, info } = d;
+    $('eyebrow').textContent = '2D Perovskite Workbench  ·  data_' + struct.meta.block;
+    $('title').textContent = d.name;
+    const bits = ['<b>' + formulaHtml(info.formula) + '</b>'];
+    const sg = sgHtml(struct.meta.spaceGroup);
+    if (sg) bits.push(sg);
+    const fw = info.framework;
+    if (fw) bits.push(frameworkText(fw, info.layer) + (fw.dim === 2 ? ', ' + fmt(fw.spacing, 2) + ' Å apart' : ''));
+    else bits.push('no metal–halide framework found');
+    $('sub').innerHTML = bits.map((b) => '<span>' + b + '</span>').join('');
+  }
+
+  function drawSheet() {
+    const d = D();
+    const { struct, info, uc } = d;
+    const m = struct.meta;
+    const rows = [];
+    const add = (k, v, txt) => rows.push('<dt>' + k + '</dt><dd' + (txt ? ' class="txt"' : '') + '>' + v + '</dd>');
+    add('Formula', formulaHtml(info.formula));
+    if (info.formulaMass) add('Formula mass', fmt(info.formulaMass, 2) + ' g mol<sup>−1</sup>');
+    if (m.spaceGroup) add('Space group', sgHtml(m.spaceGroup) + (m.sgNumber ? ' (no. ' + esc(m.sgNumber) + ')' : ''));
+    else if (m.sgNumber) add('Space group', 'no. ' + esc(m.sgNumber));
+    ['a', 'b', 'c'].forEach((k, i) => add('<i>' + k + '</i>', esc(m.cellRaw[i]) + ' Å'));
+    ['α', 'β', 'γ'].forEach((k, i) => add('<i>' + k + '</i>', esc(m.cellRaw[3 + i]) + '°'));
+    add('<i>V</i>', fmt(struct.cell.V, 1) + ' Å<sup>3</sup>');
+    add('<i>Z</i>', String(info.Z));
+    if (info.density) add('<i>ρ</i><sub>calc</sub>', fmt(info.density, 3) + ' g cm<sup>−3</sup>');
+    if (m.temperature) add('<i>T</i>', esc(m.temperature) + ' K');
+    if (m.R1) add('<i>R</i><sub>1</sub>', esc(m.R1));
+    add('Atoms per cell', String(info.nAtoms));
+    const symText = {
+      listed: struct.ops.length + ' operators listed in the file',
+      hall: struct.ops.length + ' operators generated from the Hall symbol',
+      hm: struct.ops.length + ' operators generated from the space-group symbol; standard setting assumed',
+      number: struct.ops.length + ' operators generated from the space-group number; standard setting assumed',
+      none: 'none found; P1 assumed'
+    }[m.symSource];
+    add('Symmetry', symText, true);
+    if (uc.hasMinor) {
+      const parts = [];
+      if (struct.sites.some((s) => s.minor)) parts.push('flagged minor parts ' + (d.minor ? 'shown' : 'hidden'));
+      if (uc.autoSplit.length) parts.push('unflagged split sites ' + uc.autoSplit.map(esc).join(', ') + (d.minor ? ' both shown' : '; first of each shown'));
+      add('Disorder', parts.join('; '), true);
+    }
+    $('dlCrystal').innerHTML = rows.join('');
+
+    // inorganic framework
+    const fwRows = [];
+    const addF = (k, v, txt) => fwRows.push('<dt>' + k + '</dt><dd' + (txt ? ' class="txt"' : '') + '>' + v + '</dd>');
+    const L = info.layer;
+    const notes = [];
+    if (info.metalSites.length) {
+      const fw = info.framework;
+      if (fw) {
+        addF('Connectivity', frameworkText(fw, null), true);
+        if (fw.dim === 2) {
+          if (L) addF('Layer thickness <i>n</i>', String(L.n) + (L.nUniform ? '' : ' (mixed)'));
+          addF('Layer spacing', fmt(fw.spacing, 3) + ' Å');
+          if (L && L.slabThickness !== undefined) {
+            addF('Slab, X<sub>ax</sub> to X<sub>ax</sub>', fmt(L.slabThickness, 3) + ' Å');
+            addF('Organic gallery', fmt(L.gallery, 3) + ' Å');
+          }
+        }
+      }
+      for (const s of info.metalSites) {
+        const groups = new Map();
+        for (const b of s.bonds) {
+          const key = b.label + '|' + b.d.toFixed(3);
+          groups.set(key, (groups.get(key) || 0) + 1);
+        }
+        for (const [key, mult] of groups) {
+          const [lab, dist] = key.split('|');
+          addF(esc(s.label) + '–' + esc(lab), dist + ' Å' + (mult > 1 ? ' ×' + mult : ''));
+        }
+        addF('Mean ' + esc(s.label) + '–X', fmt(s.mean, 3) + ' Å');
+        if (s.cn === 6) {
+          addF(esc(s.label) + ' cis X–M–X', fmt(s.cisMin, 1) + '–' + fmt(s.cisMax, 1) + '°');
+          addF(esc(s.label) + ' Δ<i>d</i>', fmt(s.deltaD * 1e4, 2) + ' × 10<sup>−4</sup>');
+          addF(esc(s.label) + ' <i>σ</i><sup>2</sup>', fmt(s.sigma2, 1) + ' deg<sup>2</sup>');
+        }
+      }
+      if (L) {
+        if (L.axialTilt) addF('Axial M–X to layer normal', (L.axialTilt.max - L.axialTilt.min < 0.05 ? fmt(L.axialTilt.mean, 1) : fmt(L.axialTilt.min, 1) + '–' + fmt(L.axialTilt.max, 1)) + '°');
+        for (const p of L.penetration) addF('N penetration, ' + esc(p.label), (p.depth >= 0 ? '+' : '−') + fmt(Math.abs(p.depth), 3) + ' Å');
+        if (L.offset) {
+          addF('Stacking offset', '(' + fmt(L.offset.s1, 2) + ', ' + fmt(L.offset.s2, 2) + ')');
+          addF('', esc(L.offset.kind), true);
+        }
+        if (L.penetration.length) notes.push('N penetration is the depth of the ammonium N below the plane of terminal (axial) halides; positive means inside the layer.');
+        if (L.offset) notes.push('Stacking offset is the in-plane shift between adjacent layers in units of the two in-plane M···M vectors: (½, ½) is the ideal Ruddlesden–Popper stacking, (0, 0) the ideal Dion–Jacobson stacking.');
+      }
+    }
+    $('cardFw').hidden = !fwRows.length;
+    $('dlFw').innerHTML = fwRows.join('');
+    const br = L ? L.bridges : info.bridges.map((b) => ({ x: b.x, m1: b.m1, m2: b.m2, theta: b.angle, equatorial: null, mm: b.mm }));
+    $('brWrap').hidden = !br.length;
+    if (br.length) {
+      $('tblBr').innerHTML = '<thead><tr><th>M–X–M</th><th><i>θ</i></th><th><i>θ</i><sub>in</sub></th><th><i>θ</i><sub>out</sub></th><th>M···M</th></tr></thead><tbody>' +
+        br.map((b) => '<tr><td>' + esc(b.m1) + '–' + esc(b.x) + '–' + esc(b.m2) + (b.equatorial === false ? ' (axial)' : '') + '</td><td>' + fmt(b.theta, 2) + '</td><td>' +
+          (b.thetaIn !== undefined ? fmt(b.thetaIn, 2) : '–') + '</td><td>' + (b.thetaOut !== undefined ? fmt(b.thetaOut, 2) : '–') + '</td><td>' + fmt(b.mm, 3) + '</td></tr>').join('') + '</tbody>';
+      if (L) notes.unshift('Angles in degrees, distances in Å. θ<sub>in</sub> is the M–X–M angle projected onto the layer plane; θ<sub>out</sub> is the same angle projected onto the plane that holds M···M and the layer normal.');
+    }
+    $('fwNote').innerHTML = notes.join(' ');
+    const allSix = info.metalSites.length && info.metalSites.every((s) => s.cn === 6);
+    $('polyName').textContent = allSix ? 'Octahedra' : 'Polyhedra';
+
+    // hydrogen bonds
+    const hb = d.hbRows;
+    $('cardHB').hidden = !hb.length;
+    if (hb.length) {
+      if (d.hbFromH) {
+        $('tblHB').innerHTML = '<thead><tr><th>D–H···A</th><th>H···A</th><th>D···A</th><th>∠DHA</th></tr></thead><tbody>' +
+          hb.map((r) => '<tr><td>' + esc(r.D) + '–' + esc(r.H) + '···' + esc(r.A) + '</td><td>' + fmt(r.dHA, 2) + '</td><td>' + fmt(r.dDA, 3) + '</td><td>' + fmt(r.angle, 0) + '°</td></tr>').join('') + '</tbody>';
+        $('hbNote').textContent = 'Distances in Å. Criteria: H···A at least 0.15 Å inside the van der Waals sum and D–H···A above 120°. H positions are as given in the CIF.';
+      } else {
+        $('tblHB').innerHTML = '<thead><tr><th>D···A</th><th>distance</th></tr></thead><tbody>' +
+          hb.map((r) => '<tr><td>' + esc(r.D) + '···' + esc(r.A) + '</td><td>' + fmt(r.dDA, 3) + '</td></tr>').join('') + '</tbody>';
+        $('hbNote').textContent = 'No H atoms in this CIF, so short N/O···halide contacts are listed instead (Å).';
+      }
+    }
+    $('hbTitle').textContent = d.hbFromH ? 'Hydrogen bonds' : 'Short donor–halide contacts';
+
+    $('lblMinor').hidden = !uc.hasMinor;
+    $('chkH').disabled = !info.hasH;
+    $('lblH').classList.toggle('off', !info.hasH);
+    $('chkHB').disabled = !hb.length;
+    $('lblHB').classList.toggle('off', !hb.length);
+    $('viewLayer').hidden = !(info.framework && info.framework.dim === 2);
+    drawLegend();
+  }
+
+  function drawLegend() {
+    const d = D();
+    if (!d) return;
+    const present = [];
+    for (const a of d.uc.atoms) if (!present.includes(a.el)) present.push(a.el);
+    present.sort((p, q) => (C.isMetal(q) - C.isMetal(p)) || (C.HALIDE.has(q) - C.HALIDE.has(p)) || p.localeCompare(q));
+    $('legend').innerHTML = present.map((el) => '<span class="chip"><i style="background:' + colorOf(el) + '"></i>' + esc(el) + '</span>').join('');
+  }
+
+  function drawRanges() {
+    const d = D();
+    $('ranges').innerHTML = ['a', 'b', 'c'].map((k, i) =>
+      '<em>' + k + '</em>' +
+      '<input type="number" id="rng' + i + '0" step="0.5" min="-6" max="6" value="' + d.lo[i] + '" aria-label="Lower limit along ' + k + '">' +
+      '<span>to</span>' +
+      '<input type="number" id="rng' + i + '1" step="0.5" min="-6" max="6" value="' + d.hi[i] + '" aria-label="Upper limit along ' + k + '">' +
+      '<span></span>').join('');
+  }
+
+  function drawPlanes() {
+    const d = D();
+    $('planeList').innerHTML = d.planes.map((p, i) => {
+      const r = C.planePolys(d.uc.cell, p.hkl, p.off, d.lo, d.hi, MAX_PLANES);
+      return '<div class="plane"><i class="sw" style="background:' + p.color + '"></i><span>(' + p.hkl.join(' ') + ')</span>' +
+        '<span><i>d</i> = ' + fmt(r.d, 3) + ' Å</span>' + (p.off ? '<span>offset ' + p.off + ' <i>d</i></span>' : '') +
+        '<span>' + r.polys.length + (r.polys.length === 1 ? ' plane' : ' planes') + '</span>' +
+        '<button type="button" class="mini" data-rm="' + i + '" aria-label="Remove the (' + p.hkl.join(' ') + ') planes">Remove</button></div>';
+    }).join('');
+  }
+
+  /* ---------- chromophores ---------- */
+  const siteLabel = (d, s) => d.struct.sites[s].label;
+  function stateReport(d, c, s) {
+    const r = C.orientReport(d.uc, d.info, c.inst.map((inst) => C.stateDir(inst, s)));
+    if (!r) return 'no copies found';
+    const bits = [];
+    if (r.toNormalMin !== undefined) {
+      bits.push((Math.abs(r.toNormalMax - r.toNormalMin) < 0.05 ? fmt(r.toNormalMin, 1) : fmt(r.toNormalMin, 1) + '–' + fmt(r.toNormalMax, 1)) + '° to the layer normal');
+    }
+    if (r.orientations === 1) bits.push('all copies parallel');
+    else if (r.between !== undefined) bits.push('2 orientations, ' + fmt(r.between, 1) + '° apart');
+    else bits.push(r.orientations + ' orientations');
+    return bits.join('; ');
+  }
+  function drawChromos() {
+    const d = D();
+    $('chromoList').innerHTML = d.chromos.map((c, ci) => {
+      const head = '<div class="row"><input type="text" class="cname" data-c="' + ci + '" data-f="cname" value="' + esc(c.name) + '" aria-label="Chromophore name">' +
+        '<button type="button" class="mini" data-crm="' + ci + '">Remove</button></div>';
+      const rms = c.inst.length ? Math.max(...c.inst.map((x) => x.rms)) : 0;
+      const info = '<div class="small">Plane: ' + c.plane.map((s) => esc(siteLabel(d, s))).join(' ') + '. Axis: ' +
+        (c.axis && c.axis.length === 2 ? esc(siteLabel(d, c.axis[0])) + '···' + esc(siteLabel(d, c.axis[1])) : 'longest span of the plane atoms') +
+        '. ' + c.inst.length + (c.inst.length === 1 ? ' copy' : ' copies') + ' per cell' + (c.inst.length ? ', planar to ' + fmt(rms, 3) + ' Å' : '') + '.</div>';
+      const states = c.states.map((s, si) => {
+        const key = 'data-c="' + ci + '" data-s="' + si + '"';
+        return '<div class="state">' +
+          '<input type="checkbox" ' + key + ' data-f="on"' + (s.on ? ' checked' : '') + ' aria-label="Show ' + esc(s.name) + '">' +
+          '<i class="sw" style="background:' + s.color + '"></i>' +
+          '<input type="text" class="sname" ' + key + ' data-f="sname" value="' + esc(s.name) + '" aria-label="State name">' +
+          '<button type="button" class="mini" ' + key + ' data-srm="1" aria-label="Remove ' + esc(s.name) + '">Remove</button>' +
+          '<div class="smode"><select ' + key + ' data-f="mode" aria-label="Direction of ' + esc(s.name) + '">' +
+          MODES.map(([v, t]) => '<option value="' + v + '"' + (s.mode === v ? ' selected' : '') + '>' + t + '</option>').join('') + '</select>' +
+          (s.mode === 'angle' ? '<input type="number" ' + key + ' data-f="phi" step="5" value="' + s.phi + '" aria-label="Angle from the axis in degrees">°' : '') + '</div>' +
+          '<div class="small srep">' + stateReport(d, c, s) + '</div></div>';
+      }).join('');
+      return '<div class="chromo">' + head + info + states + '<div class="row"><button type="button" class="mini" data-cadd="' + ci + '">Add a state</button></div></div>';
+    }).join('');
+  }
+  function startPicking() {
+    st.picking = { step: 1, plane: [], axis: [] };
+    const d = D();
+    d.pick = null;
+    render(true);
+  }
+  function finishPicking() {
+    const d = D();
+    const pk = st.picking;
+    st.picking = null;
+    if (pk && pk.plane.length >= 3) {
+      d.chromos.push({
+        name: 'Chromophore ' + (d.chromos.length + 1), plane: pk.plane.map((a) => a.site), axis: pk.axis.length === 2 ? pk.axis.map((a) => a.site) : null,
+        states: [{ name: 'State 1', mode: 'normal', phi: 0, on: true, color: STATE_COLORS[0] }]
+      });
+      refreshChromos(d);
+      st.notice = d.chromos[d.chromos.length - 1].inst.length ? '' : 'No copy of that chromophore could be built. Pick atoms that belong to one molecule.';
+      drawChromos();
+    }
+    render(true);
+  }
+  function pickAtom(atom) {
+    const pk = st.picking;
+    const entry = { site: atom.xs, label: atom.xl, group: atom.xg, p: [atom.x, atom.y, atom.z] };
+    const all = pk.plane.concat(pk.axis);
+    if (atom.xk !== 'organic') { st.notice = 'Pick atoms of an organic molecule.'; return; }
+    if (all.length && all[0].group !== entry.group) { st.notice = 'Keep to one molecule: that atom belongs to a different one.'; return; }
+    st.notice = '';
+    const list = pk.step === 1 ? pk.plane : pk.axis;
+    const at = list.findIndex((a) => a.site === entry.site);
+    if (at >= 0) list.splice(at, 1);
+    else if (pk.step === 2 && list.length >= 2) list.splice(0, 1, entry);
+    else list.push(entry);
+  }
+
+  /* ---------- comparison table ---------- */
+  function summary(d) {
+    const { struct, info } = d;
+    const c = struct.cell;
+    const fw = info.framework, L = info.layer;
+    const eq = L ? L.bridges.filter((b) => b.equatorial) : [];
+    const ms = info.metalSites;
+    const six = ms.filter((s) => s.cn === 6);
+    const num = (x, dd) => (x === null || x === undefined || !isFinite(x) ? '' : fmt(x, dd));
+    return [
+      ['Structure', d.name],
+      ['Formula', formulaText(info.formula)],
+      ['Space group', struct.meta.spaceGroup || (struct.meta.sgNumber ? 'no. ' + struct.meta.sgNumber : '')],
+      ['a (Å)', num(c.a, 4)], ['b (Å)', num(c.b, 4)], ['c (Å)', num(c.c, 4)],
+      ['α (°)', num(c.al, 3)], ['β (°)', num(c.be, 3)], ['γ (°)', num(c.ga, 3)],
+      ['V (Å³)', num(c.V, 1)], ['Z', String(info.Z)], ['ρ (g cm⁻³)', num(info.density, 3)],
+      ['Framework', fw ? frameworkText(fw, null) : 'none'],
+      ['n', L ? String(L.n) : ''],
+      ['Layer spacing (Å)', fw && fw.dim === 2 ? num(fw.spacing, 3) : ''],
+      ['Slab (Å)', L ? num(L.slabThickness, 3) : ''],
+      ['Gallery (Å)', L ? num(L.gallery, 3) : ''],
+      ['Mean M–X (Å)', ms.length ? num(mean(ms.map((s) => s.mean)), 3) : ''],
+      ['Δd (10⁻⁴)', six.length ? num(mean(six.map((s) => s.deltaD)) * 1e4, 2) : ''],
+      ['σ² (deg²)', six.length ? num(mean(six.map((s) => s.sigma2)), 1) : ''],
+      ['M–X–M (°)', eq.length ? num(mean(eq.map((b) => b.theta)), 2) : (info.bridges.length ? num(mean(info.bridges.map((b) => b.angle)), 2) : '')],
+      ['θ in (°)', eq.length ? num(mean(eq.map((b) => b.thetaIn)), 2) : ''],
+      ['θ out (°)', eq.length ? num(mean(eq.map((b) => b.thetaOut)), 2) : ''],
+      ['Axial tilt (°)', L && L.axialTilt ? num(L.axialTilt.mean, 1) : ''],
+      ['N penetration (Å)', L && L.penetration.length ? num(mean(L.penetration.map((p) => p.depth)), 3) : ''],
+      ['Stacking offset', L && L.offset ? '(' + fmt(L.offset.s1, 2) + ', ' + fmt(L.offset.s2, 2) + ')' : ''],
+      ['Workbench version', 'v0.1.0']
+    ];
+  }
+  function drawCompare() {
+    if (!st.docs.length) { $('tblCmp').innerHTML = ''; return; }
+    const rows = st.docs.map(summary);
+    const head = rows[0].map((c) => '<th>' + esc(c[0]) + '</th>').join('') + '<th></th>';
+    $('tblCmp').innerHTML = '<thead><tr>' + head + '</tr></thead><tbody>' + rows.map((r, i) =>
+      '<tr class="' + (i === st.cur ? 'on' : '') + '">' + r.map((c, k) => '<td>' + (k === 0 ? '<button type="button" class="linkbtn" data-open="' + i + '">' + esc(c[1]) + '</button>' : esc(c[1])) + '</td>').join('') +
+      '<td><button type="button" class="mini" data-close="' + i + '" aria-label="Remove ' + esc(r[0][1]) + '">Remove</button></td></tr>').join('') + '</tbody>';
+    $('tsvBox').hidden = true;
+    $('copyMsg').textContent = st.docs.length > 1 ? 'Means over the independent sites of each structure.' : '';
+  }
+  function tsv() {
+    const rows = st.docs.map(summary);
+    return [rows[0].map((c) => c[0]).join('\t')].concat(rows.map((r) => r.map((c) => c[1]).join('\t'))).join('\n');
+  }
+
+  function drawReadout(hoverText) {
+    const d = D();
+    const lines = [];
+    if (st.notice) lines.push('<div class="alert" role="alert">' + esc(st.notice) + '</div>');
+    if (!d) {
+      if (!st.notice) lines.push('<div class="hint">No structure loaded yet.</div>');
+      $('readout').innerHTML = lines.join('');
+      return;
+    }
+    if (st.picking) {
+      const pk = st.picking;
+      if (pk.step === 1) {
+        lines.push('<div class="pickbar"><span>Step 1 of 2. Click three or more atoms of one molecule to set the chromophore plane.</span><span>' +
+          (pk.plane.length ? 'Picked: ' + pk.plane.map((a) => esc(a.label)).join(' ') : 'Nothing picked yet.') + '</span>' +
+          '<button type="button" class="primary" id="pickNext"' + (pk.plane.length < 3 ? ' disabled' : '') + '>Next</button><button type="button" id="pickCancel">Cancel</button></div>');
+      } else {
+        lines.push('<div class="pickbar"><span>Step 2 of 2. Click two atoms for the in-plane reference axis, or finish without one.</span><span>' +
+          (pk.axis.length ? 'Axis: ' + pk.axis.map((a) => esc(a.label)).join('···') : 'No axis yet.') + '</span>' +
+          '<button type="button" class="primary" id="pickDone">Done</button><button type="button" id="pickCancel">Cancel</button></div>');
+      }
+    }
+    if (hoverText) lines.push('<div>' + hoverText + '</div>');
+    if (d.pick) lines.push('<div>From ' + esc(d.pick.label) + ': click a second atom for the distance.</div>');
+    if (d.measures.length) {
+      lines.push('<div class="meas">' + d.measures.map((m) => '<span>' + esc(m.l1) + '···' + esc(m.l2) + ' ' + fmt(m.d, 3) + ' Å</span>').join('') +
+        '<button type="button" class="mini" id="btnClear">Clear</button></div>');
+    }
+    if (!hoverText && !d.pick && !d.measures.length && !st.picking) {
+      lines.push('<div class="hint">Drag to rotate, scroll or pinch to zoom, Ctrl-drag to pan. Hover an atom for its label; click two atoms to measure a distance.</div>');
+    }
+    $('readout').innerHTML = lines.join('');
+  }
+
+  /* ---------- 3D scene ---------- */
+  function render(keepView) {
+    const d = D();
+    if (!viewer || !d) { drawReadout(); return; }
+    const view = keepView ? viewer.getView() : null;
+    viewer.removeAllModels();
+    viewer.removeAllShapes();
+    viewer.removeAllLabels();
+    hoverLabel = null;
+    const uc = d.uc;
+    const blk = C.assemble(uc, d.lo, d.hi);
+    const visible = (a) => (a.el !== 'H' || st.H) && (a.kind === 'organic' ? st.org : st.inorg);
+    const ink = cssVar('--ink'), muted = cssVar('--muted'), accent = cssVar('--accent'), panel = cssVar('--panel');
+    viewer.setBackgroundColor(cssVar('--stage'), 1);
+
+    const map = new Map();
+    const list = [];
+    blk.atoms.forEach((a, i) => {
+      if (!visible(a)) return;
+      map.set(i, list.length);
+      list.push({ elem: a.el, x: a.xyz[0], y: a.xyz[1], z: a.xyz[2], bonds: [], bondOrder: [], xl: a.label, xf: a.f, xk: a.kind, xs: a.site, xg: a.group });
+    });
+    blk.atoms.forEach((a, i) => {
+      if (!map.has(i)) return;
+      const me = list[map.get(i)];
+      for (const j of a.bonds) if (map.has(j)) { me.bonds.push(map.get(j)); me.bondOrder.push(1); }
+    });
+    st.shown = list.length;
+    st.pts = list.map((a) => ({ x: a.x, y: a.y, z: a.z }));
+    const model = viewer.addModel();
+    if (list.length) model.addAtoms(list);
+
+    const elMap = {};
+    for (const a of list) elMap[a.elem] = hexInt(colorOf(a.elem));
+    const cs = { prop: 'elem', map: elMap };
+    const metals = Object.keys(elMap).filter((e) => C.isMetal(e));
+    const halides = Object.keys(elMap).filter((e) => C.HALIDE.has(e));
+    if (st.style === 'sf') {
+      model.setStyle({}, { sphere: { colorscheme: cs } });
+    } else if (st.style === 'st') {
+      model.setStyle({}, { stick: { radius: 0.13, colorscheme: cs } });
+      if (metals.length) model.setStyle({ elem: metals }, { stick: { radius: 0.13, colorscheme: cs }, sphere: { radius: 0.3, colorscheme: cs } });
+      if (halides.length) model.setStyle({ elem: halides }, { stick: { radius: 0.13, colorscheme: cs }, sphere: { radius: 0.2, colorscheme: cs } });
+    } else {
+      model.setStyle({}, { stick: { radius: 0.1, colorscheme: cs }, sphere: { radius: 0.3, colorscheme: cs } });
+      model.setStyle({ elem: 'H' }, { stick: { radius: 0.07, colorscheme: cs }, sphere: { radius: 0.16, colorscheme: cs } });
+      if (halides.length) model.setStyle({ elem: halides }, { stick: { radius: 0.1, colorscheme: cs }, sphere: { radius: 0.42, colorscheme: cs } });
+      if (metals.length) model.setStyle({ elem: metals }, { stick: { radius: 0.1, colorscheme: cs }, sphere: { radius: 0.55, colorscheme: cs } });
+    }
+
+    // coordination polyhedra, one mesh per metal element
+    if (st.poly && st.inorg && st.style !== 'sf') {
+      const meshes = {};
+      for (const p of blk.polyhedra) {
+        const el = blk.atoms[p.center].el;
+        const mesh = meshes[el] || (meshes[el] = { vertexArr: [], normalArr: [], faceArr: [] });
+        const pts = p.verts.map((i) => blk.atoms[i].xyz);
+        for (const f of C.hullFaces(pts)) {
+          const base = mesh.vertexArr.length;
+          for (const k of f.v) { mesh.vertexArr.push(V3(pts[k])); mesh.normalArr.push(V3(f.n)); }
+          mesh.faceArr.push(base, base + 1, base + 2);
+        }
+      }
+      for (const el of Object.keys(meshes)) viewer.addCustom(Object.assign(meshes[el], { color: colorOf(el), opacity: 0.5 }));
+    }
+
+    // unit cell outline with axis letters
+    if (st.cellBox) {
+      const c = uc.cell;
+      const P = (i, j, k) => V3([i * c.A[0] + j * c.B[0] + k * c.C[0], i * c.A[1] + j * c.B[1] + k * c.C[1], i * c.A[2] + j * c.B[2] + k * c.C[2]]);
+      const edges = [];
+      for (let u = 0; u < 2; u++) for (let v = 0; v < 2; v++) {
+        edges.push([P(0, u, v), P(1, u, v)], [P(u, 0, v), P(u, 1, v)], [P(u, v, 0), P(u, v, 1)]);
+      }
+      for (const [s, e] of edges) viewer.addCylinder({ start: s, end: e, radius: 0.035, color: muted, fromCap: 1, toCap: 1 });
+      const lab = { font: 'IBM Plex Mono, monospace', fontSize: 14, fontColor: ink, backgroundColor: panel, backgroundOpacity: 0.85, borderThickness: 0, inFront: true, alignment: 'center' };
+      viewer.addLabel('a', Object.assign({ position: P(1, 0, 0) }, lab));
+      viewer.addLabel('b', Object.assign({ position: P(0, 1, 0) }, lab));
+      viewer.addLabel('c', Object.assign({ position: P(0, 0, 1) }, lab));
+      viewer.addLabel('0', Object.assign({ position: P(0, 0, 0) }, lab));
+    }
+
+    // hydrogen bonds
+    if (st.hb && st.style !== 'sf') {
+      for (const h of blk.hbonds) {
+        if (!map.has(h.d) || !map.has(h.a)) continue;
+        const from = st.H && h.h >= 0 ? blk.atoms[h.h] : blk.atoms[h.d];
+        viewer.addCylinder({ start: V3(from.xyz), end: V3(blk.atoms[h.a].xyz), radius: 0.05, color: accent, dashed: true, dashLength: 0.16, gapLength: 0.12, fromCap: 1, toCap: 1 });
+      }
+    }
+
+    // lattice planes, cut to the packing block
+    let clipped = 0;
+    for (const p of d.planes) {
+      const res = C.planePolys(uc.cell, p.hkl, p.off, d.lo, d.hi, MAX_PLANES);
+      if (res.total > MAX_PLANES) clipped = res.total;
+      const mesh = { vertexArr: [], normalArr: [], faceArr: [] };
+      for (const poly of res.polys) {
+        for (const sgn of [1, -1]) {
+          const nv = V3(res.normal.map((x) => x * sgn));
+          for (let k = 0; k < poly.pts.length; k++) {
+            const q0 = poly.pts[k], q1 = poly.pts[(k + 1) % poly.pts.length];
+            const base = mesh.vertexArr.length;
+            mesh.vertexArr.push(V3(poly.cen), V3(sgn > 0 ? q0 : q1), V3(sgn > 0 ? q1 : q0));
+            mesh.normalArr.push(nv, nv, nv);
+            mesh.faceArr.push(base, base + 1, base + 2);
+          }
+        }
+        for (let k = 0; k < poly.pts.length; k++) {
+          viewer.addCylinder({ start: V3(poly.pts[k]), end: V3(poly.pts[(k + 1) % poly.pts.length]), radius: 0.03, color: p.color, fromCap: 1, toCap: 1 });
+        }
+      }
+      if (mesh.faceArr.length) viewer.addCustom(Object.assign(mesh, { color: p.color, opacity: 0.3 }));
+    }
+    if (clipped) st.notice = 'Only the first ' + MAX_PLANES + ' of ' + clipped + ' planes are drawn. Narrow the packing limits to see the rest.';
+    else if (st.notice.startsWith('Only the first')) st.notice = '';
+
+    // transition-dipole axes, one double-headed arrow per state and per chromophore copy
+    const L = st.arrow;
+    for (const c of d.chromos) {
+      const active = c.states.filter((s) => s.on);
+      if (!active.length || !c.inst.length) continue;
+      for (const m of blk.mols) {
+        for (const inst of c.inst) {
+          if (inst.mi !== m.mi) continue;
+          const cen = uc.cell.toCart([inst.f[0] + m.t[0], inst.f[1] + m.t[1], inst.f[2] + m.t[2]]);
+          for (const s of active) {
+            const v = C.stateDir(inst, s);
+            for (const sgn of [1, -1]) {
+              viewer.addArrow({ start: V3(cen), end: V3([cen[0] + sgn * L * v[0], cen[1] + sgn * L * v[1], cen[2] + sgn * L * v[2]]),
+                radius: 0.13, radiusRatio: 2.2, mid: 0.7, color: s.color, opacity: 0.78 });
+            }
+          }
+        }
+      }
+    }
+
+    // measurements and picks
+    for (const m of d.measures) {
+      viewer.addCylinder({ start: V3(m.p1), end: V3(m.p2), radius: 0.04, color: ink, dashed: true, dashLength: 0.12, gapLength: 0.1, fromCap: 1, toCap: 1 });
+      viewer.addLabel(fmt(m.d, 3) + ' Å', {
+        position: V3([(m.p1[0] + m.p2[0]) / 2, (m.p1[1] + m.p2[1]) / 2, (m.p1[2] + m.p2[2]) / 2]),
+        font: 'IBM Plex Mono, monospace', fontSize: 13, fontColor: panel, backgroundColor: ink, backgroundOpacity: 0.9, borderThickness: 0, inFront: true, alignment: 'center'
+      });
+    }
+    if (d.pick) viewer.addSphere({ center: V3(d.pick.p), radius: 0.75, color: accent, opacity: 0.4 });
+    if (st.picking) {
+      for (const a of st.picking.plane) viewer.addSphere({ center: V3(a.p), radius: 0.6, color: accent, opacity: 0.45 });
+      for (const a of st.picking.axis) viewer.addSphere({ center: V3(a.p), radius: 0.6, color: ink, opacity: 0.45 });
+    }
+
+    // hover and click
+    const describe = (atom) => {
+      const f = atom.xf.map((x) => fmt(x, 4)).join(', ');
+      return '<b>' + esc(atom.xl) + '</b> (' + esc(atom.elem) + ')  ·  x, y, z = ' + f;
+    };
+    if (list.length) model.setHoverable({}, true, (atom) => {
+      if (hoverLabel) viewer.removeLabel(hoverLabel);
+      hoverLabel = viewer.addLabel(atom.xl, {
+        position: { x: atom.x, y: atom.y, z: atom.z }, font: 'IBM Plex Mono, monospace', fontSize: 13, fontColor: cssVar('--on-accent'),
+        backgroundColor: accent, backgroundOpacity: 0.95, borderThickness: 0, inFront: true, alignment: 'bottomCenter', screenOffset: { x: 0, y: 12 }
+      });
+      drawReadout(describe(atom));
+      viewer.render();
+    }, () => {
+      if (hoverLabel) { viewer.removeLabel(hoverLabel); hoverLabel = null; }
+      drawReadout();
+      viewer.render();
+    });
+    if (list.length) model.setClickable({}, true, (atom) => {
+      if (st.picking) {
+        pickAtom(atom);
+        render(true);
+        return;
+      }
+      const p = [atom.x, atom.y, atom.z];
+      if (!d.pick) {
+        d.pick = { p, label: atom.xl };
+      } else {
+        const q = d.pick.p;
+        const dist = Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]);
+        if (dist > 0.01) {
+          d.measures.push({ p1: q, p2: p, l1: d.pick.label, l2: atom.xl, d: dist });
+          if (d.measures.length > 6) d.measures.shift();
+        }
+        d.pick = null;
+      }
+      render(true);
+      drawReadout(describe(atom));
+    });
+
+    if (view) viewer.setView(view); else axisView(defaultAxes());
+    viewer.render();
+    drawReadout();
+  }
+
+  /* camera: look down one direction with another pointing up the screen */
+  function defaultAxes() {
+    const c = D().uc.cell;
+    const L = [['a', c.a], ['b', c.b], ['c', c.c]].sort((p, q) => p[1] - q[1]);
+    return [L[0][0], L[2][0]];
+  }
+  function axisView(pair) {
+    const c = D().uc.cell;
+    const vec = { a: c.A, b: c.B, c: c.C };
+    viewAlong(vec[pair[0]], vec[pair[1]]);
+  }
+  function autoUp(z) {
+    const c = D().uc.cell;
+    const zl = Math.hypot(z[0], z[1], z[2]);
+    const cand = [[c.C, c.c], [c.A, c.a], [c.B, c.b]].map(([v, len]) => ({ v, len, cos: Math.abs(v[0] * z[0] + v[1] * z[1] + v[2] * z[2]) / (len * zl) }));
+    cand.sort((p, q) => (Math.abs(p.cos - q.cos) < 0.02 ? q.len - p.len : p.cos - q.cos));
+    return cand[0].v;
+  }
+  function viewAlong(zv, upv) {
+    const unit = (v) => { const n = Math.hypot(v[0], v[1], v[2]); return [v[0] / n, v[1] / n, v[2] / n]; };
+    const z = unit(zv);
+    let u = upv;
+    const k = u[0] * z[0] + u[1] * z[1] + u[2] * z[2];
+    u = unit([u[0] - k * z[0], u[1] - k * z[1], u[2] - k * z[2]]);
+    const x = [u[1] * z[2] - u[2] * z[1], u[2] * z[0] - u[0] * z[2], u[0] * z[1] - u[1] * z[0]];
+    const m = [x, u, z];
+    const tr = m[0][0] + m[1][1] + m[2][2];
+    let qw, qx, qy, qz;
+    if (tr > 0) {
+      const s = Math.sqrt(tr + 1) * 2; qw = s / 4; qx = (m[2][1] - m[1][2]) / s; qy = (m[0][2] - m[2][0]) / s; qz = (m[1][0] - m[0][1]) / s;
+    } else if (m[0][0] > m[1][1] && m[0][0] > m[2][2]) {
+      const s = Math.sqrt(1 + m[0][0] - m[1][1] - m[2][2]) * 2; qw = (m[2][1] - m[1][2]) / s; qx = s / 4; qy = (m[0][1] + m[1][0]) / s; qz = (m[0][2] + m[2][0]) / s;
+    } else if (m[1][1] > m[2][2]) {
+      const s = Math.sqrt(1 + m[1][1] - m[0][0] - m[2][2]) * 2; qw = (m[0][2] - m[2][0]) / s; qx = (m[0][1] + m[1][0]) / s; qy = s / 4; qz = (m[1][2] + m[2][1]) / s;
+    } else {
+      const s = Math.sqrt(1 + m[2][2] - m[0][0] - m[1][1]) * 2; qw = (m[1][0] - m[0][1]) / s; qx = (m[0][2] + m[2][0]) / s; qy = (m[1][2] + m[2][1]) / s; qz = s / 4;
+    }
+    const v = viewer.getView();
+    v[4] = qx; v[5] = qy; v[6] = qz; v[7] = qw;
+    viewer.setView(v);
+    fit();
+  }
+  /* zoom so the drawn atoms fill the stage, leaving room for the two toolbars */
+  function fit() {
+    if (!st.shown) { viewer.render(); return; }
+    viewer.zoomTo();
+    const box = $('gl').getBoundingClientRect();
+    const W = box.width - 40, H = box.height - 110;
+    for (let pass = 0; pass < 2 && W > 50 && H > 50; pass++) {
+      let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+      for (const q of st.pts) {
+        const sc = viewer.modelToScreen(q);
+        if (!sc || !isFinite(sc.x) || !isFinite(sc.y)) continue;
+        if (sc.x < x0) x0 = sc.x; if (sc.x > x1) x1 = sc.x;
+        if (sc.y < y0) y0 = sc.y; if (sc.y > y1) y1 = sc.y;
+      }
+      const bw = Math.max(x1 - x0, 1), bh = Math.max(y1 - y0, 1);
+      if (!isFinite(bw) || !isFinite(bh)) break;
+      const f = Math.min(W / bw, H / bh);
+      if (!isFinite(f) || f <= 0) break;
+      viewer.zoom(Math.max(0.2, Math.min(5, f)));
+    }
+    viewer.render();
+  }
+
+  /* ---------- wiring ---------- */
+  function setStyle(s) {
+    st.style = s;
+    $('styleBS').setAttribute('aria-pressed', String(s === 'bs'));
+    $('styleSF').setAttribute('aria-pressed', String(s === 'sf'));
+    $('styleST').setAttribute('aria-pressed', String(s === 'st'));
+    render(true);
+  }
+  function readFiles(files) {
+    const arr = Array.from(files || []);
+    if (!arr.length) return;
+    const out = new Array(arr.length);
+    let left = arr.length;
+    arr.forEach((file, i) => {
+      const fr = new FileReader();
+      const done = () => { if (--left === 0) addFiles(out.filter(Boolean)); };
+      fr.onload = () => { out[i] = { text: String(fr.result), name: file.name }; done(); };
+      fr.onerror = () => { st.notice = 'Could not read ' + file.name + '.'; done(); };
+      fr.readAsText(file);
+    });
+  }
+
+  function init() {
+    const stage = $('stage');
+    let libMsg = '';
+    if (!window.$3Dmol) {
+      libMsg = 'The 3D library (3Dmol.js) did not load, so structures cannot be drawn. The tables are still computed from each CIF.';
+    } else {
+      try {
+        viewer = $3Dmol.createViewer($('gl'), { backgroundColor: cssVar('--stage'), orthographic: true, antialias: true, hoverDuration: 60 });
+      } catch (err) { viewer = null; }
+      if (!viewer) libMsg = 'This browser could not start WebGL, so structures cannot be drawn. The tables are still computed from each CIF.';
+    }
+    if (libMsg) $('stageMsg').innerHTML = '<strong>Drop CIF files here</strong><p>' + libMsg + '</p>';
+    activate(-1);
+
+    $('styleBS').onclick = () => setStyle('bs');
+    $('styleSF').onclick = () => setStyle('sf');
+    $('styleST').onclick = () => setStyle('st');
+    const bind = (id, key) => { $(id).onchange = (e) => { st[key] = e.target.checked; render(true); }; };
+    bind('chkPoly', 'poly'); bind('chkCell', 'cellBox'); bind('chkH', 'H'); bind('chkHB', 'hb'); bind('chkOrg', 'org'); bind('chkInorg', 'inorg');
+    $('chkPersp').onchange = (e) => { if (viewer) { viewer.setProjection(e.target.checked ? 'perspective' : 'orthographic'); viewer.render(); } };
+    $('chkSpin').onchange = (e) => { if (viewer) viewer.spin(e.target.checked ? 'y' : false, 0.6); };
+    $('chkMinor').onchange = (e) => {
+      const d = D();
+      d.minor = e.target.checked; d.measures = []; d.pick = null;
+      rebuildCell(d);
+      drawHeader(); drawSheet(); drawChromos(); drawCompare();
+      render(true);
+    };
+    $('arrowLen').onchange = (e) => { const v = parseFloat(e.target.value); if (isFinite(v) && v > 0) { st.arrow = v; render(true); } };
+
+    const applyRanges = (lo, hi) => {
+      const d = D();
+      const span = [0, 1, 2].map((i) => hi[i] - lo[i]);
+      if (lo.concat(hi).some((x) => !isFinite(x)) || span.some((x) => x <= 0)) {
+        st.notice = 'Each upper packing limit has to be above its lower limit.';
+      } else if (d.uc.atoms.length * (span[0] + 0.5) * (span[1] + 0.5) * (span[2] + 0.5) > MAX_ATOMS) {
+        st.notice = 'That block would hold more than about ' + MAX_ATOMS + ' atoms, so the limits were not changed.';
+      } else {
+        st.notice = '';
+        d.lo = lo; d.hi = hi;
+        drawRanges();
+        drawPlanes();
+        render(true);
+        if (viewer) fit();
+        return;
+      }
+      drawRanges();
+      drawReadout();
+    };
+    $('ranges').onchange = () => {
+      const val = (i, j) => parseFloat($('rng' + i + j).value);
+      const lo = [0, 1, 2].map((i) => val(i, 0)), hi = [0, 1, 2].map((i) => val(i, 1));
+      setTimeout(() => applyRanges(lo, hi), 0);
+    };
+    $('btnPackReset').onclick = () => applyRanges([0, 0, 0], D().def.slice());
+
+    const indices = () => {
+      const v = ['ixH', 'ixK', 'ixL'].map((id) => parseFloat($(id).value));
+      if (v.some((x) => !isFinite(x)) || v.every((x) => x === 0)) {
+        st.notice = 'Enter three indices, at least one of them non-zero.';
+        drawReadout();
+        return null;
+      }
+      return v;
+    };
+    const clearNotice = () => { if (st.notice) { st.notice = ''; drawReadout(); } };
+    $('btnViewUVW').onclick = () => {
+      const v = indices();
+      if (!v || !viewer) return;
+      clearNotice();
+      const c = D().uc.cell;
+      const z = [0, 1, 2].map((k) => v[0] * c.A[k] + v[1] * c.B[k] + v[2] * c.C[k]);
+      viewAlong(z, autoUp(z));
+    };
+    const viewNormal = (v) => {
+      const r = D().uc.cell.recip;
+      const z = [0, 1, 2].map((k) => v[0] * r[0][k] + v[1] * r[1][k] + v[2] * r[2][k]);
+      viewAlong(z, autoUp(z));
+    };
+    $('btnViewHKL').onclick = () => {
+      const v = indices();
+      if (!v || !viewer) return;
+      clearNotice();
+      viewNormal(v);
+    };
+    $('viewLayer').onclick = () => { const fw = D().info.framework; if (viewer && fw && fw.hkl) viewNormal(fw.hkl); };
+    $('btnPlane').onclick = () => {
+      const d = D();
+      const v = indices();
+      if (!v) return;
+      if (v.some((x) => x !== Math.round(x))) {
+        st.notice = 'Plane indices have to be whole numbers.';
+        drawReadout();
+        return;
+      }
+      let off = parseFloat($('ixOff').value);
+      if (!isFinite(off)) off = 0;
+      off = Math.round((off - Math.floor(off)) * 1000) / 1000;
+      if (d.planes.some((p) => p.hkl.join() === v.join() && p.off === off)) return;
+      const used = d.planes.map((p) => p.color);
+      const color = PLANE_COLORS.find((c) => !used.includes(c)) || PLANE_COLORS[d.planes.length % PLANE_COLORS.length];
+      st.notice = '';
+      d.planes.push({ hkl: v, off, color });
+      drawPlanes();
+      render(true);
+    };
+    $('planeList').onclick = (e) => {
+      const b = e.target.closest('button[data-rm]');
+      if (!b) return;
+      D().planes.splice(+b.dataset.rm, 1);
+      st.notice = '';
+      drawPlanes();
+      render(true);
+    };
+
+    // chromophores
+    $('btnDefine').onclick = () => startPicking();
+    $('chromoList').onclick = (e) => {
+      const d = D();
+      const b = e.target.closest('button');
+      if (!b) return;
+      if (b.dataset.crm !== undefined) d.chromos.splice(+b.dataset.crm, 1);
+      else if (b.dataset.cadd !== undefined) {
+        const c = d.chromos[+b.dataset.cadd];
+        const used = c.states.map((s) => s.color);
+        c.states.push({ name: 'State ' + (c.states.length + 1), mode: 'along', phi: 0, on: true, color: STATE_COLORS.find((x) => !used.includes(x)) || STATE_COLORS[c.states.length % STATE_COLORS.length] });
+      } else if (b.dataset.srm !== undefined) d.chromos[+b.dataset.c].states.splice(+b.dataset.s, 1);
+      else return;
+      drawChromos();
+      render(true);
+    };
+    $('chromoList').onchange = (e) => {
+      const d = D();
+      const t = e.target;
+      const c = d.chromos[+t.dataset.c];
+      if (!c) return;
+      const f = t.dataset.f;
+      if (f === 'cname') { c.name = t.value; return; }
+      const s = c.states[+t.dataset.s];
+      if (!s) return;
+      if (f === 'sname') { s.name = t.value; return; }
+      if (f === 'on') s.on = t.checked;
+      if (f === 'mode') s.mode = t.value;
+      if (f === 'phi') { const v = parseFloat(t.value); s.phi = isFinite(v) ? v : 0; }
+      // redraw after the event, so the control that fired it is not removed mid-change
+      setTimeout(() => { if (f !== 'on') drawChromos(); render(true); }, 0);
+    };
+
+    $('viewA').onclick = () => viewer && axisView(['a', 'c']);
+    $('viewB').onclick = () => viewer && axisView(['b', 'a']);
+    $('viewC').onclick = () => viewer && axisView(['c', 'a']);
+    $('viewReset').onclick = () => viewer && axisView(defaultAxes());
+    $('readout').onclick = (e) => {
+      const id = e.target.id;
+      const d = D();
+      if (id === 'btnClear') { d.measures = []; d.pick = null; render(true); }
+      if (id === 'pickNext') { st.picking.step = 2; render(true); }
+      if (id === 'pickDone') finishPicking();
+      if (id === 'pickCancel') { st.picking = null; st.notice = ''; render(true); }
+    };
+
+    // files and the structures table
+    $('fileIn').onchange = (e) => { readFiles(e.target.files); e.target.value = ''; };
+    $('btnExample').onclick = () => {
+      const at = st.docs.findIndex((x) => x.src === EXAMPLE);
+      if (at >= 0) activate(at); else addFiles([EXAMPLE]);
+    };
+    stage.addEventListener('dragover', (e) => { e.preventDefault(); stage.classList.add('drag'); });
+    stage.addEventListener('dragleave', () => stage.classList.remove('drag'));
+    stage.addEventListener('drop', (e) => { e.preventDefault(); stage.classList.remove('drag'); readFiles(e.dataTransfer.files); });
+    $('tblCmp').onclick = (e) => {
+      const b = e.target.closest('button');
+      if (!b) return;
+      if (b.dataset.open !== undefined) { st.notice = ''; activate(+b.dataset.open); }
+      if (b.dataset.close !== undefined) {
+        const i = +b.dataset.close;
+        st.docs.splice(i, 1);
+        st.notice = '';
+        activate(st.docs.length ? Math.min(st.cur > i ? st.cur - 1 : st.cur, st.docs.length - 1) : -1);
+      }
+    };
+    $('btnCopy').onclick = () => {
+      const text = tsv();
+      const fallback = () => {
+        const box = $('tsvBox');
+        box.hidden = false;
+        box.value = text;
+        box.focus();
+        box.select();
+        $('copyMsg').textContent = 'Copy the selected text.';
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => { $('copyMsg').textContent = 'Copied. Paste into a spreadsheet.'; }, fallback);
+      } else fallback();
+    };
+
+    if (viewer && window.ResizeObserver) new ResizeObserver(() => { viewer.resize(); viewer.render(); }).observe(stage);
+    const retheme = () => { drawLegend(); if (viewer && D()) render(true); };
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', retheme);
+    new MutationObserver(retheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(retheme);
+  }
+  init();
+  window.perovskiteWorkbench = { state: st, viewer: () => viewer };
+})();
+</script>
+
+</body>
+</html>
