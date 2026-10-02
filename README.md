@@ -15,6 +15,13 @@ Press "Load the sample structures" to load the two built-in samples, (PEA)2PbBr4
 (CCDC 2485416),
 or drop your own CIFs on the viewer.
 
+## Feedback
+
+Press "Send feedback" in the page header to report a bug or suggest an improvement. The note opens as a
+pre-filled issue on this repository's [Issues](https://github.com/Wenhao-Shao/perovskite-workbench/issues)
+page, where you review and submit it with a GitHub account. Only the workbench version and browser are
+added to the note; no structure data is sent.
+
 ## What it does
 
 - **Viewer:** ball and stick, space-filling or sticks; coordination polyhedra; hydrogen bonds; organic

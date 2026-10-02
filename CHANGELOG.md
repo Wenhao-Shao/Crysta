@@ -2,6 +2,11 @@
 
 Any change to how a number is defined gets a new version and a line here.
 
+## v0.1.4
+
+- A "Send feedback" button in the page header opens a box for bug reports and improvement notes. Submitting it opens a pre-filled issue at https://github.com/Wenhao-Shao/perovskite-workbench/issues.
+- No change to any definition.
+
 ## v0.1.3
 
 - The page header has a "W. Shao Lab" button that links back to the lab website, https://wenhao-shao.github.io/.
