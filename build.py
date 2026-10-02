@@ -11,12 +11,12 @@ version = json.loads((root / "package.json").read_text())["version"]
 template = (root / "src/workbench.template.html").read_text()
 core = (root / "src/core.js").read_text()
 table = (root / "src/sg-table.json").read_text()
-example = (root / "examples/tetrazine-PbCl4.cif").read_text()
+samples = [(root / "examples" / n).read_text() for n in ("PEA2PbBr4.cif", "FCA3_2PbBr4_294K.cif")]
 lib = (root / "vendor/3Dmol-min.js").read_text()
-for part in (core, table, example, lib):
+for part in (core, table, lib, *samples):
     assert "</script" not in part.lower()
 
-body = (template.replace("/*__CORE__*/", core).replace("__CIF__", example)
+body = (template.replace("/*__CORE__*/", core).replace("__SAMPLE1__", samples[0]).replace("__SAMPLE2__", samples[1])
         .replace("__SGTABLE__", table).replace("__VERSION__", "v" + version))
 cdn = '<script src="https://cdn.jsdelivr.net/npm/3dmol@2.5.5/build/3Dmol-min.js"></script>'
 inline = "<script>/* 3Dmol.js 2.5.5, BSD-3-Clause, https://3dmol.org */\n" + lib + "\n</script>"

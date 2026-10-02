@@ -165,7 +165,7 @@ th:first-child, td:first-child { text-align: left; padding-left: 0; }
     </div>
     <div class="tools">
       <label class="filebtn">Open CIF files<input type="file" id="fileIn" multiple accept=".cif,.txt,chemical/x-cif,text/plain"></label>
-      <button type="button" id="btnExample">Load the tetrazine example</button>
+      <button type="button" id="btnExample">Load the sample structures</button>
     </div>
   </header>
 
@@ -279,7 +279,8 @@ th:first-child, td:first-child { text-align: left; padding-left: 0; }
   </div>
 </div>
 
-<script type="text/plain" id="cif-example">__CIF__</script>
+<script type="text/plain" id="cif-sample-1">__SAMPLE1__</script>
+<script type="text/plain" id="cif-sample-2">__SAMPLE2__</script>
 <script type="application/json" id="sg-table">__SGTABLE__</script>
 <!--LIB-->
 <script>
@@ -292,7 +293,10 @@ th:first-child, td:first-child { text-align: left; padding-left: 0; }
   const $ = (id) => document.getElementById(id);
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   try { C.setSgTable(JSON.parse($('sg-table').textContent)); } catch (err) { /* symbol-only files fall back to P1 */ }
-  const EXAMPLE = { text: $('cif-example').textContent, name: 'Tetrazine PbCl4 (example).cif' };
+  const SAMPLES = [
+    { text: $('cif-sample-1').textContent, name: 'PEA2PbBr4.cif' },
+    { text: $('cif-sample-2').textContent, name: '(FCA3)2PbBr4_294K.cif' }
+  ];
   const PAL = {
     H: '#e6e6ec', N: '#3d64d8', O: '#e2463d', F: '#86cf3a', Cl: '#2fae52', Br: '#a9582c', I: '#7b41ad',
     S: '#dfbe1d', P: '#e58a1f', Sn: '#6f8ea6', Cd: '#d9a93f', Mn: '#9a78c6', Cu: '#c7742f', Ca: '#3f9e8c',
@@ -942,7 +946,7 @@ th:first-child, td:first-child { text-align: left; padding-left: 0; }
       drawReadout(describe(atom));
     });
 
-    if (view) viewer.setView(view); else axisView(defaultAxes());
+    if (view) viewer.setView(view); else defaultView();
     viewer.render();
     drawReadout();
   }
@@ -952,6 +956,21 @@ th:first-child, td:first-child { text-align: left; padding-left: 0; }
     const c = D().uc.cell;
     const L = [['a', c.a], ['b', c.b], ['c', c.c]].sort((p, q) => p[1] - q[1]);
     return [L[0][0], L[2][0]];
+  }
+  /* layered structures open edge-on: down the shortest in-plane cell axis, layer normal up */
+  function defaultView() {
+    const d = D();
+    const c = d.uc.cell;
+    const fw = d.info.framework;
+    if (fw && fw.dim === 2) {
+      const n = [0, 1, 2].map((k) => fw.hkl[0] * c.recip[0][k] + fw.hkl[1] * c.recip[1][k] + fw.hkl[2] * c.recip[2][k]);
+      const nl = Math.hypot(n[0], n[1], n[2]);
+      const inPlane = [[c.A, c.a], [c.B, c.b], [c.C, c.c]]
+        .filter(([v, len]) => Math.abs(v[0] * n[0] + v[1] * n[1] + v[2] * n[2]) / (len * nl) < 0.3)
+        .sort((p, q) => p[1] - q[1]);
+      if (inPlane.length) { viewAlong(inPlane[0][0], n); return; }
+    }
+    axisView(defaultAxes());
   }
   function axisView(pair) {
     const c = D().uc.cell;
@@ -1185,7 +1204,7 @@ th:first-child, td:first-child { text-align: left; padding-left: 0; }
     $('viewA').onclick = () => viewer && axisView(['a', 'c']);
     $('viewB').onclick = () => viewer && axisView(['b', 'a']);
     $('viewC').onclick = () => viewer && axisView(['c', 'a']);
-    $('viewReset').onclick = () => viewer && axisView(defaultAxes());
+    $('viewReset').onclick = () => viewer && defaultView();
     $('readout').onclick = (e) => {
       const id = e.target.id;
       const d = D();
@@ -1198,8 +1217,8 @@ th:first-child, td:first-child { text-align: left; padding-left: 0; }
     // files and the structures table
     $('fileIn').onchange = (e) => { readFiles(e.target.files); e.target.value = ''; };
     $('btnExample').onclick = () => {
-      const at = st.docs.findIndex((x) => x.src === EXAMPLE);
-      if (at >= 0) activate(at); else addFiles([EXAMPLE]);
+      const missing = SAMPLES.filter((smp) => !st.docs.some((x) => x.src === smp));
+      if (missing.length) addFiles(missing); else activate(st.docs.findIndex((x) => x.src === SAMPLES[0]));
     };
     stage.addEventListener('dragover', (e) => { e.preventDefault(); stage.classList.add('drag'); });
     stage.addEventListener('dragleave', () => stage.classList.remove('drag'));

@@ -2,6 +2,12 @@
 
 Any change to how a number is defined gets a new version and a line here.
 
+## v0.1.1
+
+- Built-in samples are now (PEA)2PbBr4 and (FCA3)2PbBr4 at 294 K; the earlier example structure was removed.
+- Layered structures now open edge-on, with the layer normal pointing up.
+- No change to any definition.
+
 ## v0.1.0
 
 First version.
