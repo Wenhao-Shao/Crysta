@@ -64,6 +64,7 @@ function load(file) {
 // 3b. sample (FCA3)2PbBr4 at 294 K: real flagged disorder (parts 1 and 2 of one assembly)
 {
   const { s, uc, info } = load('examples/FCA3_2PbBr4_294K.cif');
+  check('FCA3 CCDC number read', s.meta.ccdc === 'CCDC 2485416');
   check('FCA3 disorder flagged', uc.hasMinor && s.sites.filter((x) => x.minor).length === 14);
   check('FCA3 major part only', uc.atoms.length === 220 && uc.molecules.every((m) => m.atoms.length === 25));
   check('FCA3 formula occupancy-weighted', near(info.formula.find((e) => e.el === 'O').n, 6.15, 0.01) && info.Z === 4);
