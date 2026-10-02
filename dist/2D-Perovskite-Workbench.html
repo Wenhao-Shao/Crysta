@@ -151,7 +151,8 @@ th:first-child, td:first-child { text-align: left; padding-left: 0; }
 #tsvBox { width: 100%; height: 90px; font-family: var(--font-data); font-size: 12px; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 4px; }
 .foot { font-size: 12px; color: var(--muted); }
 
-/* Feedback box: collects a note and hands it to GitHub as a pre-filled issue. */
+/* Feedback box: collects a note, then either posts it to the maintainer through Formspree
+   or hands it to GitHub as a pre-filled issue. */
 dialog.fb { width: min(520px, calc(100vw - 32px)); max-height: calc(100vh - 32px); overflow-y: auto; background: var(--panel); color: var(--ink);
   border: 1px solid var(--line); border-radius: 8px; padding: 18px 20px 20px; }
 dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
@@ -160,10 +161,13 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
 .fb p { margin: 0; font-size: 13px; color: var(--muted); }
 .fb-field { display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
 .fb-field input, .fb-field select, .fb-field textarea { width: 100%; font-family: var(--font-ui); font-size: 14px; padding: 6px 8px; }
-.fb-field textarea { color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 4px; resize: vertical; min-height: 110px; }
+.fb-field textarea, .fb-field input[type="email"] { color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 4px; }
+.fb-field textarea { resize: vertical; min-height: 110px; }
 .fb-field textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .fb .alert { color: var(--warn); font-size: 13px; overflow-wrap: anywhere; }
 .fb .alert a { color: inherit; }
+.fb .alert.good { color: var(--ink); }
+.fb .actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
 
 @media (max-width: 900px) {
   html, body { height: auto; }
@@ -299,7 +303,7 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
         <div class="small" id="hbNote"></div>
       </section>
 
-      <div class="foot">2D Perovskite Workbench v0.1.4. Drawn with 3Dmol.js. Symmetry expansion, molecule assembly and every distance and angle are computed in this page from the CIF.</div>
+      <div class="foot">2D Perovskite Workbench v0.1.5. Drawn with 3Dmol.js. Symmetry expansion, molecule assembly and every distance and angle are computed in this page from the CIF.</div>
     </aside>
   </div>
 </div>
@@ -307,7 +311,7 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
 <dialog class="fb" id="fbDlg" aria-labelledby="fbTitle">
   <form id="fbForm">
     <h2 id="fbTitle">Send feedback</h2>
-    <p>Report a bug or suggest an improvement. Your note opens as a pre-filled issue on the project's GitHub page, where you review and submit it. This needs a free GitHub account, and the issue is public.</p>
+    <p>Report a bug or suggest an improvement. Send it straight to Wenhao Shao, which is private and needs no account, or continue on GitHub to post it as a public issue, which needs a free GitHub account.</p>
     <label class="fb-field">Type
       <select id="fbKind">
         <option value="Bug">Bug: something is wrong</option>
@@ -321,11 +325,17 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
     <label class="fb-field">Details
       <textarea id="fbDetails" rows="6" maxlength="3000" placeholder="What you did, what you expected, and what happened instead."></textarea>
     </label>
-    <p>The workbench version and your browser are added automatically. No structure data is sent; if a CIF is needed to reproduce a problem, attach it on the GitHub page.</p>
-    <div class="alert" id="fbMsg" hidden></div>
+    <label class="fb-field">Your email (optional)
+      <input type="email" id="fbEmail" maxlength="120" autocomplete="email" placeholder="For a reply; never put on GitHub">
+    </label>
+    <p>The workbench version and your browser are added automatically. No structure data is sent. Direct notes are delivered by Formspree, a form service.</p>
+    <div class="alert" id="fbMsg" role="status" hidden></div>
     <div class="row between">
-      <button type="button" id="fbCancel">Cancel</button>
-      <button type="submit" class="primary">Continue on GitHub</button>
+      <button type="button" id="fbCancel">Close</button>
+      <div class="actions">
+        <button type="button" id="fbGithub">Continue on GitHub</button>
+        <button type="button" id="fbDirect" class="primary">Send to Wenhao Shao</button>
+      </div>
     </div>
   </form>
 </dialog>
@@ -4171,7 +4181,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
       ['Axial tilt (°)', L && L.axialTilt ? num(L.axialTilt.mean, 1) : ''],
       ['N penetration (Å)', L && L.penetration.length ? num(mean(L.penetration.map((p) => p.depth)), 3) : ''],
       ['Stacking offset', L && L.offset ? '(' + fmt(L.offset.s1, 2) + ', ' + fmt(L.offset.s2, 2) + ')' : ''],
-      ['Workbench version', 'v0.1.4']
+      ['Workbench version', 'v0.1.5']
     ];
   }
   function drawCompare() {
@@ -4716,11 +4726,12 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
       } else fallback();
     };
 
-    // feedback box: builds a pre-filled GitHub issue and opens it in a new tab
+    // feedback box: a note goes straight to the maintainer through Formspree, or opens as a pre-filled GitHub issue
+    const FORMSPREE = 'https://formspree.io/f/mnnvojry';
     const ISSUES = 'https://github.com/Wenhao-Shao/perovskite-workbench/issues/new';
     const fbUrl = () => {
       const title = '[' + $('fbKind').value + '] ' + $('fbSummary').value.trim();
-      const tail = '\n\n---\nSent from the workbench feedback box\nWorkbench v0.1.4\nBrowser: ' + navigator.userAgent;
+      const tail = '\n\n---\nSent from the workbench feedback box\nWorkbench v0.1.5\nBrowser: ' + navigator.userAgent;
       let details = $('fbDetails').value.trim() || '(no details given)';
       const make = (d) => ISSUES + '?title=' + encodeURIComponent(title) + '&body=' + encodeURIComponent(d + tail);
       let url = make(details);
@@ -4738,9 +4749,16 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
       $('fbSummary').focus();
     };
     $('fbCancel').onclick = () => { const dlg = $('fbDlg'); if (dlg.close) dlg.close(); else dlg.removeAttribute('open'); };
-    $('fbForm').onsubmit = (e) => {
-      e.preventDefault();
-      if (!$('fbSummary').value.trim()) { $('fbSummary').focus(); return; }
+    const fbSay = (html, good) => { const msg = $('fbMsg'); msg.innerHTML = html; msg.classList.toggle('good', !!good); msg.hidden = false; };
+    const fbReady = () => {
+      const form = $('fbForm');
+      if (form.reportValidity && !form.reportValidity()) return false;
+      if (!$('fbSummary').value.trim()) { $('fbSummary').focus(); return false; }
+      return true;
+    };
+    $('fbForm').onsubmit = (e) => e.preventDefault();
+    $('fbGithub').onclick = () => {
+      if (!fbReady()) return;
       const url = fbUrl();
       const win = window.open(url, '_blank');
       if (win) {
@@ -4748,10 +4766,38 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
         $('fbForm').reset();
         $('fbCancel').onclick();
       } else {
-        const msg = $('fbMsg');
-        msg.innerHTML = 'Your browser blocked the new tab. <a href="' + esc(url) + '" target="_blank" rel="noopener">Open the issue on GitHub</a>';
-        msg.hidden = false;
+        fbSay('Your browser blocked the new tab. <a href="' + esc(url) + '" target="_blank" rel="noopener">Open the issue on GitHub</a>');
       }
+    };
+    $('fbDirect').onclick = () => {
+      if (!fbReady()) return;
+      const kind = $('fbKind').value;
+      const summary = $('fbSummary').value.trim();
+      const email = $('fbEmail').value.trim();
+      const data = new FormData();
+      data.append('_subject', 'Workbench feedback: [' + kind + '] ' + summary);
+      data.append('type', kind);
+      data.append('summary', summary);
+      data.append('details', $('fbDetails').value.trim() || '(no details given)');
+      if (email) data.append('email', email);
+      data.append('workbench', 'v0.1.5');
+      data.append('browser', navigator.userAgent);
+      const buttons = [$('fbDirect'), $('fbGithub')];
+      buttons.forEach((b) => { b.disabled = true; });
+      fbSay('Sending\u2026', true);
+      fetch(FORMSPREE, { method: 'POST', body: data, headers: { Accept: 'application/json' } })
+        .then((res) => {
+          if (res.ok) return null;
+          const plain = () => { throw new Error('error ' + res.status); };
+          return res.json().then((j) => {
+            const text = (j && j.errors ? j.errors.map((x) => x.message).join(', ') : '') || (j && j.error) || '';
+            if (text) throw new Error(text);
+            plain();
+          }, plain);
+        })
+        .then(() => { $('fbForm').reset(); fbSay('Sent to Wenhao Shao. Thank you.', true); })
+        .catch((err) => fbSay('The note could not be sent (' + esc(err instanceof TypeError ? 'no connection to the form service' : err.message) + '). Your text is still here. Try again, or use Continue on GitHub.'))
+        .then(() => buttons.forEach((b) => { b.disabled = false; }));
     };
 
     if (viewer && window.ResizeObserver) new ResizeObserver(() => { viewer.resize(); viewer.render(); }).observe(stage);

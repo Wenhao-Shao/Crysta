@@ -17,10 +17,15 @@ or drop your own CIFs on the viewer.
 
 ## Feedback
 
-Press "Send feedback" in the page header to report a bug or suggest an improvement. The note opens as a
-pre-filled issue on this repository's [Issues](https://github.com/Wenhao-Shao/perovskite-workbench/issues)
-page, where you review and submit it with a GitHub account. Only the workbench version and browser are
-added to the note; no structure data is sent.
+Press "Send feedback" in the page header to report a bug or suggest an improvement. The box offers two routes:
+
+- **Send to Wenhao Shao:** the note is delivered privately through [Formspree](https://formspree.io), a form
+  service. No account is needed. An optional email address allows a reply.
+- **Continue on GitHub:** the note opens as a pre-filled issue on this repository's
+  [Issues](https://github.com/Wenhao-Shao/perovskite-workbench/issues) page, where you review and submit it
+  with a GitHub account. The issue is public and the email field is left out.
+
+Either way, only the note, the workbench version and the browser are sent. No structure data is sent.
 
 ## What it does
 

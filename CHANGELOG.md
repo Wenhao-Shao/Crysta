@@ -2,6 +2,11 @@
 
 Any change to how a number is defined gets a new version and a line here.
 
+## v0.1.5
+
+- The feedback box has two buttons: "Send to Wenhao Shao" delivers the note privately through Formspree with no account needed, and "Continue on GitHub" opens the pre-filled public issue as before. An optional email field allows a reply to a direct note.
+- No change to any definition.
+
 ## v0.1.4
 
 - A "Send feedback" button in the page header opens a box for bug reports and improvement notes. Submitting it opens a pre-filled issue at https://github.com/Wenhao-Shao/perovskite-workbench/issues.
