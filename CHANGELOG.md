@@ -2,6 +2,11 @@
 
 Any change to how a number is defined gets a new version and a line here.
 
+## v0.1.3
+
+- The page header has a "W. Shao Lab" button that links back to the lab website, https://wenhao-shao.github.io/.
+- No change to any definition.
+
 ## v0.1.2
 
 - The (FCA3)2PbBr4 294 K sample is marked as CCDC 2485416 in the CIF, the page and the README.
