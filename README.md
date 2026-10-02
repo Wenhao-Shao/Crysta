@@ -11,7 +11,8 @@ and no data leaves the browser.
 - **Online:** `docs/index.html` is the same page loading 3Dmol.js from a CDN. Turn on GitHub Pages for
   the `docs/` folder to give it a public address.
 
-Press "Load the tetrazine example" to see a worked structure, or drop your own CIFs on the viewer.
+Press "Load the sample structures" to load the two built-in samples, (PEA)2PbBr4 and (FCA3)2PbBr4 at 294 K,
+or drop your own CIFs on the viewer.
 
 ## What it does
 
@@ -60,7 +61,7 @@ These choices decide the numbers, so they are stated here. Changing any of them 
 
 ## Known limits
 
-- Quasi-2D (n > 1), symbol-only and flagged-disorder paths are tested on constructed files only.
+- Quasi-2D (n > 1) and symbol-only paths are tested on constructed files only.
 - There is no way yet to choose a disorder component other than the major one.
 - A chromophore follows crystallographic sites, so a structure with two independent cations needs one
   definition per cation.
@@ -76,7 +77,8 @@ node tests/run.js     # regression tests for src/core.js
 - `src/core.js`: CIF parsing, symmetry, geometry. Pure functions, no DOM, runs in Node.
 - `src/workbench.template.html`: the page and its interface code.
 - `src/sg-table.json`: Hermann–Mauguin symbol to Hall symbol, for CIFs that list no operators.
-- `examples/`: the structure embedded as the built-in example.
+- `examples/`: the two CIFs embedded as built-in samples. The reflection list was removed from the
+  (FCA3)2PbBr4 file to keep the page small; everything else is unchanged.
 - `tests/`: regression tests, including operator lists for every tabulated Hall symbol.
 - `vendor/`: 3Dmol.js 2.5.5 (BSD-3-Clause) for the offline build.
 
