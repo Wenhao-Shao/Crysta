@@ -145,6 +145,20 @@ th:first-child, td:first-child { text-align: left; padding-left: 0; }
 #tsvBox { width: 100%; height: 90px; font-family: var(--font-data); font-size: 12px; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 4px; }
 .foot { font-size: 12px; color: var(--muted); }
 
+/* Feedback box: collects a note and hands it to GitHub as a pre-filled issue. */
+dialog.fb { width: min(520px, calc(100vw - 32px)); max-height: calc(100vh - 32px); overflow-y: auto; background: var(--panel); color: var(--ink);
+  border: 1px solid var(--line); border-radius: 8px; padding: 18px 20px 20px; }
+dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
+.fb form { display: grid; gap: 12px; }
+.fb h2 { font-family: var(--font-display); font-size: 20px; letter-spacing: 0; text-transform: none; color: var(--ink); }
+.fb p { margin: 0; font-size: 13px; color: var(--muted); }
+.fb-field { display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
+.fb-field input, .fb-field select, .fb-field textarea { width: 100%; font-family: var(--font-ui); font-size: 14px; padding: 6px 8px; }
+.fb-field textarea { color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 4px; resize: vertical; min-height: 110px; }
+.fb-field textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.fb .alert { color: var(--warn); font-size: 13px; overflow-wrap: anywhere; }
+.fb .alert a { color: inherit; }
+
 @media (max-width: 900px) {
   html, body { height: auto; }
   .app { height: auto; min-height: 0; padding-inline: 16px; }
@@ -168,6 +182,7 @@ th:first-child, td:first-child { text-align: left; padding-left: 0; }
       <a class="homelink" href="https://wenhao-shao.github.io/" title="Back to the W. Shao Laboratory website"><span aria-hidden="true">&larr;</span> W. Shao Lab</a>
       <label class="filebtn">Open CIF files<input type="file" id="fileIn" multiple accept=".cif,.txt,chemical/x-cif,text/plain"></label>
       <button type="button" id="btnExample">Load the sample structures</button>
+      <button type="button" id="btnFeedback">Send feedback</button>
     </div>
   </header>
 
@@ -280,6 +295,32 @@ th:first-child, td:first-child { text-align: left; padding-left: 0; }
     </aside>
   </div>
 </div>
+
+<dialog class="fb" id="fbDlg" aria-labelledby="fbTitle">
+  <form id="fbForm">
+    <h2 id="fbTitle">Send feedback</h2>
+    <p>Report a bug or suggest an improvement. Your note opens as a pre-filled issue on the project's GitHub page, where you review and submit it. This needs a free GitHub account, and the issue is public.</p>
+    <label class="fb-field">Type
+      <select id="fbKind">
+        <option value="Bug">Bug: something is wrong</option>
+        <option value="Idea">Improvement or new feature</option>
+        <option value="Question">Question</option>
+      </select>
+    </label>
+    <label class="fb-field">Summary
+      <input type="text" id="fbSummary" maxlength="120" required autocomplete="off" placeholder="One line, e.g. Layer spacing is wrong for n = 2">
+    </label>
+    <label class="fb-field">Details
+      <textarea id="fbDetails" rows="6" maxlength="3000" placeholder="What you did, what you expected, and what happened instead."></textarea>
+    </label>
+    <p>The workbench version and your browser are added automatically. No structure data is sent; if a CIF is needed to reproduce a problem, attach it on the GitHub page.</p>
+    <div class="alert" id="fbMsg" hidden></div>
+    <div class="row between">
+      <button type="button" id="fbCancel">Cancel</button>
+      <button type="submit" class="primary">Continue on GitHub</button>
+    </div>
+  </form>
+</dialog>
 
 <script type="text/plain" id="cif-sample-1">__SAMPLE1__</script>
 <script type="text/plain" id="cif-sample-2">__SAMPLE2__</script>
@@ -1250,6 +1291,44 @@ th:first-child, td:first-child { text-align: left; padding-left: 0; }
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(text).then(() => { $('copyMsg').textContent = 'Copied. Paste into a spreadsheet.'; }, fallback);
       } else fallback();
+    };
+
+    // feedback box: builds a pre-filled GitHub issue and opens it in a new tab
+    const ISSUES = 'https://github.com/Wenhao-Shao/perovskite-workbench/issues/new';
+    const fbUrl = () => {
+      const title = '[' + $('fbKind').value + '] ' + $('fbSummary').value.trim();
+      const tail = '\n\n---\nSent from the workbench feedback box\nWorkbench __VERSION__\nBrowser: ' + navigator.userAgent;
+      let details = $('fbDetails').value.trim() || '(no details given)';
+      const make = (d) => ISSUES + '?title=' + encodeURIComponent(title) + '&body=' + encodeURIComponent(d + tail);
+      let url = make(details);
+      // GitHub rejects very long addresses, so a long note is cut and the writer is told to paste the rest there
+      while (url.length > 7000 && details.length > 200) {
+        details = details.slice(0, Math.floor(details.length * 0.8));
+        url = make(details + '\n\n[Cut short by the feedback box. Please paste the rest of your note here.]');
+      }
+      return url;
+    };
+    $('btnFeedback').onclick = () => {
+      const dlg = $('fbDlg');
+      $('fbMsg').hidden = true;
+      if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
+      $('fbSummary').focus();
+    };
+    $('fbCancel').onclick = () => { const dlg = $('fbDlg'); if (dlg.close) dlg.close(); else dlg.removeAttribute('open'); };
+    $('fbForm').onsubmit = (e) => {
+      e.preventDefault();
+      if (!$('fbSummary').value.trim()) { $('fbSummary').focus(); return; }
+      const url = fbUrl();
+      const win = window.open(url, '_blank');
+      if (win) {
+        try { win.opener = null; } catch (err) { /* cross-origin tab, nothing to clear */ }
+        $('fbForm').reset();
+        $('fbCancel').onclick();
+      } else {
+        const msg = $('fbMsg');
+        msg.innerHTML = 'Your browser blocked the new tab. <a href="' + esc(url) + '" target="_blank" rel="noopener">Open the issue on GitHub</a>';
+        msg.hidden = false;
+      }
     };
 
     if (viewer && window.ResizeObserver) new ResizeObserver(() => { viewer.resize(); viewer.render(); }).observe(stage);
