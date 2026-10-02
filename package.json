@@ -1,6 +1,6 @@
 {
   "name": "perovskite-workbench",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Browser tool for layered metal-halide perovskite CIFs: 3D view, layer descriptors, transition-dipole axes, multi-structure comparison",
   "license": "MIT",
   "private": true,
