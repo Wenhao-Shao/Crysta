@@ -295,7 +295,7 @@ th:first-child, td:first-child { text-align: left; padding-left: 0; }
   try { C.setSgTable(JSON.parse($('sg-table').textContent)); } catch (err) { /* symbol-only files fall back to P1 */ }
   const SAMPLES = [
     { text: $('cif-sample-1').textContent, name: 'PEA2PbBr4.cif' },
-    { text: $('cif-sample-2').textContent, name: '(FCA3)2PbBr4_294K.cif' }
+    { text: $('cif-sample-2').textContent, name: '(FCA3)2PbBr4_294K, CCDC 2485416.cif' }
   ];
   const PAL = {
     H: '#e6e6ec', N: '#3d64d8', O: '#e2463d', F: '#86cf3a', Cl: '#2fae52', Br: '#a9582c', I: '#7b41ad',
@@ -469,6 +469,7 @@ th:first-child, td:first-child { text-align: left; padding-left: 0; }
     if (info.density) add('<i>ρ</i><sub>calc</sub>', fmt(info.density, 3) + ' g cm<sup>−3</sup>');
     if (m.temperature) add('<i>T</i>', esc(m.temperature) + ' K');
     if (m.R1) add('<i>R</i><sub>1</sub>', esc(m.R1));
+    if (m.ccdc) add('Deposition', esc(m.ccdc), true);
     add('Atoms per cell', String(info.nAtoms));
     const symText = {
       listed: struct.ops.length + ' operators listed in the file',

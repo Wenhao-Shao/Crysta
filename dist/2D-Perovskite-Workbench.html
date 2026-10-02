@@ -282,7 +282,7 @@ th:first-child, td:first-child { text-align: left; padding-left: 0; }
         <div class="small" id="hbNote"></div>
       </section>
 
-      <div class="foot">2D Perovskite Workbench v0.1.1. Drawn with 3Dmol.js. Symmetry expansion, molecule assembly and every distance and angle are computed in this page from the CIF.</div>
+      <div class="foot">2D Perovskite Workbench v0.1.2. Drawn with 3Dmol.js. Symmetry expansion, molecule assembly and every distance and angle are computed in this page from the CIF.</div>
     </aside>
   </div>
 </div>
@@ -1543,6 +1543,7 @@ loop_
 </script>
 <script type="text/plain" id="cif-sample-2">
 data_(FCA3)2PbBr4_294K 
+_database_code_depnum_ccdc_archive 'CCDC 2485416'
 # was data_FB_RT_0m
 
 
@@ -3717,7 +3718,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
   try { C.setSgTable(JSON.parse($('sg-table').textContent)); } catch (err) { /* symbol-only files fall back to P1 */ }
   const SAMPLES = [
     { text: $('cif-sample-1').textContent, name: 'PEA2PbBr4.cif' },
-    { text: $('cif-sample-2').textContent, name: '(FCA3)2PbBr4_294K.cif' }
+    { text: $('cif-sample-2').textContent, name: '(FCA3)2PbBr4_294K, CCDC 2485416.cif' }
   ];
   const PAL = {
     H: '#e6e6ec', N: '#3d64d8', O: '#e2463d', F: '#86cf3a', Cl: '#2fae52', Br: '#a9582c', I: '#7b41ad',
@@ -3891,6 +3892,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     if (info.density) add('<i>ρ</i><sub>calc</sub>', fmt(info.density, 3) + ' g cm<sup>−3</sup>');
     if (m.temperature) add('<i>T</i>', esc(m.temperature) + ' K');
     if (m.R1) add('<i>R</i><sub>1</sub>', esc(m.R1));
+    if (m.ccdc) add('Deposition', esc(m.ccdc), true);
     add('Atoms per cell', String(info.nAtoms));
     const symText = {
       listed: struct.ops.length + ' operators listed in the file',
@@ -4126,7 +4128,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
       ['Axial tilt (°)', L && L.axialTilt ? num(L.axialTilt.mean, 1) : ''],
       ['N penetration (Å)', L && L.penetration.length ? num(mean(L.penetration.map((p) => p.depth)), 3) : ''],
       ['Stacking offset', L && L.offset ? '(' + fmt(L.offset.s1, 2) + ', ' + fmt(L.offset.s2, 2) + ')' : ''],
-      ['Workbench version', 'v0.1.1']
+      ['Workbench version', 'v0.1.2']
     ];
   }
   function drawCompare() {

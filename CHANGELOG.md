@@ -2,6 +2,12 @@
 
 Any change to how a number is defined gets a new version and a line here.
 
+## v0.1.2
+
+- The (FCA3)2PbBr4 294 K sample is marked as CCDC 2485416 in the CIF, the page and the README.
+- The Crystal data card shows a CIF's CCDC deposition number when it has one.
+- No change to any definition.
+
 ## v0.1.1
 
 - Built-in samples are now (PEA)2PbBr4 and (FCA3)2PbBr4 at 294 K; the earlier example structure was removed.

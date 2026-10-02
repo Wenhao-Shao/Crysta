@@ -11,7 +11,8 @@ and no data leaves the browser.
 - **Online:** `docs/index.html` is the same page loading 3Dmol.js from a CDN. Turn on GitHub Pages for
   the `docs/` folder to give it a public address.
 
-Press "Load the sample structures" to load the two built-in samples, (PEA)2PbBr4 and (FCA3)2PbBr4 at 294 K,
+Press "Load the sample structures" to load the two built-in samples, (PEA)2PbBr4 and (FCA3)2PbBr4 at 294 K
+(CCDC 2485416),
 or drop your own CIFs on the viewer.
 
 ## What it does
@@ -78,7 +79,7 @@ node tests/run.js     # regression tests for src/core.js
 - `src/workbench.template.html`: the page and its interface code.
 - `src/sg-table.json`: Hermann–Mauguin symbol to Hall symbol, for CIFs that list no operators.
 - `examples/`: the two CIFs embedded as built-in samples. The reflection list was removed from the
-  (FCA3)2PbBr4 file to keep the page small; everything else is unchanged.
+  (FCA3)2PbBr4 file (CCDC 2485416) to keep the page small, and its CCDC number was added as a data item.
 - `tests/`: regression tests, including operator lists for every tabulated Hall symbol.
 - `vendor/`: 3Dmol.js 2.5.5 (BSD-3-Clause) for the offline build.
 
