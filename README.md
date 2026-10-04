@@ -36,7 +36,7 @@ Press "Load the sample structures" to load the four built-in samples: (PEA)2PbBr
   direction or an (hkl) normal; lattice planes with an offset.
 - **Measure:** click atoms for a distance (two), an angle (three, at the second) or a torsion (four). Remove one from the list in the Measure card or by a right-click on it in the picture; Clear removes all.
 - **Polyhedra:** automatic around metal centres, and your own: choose a centre element, the corner elements and a distance in the Polyhedra card, or click a centre and a corner in the picture. Press a row to set colour, opacity and edges.
-- **Element appearance:** press an element in the legend to set its colour, size and opacity, and to switch its polyhedra on or off.
+- **Element appearance:** press an element in the legend to set its colour, size and opacity.
 - **Structure types:** metal-anion frameworks (oxides, sulfides, halides), frameworks joined through
   molecular linkers, covalent networks, molecular crystals, molecular complexes and salts.
 - **2D perovskite module:** layer thickness n, spacing, slab and gallery height, in-plane and out-of-plane
@@ -73,8 +73,8 @@ These choices decide the numbers, so they are stated here. Changing any of them 
 | Metal-donor bond | metal to any other non-metal except H and the noble gases, below the sum of covalent radii plus 0.5 Å; an atom with four or more covalent bonds is not a donor |
 | Polyhedron centre | any metal except Li, Na, K, Rb, Cs, Fr, which are free ions unless they are the only metals with anions around them |
 | Polyhedron | drawn for 4 to 8 bonded neighbours |
-| Polyhedron you define | centre element, corner elements and a largest centre-to-corner distance; drawn for 3 or more corners (3 is a triangle); replaces the automatic polyhedra of that centre element; changes the picture only |
-| Suggested distance | the nearest shell of corners (ending at the first jump of more than 20 % in the sorted distances), times 1.15, but at most halfway to the next shell |
+| Polyhedron you define | centre element, corner elements and a largest centre-to-corner distance; drawn for 3 or more corners (3 is a triangle); drawn next to the automatic polyhedra and to other sets, also with the same centre element; changes the picture only |
+| Suggested distance | for each centre the nearest shell ends at the widest relative gap (at least 12 %) among its first 12 sorted distances; the suggestion is the widest shell times 1.08, but at most halfway to the nearest next shell |
 | Covalent network | a set of covalently bonded atoms that a lattice translation joins to itself (diamond, quartz, graphite) |
 | Non-metal polyhedron | B, Si, P, As, S, Se or Te with 4 to 8 bonded neighbours, all of them O, N, F, S, Se, Cl, Br or I; in networks, molecules and molecular ions |
 | Molecular complex | a finite bonded unit that holds a metal and its ligands; drawn whole |

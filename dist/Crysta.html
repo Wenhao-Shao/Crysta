@@ -264,7 +264,6 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
             <label for="elSize">Size</label><input type="range" id="elSize" min="0.3" max="2.5" step="0.05"><output id="elSizeOut"></output>
             <label for="elOpacity">Opacity</label><input type="range" id="elOpacity" min="0.1" max="1" step="0.05"><output id="elOpacityOut"></output>
           </div>
-          <div class="checks" id="elPolyRow"><label><input type="checkbox" id="elPoly">Polyhedra around it</label></div>
           <div class="row between"><span class="small">Applies to every atom of this element, in every loaded structure.</span><button type="button" class="mini" id="elReset">Reset</button></div>
         </div>
       </div>
@@ -352,6 +351,7 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
       <section class="card" id="cardPoly">
         <h2>Polyhedra</h2>
         <div id="polyList"></div>
+        <div class="row" id="polyRestoreRow" hidden><button type="button" class="mini" id="polyRestore">Bring back the automatic polyhedra</button></div>
         <div class="pform">
           <div class="line"><span class="lab">Around</span><select id="pfCentre" aria-label="Element at the centre"></select>
             <button type="button" class="mini" id="pfPick">Pick in the picture</button></div>
@@ -361,7 +361,7 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
           <div class="pprev" id="pfPreview" aria-live="polite"></div>
           <div class="row"><button type="button" class="primary" id="pfAdd">Add these polyhedra</button></div>
         </div>
-        <div class="small">Any element can be the centre and any elements the corners. Press a row to change its colour, opacity and edges. Polyhedra you add replace the automatic ones around the same element. They change the picture only, not the coordination numbers in the data cards.</div>
+        <div class="small">Any element can be the centre and any elements the corners. Press a row to change its colour, opacity and edges; the cross removes it. Polyhedra you add are drawn next to the others, so one element can be the centre of several sets. They change the picture only, not the coordination numbers in the data cards.</div>
       </section>
 
       <section class="card">
@@ -1916,23 +1916,26 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     }
     return { centres: cn.length, cnMin: cn.length ? Math.min(...cn) : 0, cnMax: cn.length ? Math.max(...cn) : 0, outside };
   }
-  /* a distance limit that takes the first shell of corners around the centre: the shell ends at the first
-     jump of more than 20 % in the sorted distances; the limit sits just outside it, well short of the next
-     shell. It never reaches for a further shell to make up the numbers: that would take corners that
-     belong to a neighbouring unit. */
+  /* a distance limit that takes the first shell of corners around the centre. For each centre the shell
+     ends at the widest relative gap among its first 12 sorted distances; the limit sits just outside the
+     widest shell (times 1.08), but inside the next shell of every centre where that is possible. It never
+     reaches for a further shell to make up the numbers: those corners belong to a neighbouring unit. */
   function suggestPolyMax(uc, center, corners) {
     const reach = 8;
     const map = polyhedraFor(uc, [{ center, corners, max: reach }]);
-    let best = null;
+    let end = null, next = null;
     for (const list of map.values()) {
       const d = list.map((v) => v.d).sort((p, q) => p - q);
       if (!d.length) continue;
-      let k = 0;
-      while (k + 1 < d.length && d[k + 1] <= d[k] * 1.2) k++;
-      const lim = k + 1 < d.length ? Math.min(d[k] * 1.15, (d[k] + d[k + 1]) / 2) : d[k] * 1.15;
-      if (best === null || lim > best) best = lim;
+      let k = d.length - 1, best = 1.12;                       // a gap has to be at least 12 % to end a shell
+      for (let i = 0; i + 1 < d.length && i < 12; i++) if (d[i + 1] / d[i] > best) { best = d[i + 1] / d[i]; k = i; }
+      if (end === null || d[k] > end) end = d[k];
+      if (k + 1 < d.length && (next === null || d[k + 1] < next)) next = d[k + 1];
     }
-    return best === null ? null : Math.ceil(best * 20) / 20;
+    if (end === null) return null;
+    let lim = end * 1.08;
+    if (next !== null && next > end) lim = Math.min(lim, (end + next) / 2);
+    return Math.ceil(lim * 20) / 20;
   }
 
   /* ---------- unit cell -> displayed block of n1 x n2 x n3 cells ---------- */
@@ -2029,26 +2032,28 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
       }
     }
 
-    // user-defined polyhedra replace the automatic ones around the same element. A corner that is not
-    // drawn yet is added as a lone atom, without a bond, so every polyhedron has all its corners.
-    if (rules && rules.some((r) => r && r.on !== false)) {
-      const map = polyhedraFor(uc, rules);
-      const centres = new Set(rules.filter((r) => r && r.on !== false).map((r) => r.center));
-      for (let k = polyhedra.length - 1; k >= 0; k--) if (centres.has(out[polyhedra[k].center].el)) polyhedra.splice(k, 1);
+    // user-defined polyhedra: each rule is a set of its own, drawn next to the automatic ones and to the
+    // other rules (two rules may share a centre element). A corner that is not drawn yet is added as a lone
+    // atom, without a bond, so every polyhedron has all its corners.
+    if (rules && rules.length) {
       const before = out.length;
-      for (let ix = 0; ix < before; ix++) {
-        const a = out[ix];
-        const list = map.get(a.src);
-        if (!list || list.length < 3 || !(a.group >= 0 || inside(a.f))) continue;
-        const verts = list.map((v) => {
-          const f = add(a.f, v.off);
-          const key = keyOf(v.j, f);
-          let jx = placed.get(key);
-          if (jx === undefined) { jx = push(v.j, f, 'ligand', -1); placed.set(key, jx); }
-          return jx;
-        });
-        polyhedra.push({ center: ix, verts, custom: true });
-      }
+      rules.forEach((rule, k) => {
+        if (!rule || rule.on === false) return;
+        const map = polyhedraFor(uc, [rule]);
+        for (let ix = 0; ix < before; ix++) {
+          const a = out[ix];
+          const list = map.get(a.src);
+          if (!list || list.length < 3 || !(a.group >= 0 || inside(a.f))) continue;
+          const verts = list.map((v) => {
+            const f = add(a.f, v.off);
+            const key = keyOf(v.j, f);
+            let jx = placed.get(key);
+            if (jx === undefined) { jx = push(v.j, f, 'ligand', -1); placed.set(key, jx); }
+            return jx;
+          });
+          polyhedra.push({ center: ix, verts, custom: true, rule: k });
+        }
+      });
     }
 
     // hydrogen bonds: N-H...A / O-H...A. Acceptors are O and N of another molecule, and the anions
@@ -2393,7 +2398,6 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
   };
   const stickR = (el) => (st.style === 'st' ? 0.13 : el === 'H' ? 0.07 : 0.1);
   const opacityOf = (el) => (look(el).opacity === undefined ? 1 : look(el).opacity);
-  const polyOn = (el) => look(el).poly !== false;
   function colorOf(el) {
     return look(el).color || defaultColorOf(el);
   }
@@ -2407,7 +2411,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
   /* ---------- documents ---------- */
   function makeDoc(src) {
     const struct = C.readStructure(src.text, src.name);
-    const d = { src, struct, minor: false, planes: [], chromos: [], measures: [], picks: [], polyRules: [], autoStyle: {}, polyOpen: null, name: src.name.replace(/\.[^.]+$/, '') };
+    const d = { src, struct, minor: false, planes: [], chromos: [], measures: [], picks: [], polyRules: [], autoStyle: {}, autoHide: {}, autoGone: {}, polyOpen: null, name: src.name.replace(/\.[^.]+$/, '') };
     rebuildCell(d);
     const L = [struct.cell.a, struct.cell.b, struct.cell.c];
     // a molecule without a lattice sits in a box of its own: one copy is the whole picture
@@ -2692,9 +2696,6 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     $('elOpacity').value = opacityOf(el);
     $('elSizeOut').textContent = fmt(+$('elSize').value, 2) + '×';
     $('elOpacityOut').textContent = Math.round(100 * $('elOpacity').value) + '%';
-    const centre = d && (d.info.metalSites.some((s) => s.el === el) || Array.from(d.uc.polyAt).some((i) => d.uc.atoms[i].el === el));
-    $('elPolyRow').hidden = !centre;
-    $('elPoly').checked = polyOn(el);
     $('elPop').hidden = false;
     drawLegend();
   }
@@ -2707,7 +2708,6 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     const o = elemLook[el] || (elemLook[el] = {});
     o[key] = value;
     drawLegend();
-    if (key === 'poly') drawPolyCard();
     render(true);
   }
 
@@ -2734,9 +2734,11 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
   const ruleSummary = (d, rule) => ruleReport(d, rule).text;
   /* how the polyhedra around one element are drawn: the user's rule if there is one, else the automatic style */
   const POLY_DEFAULT = { opacity: 0.5, edges: false };
-  function polyStyle(d, el) {
-    const rule = d.polyRules.find((r) => r.center === el && r.on !== false);
-    const o = (rule ? rule.style : d.autoStyle[el]) || {};
+  /* one set of polyhedra is 'a:El' (automatic, around element El) or 'r:n' (the user's rule n) */
+  const polyKey = (blk, pl) => (pl.custom ? 'r:' + pl.rule : 'a:' + blk.atoms[pl.center].el);
+  const polyShown = (d, key) => (key[0] === 'r' ? true : !d.autoHide[key.slice(2)] && !d.autoGone[key.slice(2)]);
+  function polyStyle(d, key, el) {
+    const o = (key[0] === 'r' ? (d.polyRules[+key.slice(2)] || {}).style : d.autoStyle[key.slice(2)]) || {};
     return { color: o.color || colorOf(el), own: !!o.color, opacity: o.opacity === undefined ? POLY_DEFAULT.opacity : o.opacity, edges: o.edges === undefined ? POLY_DEFAULT.edges : o.edges };
   }
   const styleStore = (d, key) => {
@@ -2747,7 +2749,6 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
   function drawPolyCard() {
     const d = D();
     if (!d) return;
-    const custom = new Set(d.polyRules.map((r) => r.center));
     const look = (key, el, o) => {
       if (d.polyOpen !== key) return '';
       const col = (o && o.color) || colorOf(el);
@@ -2759,12 +2760,14 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     };
     const head = (key, el, o, html) => '<button type="button" class="what" data-ptog="' + key + '" aria-expanded="' + (d.polyOpen === key) + '" title="Colour, opacity and edges">' +
       '<span class="car" aria-hidden="true">' + (d.polyOpen === key ? '▾' : '▸') + '</span><i class="sw" style="background:' + ((o && o.color) || colorOf(el)) + '"></i><span>' + html + '</span></button>';
-    // automatic polyhedra, one row per centre element that has no rule of its own
-    const rows = d.autoPoly.filter((x) => !custom.has(x.el)).map((x) => {
+    // automatic polyhedra, one row per centre element
+    const rows = d.autoPoly.filter((x) => !d.autoGone[x.el]).map((x) => {
       const key = 'a:' + x.el;
-      return '<div class="prule"><input type="checkbox" data-pauto="' + esc(x.el) + '"' + (polyOn(x.el) ? ' checked' : '') + ' aria-label="Show polyhedra around ' + esc(x.el) + '">' +
-        head(key, x.el, d.autoStyle[x.el], '<b>' + esc(x.el) + '</b> with ' + esc(x.corners.join(', '))) + '<span class="small">automatic</span>' + look(key, x.el, d.autoStyle[x.el]) + '</div>';
+      return '<div class="prule"><input type="checkbox" data-pauto="' + esc(x.el) + '"' + (!d.autoHide[x.el] ? ' checked' : '') + ' aria-label="Show polyhedra around ' + esc(x.el) + '">' +
+        head(key, x.el, d.autoStyle[x.el], '<b>' + esc(x.el) + '</b> with ' + esc(x.corners.join(', ')) + ' <span class="small">· automatic</span>') +
+        '<button type="button" class="xbtn" data-pgone="' + esc(x.el) + '" aria-label="Remove the automatic polyhedra around ' + esc(x.el) + '" title="Remove">×</button>' + look(key, x.el, d.autoStyle[x.el]) + '</div>';
     });
+    $('polyRestoreRow').hidden = !d.autoPoly.some((x) => d.autoGone[x.el]);
     d.polyRules.forEach((r, i) => {
       const key = 'r:' + i;
       const rep = ruleReport(d, r);
@@ -3124,32 +3127,32 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
       }
     }
 
-    // coordination polyhedra, one mesh per centre element, in that element's polyhedron style
+    // polyhedra, one mesh per set (automatic per centre element, or one of the user's rules), in that set's style
     if (st.poly && st.inorg && st.style !== 'sf') {
       const meshes = {};
       for (const p of blk.polyhedra) {
-        const el = blk.atoms[p.center].el;
-        if (!polyOn(el)) continue;
-        const mesh = meshes[el] || (meshes[el] = { vertexArr: [], normalArr: [], faceArr: [] });
+        const key = polyKey(blk, p);
+        if (!polyShown(d, key)) continue;
+        const sty = polyStyle(d, key, blk.atoms[p.center].el);
+        const mesh = meshes[key] || (meshes[key] = { vertexArr: [], normalArr: [], faceArr: [], sty });
         const pts = p.verts.map((i) => blk.atoms[i].xyz);
         for (const f of C.hullFaces(pts)) {
           const base = mesh.vertexArr.length;
           for (const k of f.v) { mesh.vertexArr.push(V3(pts[k])); mesh.normalArr.push(V3(f.n)); }
           mesh.faceArr.push(base, base + 1, base + 2);
         }
-        const sty = polyStyle(d, el);
         if (sty.edges) {
           const seen = new Set();
           for (const poly of C.hullPolygons(pts)) for (let k = 0; k < poly.length; k++) {
             const u = poly[k], v = poly[(k + 1) % poly.length];
-            const key = Math.min(u, v) + '-' + Math.max(u, v);
-            if (seen.has(key)) continue;
-            seen.add(key);
+            const ek = Math.min(u, v) + '-' + Math.max(u, v);
+            if (seen.has(ek)) continue;
+            seen.add(ek);
             viewer.addCylinder({ start: V3(pts[u]), end: V3(pts[v]), radius: 0.035, color: darker(sty.color), fromCap: 1, toCap: 1 });
           }
         }
       }
-      for (const el of Object.keys(meshes)) { const sty = polyStyle(d, el); viewer.addCustom(Object.assign(meshes[el], { color: sty.color, opacity: sty.opacity })); }
+      for (const key of Object.keys(meshes)) { const m = meshes[key]; viewer.addCustom({ vertexArr: m.vertexArr, normalArr: m.normalArr, faceArr: m.faceArr, color: m.sty.color, opacity: m.sty.opacity }); }
     }
 
     // unit cell outline with axis letters
@@ -3510,9 +3513,9 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     });
     if (st.poly && st.inorg && st.style !== 'sf') {
       for (const pl of blk.polyhedra) {
-        if (!polyOn(blk.atoms[pl.center].el)) continue;
+        if (!polyShown(d, polyKey(blk, pl))) continue;
         const pts = pl.verts.map((i) => blk.atoms[i].xyz);
-        const sty = polyStyle(d, blk.atoms[pl.center].el);
+        const sty = polyStyle(d, polyKey(blk, pl), blk.atoms[pl.center].el);
         // only the faces turned to the viewer, in a lighter tint: stacked translucent faces would add up to a dark block
         const cen = pts.reduce((t, q) => [t[0] + q[0], t[1] + q[1], t[2] + q[2]], [0, 0, 0]).map((x) => x / pts.length);
         for (const f of C.hullPolygons(pts)) {
@@ -3663,7 +3666,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     $('polyList').onchange = (e) => {
       const d = D();
       const t = e.target;
-      if (t.dataset.pauto !== undefined) { setLook(t.dataset.pauto, 'poly', t.checked); return; }
+      if (t.dataset.pauto !== undefined) d.autoHide[t.dataset.pauto] = !t.checked;
       if (t.dataset.pon !== undefined) d.polyRules[+t.dataset.pon].on = t.checked;
       if (t.dataset.pcol !== undefined) styleStore(d, t.dataset.pcol).color = t.value;
       if (t.dataset.pop !== undefined) styleStore(d, t.dataset.pop).opacity = +t.value;
@@ -3682,12 +3685,15 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
         polyChanged();
         return;
       }
+      const gone = e.target.closest('button[data-pgone]');
+      if (gone) { d.autoGone[gone.dataset.pgone] = true; d.polyOpen = null; polyChanged(); return; }
       const b = e.target.closest('button[data-prm]');
       if (!b) return;
       d.polyRules.splice(+b.dataset.prm, 1);
       d.polyOpen = null;
       polyChanged();
     };
+    $('polyRestore').onclick = () => { const d = D(); d.autoGone = {}; d.autoHide = {}; polyChanged(); };
     $('pfCentre').onchange = (e) => { const f = D().polyForm; f.center = e.target.value; if (f.corners.length) suggestPolyForm(); else drawPolyPreview(); };
     $('pfCorners').onclick = (e) => {
       const b = e.target.closest('button[data-el]');
@@ -3706,9 +3712,12 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
       const f = d.polyForm;
       if (!f.corners.length || !(f.max > 0)) return;
       const els = elementsOf(d);
-      // every element chosen is the same as "any element"; a second rule for a centre replaces the first
+      // every element chosen is the same as "any element"; adding the same centre and corners again replaces that set
       const rule = { center: f.center, corners: f.corners.length === els.length ? null : f.corners.slice().sort(), max: f.max, on: true };
-      d.polyRules = d.polyRules.filter((r) => r.center !== rule.center).concat([rule]);
+      const sameSet = (r) => r.center === rule.center && cornerText(r) === cornerText(rule);
+      const old = d.polyRules.find(sameSet);
+      if (old) rule.style = old.style;
+      d.polyRules = d.polyRules.filter((r) => !sameSet(r)).concat([rule]);
       d.polyOpen = null;
       if (!st.poly) { st.poly = true; $('chkPoly').checked = true; }
       d.polyForm = { center: f.center, corners: [], max: null };
@@ -3720,7 +3729,6 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     $('elSize').onchange = (e) => setLook(st.editEl, 'scale', +e.target.value);
     $('elOpacity').oninput = (e) => { $('elOpacityOut').textContent = Math.round(100 * e.target.value) + '%'; };
     $('elOpacity').onchange = (e) => setLook(st.editEl, 'opacity', +e.target.value);
-    $('elPoly').onchange = (e) => setLook(st.editEl, 'poly', e.target.checked);
     $('elReset').onclick = () => { const el = st.editEl; delete elemLook[el]; drawLegend(); drawPolyCard(); render(true); openElPop(el); };
     $('selLabels').onchange = (e) => { st.labels = e.target.value; render(true); };
     $('btnPng').onclick = exportPng;

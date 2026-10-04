@@ -249,7 +249,7 @@ const formula = (info) => info.formula.map((e) => e.el + e.n).join(' ');
   const { uc } = load('tests/cifs/CsPbBr3_cubic.cif');
   const max = X.suggestPolyMax(uc, 'Cs', ['Br']);
   check('suggested limit takes the first shell', max > 4.154 && max < 5.0, 'got ' + max);
-  check('Pb-Br suggestion', near(X.suggestPolyMax(uc, 'Pb', ['Br']), 3.4, 0.05));
+  check('Pb-Br suggestion', X.suggestPolyMax(uc, 'Pb', ['Br']) > 2.94 && X.suggestPolyMax(uc, 'Pb', ['Br']) < 3.5);
   const st = X.polyhedraStats(uc, { center: 'Cs', corners: ['Br'], max });
   check('Cs cuboctahedron', st.centres === 1 && st.cnMin === 12 && st.cnMax === 12);
   const plain = X.assemble(uc, [0, 0, 0], [1, 1, 1]);
@@ -257,9 +257,13 @@ const formula = (info) => info.formula.map((e) => e.el + e.n).join(' ');
   const cs = b.polyhedra.filter((p) => p.custom);
   check('custom polyhedron drawn with all corners', cs.length === 1 && cs[0].verts.length === 12 && cs[0].verts.every((v) => b.atoms[v].el === 'Br'));
   check('automatic polyhedra kept for other elements', b.polyhedra.length === plain.polyhedra.length + 1);
-  // a rule for Pb replaces the automatic Pb octahedra; with a short limit nothing is drawn around Pb
-  const none = X.assemble(uc, [0, 0, 0], [1, 1, 1], [{ center: 'Pb', corners: ['Br'], max: 2.0 }]);
-  check('a rule replaces the automatic polyhedra of its centre', none.polyhedra.length === 0);
+  // a rule for Pb is a set of its own: the automatic Pb octahedra stay, and two rules can share a centre
+  const kept = X.assemble(uc, [0, 0, 0], [1, 1, 1], [{ center: 'Pb', corners: ['Br'], max: 2.0 }]);
+  check('a rule leaves the automatic polyhedra alone', kept.polyhedra.length === plain.polyhedra.length && kept.polyhedra.every((p) => !p.custom));
+  const two = X.assemble(uc, [0, 0, 0], [1, 1, 1], [{ center: 'Pb', corners: ['Cs'], max: 5.2 }, { center: 'Pb', corners: ['Br'], max: 3.4 }]);
+  const byRule = [0, 1].map((k) => two.polyhedra.filter((p) => p.rule === k));
+  check('two rules with one centre element', byRule[0].length > 0 && byRule[0].every((p) => p.verts.length === 8) && byRule[1].length === byRule[0].length && byRule[1].every((p) => p.verts.length === 6) &&
+    two.polyhedra.filter((p) => !p.custom).length === plain.polyhedra.length);
   const off = X.assemble(uc, [0, 0, 0], [1, 1, 1], [{ center: 'Pb', corners: ['Br'], max: 2.0, on: false }]);
   check('a rule switched off changes nothing', off.polyhedra.length === plain.polyhedra.length && off.atoms.length === plain.atoms.length);
   // a non-metal centre with any element as corner: Br with its 2 Pb and 4 Cs
@@ -267,9 +271,9 @@ const formula = (info) => info.formula.map((e) => e.el + e.n).join(' ');
   check('non-metal centre, any corner', br.centres === 3 && br.cnMin === 14 && br.cnMax === 14, JSON.stringify(br));
   const brOnly = X.polyhedraStats(uc, { center: 'Br', corners: ['Pb', 'Cs'], max: 4.3 });
   check('corners limited to chosen elements', brOnly.cnMin === 6 && brOnly.cnMax === 6, JSON.stringify(brOnly));
-  // the suggestion stays with the nearest shell (the two Pb) and does not reach for the Cs to make up the numbers
+  // around Br the widest gap comes after the two Pb and four Cs, not after the two Pb alone
   const sb = X.suggestPolyMax(uc, 'Br', ['Pb', 'Cs']);
-  check('suggestion keeps to the nearest shell', near(sb, 3.4, 0.05) && X.polyhedraStats(uc, { center: 'Br', corners: ['Pb', 'Cs'], max: sb }).cnMax === 2, 'got ' + sb);
+  check('suggestion ends at the widest gap', sb > 4.154 && sb < 5.5 && X.polyhedraStats(uc, { center: 'Br', corners: ['Pb', 'Cs'], max: sb }).cnMax === 6, 'got ' + sb);
   check('centre inside its polyhedron', X.polyhedraStats(uc, { center: 'Cs', corners: ['Br'], max }).outside === 0);
 
   const u = load('tests/cifs/urea.cif');

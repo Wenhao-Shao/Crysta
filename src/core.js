@@ -1451,23 +1451,26 @@
     }
     return { centres: cn.length, cnMin: cn.length ? Math.min(...cn) : 0, cnMax: cn.length ? Math.max(...cn) : 0, outside };
   }
-  /* a distance limit that takes the first shell of corners around the centre: the shell ends at the first
-     jump of more than 20 % in the sorted distances; the limit sits just outside it, well short of the next
-     shell. It never reaches for a further shell to make up the numbers: that would take corners that
-     belong to a neighbouring unit. */
+  /* a distance limit that takes the first shell of corners around the centre. For each centre the shell
+     ends at the widest relative gap among its first 12 sorted distances; the limit sits just outside the
+     widest shell (times 1.08), but inside the next shell of every centre where that is possible. It never
+     reaches for a further shell to make up the numbers: those corners belong to a neighbouring unit. */
   function suggestPolyMax(uc, center, corners) {
     const reach = 8;
     const map = polyhedraFor(uc, [{ center, corners, max: reach }]);
-    let best = null;
+    let end = null, next = null;
     for (const list of map.values()) {
       const d = list.map((v) => v.d).sort((p, q) => p - q);
       if (!d.length) continue;
-      let k = 0;
-      while (k + 1 < d.length && d[k + 1] <= d[k] * 1.2) k++;
-      const lim = k + 1 < d.length ? Math.min(d[k] * 1.15, (d[k] + d[k + 1]) / 2) : d[k] * 1.15;
-      if (best === null || lim > best) best = lim;
+      let k = d.length - 1, best = 1.12;                       // a gap has to be at least 12 % to end a shell
+      for (let i = 0; i + 1 < d.length && i < 12; i++) if (d[i + 1] / d[i] > best) { best = d[i + 1] / d[i]; k = i; }
+      if (end === null || d[k] > end) end = d[k];
+      if (k + 1 < d.length && (next === null || d[k + 1] < next)) next = d[k + 1];
     }
-    return best === null ? null : Math.ceil(best * 20) / 20;
+    if (end === null) return null;
+    let lim = end * 1.08;
+    if (next !== null && next > end) lim = Math.min(lim, (end + next) / 2);
+    return Math.ceil(lim * 20) / 20;
   }
 
   /* ---------- unit cell -> displayed block of n1 x n2 x n3 cells ---------- */
@@ -1564,26 +1567,28 @@
       }
     }
 
-    // user-defined polyhedra replace the automatic ones around the same element. A corner that is not
-    // drawn yet is added as a lone atom, without a bond, so every polyhedron has all its corners.
-    if (rules && rules.some((r) => r && r.on !== false)) {
-      const map = polyhedraFor(uc, rules);
-      const centres = new Set(rules.filter((r) => r && r.on !== false).map((r) => r.center));
-      for (let k = polyhedra.length - 1; k >= 0; k--) if (centres.has(out[polyhedra[k].center].el)) polyhedra.splice(k, 1);
+    // user-defined polyhedra: each rule is a set of its own, drawn next to the automatic ones and to the
+    // other rules (two rules may share a centre element). A corner that is not drawn yet is added as a lone
+    // atom, without a bond, so every polyhedron has all its corners.
+    if (rules && rules.length) {
       const before = out.length;
-      for (let ix = 0; ix < before; ix++) {
-        const a = out[ix];
-        const list = map.get(a.src);
-        if (!list || list.length < 3 || !(a.group >= 0 || inside(a.f))) continue;
-        const verts = list.map((v) => {
-          const f = add(a.f, v.off);
-          const key = keyOf(v.j, f);
-          let jx = placed.get(key);
-          if (jx === undefined) { jx = push(v.j, f, 'ligand', -1); placed.set(key, jx); }
-          return jx;
-        });
-        polyhedra.push({ center: ix, verts, custom: true });
-      }
+      rules.forEach((rule, k) => {
+        if (!rule || rule.on === false) return;
+        const map = polyhedraFor(uc, [rule]);
+        for (let ix = 0; ix < before; ix++) {
+          const a = out[ix];
+          const list = map.get(a.src);
+          if (!list || list.length < 3 || !(a.group >= 0 || inside(a.f))) continue;
+          const verts = list.map((v) => {
+            const f = add(a.f, v.off);
+            const key = keyOf(v.j, f);
+            let jx = placed.get(key);
+            if (jx === undefined) { jx = push(v.j, f, 'ligand', -1); placed.set(key, jx); }
+            return jx;
+          });
+          polyhedra.push({ center: ix, verts, custom: true, rule: k });
+        }
+      });
     }
 
     // hydrogen bonds: N-H...A / O-H...A. Acceptors are O and N of another molecule, and the anions
