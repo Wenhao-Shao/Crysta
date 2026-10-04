@@ -320,6 +320,9 @@ const formula = (info) => info.formula.map((e) => e.el + e.n).join(' ');
   const view = { width: 100, height: 100, M: [[10, 0, 0], [0, -10, 0]], b: [50, 50] };
   const svg = X.toSvg(Object.assign({ items: [{ t: 'bond', p: [0, 0, 0], q: [1, 0, 0], r: 0.1, color: '#ff0000', color2: '#800080' }, { t: 'bond', p: [0, 0, 0], q: [0, 1, 0], r: 0.1, color: '#ff0000' }] }, view));
   check('svg gradient bond', (svg.match(/<linearGradient/g) || []).length === 1 && svg.includes('stroke="url(#b1)"') && svg.includes('stop-color="#800080"') && svg.includes('x1="50" y1="50" x2="60" y2="50"'));
+  check('svg bonds are solid unless told otherwise', !svg.includes('<g class="bond" opacity'));
+  const faded = X.toSvg(Object.assign({ items: [{ t: 'bond', p: [0, 0, 0], q: [1, 0, 0], r: 0.1, color: '#ff0000', opacity: 0.35 }, { t: 'bond', p: [0, 0, 0], q: [0, 1, 0], r: 0.1, color: '#ff0000', opacity: 1 }] }, view));
+  check('svg faded bond carries its opacity once, on the group', (faded.match(/<g class="bond" opacity="0.35">/g) || []).length === 1 && (faded.match(/opacity=/g) || []).length === 1);
 }
 
 console.log(passed + ' passed, ' + failed + ' failed');

@@ -371,7 +371,7 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
         </div>
         <div class="checks"><label><input type="checkbox" id="pngClear">Transparent background</label></div>
         <div class="row"><button type="button" id="btnMol2">Save mol2 file</button></div>
-        <div class="small">All three save what is shown: the packing block, with hidden atoms left out. Centre atoms hidden inside polyhedra are left out of the PNG and the SVG, and kept in the mol2 file. The SVG is a vector drawing in which every atom, bond and face is a separate object to edit; it is drawn without perspective, and objects that pass through each other are approximated. The mol2 file carries the cell; its atom types are guessed from the number of neighbours and every bond is written as single.</div>
+        <div class="small">All three save what is shown: the packing block, with hidden atoms left out. The mol2 file keeps every polyhedron centre, also those set to 0 %. The SVG is a vector drawing in which every atom, bond and face is a separate object to edit; it is drawn without perspective, and objects that pass through each other are approximated. The mol2 file carries the cell; its atom types are guessed from the number of neighbours and every bond is written as single.</div>
       </section>
 
       <section class="card" id="cardPoly">
@@ -387,7 +387,7 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
           <div class="pprev" id="pfPreview" aria-live="polite"></div>
           <div class="row"><button type="button" class="primary" id="pfAdd">Add these polyhedra</button></div>
         </div>
-        <div class="small">Any element can be the centre and any elements the corners. Polyhedra you add hide their centre atoms. Press a row to show them again or to change its colour, opacity and edges; the cross removes it. Polyhedra you add are drawn next to the others, so one element can be the centre of several sets. They change the picture only, not the coordination numbers in the data cards.</div>
+        <div class="small">Any element can be the centre and any elements the corners. Inside a polyhedron the centre atom and its bonds are drawn faded. Press a row to change that (100 % is solid, 0 % leaves them out) or its colour, opacity and edges; the cross removes it. Polyhedra you add are drawn next to the others, so one element can be the centre of several sets. They change the picture only, not the coordination numbers in the data cards.</div>
       </section>
 
       <section class="card">
@@ -2259,7 +2259,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
           paint = 'url(#' + id + ')';
         }
         // a dark line under a slightly thinner coloured one gives the stick its outline
-        body.push({ z: depth(midp(it.p, it.q, 0.5)), s: '<g class="bond"><line ' + xy + ' stroke="' + shade(it.color, -0.55) + '" stroke-width="' + n2(w + Math.max(0.6, 0.03 * scale)) + '"/>' +
+        body.push({ z: depth(midp(it.p, it.q, 0.5)), s: '<g class="bond"' + (it.opacity !== undefined && it.opacity < 1 ? ' opacity="' + n2(it.opacity) + '"' : '') + '><line ' + xy + ' stroke="' + shade(it.color, -0.55) + '" stroke-width="' + n2(w + Math.max(0.6, 0.03 * scale)) + '"/>' +
           '<line ' + xy + ' stroke="' + paint + '" stroke-width="' + n2(w) + '"/></g>' });
       } else if (it.t === 'face') {
         let z = 0;
@@ -2429,6 +2429,8 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
   }
   const hexInt = (h) => parseInt(h.slice(1), 16);
   const mixHex = (a, b) => '#' + [1, 3, 5].map((k) => Math.round((parseInt(a.slice(k, k + 2), 16) + parseInt(b.slice(k, k + 2), 16)) / 2).toString(16).padStart(2, '0')).join('');
+  /* colour a seen through to colour b: f of a, the rest b */
+  const blendHex = (a, b, f) => '#' + [1, 3, 5].map((k) => Math.round(parseInt(a.slice(k, k + 2), 16) * f + parseInt(b.slice(k, k + 2), 16) * (1 - f)).toString(16).padStart(2, '0')).join('');
   const darker = (hex) => '#' + [1, 3, 5].map((k) => Math.round(parseInt(hex.slice(k, k + 2), 16) * 0.5).toString(16).padStart(2, '0')).join('');
   const fmt = (x, d) => x.toFixed(d);
   const V3 = (p) => ({ x: p[0], y: p[1], z: p[2] });
@@ -2760,26 +2762,32 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
   const ruleSummary = (d, rule) => ruleReport(d, rule).text;
   /* how the polyhedra around one element are drawn: the user's rule if there is one, else the automatic style */
   const POLY_DEFAULT = { opacity: 0.5, edges: false };
-  /* polyhedra the user adds hide their centre atoms unless told otherwise; the automatic ones keep them */
-  const centreShown = (key, o) => (o && o.centre !== undefined ? o.centre : key[0] !== 'r');
+  /* how solid the centre atom of a polyhedron and its bonds are drawn: 1 is solid, 0 leaves them out.
+     Inside a polyhedron they are faded by default, for the automatic sets and the user's alike. */
+  const CENTRE_DEFAULT = 0.25;
+  const centreOf = (o) => (o && o.centre !== undefined ? o.centre : CENTRE_DEFAULT);
   /* one set of polyhedra is 'a:El' (automatic, around element El) or 'r:n' (the user's rule n) */
   const polyKey = (blk, pl) => (pl.custom ? 'r:' + pl.rule : 'a:' + blk.atoms[pl.center].el);
   const polyShown = (d, key) => (key[0] === 'r' ? true : !d.autoHide[key.slice(2)] && !d.autoGone[key.slice(2)]);
   function polyStyle(d, key, el) {
     const o = (key[0] === 'r' ? (d.polyRules[+key.slice(2)] || {}).style : d.autoStyle[key.slice(2)]) || {};
-    return { color: o.color || colorOf(el), own: !!o.color, opacity: o.opacity === undefined ? POLY_DEFAULT.opacity : o.opacity, edges: o.edges === undefined ? POLY_DEFAULT.edges : o.edges, centre: centreShown(key, o) };
+    return { color: o.color || colorOf(el), own: !!o.color, opacity: o.opacity === undefined ? POLY_DEFAULT.opacity : o.opacity, edges: o.edges === undefined ? POLY_DEFAULT.edges : o.edges, centre: centreOf(o) };
   }
-  /* The centre atoms that are left out of the picture: those inside a polyhedron that is drawn and whose set hides
-     its centres. An atom with no polyhedron around it (too few corners in the block) stays, and so does every centre
-     when the polyhedra are switched off. Indices are into blk.atoms. */
-  function hiddenCentres(d, blk) {
-    const hid = new Set();
-    if (!(st.poly && st.inorg && st.style !== 'sf')) return hid;
+  /* The centre atoms that are drawn faded, or left out: those inside a polyhedron that is drawn. The map gives,
+     for an index into blk.atoms, f (how solid that atom and its bonds are, below 1; 0 leaves them out) and poly
+     (the colour and opacity of the polyhedron around it). An atom at the centre of several sets takes the lowest
+     value. An atom with no polyhedron around it (too few corners in the block) is not in the map, and neither is
+     any atom when the polyhedra are switched off. */
+  function centreFade(d, blk) {
+    const fade = new Map();
+    if (!(st.poly && st.inorg && st.style !== 'sf')) return fade;
     for (const pl of blk.polyhedra) {
       const key = polyKey(blk, pl);
-      if (polyShown(d, key) && !polyStyle(d, key, blk.atoms[pl.center].el).centre) hid.add(pl.center);
+      if (!polyShown(d, key)) continue;
+      const sty = polyStyle(d, key, blk.atoms[pl.center].el);
+      if (sty.centre < 1 && (!fade.has(pl.center) || sty.centre < fade.get(pl.center).f)) fade.set(pl.center, { f: sty.centre, poly: sty });
     }
-    return hid;
+    return fade;
   }
   const styleStore = (d, key) => {
     if (key[0] === 'a') return d.autoStyle[key.slice(2)] || (d.autoStyle[key.slice(2)] = {});
@@ -2796,7 +2804,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
       const ed = o && o.edges !== undefined ? o.edges : POLY_DEFAULT.edges;
       return '<div class="look"><span>Colour</span><input type="color" data-pcol="' + key + '" value="' + esc(col) + '" aria-label="Colour of these polyhedra"><span></span>' +
         '<span>Opacity</span><input type="range" data-pop="' + key + '" min="0.05" max="1" step="0.05" value="' + op + '" aria-label="Opacity of these polyhedra"><span>' + Math.round(100 * op) + '%</span>' +
-        '<div class="full"><label><input type="checkbox" data-pcen="' + key + '"' + (centreShown(key, o) ? '' : ' checked') + '>Hide the centre atoms</label></div>' +
+        '<span title="How solid the centre atoms and their bonds are drawn. 0 % leaves them out.">Centre atoms</span><input type="range" data-pcen="' + key + '" min="0" max="1" step="0.05" value="' + centreOf(o) + '" aria-label="How solid the centre atoms and their bonds are drawn"><span>' + Math.round(100 * centreOf(o)) + '%</span>' +
         '<div class="full"><label><input type="checkbox" data-pedge="' + key + '"' + (ed ? ' checked' : '') + '>Draw the edges</label><button type="button" class="mini" data-prst="' + key + '">Reset look</button></div></div>';
     };
     const head = (key, el, o, html) => '<button type="button" class="what" data-ptog="' + key + '" aria-expanded="' + (d.polyOpen === key) + '" title="Colour, opacity, edges and centre atoms">' +
@@ -3123,33 +3131,48 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     hoverLabel = null;
     const uc = d.uc;
     const blk = C.assemble(uc, d.lo, d.hi, d.polyRules);
-    const hid = hiddenCentres(d, blk);
+    const fade = centreFade(d, blk);
     const px = st.px;
     // a label added with the last argument set does not redraw the scene; it is drawn once at the end
     const addText = (text, opts) => viewer.addLabel(text, opts, undefined, true);
     const ink = cssVar('--ink'), muted = cssVar('--muted'), accent = cssVar('--accent'), panel = cssVar('--panel');
     viewer.setBackgroundColor(cssVar('--stage'), st.clear ? 0 : 1);
 
+    // Atoms of the model. A polyhedron centre below 100 % is a 'ghost'. 3Dmol shows only the nearest see-through
+    // surface, so a see-through atom inside a see-through polyhedron would vanish. A ghost and its bonds are
+    // therefore drawn solid, in their colours mixed with what lies behind them: the polyhedron over the stage.
+    const stageHex = cssVar('--stage');
+    const ghostHex = (el, g) => blendHex(colorOf(el), /^#[0-9a-f]{6}$/i.test(stageHex) ? blendHex(g.poly.color, stageHex, g.poly.opacity) : g.poly.color, g.f);
     const map = new Map();
     const list = [];
     blk.atoms.forEach((a, i) => {
-      if (!isVisible(a) || hid.has(i)) return;
+      if (!isVisible(a)) return;
+      const g = fade.get(i);
+      if (g && g.f <= 0) return;
       map.set(i, list.length);
-      list.push({ elem: a.el, x: a.xyz[0], y: a.xyz[1], z: a.xyz[2], bonds: [], bondOrder: [], xl: a.label, xf: a.f, xk: a.kind, xs: a.site, xg: a.group });
+      const hex = g ? ghostHex(a.el, g) : colorOf(a.el);
+      list.push({ elem: a.el, x: a.xyz[0], y: a.xyz[1], z: a.xyz[2], bonds: [], bondOrder: [], xl: a.label, xf: a.f, xk: a.kind, xs: a.site, xg: a.group, xc: g ? a.el + hex : a.el, xhex: hex, ghost: g });
     });
+    const ghostBonds = [];
     blk.atoms.forEach((a, i) => {
       if (!map.has(i)) return;
       const me = list[map.get(i)];
-      for (const j of a.bonds) if (map.has(j)) { me.bonds.push(map.get(j)); me.bondOrder.push(1); }
+      for (const j of a.bonds) {
+        if (!map.has(j)) continue;
+        const you = list[map.get(j)];
+        // the bonds of a ghost are left out of the model and drawn below, so that both halves are faded
+        if (me.ghost || you.ghost) { if (j > i) ghostBonds.push({ a: me, b: you, g: me.ghost && you.ghost ? (me.ghost.f <= you.ghost.f ? me.ghost : you.ghost) : (me.ghost || you.ghost) }); continue; }
+        me.bonds.push(map.get(j)); me.bondOrder.push(1);
+      }
     });
     st.shown = list.length;
     st.pts = list.map((a) => ({ x: a.x, y: a.y, z: a.z }));
     const model = viewer.addModel();
     if (list.length) model.addAtoms(list);
 
-    const elMap = {};
-    for (const a of list) elMap[a.elem] = hexInt(colorOf(a.elem));
-    const cs = { prop: 'elem', map: elMap };
+    const elMap = {}, colMap = {};
+    for (const a of list) { elMap[a.elem] = hexInt(colorOf(a.elem)); colMap[a.xc] = hexInt(a.xhex); }
+    const cs = { prop: 'xc', map: colMap };
     const metals = Object.keys(elMap).filter((e) => C.isMetal(e));
     const halides = Object.keys(elMap).filter((e) => C.HALIDE.has(e));
     // one style per element, so a colour, size or opacity set by the user applies to that element only.
@@ -3169,10 +3192,20 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
       }
       model.setStyle({ elem: el }, sty);
     }
-    if (st.bondGrad && st.style !== 'sf') {
-      const rgb = (el) => { const v = hexInt(colorOf(el)); return [((v >> 16) & 255) / 255, ((v >> 8) & 255) / 255, (v & 255) / 255]; };
+    if (st.style !== 'sf' && (st.bondGrad || ghostBonds.length)) {
+      const rgb3 = (hex) => { const v = hexInt(hex); return [((v >> 16) & 255) / 255, ((v >> 8) & 255) / 255, (v & 255) / 255]; };
+      const rgb = (el) => rgb3(colorOf(el));
       const bonds = [];
-      list.forEach((a, i) => { for (const j of a.bonds) if (j > i) bonds.push({ p: [a.x, a.y, a.z], q: [list[j].x, list[j].y, list[j].z], rp: stickR(a.elem), rq: stickR(list[j].elem), cp: rgb(a.elem), cq: rgb(list[j].elem) }); });
+      if (st.bondGrad) list.forEach((a, i) => { for (const j of a.bonds) if (j > i) bonds.push({ p: [a.x, a.y, a.z], q: [list[j].x, list[j].y, list[j].z], rp: stickR(a.elem), rq: stickR(list[j].elem), cp: rgb(a.elem), cq: rgb(list[j].elem) }); });
+      for (const gb of ghostBonds) {
+        const p = [gb.a.x, gb.a.y, gb.a.z], q = [gb.b.x, gb.b.y, gb.b.z];
+        const cp = rgb3(ghostHex(gb.a.elem, gb.g)), cq = rgb3(ghostHex(gb.b.elem, gb.g));
+        if (st.bondGrad) bonds.push({ p, q, rp: stickR(gb.a.elem), rq: stickR(gb.b.elem), cp, cq });
+        else {
+          const m = [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2, (p[2] + q[2]) / 2];
+          bonds.push({ p, q: m, rp: stickR(gb.a.elem), rq: stickR(gb.a.elem), cp, cq: cp }, { p: m, q, rp: stickR(gb.b.elem), rq: stickR(gb.b.elem), cp: cq, cq });
+        }
+      }
       for (const m of C.bondTubes(bonds, 10)) {
         // 3Dmol repaints a shape with its own colour when it draws it; a list of colours, one per vertex, is kept as given
         const colours = m.colorArr.map((c) => ({ r: c[0], g: c[1], b: c[2] }));
@@ -3375,7 +3408,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     if (list.length) model.setClickable({}, true, onClick);
     for (const a of list) {
       if (!glassy.includes(a.elem)) continue;
-      viewer.addSphere({ center: { x: a.x, y: a.y, z: a.z }, radius: sphereR(a.elem), color: colorOf(a.elem), opacity: opacityOf(a.elem),
+      viewer.addSphere({ center: { x: a.x, y: a.y, z: a.z }, radius: sphereR(a.elem), color: a.xhex, opacity: opacityOf(a.elem),
         clickable: true, callback: () => onClick(a), hoverable: true, hover_callback: () => onHover(a), unhover_callback: onLeave });
     }
 
@@ -3553,17 +3586,19 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     const ink = cssVar('--ink'), muted = cssVar('--muted'), accent = cssVar('--accent'), panel = cssVar('--panel');
     const items = [];
     const mid = (p, q) => [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2, (p[2] + q[2]) / 2];
-    const hid = hiddenCentres(d, blk);
+    // a faded polyhedron centre and its bonds carry that opacity; one set to 0 is left out
+    const fade = centreFade(d, blk);
+    const solid = (i) => (fade.has(i) ? fade.get(i).f : 1);
     blk.atoms.forEach((a, i) => {
-      if (!isVisible(a) || hid.has(i)) return;
+      if (!isVisible(a) || solid(i) <= 0) return;
       const color = colorOf(a.el);
-      items.push({ t: 'atom', p: a.xyz, r: sphereR(a.el), color, el: a.el, opacity: opacityOf(a.el) });
+      items.push({ t: 'atom', p: a.xyz, r: sphereR(a.el), color, el: a.el, opacity: opacityOf(a.el) * solid(i) });
       if (st.style === 'sf') return;
       for (const j of a.bonds) {
         const o = blk.atoms[j];
-        if (!isVisible(o) || hid.has(j)) continue;
+        if (!isVisible(o) || solid(j) <= 0) continue;
         // each atom draws its half of the bond; with gradient bonds the half fades to the midpoint colour
-        items.push({ t: 'bond', p: a.xyz, q: mid(a.xyz, o.xyz), r: stickR(a.el), color, color2: st.bondGrad ? mixHex(color, colorOf(o.el)) : undefined });
+        items.push({ t: 'bond', p: a.xyz, q: mid(a.xyz, o.xyz), r: stickR(a.el), color, color2: st.bondGrad ? mixHex(color, colorOf(o.el)) : undefined, opacity: Math.min(solid(i), solid(j)) });
       }
     });
     if (st.poly && st.inorg && st.style !== 'sf') {
@@ -3601,7 +3636,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     }
     if (st.hb && st.style !== 'sf') {
       for (const h of blk.hbonds) {
-        if (!isVisible(blk.atoms[h.d]) || !isVisible(blk.atoms[h.a]) || hid.has(h.d) || hid.has(h.a)) continue;
+        if (!isVisible(blk.atoms[h.d]) || !isVisible(blk.atoms[h.a]) || solid(h.d) <= 0 || solid(h.a) <= 0) continue;
         const from = st.H && h.h >= 0 ? blk.atoms[h.h] : blk.atoms[h.d];
         items.push({ t: 'line', p: from.xyz, q: blk.atoms[h.a].xyz, w: 0.1 * scale, color: accent, dash: [0.16 * scale, 0.2 * scale], cls: 'hbond' });
       }
@@ -3628,7 +3663,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
       text(at, measureValueText(m), 13, panel, ink, 0.9, 'measure');
     }
     if (st.labels !== 'off') {
-      blk.atoms.forEach((a, i) => { if (isVisible(a) && !hid.has(i) && (st.labels === 'all' || a.el !== 'H')) text(a.xyz, a.label, 11, ink, panel, 0.55, 'atom-label'); });
+      blk.atoms.forEach((a, i) => { if (isVisible(a) && solid(i) > 0 && (st.labels === 'all' || a.el !== 'H')) text(a.xyz, a.label, 11, ink, panel, 0.55, 'atom-label'); });
     }
     const svg = C.toSvg({ width: rect.width, height: rect.height, M, b: o, items, title: d.name, shaded: $('svgShade').value === 'shaded',
       background: $('pngClear').checked ? null : cssVar('--stage') });
@@ -3726,7 +3761,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
       if (t.dataset.pcol !== undefined) styleStore(d, t.dataset.pcol).color = t.value;
       if (t.dataset.pop !== undefined) styleStore(d, t.dataset.pop).opacity = +t.value;
       if (t.dataset.pedge !== undefined) styleStore(d, t.dataset.pedge).edges = t.checked;
-      if (t.dataset.pcen !== undefined) styleStore(d, t.dataset.pcen).centre = !t.checked;
+      if (t.dataset.pcen !== undefined) styleStore(d, t.dataset.pcen).centre = +t.value;
       if (t.dataset.pmax !== undefined) { const v = parseFloat(t.value); if (v > 0) d.polyRules[+t.dataset.pmax].max = v; }
       setTimeout(polyChanged, 0);
     };

@@ -4,7 +4,7 @@ Any change to how a number is defined gets a new version and a line here.
 
 ## v0.2.2
 
-- Polyhedra can hide their centre atoms. Each row of the Polyhedra card has a "Hide the centre atoms" box. It is on for polyhedra you add and off for the automatic ones. A hidden centre is left out of the picture, the PNG and the SVG together with its bonds; it stays in the mol2 file and in every number. An atom with no polyhedron drawn around it is never hidden.
+- Inside a polyhedron the centre atom and its bonds are drawn faded, so the polyhedron reads first. Each row of the Polyhedra card has a "Centre atoms" slider: 100 % draws them solid as before, 0 % leaves them out. The default is 25 %, for the automatic polyhedra and for the ones you add, so the picture of a structure with polyhedra looks different from v0.2.1 when it opens. The fading is used by the PNG and the SVG too. A centre set to 0 % stays in the mol2 file. An atom with no polyhedron drawn around it is never faded, and switching the polyhedra off draws everything solid.
 - The strip under the picture is one row of fixed height, so the picture no longer jumps when the pointer passes over an atom. It shows the latest measurement; the Measure card lists them all.
 - The Structures table starts at its header row, with a "Copy table" button next to "Structure".
 

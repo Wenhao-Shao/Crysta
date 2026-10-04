@@ -1768,7 +1768,7 @@
           paint = 'url(#' + id + ')';
         }
         // a dark line under a slightly thinner coloured one gives the stick its outline
-        body.push({ z: depth(midp(it.p, it.q, 0.5)), s: '<g class="bond"><line ' + xy + ' stroke="' + shade(it.color, -0.55) + '" stroke-width="' + n2(w + Math.max(0.6, 0.03 * scale)) + '"/>' +
+        body.push({ z: depth(midp(it.p, it.q, 0.5)), s: '<g class="bond"' + (it.opacity !== undefined && it.opacity < 1 ? ' opacity="' + n2(it.opacity) + '"' : '') + '><line ' + xy + ' stroke="' + shade(it.color, -0.55) + '" stroke-width="' + n2(w + Math.max(0.6, 0.03 * scale)) + '"/>' +
           '<line ' + xy + ' stroke="' + paint + '" stroke-width="' + n2(w) + '"/></g>' });
       } else if (it.t === 'face') {
         let z = 0;
