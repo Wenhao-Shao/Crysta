@@ -30,6 +30,7 @@ Status marks: **done** (released), **next** (agreed, not started), **later** (ag
 | Show, hide or remove each set of polyhedra; several sets per centre element | done, v0.2.1 |
 | Polyhedra defined by the user: any centre element, any corner elements, a distance limit, CN above 8 allowed; filled from the form or by clicking a centre and a corner | done, v0.2.1 |
 | Colour, opacity and edges per polyhedron row | done, v0.2.1 |
+| Centre atoms and their bonds faded inside polyhedra, set per row from left out to solid | done, v0.2.2 |
 | Automatic polyhedra around non-metal centres in molecular ions (PF6, SO4, TeCl6) | done, v0.2.1 |
 | User polyhedra: a separate distance per corner element; edge width; remembered between visits | later |
 | Option for an edited distance to also change the reported coordination numbers and dimensionality | open |
