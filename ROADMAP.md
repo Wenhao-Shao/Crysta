@@ -29,10 +29,11 @@ Status marks: **done** (released), **next** (agreed, not started), **later** (ag
 | Alkali ions as polyhedron centres when they are the only metals (NaCl) | done, v0.2.0 |
 | Switch polyhedra on or off per element | done, v0.2.1 |
 | Polyhedra defined by the user: any centre element, any corner elements, a distance limit, CN above 8 allowed; filled from the form or by clicking a centre and a corner | done, v0.2.1 |
-| User polyhedra: a separate distance per corner element; a colour per rule; remembered between visits | later |
+| Colour, opacity and edges per polyhedron row | done, v0.2.1 |
+| Automatic polyhedra around non-metal centres in molecular ions (PF6, SO4, TeCl6) | done, v0.2.1 |
+| User polyhedra: a separate distance per corner element; edge width; remembered between visits | later |
 | Option for an edited distance to also change the reported coordination numbers and dimensionality | open |
 | Editable bond cutoffs per element pair | next |
-| Polyhedra around P and S inside molecular oxyanions (PO4 in LiFePO4, SO4) | later |
 
 ## 3. Perovskite analysis as a module
 

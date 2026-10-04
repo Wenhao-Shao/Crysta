@@ -6,9 +6,17 @@ Any change to how a number is defined gets a new version and a line here.
 
 - Measurements can be removed one at a time: each is listed in the Measure card with a Remove button, a Clear button removes them all, and a right-click on a measurement in the picture opens a menu to remove it. Up to 20 are kept.
 - Element appearance: press an element in the legend to change its colour, size and opacity, and to switch its polyhedra on or off. The change applies to every atom of that element in every loaded structure, and is used by the PNG and SVG exports. A see-through element keeps solid bonds.
-- Polyhedra you define yourself: a Polyhedra card where any element can be the centre and any elements the corners, within a distance you set. The card suggests the distance of the nearest shell, shows how many corners that gives before you add it, and can be filled by clicking a centre atom and one corner atom in the picture. The distance stays editable in the list. Your polyhedra replace the automatic ones around the same element, belong to one structure, and are used by the PNG and SVG exports. They change the picture only: coordination numbers, framework dimensionality and the layer descriptors are computed as before.
+- Polyhedra you define yourself: a Polyhedra card where any element can be the centre and any elements the corners, within a distance you set. The card suggests the distance of the nearest shell, shows how many corners that gives before you add it, and can be filled by clicking a centre atom and one corner atom in the picture. Three corners are drawn as a triangle. The card warns when the centre lies outside its corners, which means the distance reaches into a neighbouring unit. The distance stays editable in the list. Your polyhedra replace the automatic ones around the same element, belong to one structure, and are used by the PNG and SVG exports. They change the picture only: coordination numbers, framework dimensionality and the layer descriptors are computed as before.
 - In the Structures table the control that removes a structure is a cross at the left of its name.
-- No change to any definition.
+- Each row of the Polyhedra card opens to set the colour, opacity and edges of those polyhedra, automatic or your own.
+
+Definitions that changed:
+
+- **Saturated atoms are not ligands.** An atom that already has four or more covalent bonds is no longer counted as bonded to a metal, however close it sits. Before, Te of TeCl6 next to Cs, or an sp3 carbon next to a large cation, could be counted in the coordination number.
+- **Halides beside a metal keep their covalent bonds.** A halide bonded to a non-metal centre (Cl of TeCl6) stays part of that unit when a metal is also near. Before, any halide within reach of a metal was taken out of its molecule.
+- **Automatic polyhedra around non-metal centres.** B, Si, P, As, S, Se and Te with 4 to 8 bonded neighbours, all of them O, N, F, S, Se, Cl, Br or I, get a polyhedron in molecules and molecular ions too (PF6, SO4, TeCl6), not only in covalent networks.
+
+Checked: every number reported for the six layered halide structures is still identical to v0.1.5.
 
 ## v0.2.0
 

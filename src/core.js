@@ -45,9 +45,10 @@
   const isDonor = (el) => NONMETAL.has(el) && el !== 'H' && el !== 'D' && !NOBLE.has(el);
   /* extra length allowed on top of the covalent radii */
   const TOL_COVALENT = 0.45, TOL_HALIDE = 0.75, TOL_DONOR = 0.5;
-  /* network formers that get a polyhedron inside a covalent network (SiO4 in quartz), and what may surround them */
-  const NET_CENTER = new Set(['B', 'Si', 'P', 'As']);
-  const NET_VERTEX = new Set(['O', 'N', 'F', 'S', 'Se', 'Cl']);
+  /* non-metal centres that get a polyhedron when four or more atoms of the listed kinds, and nothing else,
+     are bonded to them: SiO4 in quartz, PO4, SO4, BF4, PF6, TeCl6 */
+  const NET_CENTER = new Set(['B', 'Si', 'P', 'As', 'S', 'Se', 'Te']);
+  const NET_VERTEX = new Set(['O', 'N', 'F', 'S', 'Se', 'Cl', 'Br', 'I']);
   /* largest coordination number drawn as a polyhedron; larger shells (A-site cuboctahedra) only clutter */
   const MAX_POLY_CN = 8;
 
@@ -697,7 +698,8 @@
     const adj = atoms.map(() => []);
     const thin = Math.min(...cell.recip.map((r) => 1 / norm(r))) < 7.0;
     const covShifts = thin ? shifts : [[0, 0, 0]];
-    const noCovalent = (i) => isMetal(atoms[i].el) || (HALIDE.has(atoms[i].el) && metalsOf[i].length > 0);
+    // a halide next to a metal can still be covalently bound to a non-metal centre (Cl of TeCl6 beside Cs)
+    const noCovalent = (i) => isMetal(atoms[i].el);
     for (let i = 0; i < N; i++) {
       const a = atoms[i];
       if (noCovalent(i)) continue;
@@ -722,6 +724,15 @@
         }
       }
     }
+
+    // an atom that already has four or more covalent bonds has no lone pair left to give: it is not a
+    // ligand, however close a large cation sits (Te of TeCl6 next to Cs, N of an ammonium, sp3 C)
+    for (let j = 0; j < N; j++) {
+      if (!metalsOf[j].length || adj[j].length < 4) continue;
+      for (const m of metalsOf[j]) ligs[m.i] = ligs[m.i].filter((l) => l.j !== j);
+      metalsOf[j] = [];
+    }
+    const covCentre = (i) => NET_CENTER.has(atoms[i].el) && adj[i].length >= 4 && adj[i].length <= MAX_POLY_CN && adj[i].every((nb) => NET_VERTEX.has(atoms[nb.j].el));
 
     // 4. connected components of the whole bond graph (coordination and covalent), each with the
     //    lattice translations that join it to itself: none for a molecule, 1 to 3 for a chain, layer or framework
@@ -790,7 +801,7 @@
       if (loops.length) {
         networks.push({ atoms: order, dim: loops.length, vecs: loops });
         for (const i of order) {
-          if (NET_CENTER.has(atoms[i].el) && adj[i].length >= 4 && adj[i].length <= MAX_POLY_CN && adj[i].every((nb) => NET_VERTEX.has(atoms[nb.j].el))) polyAt.add(i);
+          if (covCentre(i)) polyAt.add(i);
         }
         continue;
       }
@@ -810,6 +821,10 @@
         ion: order.length === 1 && (HALIDE.has(atoms[s].el) || isMetal(atoms[s].el)),
         symdis: order.some((i) => atoms[i].symdis)
       };
+      // polyhedra inside a molecule or molecular ion: PF6, SO4, TeCl6
+      const mp = [];
+      for (const i of order) if (covCentre(i) && adj[i].every((nb) => local.has(nb.j))) mp.push({ center: local.get(i), verts: adj[i].map((nb) => local.get(nb.j)) });
+      if (mp.length) mol.polys = mp;
       mol.cen = cen.map((x, k) => x / order.length + shift[k]);
       // a molecule disordered over a symmetry element: keep one orientation
       if (mol.symdis && !showMinor && molecules.some((m) => m.symdis && norm(cell.toCart(mi(sub(m.cen, mol.cen)))) < 1.0)) continue;
@@ -833,6 +848,7 @@
           const sft = [0, 1, 2].map((k) => Math.round(nb.d[k] - (atoms[nb.j].f[k] - atoms[i].f[k])));
           if (same(add(offs[i], sft), offs[nb.j])) bonds.push([local.get(i), local.get(nb.j)]);
         }
+        if (covCentre(i) && adj[i].every((nb) => local.has(nb.j))) polys.push({ center: local.get(i), verts: adj[i].map((nb) => local.get(nb.j)) });
         if (!center[i]) continue;
         const verts = [];
         for (const l of ligs[i]) {
@@ -1424,12 +1440,21 @@
   /* what one rule gives in this structure: how many centres, and the smallest and largest number of corners */
   function polyhedraStats(uc, rule) {
     const map = polyhedraFor(uc, [Object.assign({}, rule, { on: true })]);
-    const cn = Array.from(map.values()).map((v) => v.length);
-    return { centres: cn.length, cnMin: cn.length ? Math.min(...cn) : 0, cnMax: cn.length ? Math.max(...cn) : 0 };
+    const cn = [];
+    let outside = 0;
+    for (const list of map.values()) {
+      cn.push(list.length);
+      if (list.length < 4) continue;
+      // corners relative to the centre: the centre is outside when it lies beyond one of the faces
+      const pts = list.map((v) => uc.cell.toCart(v.off));
+      if (hullFaces(pts).some((f) => -dot(f.n, pts[f.v[0]]) > 0.05)) outside++;
+    }
+    return { centres: cn.length, cnMin: cn.length ? Math.min(...cn) : 0, cnMax: cn.length ? Math.max(...cn) : 0, outside };
   }
   /* a distance limit that takes the first shell of corners around the centre: the shell ends at the first
-     jump of more than 20 % in the sorted distances (later, if that leaves fewer than 4 corners); the limit
-     sits just outside it, well short of the next shell */
+     jump of more than 20 % in the sorted distances; the limit sits just outside it, well short of the next
+     shell. It never reaches for a further shell to make up the numbers: that would take corners that
+     belong to a neighbouring unit. */
   function suggestPolyMax(uc, center, corners) {
     const reach = 8;
     const map = polyhedraFor(uc, [{ center, corners, max: reach }]);
@@ -1437,9 +1462,8 @@
     for (const list of map.values()) {
       const d = list.map((v) => v.d).sort((p, q) => p - q);
       if (!d.length) continue;
-      // the nearest shell, and further shells while there are fewer than the 4 corners a polyhedron needs
       let k = 0;
-      while (k + 1 < d.length && (d[k + 1] <= d[k] * 1.2 || k + 1 < 4)) k++;
+      while (k + 1 < d.length && d[k + 1] <= d[k] * 1.2) k++;
       const lim = k + 1 < d.length ? Math.min(d[k] * 1.15, (d[k] + d[k + 1]) / 2) : d[k] * 1.15;
       if (best === null || lim > best) best = lim;
     }
@@ -1550,7 +1574,7 @@
       for (let ix = 0; ix < before; ix++) {
         const a = out[ix];
         const list = map.get(a.src);
-        if (!list || list.length < 4 || !(a.group >= 0 || inside(a.f))) continue;
+        if (!list || list.length < 3 || !(a.group >= 0 || inside(a.f))) continue;
         const verts = list.map((v) => {
           const f = add(a.f, v.off);
           const key = keyOf(v.j, f);
@@ -1667,7 +1691,7 @@
      items:
        { t: 'atom', p, r, color, el, opacity }           sphere of radius r (angstrom)
        { t: 'bond', p, q, r, color }                     one half of a stick, radius r (angstrom)
-       { t: 'face', pts, color, opacity, cls }           flat polygon (polyhedron face, lattice plane)
+       { t: 'face', pts, color, opacity, cls, edge, edgeColor }   flat polygon; edge = outline width in pixels
        { t: 'line', p, q, w, color, dash, cls }          line of width w (pixels)
        { t: 'arrow', p, q, r, color }                    arrow from p to q, shaft radius r (angstrom)
        { t: 'text', p, text, size, color, bg, cls }      label, always drawn on top                */
@@ -1684,6 +1708,8 @@
       if (!g) { g = { n: f.n, d, idx: new Set() }; groups.push(g); }
       for (const k of f.v) g.idx.add(k);
     }
+    // a flat set gives the same polygon twice, once for each side: keep one
+    if (groups.length === 2 && dot(groups[0].n, groups[1].n) < -0.999) groups.pop();
     return groups.map((g) => {
       const idx = Array.from(g.idx);
       let cen = [0, 0, 0];
@@ -1734,7 +1760,7 @@
         let z = 0;
         for (const p of it.pts) z += depth(p);
         body.push({ z: z / it.pts.length, s: '<polygon class="' + xml(it.cls || 'face') + '" points="' + it.pts.map(pt).join(' ') + '" fill="' + it.color + '" fill-opacity="' + (it.opacity === undefined ? 0.45 : it.opacity) +
-          '" stroke="' + shade(it.color, -0.35) + '" stroke-opacity="0.7" stroke-width="' + n2(Math.max(0.4, 0.015 * scale)) + '" stroke-linejoin="round"/>' });
+          '" stroke="' + (it.edgeColor || shade(it.color, -0.35)) + '" stroke-opacity="' + (it.edge ? 1 : 0.7) + '" stroke-width="' + n2(it.edge || Math.max(0.4, 0.015 * scale)) + '" stroke-linejoin="round"/>' });
       } else if (it.t === 'line') {
         const s = P(it.p), e = P(it.q);
         body.push({ z: depth(midp(it.p, it.q, 0.5)), s: '<line class="' + xml(it.cls || 'line') + '" x1="' + n2(s[0]) + '" y1="' + n2(s[1]) + '" x2="' + n2(e[0]) + '" y2="' + n2(e[1]) + '" stroke="' + it.color +
@@ -1791,6 +1817,11 @@
         if (s > 0.05) pos++; else if (s < -0.05) neg++;
       }
       if (pos && neg) continue;
+      if (!pos && !neg) {
+        // every point lies in this plane (a triangle, a square): the face is seen from both sides
+        faces.push({ v: [i, j, k], n: nrm }, { v: [i, k, j], n: nrm.map((x) => -x) });
+        continue;
+      }
       const outward = dot(nrm, sub(points[i], cen)) >= 0;
       faces.push(outward ? { v: [i, j, k], n: nrm } : { v: [i, k, j], n: nrm.map((x) => -x) });
     }

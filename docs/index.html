@@ -86,7 +86,15 @@ button.chip[aria-expanded="true"] { border-color: var(--accent); }
 .ctx button:hover { background: var(--accent-soft); }
 .prule { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 4px 8px; align-items: center; font-size: 13px; border-top: 1px solid var(--line); padding-top: 8px; }
 .prule:first-child { border-top: 0; padding-top: 0; }
-.prule .what { min-width: 0; }
+.prule .what { min-width: 0; border: 0; background: none; padding: 0; text-align: left; display: flex; align-items: center; gap: 6px; }
+.prule .what:hover b { text-decoration: underline; }
+.prule .what .sw { border: 1px solid var(--line); border-radius: 3px; }
+.prule .what .car { color: var(--muted); font-size: 11px; width: 10px; }
+.prule .look { grid-column: 2 / 4; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 6px 8px; align-items: center; font-size: 12.5px; color: var(--muted); }
+.prule .look input[type="range"] { width: 100%; accent-color: var(--accent); }
+.prule .look input[type="color"] { width: 44px; height: 24px; padding: 0; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); }
+.prule .look .full { grid-column: 1 / 4; display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; justify-content: space-between; }
+.prule .look label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
 .prule .what b { font-weight: 600; }
 .prule .sub2 { grid-column: 2 / 4; display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; color: var(--muted); font-size: 12.5px; }
 .prule .sub2 input { width: 64px; }
@@ -345,7 +353,7 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
           <div class="pprev" id="pfPreview" aria-live="polite"></div>
           <div class="row"><button type="button" class="primary" id="pfAdd">Add these polyhedra</button></div>
         </div>
-        <div class="small">Any element can be the centre and any elements the corners. Polyhedra you add replace the automatic ones around the same element. They change the picture only, not the coordination numbers in the data cards.</div>
+        <div class="small">Any element can be the centre and any elements the corners. Press a row to change its colour, opacity and edges. Polyhedra you add replace the automatic ones around the same element. They change the picture only, not the coordination numbers in the data cards.</div>
       </section>
 
       <section class="card">
@@ -491,9 +499,10 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
   const isDonor = (el) => NONMETAL.has(el) && el !== 'H' && el !== 'D' && !NOBLE.has(el);
   /* extra length allowed on top of the covalent radii */
   const TOL_COVALENT = 0.45, TOL_HALIDE = 0.75, TOL_DONOR = 0.5;
-  /* network formers that get a polyhedron inside a covalent network (SiO4 in quartz), and what may surround them */
-  const NET_CENTER = new Set(['B', 'Si', 'P', 'As']);
-  const NET_VERTEX = new Set(['O', 'N', 'F', 'S', 'Se', 'Cl']);
+  /* non-metal centres that get a polyhedron when four or more atoms of the listed kinds, and nothing else,
+     are bonded to them: SiO4 in quartz, PO4, SO4, BF4, PF6, TeCl6 */
+  const NET_CENTER = new Set(['B', 'Si', 'P', 'As', 'S', 'Se', 'Te']);
+  const NET_VERTEX = new Set(['O', 'N', 'F', 'S', 'Se', 'Cl', 'Br', 'I']);
   /* largest coordination number drawn as a polyhedron; larger shells (A-site cuboctahedra) only clutter */
   const MAX_POLY_CN = 8;
 
@@ -1143,7 +1152,8 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
     const adj = atoms.map(() => []);
     const thin = Math.min(...cell.recip.map((r) => 1 / norm(r))) < 7.0;
     const covShifts = thin ? shifts : [[0, 0, 0]];
-    const noCovalent = (i) => isMetal(atoms[i].el) || (HALIDE.has(atoms[i].el) && metalsOf[i].length > 0);
+    // a halide next to a metal can still be covalently bound to a non-metal centre (Cl of TeCl6 beside Cs)
+    const noCovalent = (i) => isMetal(atoms[i].el);
     for (let i = 0; i < N; i++) {
       const a = atoms[i];
       if (noCovalent(i)) continue;
@@ -1168,6 +1178,15 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
         }
       }
     }
+
+    // an atom that already has four or more covalent bonds has no lone pair left to give: it is not a
+    // ligand, however close a large cation sits (Te of TeCl6 next to Cs, N of an ammonium, sp3 C)
+    for (let j = 0; j < N; j++) {
+      if (!metalsOf[j].length || adj[j].length < 4) continue;
+      for (const m of metalsOf[j]) ligs[m.i] = ligs[m.i].filter((l) => l.j !== j);
+      metalsOf[j] = [];
+    }
+    const covCentre = (i) => NET_CENTER.has(atoms[i].el) && adj[i].length >= 4 && adj[i].length <= MAX_POLY_CN && adj[i].every((nb) => NET_VERTEX.has(atoms[nb.j].el));
 
     // 4. connected components of the whole bond graph (coordination and covalent), each with the
     //    lattice translations that join it to itself: none for a molecule, 1 to 3 for a chain, layer or framework
@@ -1236,7 +1255,7 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
       if (loops.length) {
         networks.push({ atoms: order, dim: loops.length, vecs: loops });
         for (const i of order) {
-          if (NET_CENTER.has(atoms[i].el) && adj[i].length >= 4 && adj[i].length <= MAX_POLY_CN && adj[i].every((nb) => NET_VERTEX.has(atoms[nb.j].el))) polyAt.add(i);
+          if (covCentre(i)) polyAt.add(i);
         }
         continue;
       }
@@ -1256,6 +1275,10 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
         ion: order.length === 1 && (HALIDE.has(atoms[s].el) || isMetal(atoms[s].el)),
         symdis: order.some((i) => atoms[i].symdis)
       };
+      // polyhedra inside a molecule or molecular ion: PF6, SO4, TeCl6
+      const mp = [];
+      for (const i of order) if (covCentre(i) && adj[i].every((nb) => local.has(nb.j))) mp.push({ center: local.get(i), verts: adj[i].map((nb) => local.get(nb.j)) });
+      if (mp.length) mol.polys = mp;
       mol.cen = cen.map((x, k) => x / order.length + shift[k]);
       // a molecule disordered over a symmetry element: keep one orientation
       if (mol.symdis && !showMinor && molecules.some((m) => m.symdis && norm(cell.toCart(mi(sub(m.cen, mol.cen)))) < 1.0)) continue;
@@ -1279,6 +1302,7 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
           const sft = [0, 1, 2].map((k) => Math.round(nb.d[k] - (atoms[nb.j].f[k] - atoms[i].f[k])));
           if (same(add(offs[i], sft), offs[nb.j])) bonds.push([local.get(i), local.get(nb.j)]);
         }
+        if (covCentre(i) && adj[i].every((nb) => local.has(nb.j))) polys.push({ center: local.get(i), verts: adj[i].map((nb) => local.get(nb.j)) });
         if (!center[i]) continue;
         const verts = [];
         for (const l of ligs[i]) {
@@ -1870,12 +1894,21 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
   /* what one rule gives in this structure: how many centres, and the smallest and largest number of corners */
   function polyhedraStats(uc, rule) {
     const map = polyhedraFor(uc, [Object.assign({}, rule, { on: true })]);
-    const cn = Array.from(map.values()).map((v) => v.length);
-    return { centres: cn.length, cnMin: cn.length ? Math.min(...cn) : 0, cnMax: cn.length ? Math.max(...cn) : 0 };
+    const cn = [];
+    let outside = 0;
+    for (const list of map.values()) {
+      cn.push(list.length);
+      if (list.length < 4) continue;
+      // corners relative to the centre: the centre is outside when it lies beyond one of the faces
+      const pts = list.map((v) => uc.cell.toCart(v.off));
+      if (hullFaces(pts).some((f) => -dot(f.n, pts[f.v[0]]) > 0.05)) outside++;
+    }
+    return { centres: cn.length, cnMin: cn.length ? Math.min(...cn) : 0, cnMax: cn.length ? Math.max(...cn) : 0, outside };
   }
   /* a distance limit that takes the first shell of corners around the centre: the shell ends at the first
-     jump of more than 20 % in the sorted distances (later, if that leaves fewer than 4 corners); the limit
-     sits just outside it, well short of the next shell */
+     jump of more than 20 % in the sorted distances; the limit sits just outside it, well short of the next
+     shell. It never reaches for a further shell to make up the numbers: that would take corners that
+     belong to a neighbouring unit. */
   function suggestPolyMax(uc, center, corners) {
     const reach = 8;
     const map = polyhedraFor(uc, [{ center, corners, max: reach }]);
@@ -1883,9 +1916,8 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
     for (const list of map.values()) {
       const d = list.map((v) => v.d).sort((p, q) => p - q);
       if (!d.length) continue;
-      // the nearest shell, and further shells while there are fewer than the 4 corners a polyhedron needs
       let k = 0;
-      while (k + 1 < d.length && (d[k + 1] <= d[k] * 1.2 || k + 1 < 4)) k++;
+      while (k + 1 < d.length && d[k + 1] <= d[k] * 1.2) k++;
       const lim = k + 1 < d.length ? Math.min(d[k] * 1.15, (d[k] + d[k + 1]) / 2) : d[k] * 1.15;
       if (best === null || lim > best) best = lim;
     }
@@ -1996,7 +2028,7 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
       for (let ix = 0; ix < before; ix++) {
         const a = out[ix];
         const list = map.get(a.src);
-        if (!list || list.length < 4 || !(a.group >= 0 || inside(a.f))) continue;
+        if (!list || list.length < 3 || !(a.group >= 0 || inside(a.f))) continue;
         const verts = list.map((v) => {
           const f = add(a.f, v.off);
           const key = keyOf(v.j, f);
@@ -2113,7 +2145,7 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
      items:
        { t: 'atom', p, r, color, el, opacity }           sphere of radius r (angstrom)
        { t: 'bond', p, q, r, color }                     one half of a stick, radius r (angstrom)
-       { t: 'face', pts, color, opacity, cls }           flat polygon (polyhedron face, lattice plane)
+       { t: 'face', pts, color, opacity, cls, edge, edgeColor }   flat polygon; edge = outline width in pixels
        { t: 'line', p, q, w, color, dash, cls }          line of width w (pixels)
        { t: 'arrow', p, q, r, color }                    arrow from p to q, shaft radius r (angstrom)
        { t: 'text', p, text, size, color, bg, cls }      label, always drawn on top                */
@@ -2130,6 +2162,8 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
       if (!g) { g = { n: f.n, d, idx: new Set() }; groups.push(g); }
       for (const k of f.v) g.idx.add(k);
     }
+    // a flat set gives the same polygon twice, once for each side: keep one
+    if (groups.length === 2 && dot(groups[0].n, groups[1].n) < -0.999) groups.pop();
     return groups.map((g) => {
       const idx = Array.from(g.idx);
       let cen = [0, 0, 0];
@@ -2180,7 +2214,7 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
         let z = 0;
         for (const p of it.pts) z += depth(p);
         body.push({ z: z / it.pts.length, s: '<polygon class="' + xml(it.cls || 'face') + '" points="' + it.pts.map(pt).join(' ') + '" fill="' + it.color + '" fill-opacity="' + (it.opacity === undefined ? 0.45 : it.opacity) +
-          '" stroke="' + shade(it.color, -0.35) + '" stroke-opacity="0.7" stroke-width="' + n2(Math.max(0.4, 0.015 * scale)) + '" stroke-linejoin="round"/>' });
+          '" stroke="' + (it.edgeColor || shade(it.color, -0.35)) + '" stroke-opacity="' + (it.edge ? 1 : 0.7) + '" stroke-width="' + n2(it.edge || Math.max(0.4, 0.015 * scale)) + '" stroke-linejoin="round"/>' });
       } else if (it.t === 'line') {
         const s = P(it.p), e = P(it.q);
         body.push({ z: depth(midp(it.p, it.q, 0.5)), s: '<line class="' + xml(it.cls || 'line') + '" x1="' + n2(s[0]) + '" y1="' + n2(s[1]) + '" x2="' + n2(e[0]) + '" y2="' + n2(e[1]) + '" stroke="' + it.color +
@@ -2237,6 +2271,11 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
         if (s > 0.05) pos++; else if (s < -0.05) neg++;
       }
       if (pos && neg) continue;
+      if (!pos && !neg) {
+        // every point lies in this plane (a triangle, a square): the face is seen from both sides
+        faces.push({ v: [i, j, k], n: nrm }, { v: [i, k, j], n: nrm.map((x) => -x) });
+        continue;
+      }
       const outward = dot(nrm, sub(points[i], cen)) >= 0;
       faces.push(outward ? { v: [i, j, k], n: nrm } : { v: [i, k, j], n: nrm.map((x) => -x) });
     }
@@ -2308,6 +2347,7 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
     return look(el).color || defaultColorOf(el);
   }
   const hexInt = (h) => parseInt(h.slice(1), 16);
+  const darker = (hex) => '#' + [1, 3, 5].map((k) => Math.round(parseInt(hex.slice(k, k + 2), 16) * 0.5).toString(16).padStart(2, '0')).join('');
   const fmt = (x, d) => x.toFixed(d);
   const V3 = (p) => ({ x: p[0], y: p[1], z: p[2] });
   const mean = (a) => a.reduce((t, x) => t + x, 0) / a.length;
@@ -2315,7 +2355,7 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
   /* ---------- documents ---------- */
   function makeDoc(src) {
     const struct = C.readStructure(src.text, src.name);
-    const d = { src, struct, minor: false, planes: [], chromos: [], measures: [], picks: [], polyRules: [], name: src.name.replace(/\.[^.]+$/, '') };
+    const d = { src, struct, minor: false, planes: [], chromos: [], measures: [], picks: [], polyRules: [], autoStyle: {}, polyOpen: null, name: src.name.replace(/\.[^.]+$/, '') };
     rebuildCell(d);
     const L = [struct.cell.a, struct.cell.b, struct.cell.c];
     // a molecule without a lattice sits in a box of its own: one copy is the whole picture
@@ -2351,6 +2391,14 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
     }
     d.hbRows = Array.from(seen.values()).sort((p, q) => p.dDA - q.dDA);
     d.hbFromH = big.hasH;
+    // automatic polyhedra of this structure: centre element, and what sits at the corners
+    d.autoPoly = [];
+    for (const pl of big.polyhedra) {
+      const el = big.atoms[pl.center].el;
+      let rec = d.autoPoly.find((x) => x.el === el);
+      if (!rec) { rec = { el, corners: [], cn: pl.verts.length }; d.autoPoly.push(rec); }
+      for (const v of pl.verts) if (!rec.corners.includes(big.atoms[v].el)) rec.corners.push(big.atoms[v].el);
+    }
     if (d.chromos) refreshChromos(d);
   }
   function refreshChromos(d) {
@@ -2618,28 +2666,61 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
     return present.sort((p, q) => (C.isMetal(q) - C.isMetal(p)) || p.localeCompare(q));
   };
   const cornerText = (rule) => (rule.corners ? rule.corners.join(', ') : 'any element');
-  function ruleSummary(d, rule) {
+  /* what a rule gives, in words, and whether it needs a warning */
+  function ruleReport(d, rule) {
     const r = C.polyhedraStats(d.uc, rule);
-    if (!r.centres) return 'no ' + rule.center + ' in this structure';
+    if (!r.centres) return { text: 'no ' + rule.center + ' in this structure', warn: true };
     const cn = r.cnMin === r.cnMax ? String(r.cnMax) : r.cnMin + ' to ' + r.cnMax;
-    return cn + (r.cnMax === 1 ? ' corner' : ' corners') + ' around each ' + rule.center + (r.cnMax < 4 ? '; a polyhedron needs at least 4' : r.cnMin < 4 ? '; centres with fewer than 4 are not drawn' : '');
+    let text = cn + (r.cnMax === 1 ? ' corner' : ' corners') + ' around each ' + rule.center;
+    let warn = false;
+    if (r.cnMax < 3) { text += '; a polyhedron needs at least 3. Add a corner element or a longer distance'; warn = true; }
+    else if (r.cnMax === 3) text += ', drawn as a triangle. Add a corner element for a polyhedron';
+    else if (r.cnMin < 3) text += '; centres with fewer than 3 are not drawn';
+    if (r.outside) { text += '. The ' + rule.center + ' lies outside these corners: the distance reaches a neighbouring unit, so try a shorter one'; warn = true; }
+    return { text, warn };
   }
+  const ruleSummary = (d, rule) => ruleReport(d, rule).text;
+  /* how the polyhedra around one element are drawn: the user's rule if there is one, else the automatic style */
+  const POLY_DEFAULT = { opacity: 0.5, edges: false };
+  function polyStyle(d, el) {
+    const rule = d.polyRules.find((r) => r.center === el && r.on !== false);
+    const o = (rule ? rule.style : d.autoStyle[el]) || {};
+    return { color: o.color || colorOf(el), own: !!o.color, opacity: o.opacity === undefined ? POLY_DEFAULT.opacity : o.opacity, edges: o.edges === undefined ? POLY_DEFAULT.edges : o.edges };
+  }
+  const styleStore = (d, key) => {
+    if (key[0] === 'a') return d.autoStyle[key.slice(2)] || (d.autoStyle[key.slice(2)] = {});
+    const rule = d.polyRules[+key.slice(2)];
+    return rule.style || (rule.style = {});
+  };
   function drawPolyCard() {
     const d = D();
     if (!d) return;
     const custom = new Set(d.polyRules.map((r) => r.center));
+    const look = (key, el, o) => {
+      if (d.polyOpen !== key) return '';
+      const col = (o && o.color) || colorOf(el);
+      const op = o && o.opacity !== undefined ? o.opacity : POLY_DEFAULT.opacity;
+      const ed = o && o.edges !== undefined ? o.edges : POLY_DEFAULT.edges;
+      return '<div class="look"><span>Colour</span><input type="color" data-pcol="' + key + '" value="' + esc(col) + '" aria-label="Colour of these polyhedra"><span></span>' +
+        '<span>Opacity</span><input type="range" data-pop="' + key + '" min="0.05" max="1" step="0.05" value="' + op + '" aria-label="Opacity of these polyhedra"><span>' + Math.round(100 * op) + '%</span>' +
+        '<div class="full"><label><input type="checkbox" data-pedge="' + key + '"' + (ed ? ' checked' : '') + '>Draw the edges</label><button type="button" class="mini" data-prst="' + key + '">Reset look</button></div></div>';
+    };
+    const head = (key, el, o, html) => '<button type="button" class="what" data-ptog="' + key + '" aria-expanded="' + (d.polyOpen === key) + '" title="Colour, opacity and edges">' +
+      '<span class="car" aria-hidden="true">' + (d.polyOpen === key ? '▾' : '▸') + '</span><i class="sw" style="background:' + ((o && o.color) || colorOf(el)) + '"></i><span>' + html + '</span></button>';
     // automatic polyhedra, one row per centre element that has no rule of its own
-    const auto = [];
-    for (const sIt of d.info.metalSites) if (sIt.cn >= 4 && sIt.cn <= C.MAX_POLY_CN && !auto.some((x) => x.el === sIt.el)) auto.push({ el: sIt.el, cn: sIt.cn });
-    for (const i of d.uc.polyAt) { const el = d.uc.atoms[i].el; if (!auto.some((x) => x.el === el)) auto.push({ el, cn: d.uc.adj[i].length }); }
-    const rows = auto.filter((x) => !custom.has(x.el)).map((x) =>
-      '<div class="prule"><input type="checkbox" data-pauto="' + esc(x.el) + '"' + (polyOn(x.el) ? ' checked' : '') + ' aria-label="Show polyhedra around ' + esc(x.el) + '">' +
-      '<span class="what"><b>' + esc(x.el) + '</b> with its bonded neighbours</span><span class="small">automatic</span></div>');
+    const rows = d.autoPoly.filter((x) => !custom.has(x.el)).map((x) => {
+      const key = 'a:' + x.el;
+      return '<div class="prule"><input type="checkbox" data-pauto="' + esc(x.el) + '"' + (polyOn(x.el) ? ' checked' : '') + ' aria-label="Show polyhedra around ' + esc(x.el) + '">' +
+        head(key, x.el, d.autoStyle[x.el], '<b>' + esc(x.el) + '</b> with ' + esc(x.corners.join(', '))) + '<span class="small">automatic</span>' + look(key, x.el, d.autoStyle[x.el]) + '</div>';
+    });
     d.polyRules.forEach((r, i) => {
+      const key = 'r:' + i;
+      const rep = ruleReport(d, r);
       rows.push('<div class="prule"><input type="checkbox" data-pon="' + i + '"' + (r.on !== false ? ' checked' : '') + ' aria-label="Show these polyhedra">' +
-        '<span class="what"><b>' + esc(r.center) + '</b> with ' + esc(cornerText(r)) + '</span>' +
+        head(key, r.center, r.style, '<b>' + esc(r.center) + '</b> with ' + esc(cornerText(r))) +
         '<button type="button" class="xbtn" data-prm="' + i + '" aria-label="Remove the polyhedra around ' + esc(r.center) + '" title="Remove">×</button>' +
-        '<div class="sub2"><label>within <input type="number" data-pmax="' + i + '" step="0.05" min="0.5" max="12" value="' + r.max + '"> Å</label><span>' + esc(ruleSummary(d, r)) + '</span></div></div>');
+        '<div class="sub2"><label>within <input type="number" data-pmax="' + i + '" step="0.05" min="0.5" max="12" value="' + r.max + '"> Å</label><span' + (rep.warn ? ' style="color:var(--warn)"' : '') + '>' + esc(rep.text) + '</span></div>' +
+        look(key, r.center, r.style) + '</div>');
     });
     $('polyList').innerHTML = rows.join('') || '<div class="small">No polyhedra in this structure yet.</div>';
     // the form: elements of this structure
@@ -2661,9 +2742,9 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
     box.classList.remove('warn');
     if (!f.corners.length) { box.textContent = 'Choose the corner elements.'; return; }
     if (!(f.max > 0)) { box.textContent = 'Enter a distance, or press Nearest shell.'; return; }
-    const r = C.polyhedraStats(d.uc, f);
-    box.textContent = ruleSummary(d, f) + '.';
-    box.classList.toggle('warn', r.cnMax < 4);
+    const rep = ruleReport(d, f);
+    box.textContent = rep.text + '.';
+    box.classList.toggle('warn', rep.warn);
   }
   function suggestPolyForm() {
     const d = D();
@@ -2964,7 +3045,7 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
       model.setStyle({ elem: el }, sty);
     }
 
-    // coordination polyhedra, one mesh per metal element
+    // coordination polyhedra, one mesh per centre element, in that element's polyhedron style
     if (st.poly && st.inorg && st.style !== 'sf') {
       const meshes = {};
       for (const p of blk.polyhedra) {
@@ -2977,8 +3058,19 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
           for (const k of f.v) { mesh.vertexArr.push(V3(pts[k])); mesh.normalArr.push(V3(f.n)); }
           mesh.faceArr.push(base, base + 1, base + 2);
         }
+        const sty = polyStyle(d, el);
+        if (sty.edges) {
+          const seen = new Set();
+          for (const poly of C.hullPolygons(pts)) for (let k = 0; k < poly.length; k++) {
+            const u = poly[k], v = poly[(k + 1) % poly.length];
+            const key = Math.min(u, v) + '-' + Math.max(u, v);
+            if (seen.has(key)) continue;
+            seen.add(key);
+            viewer.addCylinder({ start: V3(pts[u]), end: V3(pts[v]), radius: 0.035, color: darker(sty.color), fromCap: 1, toCap: 1 });
+          }
+        }
       }
-      for (const el of Object.keys(meshes)) viewer.addCustom(Object.assign(meshes[el], { color: colorOf(el), opacity: 0.5 }));
+      for (const el of Object.keys(meshes)) { const sty = polyStyle(d, el); viewer.addCustom(Object.assign(meshes[el], { color: sty.color, opacity: sty.opacity })); }
     }
 
     // unit cell outline with axis letters
@@ -3336,14 +3428,15 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
       for (const pl of blk.polyhedra) {
         if (!polyOn(blk.atoms[pl.center].el)) continue;
         const pts = pl.verts.map((i) => blk.atoms[i].xyz);
-        const color = colorOf(blk.atoms[pl.center].el);
+        const sty = polyStyle(d, blk.atoms[pl.center].el);
         // only the faces turned to the viewer, in a lighter tint: stacked translucent faces would add up to a dark block
         const cen = pts.reduce((t, q) => [t[0] + q[0], t[1] + q[1], t[2] + q[2]], [0, 0, 0]).map((x) => x / pts.length);
         for (const f of C.hullPolygons(pts)) {
           const fp = f.map((k) => pts[k]);
           const fc = fp.reduce((t, q) => [t[0] + q[0], t[1] + q[1], t[2] + q[2]], [0, 0, 0]).map((x) => x / fp.length);
           if ((fc[0] - cen[0]) * zdir[0] + (fc[1] - cen[1]) * zdir[1] + (fc[2] - cen[2]) * zdir[2] < -1e-6) continue;
-          items.push({ t: 'face', pts: fp, color: tint(color), opacity: 0.34, cls: 'polyhedron' });
+          items.push({ t: 'face', pts: fp, color: sty.own ? sty.color : tint(sty.color), opacity: Math.min(1, sty.opacity * 0.68), cls: 'polyhedron',
+            edge: sty.edges ? Math.max(1, 0.07 * scale) : undefined, edgeColor: sty.edges ? darker(sty.color) : undefined });
         }
       }
     }
@@ -3480,13 +3573,27 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
       const t = e.target;
       if (t.dataset.pauto !== undefined) { setLook(t.dataset.pauto, 'poly', t.checked); return; }
       if (t.dataset.pon !== undefined) d.polyRules[+t.dataset.pon].on = t.checked;
+      if (t.dataset.pcol !== undefined) styleStore(d, t.dataset.pcol).color = t.value;
+      if (t.dataset.pop !== undefined) styleStore(d, t.dataset.pop).opacity = +t.value;
+      if (t.dataset.pedge !== undefined) styleStore(d, t.dataset.pedge).edges = t.checked;
       if (t.dataset.pmax !== undefined) { const v = parseFloat(t.value); if (v > 0) d.polyRules[+t.dataset.pmax].max = v; }
       setTimeout(polyChanged, 0);
     };
     $('polyList').onclick = (e) => {
+      const d = D();
+      const tog = e.target.closest('button[data-ptog]');
+      if (tog) { d.polyOpen = d.polyOpen === tog.dataset.ptog ? null : tog.dataset.ptog; drawPolyCard(); return; }
+      const rst = e.target.closest('button[data-prst]');
+      if (rst) {
+        const key = rst.dataset.prst;
+        if (key[0] === 'a') delete d.autoStyle[key.slice(2)]; else delete d.polyRules[+key.slice(2)].style;
+        polyChanged();
+        return;
+      }
       const b = e.target.closest('button[data-prm]');
       if (!b) return;
-      D().polyRules.splice(+b.dataset.prm, 1);
+      d.polyRules.splice(+b.dataset.prm, 1);
+      d.polyOpen = null;
       polyChanged();
     };
     $('pfCentre').onchange = (e) => { const f = D().polyForm; f.center = e.target.value; if (f.corners.length) suggestPolyForm(); else drawPolyPreview(); };
@@ -3510,6 +3617,7 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
       // every element chosen is the same as "any element"; a second rule for a centre replaces the first
       const rule = { center: f.center, corners: f.corners.length === els.length ? null : f.corners.slice().sort(), max: f.max, on: true };
       d.polyRules = d.polyRules.filter((r) => r.center !== rule.center).concat([rule]);
+      d.polyOpen = null;
       if (!st.poly) { st.poly = true; $('chkPoly').checked = true; }
       d.polyForm = { center: f.center, corners: [], max: null };
       polyChanged();

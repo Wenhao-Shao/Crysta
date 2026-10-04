@@ -267,12 +267,33 @@ const formula = (info) => info.formula.map((e) => e.el + e.n).join(' ');
   check('non-metal centre, any corner', br.centres === 3 && br.cnMin === 14 && br.cnMax === 14, JSON.stringify(br));
   const brOnly = X.polyhedraStats(uc, { center: 'Br', corners: ['Pb', 'Cs'], max: 4.3 });
   check('corners limited to chosen elements', brOnly.cnMin === 6 && brOnly.cnMax === 6, JSON.stringify(brOnly));
-  // two Pb alone are too few for a polyhedron, so the suggestion reaches on to the four Cs
+  // the suggestion stays with the nearest shell (the two Pb) and does not reach for the Cs to make up the numbers
   const sb = X.suggestPolyMax(uc, 'Br', ['Pb', 'Cs']);
-  check('suggestion reaches four corners', sb > 4.154 && sb < 5.0 && X.polyhedraStats(uc, { center: 'Br', corners: ['Pb', 'Cs'], max: sb }).cnMin === 6, 'got ' + sb);
+  check('suggestion keeps to the nearest shell', near(sb, 3.4, 0.05) && X.polyhedraStats(uc, { center: 'Br', corners: ['Pb', 'Cs'], max: sb }).cnMax === 2, 'got ' + sb);
+  check('centre inside its polyhedron', X.polyhedraStats(uc, { center: 'Cs', corners: ['Br'], max }).outside === 0);
 
   const u = load('tests/cifs/urea.cif');
-  check('fewer than four corners: no polyhedron', X.assemble(u.uc, [0, 0, 0], [1, 1, 1], [{ center: 'C', corners: ['N', 'O'], max: 1.5 }]).polyhedra.length === 0);
+  const tri = X.assemble(u.uc, [0, 0, 0], [1, 1, 1], [{ center: 'C', corners: ['N', 'O'], max: 1.5 }]).polyhedra;
+  check('three corners: a triangle', tri.length === 2 && tri.every((p) => p.verts.length === 3));
+  check('fewer than three corners: nothing', X.assemble(u.uc, [0, 0, 0], [1, 1, 1], [{ center: 'C', corners: ['O'], max: 1.5 }]).polyhedra.length === 0);
+  check('a flat face is one polygon seen from both sides', X.hullFaces([[0, 0, 0], [1, 0, 0], [0, 1, 0]]).length === 2 && X.hullPolygons([[0, 0, 0], [1, 0, 0], [0, 1, 0]]).length === 1 &&
+    X.hullPolygons([[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0]]).length === 1);
+}
+
+// 10. molecular ions with a non-metal centre, next to a large cation: Cs2[TeCl6] (K2PtCl6 type, Fm-3m)
+{
+  const { uc, info } = load('tests/cifs/Cs2TeCl6.cif');
+  const b = X.assemble(uc, [0, 0, 0], [1, 1, 1]);
+  const te = b.polyhedra.filter((p) => b.atoms[p.center].el === 'Te');
+  check('TeCl6 octahedra drawn automatically', te.length > 0 && te.every((p) => p.verts.length === 6 && p.verts.every((v) => b.atoms[v].el === 'Cl')));
+  check('Te is not a ligand of Cs', info.metalSites.every((m) => m.bonds.every((x) => x.el !== 'Te')));
+  // Cs has 12 Cl at 3.69 A; the far Cl of each octahedron are at 6.4 A and must not be suggested
+  const max = X.suggestPolyMax(uc, 'Cs', ['Cl']);
+  const st = X.polyhedraStats(uc, { center: 'Cs', corners: ['Cl'], max });
+  check('Cs-Cl nearest shell', max < 4.5 && st.cnMin === 12 && st.cnMax === 12 && st.outside === 0, 'max ' + max + ' ' + JSON.stringify(st));
+  // a limit that takes only the corners of a neighbouring unit puts the centre outside its polyhedron
+  const far = X.polyhedraStats(uc, { center: 'Te', corners: ['Cs'], max: 4.7 });
+  check('Te with 8 Cs: centre inside a cube', far.cnMin === 8 && far.outside === 0, JSON.stringify(far));
 }
 
 console.log(passed + ' passed, ' + failed + ' failed');
