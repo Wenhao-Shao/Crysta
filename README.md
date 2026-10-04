@@ -1,18 +1,18 @@
-# Crystal Workbench
+# Crysta
 
-A single-page browser tool for crystal structures. Drop in one or more structure files and it expands
+Crysta is a crystal workbench that runs in a browser: a single-page tool for crystal structures. Drop in one or more structure files and it expands
 the symmetry, works out the bonding, sorts the atoms into frameworks, networks and whole molecules,
 draws the structure in 3D, and lets you measure, label, compare and export. Layered metal halides
 also get the layer descriptors that 2D perovskite papers use. Nothing is installed and no data leaves
 the browser.
 
-"Crystal Workbench" is a working title. The repository is still called `perovskite-workbench`.
+Crysta grew out of the 2D Perovskite Workbench (this repository was called `perovskite-workbench` until v0.2.0).
 What is planned next is in [ROADMAP.md](ROADMAP.md).
 
 ## Use it
 
-- **Online:** https://wenhao-shao.github.io/perovskite-workbench/ (`docs/index.html`, which loads 3Dmol.js from a CDN).
-- **Offline:** open `dist/Crystal-Workbench.html` in any browser. The 3D library is embedded.
+- **Online:** https://wenhao-shao.github.io/Crysta/ (`docs/index.html`, which loads 3Dmol.js from a CDN).
+- **Offline:** open `dist/Crysta.html` in any browser. The 3D library is embedded.
 
 Press "Load the sample structures" to load the four built-in samples: (PEA)2PbBr4, (FCA3)2PbBr4 at 294 K
 (CCDC 2485416), α-quartz and urea. Or drop your own files on the viewer.
@@ -27,6 +27,7 @@ Press "Load the sample structures" to load the four built-in samples: (PEA)2PbBr
 | XYZ, extended XYZ | yes | with `Lattice="..."` the cell is used; without it the file is shown as a single molecule with no lattice |
 | Tripos mol2 | write | the shown block, with the cell |
 | PNG | write | 1×, 2× or 4× the screen size, optional transparent background |
+| SVG | write | vector drawing of the view; every atom, bond and face is a separate editable object |
 
 ## What it does
 
@@ -45,7 +46,7 @@ Press "Load the sample structures" to load the four built-in samples: (PEA)2PbBr
   automatically.
 - **Comparison:** every loaded structure is a row in one table, which copies to the clipboard as
   tab-separated text for a spreadsheet.
-- **Export:** a PNG image of the view, or a mol2 file of the shown atoms.
+- **Export:** a PNG image of the view, an SVG vector drawing of it, or a mol2 file of the shown atoms.
 
 ## Feedback
 
@@ -54,10 +55,10 @@ Press "Send feedback" in the page header to report a bug or suggest an improveme
 - **Send to Wenhao Shao:** the note is delivered privately through [Formspree](https://formspree.io), a form
   service. No account is needed. An optional email address allows a reply.
 - **Continue on GitHub:** the note opens as a pre-filled issue on this repository's
-  [Issues](https://github.com/Wenhao-Shao/perovskite-workbench/issues) page, where you review and submit it
+  [Issues](https://github.com/Wenhao-Shao/Crysta/issues) page, where you review and submit it
   with a GitHub account. The issue is public and the email field is left out.
 
-Either way, only the note, the workbench version and the browser are sent. No structure data is sent.
+Either way, only the note, the Crysta version and the browser are sent. No structure data is sent.
 
 ## Definitions
 
@@ -90,6 +91,7 @@ These choices decide the numbers, so they are stated here. Changing any of them 
 | Hydrogen bond | N–H or O–H donor; H···A at least 0.15 Å inside the Bondi van der Waals sum and D–H···A above 120°; acceptors are O and N of another molecule and halide, O, N or S anions |
 | Torsion | −180° to 180°, positive when the far bond is clockwise from the near bond looking down the central bond |
 | mol2 atom types | SYBYL types guessed from the element and the number of bonded neighbours; every bond written as single |
+| SVG drawing | the screen view without perspective; objects written back to front by the depth of their centre; of each polyhedron only the faces turned to the viewer |
 
 ## Disorder
 
@@ -116,20 +118,21 @@ These choices decide the numbers, so they are stated here. Changing any of them 
   definition per cation.
 - The stacking-offset and tilt descriptors assume corner-sharing layers.
 - The mol2 file carries no bond orders or charges.
+- The SVG drawing sorts whole objects by depth, so objects that pass through each other (a bond through a polyhedron face, crossing lattice planes) can overlap in the wrong order. It has no perspective and no lighting beyond the shaded atom fill.
 
 ## Develop
 
 ```
-python3 build.py      # writes docs/index.html and dist/Crystal-Workbench.html
+python3 build.py      # writes docs/index.html and dist/Crysta.html
 node tests/run.js     # regression tests for src/core.js
 ```
 
-- `src/core.js`: file reading, symmetry, bonding, geometry, mol2 writer. Pure functions, no DOM, runs in Node.
+- `src/core.js`: file reading, symmetry, bonding, geometry, mol2 and SVG writers. Pure functions, no DOM, runs in Node.
 - `src/workbench.template.html`: the page and its interface code.
 - `src/sg-table.json`: Hermann–Mauguin symbol to Hall symbol, for CIFs that list no operators.
 - `examples/`: the CIFs embedded as built-in samples. The reflection list was removed from the
   (FCA3)2PbBr4 file (CCDC 2485416) to keep the page small, and its CCDC number was added as a data item.
-  The quartz and urea files were written for this workbench from literature values.
+  The quartz and urea files were written for Crysta from literature values.
 - `tests/`: regression tests, including operator lists for every tabulated Hall symbol, one small
   structure per crystal class in `tests/cifs/`, and one file per extra format in `tests/files/`.
 - `vendor/`: 3Dmol.js 2.5.5 (BSD-3-Clause) for the offline build.

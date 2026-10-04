@@ -2,7 +2,7 @@
 """Assemble the workbench from src/ into two single-file pages.
 
 docs/index.html          loads 3Dmol.js from a CDN (for GitHub Pages)
-dist/<Name>.html         embeds 3Dmol.js, works offline
+dist/<Name>.html         embeds 3Dmol.js, works offline (dist/Crysta.html)
 
 The name shown in the page comes from "displayName" in package.json.
 """

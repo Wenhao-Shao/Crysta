@@ -49,34 +49,29 @@ Status marks: **done** (released), **next** (agreed, not started), **later** (ag
 | PNG export, 1x to 4x, optional transparent background | done, v0.2.0 |
 | mol2 export of the shown block | done, v0.2.0 |
 | Input beyond CIF: SHELX .res/.ins, POSCAR/CONTCAR, XYZ | done, v0.2.0 |
-| SVG export | open, see below |
+| SVG export as a true vector drawing, shaded or flat atoms | done, v0.2.0 |
+| SVG: split objects that pass through each other, so the depth order is exact | later |
+| SVG: PNG-in-SVG variant that looks identical to the screen | later, if wanted |
 | Structure export beyond mol2 (CIF, XYZ, POSCAR) | later |
 | Thermal ellipsoids from the anisotropic displacement parameters | later |
 | Simulated powder XRD pattern | later |
 | Symmetry elements, voids, contacts shorter than van der Waals | later |
 | Bond orders and aromatic rings in the mol2 file | later |
 
-### SVG export: options to decide
+### SVG export: what was chosen
 
-1. **True vector drawing (recommended).** A second, small renderer that projects the current view:
-   atoms as circles, bonds as tapered strokes, polyhedra as translucent polygons, cell edges and
-   labels as lines and text, sorted back to front. Every object stays editable in Illustrator or
-   Inkscape and text stays text. Limit: objects that cross each other in depth are approximated,
-   because a vector file has no depth buffer. This is how Mercury and ChemDraw-style vector output works.
-2. **PNG wrapped in SVG.** The rendered picture inside an SVG file, with labels and the cell as real
-   vector objects on top. Quick, looks identical to the screen, but the atoms are not editable.
-3. **Both**, with a switch.
-
-Decisions needed for option 1: flat colour or a radial highlight on atoms; outline on or off;
-whether hydrogen bonds, lattice planes and dipole arrows are included in the first version.
+A true vector drawing: atoms as circles, bonds as strokes, polyhedron faces and lattice planes as
+translucent polygons, cell edges, hydrogen bonds and measurements as lines, labels as real text,
+written back to front. Atoms are shaded with a radial highlight or filled flat. Objects that cross
+each other in depth are approximated, because a vector file has no depth buffer.
 
 ## 5. Name, release and promotion
 
 | Item | Status |
 |---|---|
-| General name in the page, set in one place (`displayName` in `package.json`) | done, v0.2.0 (working title "Crystal Workbench") |
-| Final name, and whether to rename the repository and the published address | open |
-| Update the tab on the lab website to the new name | next |
+| Name: Crysta, set in one place (`displayName` in `package.json`) | done, v0.2.0 |
+| Repository renamed to `Crysta`; published address https://wenhao-shao.github.io/Crysta/ | done with v0.2.0 |
+| Lab website tab reads "Crystal Workbench" and points to the new address | done with v0.2.0 |
 | Citable release with a DOI (Zenodo) and a "how to cite" line in the page | next |
 | Short user guide with screenshots | next |
 | Comparison table against VESTA, Mercury and CrystalMaker, stating honestly what is and is not covered | next |

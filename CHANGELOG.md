@@ -4,7 +4,7 @@ Any change to how a number is defined gets a new version and a line here.
 
 ## v0.2.0
 
-The workbench becomes a general crystal viewer. The 2D perovskite analysis is unchanged and now runs as a module.
+The workbench becomes a general crystal viewer and is renamed **Crysta**. The 2D perovskite analysis is unchanged and now runs as a module.
 
 Definitions that changed:
 
@@ -27,10 +27,10 @@ New:
 - File formats: SHELX .res and .ins, VASP POSCAR and CONTCAR, XYZ and extended XYZ, next to CIF.
 - Measure: distance, angle and torsion by clicking atoms.
 - Atom labels.
-- Export: PNG image at 1×, 2× or 4× with an optional transparent background; Tripos mol2 file of the shown block.
+- Export: PNG image at 1×, 2× or 4× with an optional transparent background; SVG vector drawing of the view, with shaded or flat atoms, in which every atom, bond and face is a separate editable object; Tripos mol2 file of the shown block.
 - The comparison table leaves out columns that are empty for every loaded structure.
 - Two more built-in samples: α-quartz and urea.
-- The page name is set by `displayName` in `package.json`; the working title is "Crystal Workbench". The offline file is now `dist/Crystal-Workbench.html`.
+- Name: the tool is Crysta, set by `displayName` in `package.json`. The repository is renamed from `perovskite-workbench` to `Crysta`, the published address becomes https://wenhao-shao.github.io/Crysta/, and the offline file is `dist/Crysta.html`. The last column of the copied table is now headed "Crysta version".
 - Drawing many labels no longer redraws the scene once per label.
 - `ROADMAP.md` lists what is planned.
 

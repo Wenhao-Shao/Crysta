@@ -270,9 +270,16 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
             <option value="4">4×</option>
           </select></label>
         </div>
+        <div class="row">
+          <button type="button" id="btnSvg">Save SVG drawing</button>
+          <label class="small">atoms <select id="svgShade" aria-label="How atoms are filled in the SVG drawing">
+            <option value="shaded" selected>Shaded</option>
+            <option value="flat">Flat colour</option>
+          </select></label>
+        </div>
         <div class="checks"><label><input type="checkbox" id="pngClear">Transparent background</label></div>
         <div class="row"><button type="button" id="btnMol2">Save mol2 file</button></div>
-        <div class="small">Both save what is shown: the packing block, with hidden atoms left out. The mol2 file carries the cell; its atom types are guessed from the number of neighbours and every bond is written as single.</div>
+        <div class="small">All three save what is shown: the packing block, with hidden atoms left out. The SVG is a vector drawing in which every atom, bond and face is a separate object to edit; it is drawn without perspective, and objects that pass through each other are approximated. The mol2 file carries the cell; its atom types are guessed from the number of neighbours and every bond is written as single.</div>
       </section>
 
       <section class="card">
@@ -353,7 +360,7 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
     <label class="fb-field">Your email (optional)
       <input type="email" id="fbEmail" maxlength="120" autocomplete="email" placeholder="For a reply; never put on GitHub">
     </label>
-    <p>The workbench version and your browser are added automatically. No structure data is sent. Direct notes are delivered by Formspree, a form service.</p>
+    <p>The __NAME__ version and your browser are added automatically. No structure data is sent. Direct notes are delivered by Formspree, a form service.</p>
     <div class="alert" id="fbMsg" role="status" hidden></div>
     <div class="row between">
       <button type="button" id="fbCancel">Close</button>
@@ -808,7 +815,7 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
       ['Axial tilt (°)', L && L.axialTilt ? num(L.axialTilt.mean, 1) : ''],
       ['N penetration (Å)', L && L.penetration.length ? num(mean(L.penetration.map((p) => p.depth)), 3) : ''],
       ['Stacking offset', L && L.offset ? '(' + fmt(L.offset.s1, 2) + ', ' + fmt(L.offset.s2, 2) + ')' : ''],
-      ['Workbench version', '__VERSION__']
+      ['__NAME__ version', '__VERSION__']
     ];
   }
   /* the table as rows of [heading, value], without the columns that are empty for every structure */
@@ -1243,6 +1250,113 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
     } else { st.notice = 'The image could not be made in this browser. Try the 1× size.'; }
     drawReadout();
   }
+  /* the same scene as a vector drawing: 3D items for C.toSvg, projected with the current view */
+  function exportSvg() {
+    const d = D();
+    if (!viewer || !d) return;
+    const persp = $('chkPersp').checked;
+    if (persp) { viewer.setProjection('orthographic'); viewer.render(); }
+    const rect = $('gl').getBoundingClientRect();
+    const de = document.documentElement;
+    const ox = rect.left + window.pageXOffset - de.clientLeft, oy = rect.top + window.pageYOffset - de.clientTop;
+    const S = (p) => { const q = viewer.modelToScreen({ x: p[0], y: p[1], z: p[2] }); return [q.x - ox, q.y - oy]; };
+    // the orthographic view is a linear map: three unit steps from the origin give it exactly
+    const o = S([0, 0, 0]), ex = S([1, 0, 0]), ey = S([0, 1, 0]), ez = S([0, 0, 1]);
+    const M = [[ex[0] - o[0], ey[0] - o[0], ez[0] - o[0]], [ex[1] - o[1], ey[1] - o[1], ez[1] - o[1]]];
+    if (persp) { viewer.setProjection('perspective'); viewer.render(); }
+    const scale = Math.hypot(M[0][0], M[0][1], M[0][2]);
+    // direction to the viewer: screen right x screen up (the screen y axis points down)
+    const zdir = [M[0][1] * -M[1][2] - M[0][2] * -M[1][1], M[0][2] * -M[1][0] - M[0][0] * -M[1][2], M[0][0] * -M[1][1] - M[0][1] * -M[1][0]];
+    const tint = (hex) => '#' + [1, 3, 5].map((k) => { const v = parseInt(hex.slice(k, k + 2), 16); return Math.round(v + (255 - v) * 0.4).toString(16).padStart(2, '0'); }).join('');
+    if (!isFinite(scale) || scale <= 0) { st.notice = 'The drawing could not be made in this browser.'; drawReadout(); return; }
+
+    const uc = d.uc;
+    const blk = C.assemble(uc, d.lo, d.hi);
+    const ink = cssVar('--ink'), muted = cssVar('--muted'), accent = cssVar('--accent'), panel = cssVar('--panel');
+    const vdw = (el) => (window.$3Dmol && $3Dmol.GLModel && $3Dmol.GLModel.vdwRadii && $3Dmol.GLModel.vdwRadii[el]) || 1.7;
+    const sphere = (el) => {
+      if (st.style === 'sf') return vdw(el);
+      if (st.style === 'st') return C.isMetal(el) ? 0.3 : C.HALIDE.has(el) ? 0.2 : 0.13;
+      return C.isMetal(el) ? 0.55 : C.HALIDE.has(el) ? 0.42 : el === 'H' ? 0.16 : 0.3;
+    };
+    const stick = (el) => (st.style === 'st' ? 0.13 : el === 'H' ? 0.07 : 0.1);
+    const items = [];
+    const mid = (p, q) => [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2, (p[2] + q[2]) / 2];
+    blk.atoms.forEach((a) => {
+      if (!isVisible(a)) return;
+      const color = colorOf(a.el);
+      items.push({ t: 'atom', p: a.xyz, r: sphere(a.el), color, el: a.el });
+      if (st.style === 'sf') return;
+      for (const j of a.bonds) if (isVisible(blk.atoms[j])) items.push({ t: 'bond', p: a.xyz, q: mid(a.xyz, blk.atoms[j].xyz), r: stick(a.el), color });
+    });
+    if (st.poly && st.inorg && st.style !== 'sf') {
+      for (const pl of blk.polyhedra) {
+        const pts = pl.verts.map((i) => blk.atoms[i].xyz);
+        const color = colorOf(blk.atoms[pl.center].el);
+        // only the faces turned to the viewer, in a lighter tint: stacked translucent faces would add up to a dark block
+        const cen = pts.reduce((t, q) => [t[0] + q[0], t[1] + q[1], t[2] + q[2]], [0, 0, 0]).map((x) => x / pts.length);
+        for (const f of C.hullPolygons(pts)) {
+          const fp = f.map((k) => pts[k]);
+          const fc = fp.reduce((t, q) => [t[0] + q[0], t[1] + q[1], t[2] + q[2]], [0, 0, 0]).map((x) => x / fp.length);
+          if ((fc[0] - cen[0]) * zdir[0] + (fc[1] - cen[1]) * zdir[1] + (fc[2] - cen[2]) * zdir[2] < -1e-6) continue;
+          items.push({ t: 'face', pts: fp, color: tint(color), opacity: 0.34, cls: 'polyhedron' });
+        }
+      }
+    }
+    const text = (p, str, size, color, bg, bgOpacity, cls) => items.push({ t: 'text', p, text: str, size, color, bg, bgOpacity, cls });
+    if (st.cellBox && !uc.meta.molecular) {
+      const c = uc.cell;
+      const P = (i, j, k) => [i * c.A[0] + j * c.B[0] + k * c.C[0], i * c.A[1] + j * c.B[1] + k * c.C[1], i * c.A[2] + j * c.B[2] + k * c.C[2]];
+      const edges = [];
+      for (let u = 0; u < 2; u++) for (let v = 0; v < 2; v++) edges.push([P(0, u, v), P(1, u, v)], [P(u, 0, v), P(u, 1, v)], [P(u, v, 0), P(u, v, 1)]);
+      // each edge in six pieces, so a long edge is sorted in depth piece by piece
+      for (const [p, q] of edges) for (let k = 0; k < 6; k++) {
+        const at = (t) => [0, 1, 2].map((i) => p[i] + (q[i] - p[i]) * t);
+        items.push({ t: 'line', p: at(k / 6), q: at((k + 1) / 6), w: Math.max(0.6, 0.07 * scale), color: muted, cls: 'cell' });
+      }
+      // the origin first: an axis seen end-on then shows its letter, as on the screen
+      text(P(0, 0, 0), '0', 14, ink, panel, 0.85, 'axis');
+      text(P(1, 0, 0), 'a', 14, ink, panel, 0.85, 'axis');
+      text(P(0, 1, 0), 'b', 14, ink, panel, 0.85, 'axis');
+      text(P(0, 0, 1), 'c', 14, ink, panel, 0.85, 'axis');
+    }
+    if (st.hb && st.style !== 'sf') {
+      for (const h of blk.hbonds) {
+        if (!isVisible(blk.atoms[h.d]) || !isVisible(blk.atoms[h.a])) continue;
+        const from = st.H && h.h >= 0 ? blk.atoms[h.h] : blk.atoms[h.d];
+        items.push({ t: 'line', p: from.xyz, q: blk.atoms[h.a].xyz, w: 0.1 * scale, color: accent, dash: [0.16 * scale, 0.2 * scale], cls: 'hbond' });
+      }
+    }
+    for (const p of d.planes) {
+      const res = C.planePolys(uc.cell, p.hkl, p.off, d.lo, d.hi, MAX_PLANES);
+      for (const poly of res.polys) items.push({ t: 'face', pts: poly.pts, color: p.color, opacity: 0.3, cls: 'plane' });
+    }
+    for (const c of d.chromos) {
+      const active = c.states.filter((s) => s.on);
+      if (!active.length || !c.inst.length) continue;
+      for (const m of blk.mols) for (const inst of c.inst) {
+        if (inst.mi !== m.mi) continue;
+        const cen = uc.cell.toCart([inst.f[0] + m.t[0], inst.f[1] + m.t[1], inst.f[2] + m.t[2]]);
+        for (const s of active) {
+          const v = C.stateDir(inst, s);
+          for (const sgn of [1, -1]) items.push({ t: 'arrow', p: cen, q: [0, 1, 2].map((k) => cen[k] + sgn * st.arrow * v[k]), r: 0.13, color: s.color });
+        }
+      }
+    }
+    for (const m of d.measures) {
+      for (let k = 0; k + 1 < m.pts.length; k++) items.push({ t: 'line', p: m.pts[k], q: m.pts[k + 1], w: Math.max(0.6, 0.08 * scale), color: ink, dash: [0.12 * scale, 0.18 * scale], cls: 'measure' });
+      const at = m.type === 'dist' ? mid(m.pts[0], m.pts[1]) : m.type === 'angle' ? m.pts[1] : mid(m.pts[1], m.pts[2]);
+      text(at, measureValueText(m), 13, panel, ink, 0.9, 'measure');
+    }
+    if (st.labels !== 'off') {
+      for (const a of blk.atoms) if (isVisible(a) && (st.labels === 'all' || a.el !== 'H')) text(a.xyz, a.label, 11, ink, panel, 0.55, 'atom-label');
+    }
+    const svg = C.toSvg({ width: rect.width, height: rect.height, M, b: o, items, title: d.name, shaded: $('svgShade').value === 'shaded',
+      background: $('pngClear').checked ? null : cssVar('--stage') });
+    const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
+    saveAs(url, fileStem(d) + '.svg');
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  }
   function exportMol2() {
     const d = D();
     if (!d) return;
@@ -1289,7 +1403,9 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
     $('selLabels').onchange = (e) => { st.labels = e.target.value; render(true); };
     $('btnPng').onclick = exportPng;
     $('btnMol2').onclick = exportMol2;
+    $('btnSvg').onclick = exportSvg;
     $('btnPng').disabled = !viewer;
+    $('btnSvg').disabled = !viewer;
     const bind = (id, key) => { $(id).onchange = (e) => { st[key] = e.target.checked; render(true); }; };
     bind('chkPoly', 'poly'); bind('chkCell', 'cellBox'); bind('chkH', 'H'); bind('chkHB', 'hb'); bind('chkOrg', 'org'); bind('chkInorg', 'inorg');
     $('chkPersp').onchange = (e) => { if (viewer) { viewer.setProjection(e.target.checked ? 'perspective' : 'orthographic'); viewer.render(); } };
@@ -1471,10 +1587,10 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
 
     // feedback box: a note goes straight to the maintainer through Formspree, or opens as a pre-filled GitHub issue
     const FORMSPREE = 'https://formspree.io/f/mnnvojry';
-    const ISSUES = 'https://github.com/Wenhao-Shao/perovskite-workbench/issues/new';
+    const ISSUES = 'https://github.com/Wenhao-Shao/Crysta/issues/new';
     const fbUrl = () => {
       const title = '[' + $('fbKind').value + '] ' + $('fbSummary').value.trim();
-      const tail = '\n\n---\nSent from the workbench feedback box\nWorkbench __VERSION__\nBrowser: ' + navigator.userAgent;
+      const tail = '\n\n---\nSent from the __NAME__ feedback box\n__NAME__ __VERSION__\nBrowser: ' + navigator.userAgent;
       let details = $('fbDetails').value.trim() || '(no details given)';
       const make = (d) => ISSUES + '?title=' + encodeURIComponent(title) + '&body=' + encodeURIComponent(d + tail);
       let url = make(details);
@@ -1518,7 +1634,7 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
       const summary = $('fbSummary').value.trim();
       const email = $('fbEmail').value.trim();
       const data = new FormData();
-      data.append('_subject', 'Workbench feedback: [' + kind + '] ' + summary);
+      data.append('_subject', '__NAME__ feedback: [' + kind + '] ' + summary);
       data.append('type', kind);
       data.append('summary', summary);
       data.append('details', $('fbDetails').value.trim() || '(no details given)');
@@ -1550,7 +1666,6 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(retheme);
   }
   init();
-  window.crystalWorkbench = { state: st, viewer: () => viewer, addFiles };
-  window.perovskiteWorkbench = window.crystalWorkbench;
+  window.crysta = { state: st, viewer: () => viewer, addFiles };
 })();
 </script>

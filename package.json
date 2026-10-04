@@ -1,9 +1,9 @@
 {
-  "name": "perovskite-workbench",
-  "displayName": "Crystal Workbench",
-  "tagline": "Crystal structures in the browser: view, measure, export",
+  "name": "crysta",
+  "displayName": "Crysta",
+  "tagline": "A crystal workbench in the browser: view, measure, export",
   "version": "0.2.0",
-  "description": "Browser tool for crystal structures: 3D view, bonding and frameworks, measurements, image and mol2 export, with 2D perovskite layer descriptors, transition-dipole axes and multi-structure comparison",
+  "description": "Browser tool for crystal structures: 3D view, bonding and frameworks, measurements, PNG, SVG and mol2 export, with 2D perovskite layer descriptors, transition-dipole axes and multi-structure comparison",
   "license": "MIT",
   "private": true,
   "scripts": {

@@ -1574,6 +1574,120 @@
       ['@<TRIPOS>CRYSIN', [cell.a, cell.b, cell.c].map((x) => pad(x.toFixed(4), 10)).join('') + [cell.al, cell.be, cell.ga].map((x) => pad(x.toFixed(3), 10)).join('') + '     1     1', '']).join('\n');
   }
 
+  /* ---------- export: vector drawing (SVG) ----------
+     A list of 3D items is projected with the same orthographic view as the screen and written back
+     to front (painter's algorithm), so every atom, bond and face stays a separate editable object.
+     Objects that pass through each other are approximated: a vector file has no depth buffer.
+
+     scene = { width, height, M: [[3],[3]], b: [2], background, shaded, font, items }
+       M, b: screen = M p + b, in pixels, y down. The scale (pixels per angstrom) is |M[0]|.
+     items:
+       { t: 'atom', p, r, color, el }                    sphere of radius r (angstrom)
+       { t: 'bond', p, q, r, color }                     one half of a stick, radius r (angstrom)
+       { t: 'face', pts, color, opacity, cls }           flat polygon (polyhedron face, lattice plane)
+       { t: 'line', p, q, w, color, dash, cls }          line of width w (pixels)
+       { t: 'arrow', p, q, r, color }                    arrow from p to q, shaft radius r (angstrom)
+       { t: 'text', p, text, size, color, bg, cls }      label, always drawn on top                */
+  const hexRgb = (h) => { const v = parseInt(String(h).replace('#', ''), 16); return [(v >> 16) & 255, (v >> 8) & 255, v & 255]; };
+  const rgbHex = (c) => '#' + c.map((x) => Math.max(0, Math.min(255, Math.round(x))).toString(16).padStart(2, '0')).join('');
+  const shade = (h, k) => { const c = hexRgb(h); return rgbHex(k >= 0 ? c.map((x) => x + (255 - x) * k) : c.map((x) => x * (1 + k))); };
+  const xml = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  /* coplanar triangles of a convex hull joined into one polygon per face, corners in order */
+  function hullPolygons(points) {
+    const groups = [];
+    for (const f of hullFaces(points)) {
+      const d = dot(f.n, points[f.v[0]]);
+      let g = groups.find((x) => dot(x.n, f.n) > 0.999 && Math.abs(x.d - d) < 0.05);
+      if (!g) { g = { n: f.n, d, idx: new Set() }; groups.push(g); }
+      for (const k of f.v) g.idx.add(k);
+    }
+    return groups.map((g) => {
+      const idx = Array.from(g.idx);
+      let cen = [0, 0, 0];
+      for (const k of idx) cen = add(cen, points[k]);
+      cen = cen.map((x) => x / idx.length);
+      let e1 = sub(points[idx[0]], cen);
+      e1 = e1.map((x) => x / norm(e1));
+      const e2 = cross(g.n, e1);
+      idx.sort((p, q) => Math.atan2(dot(sub(points[p], cen), e2), dot(sub(points[p], cen), e1)) - Math.atan2(dot(sub(points[q], cen), e2), dot(sub(points[q], cen), e1)));
+      return idx;
+    });
+  }
+  function toSvg(scene) {
+    const { M, b, width, height } = scene;
+    const scale = norm(M[0]);
+    // the viewing direction, pointing at the viewer: screen right x screen up
+    let zdir = cross(M[0], M[1].map((x) => -x));
+    zdir = zdir.map((x) => x / norm(zdir));
+    const P = (p) => [dot(M[0], p) + b[0], dot(M[1], p) + b[1]];
+    const depth = (p) => dot(zdir, p);
+    const n2 = (x) => (Math.round(x * 100) / 100).toString();
+    const pt = (p) => { const s = P(p); return n2(s[0]) + ',' + n2(s[1]); };
+    const midp = (p, q, k) => [0, 1, 2].map((i) => p[i] + (q[i] - p[i]) * k);
+    const font = scene.font || 'Helvetica, Arial, sans-serif';
+    const grads = new Map();
+    const body = [];
+    const top = [];
+    for (const it of scene.items) {
+      if (it.t === 'atom') {
+        const s = P(it.p);
+        let fill = it.color;
+        if (scene.shaded) {
+          const id = 'g' + String(it.color).replace('#', '');
+          if (!grads.has(id)) grads.set(id, it.color);
+          fill = 'url(#' + id + ')';
+        }
+        body.push({ z: depth(it.p), s: '<circle class="atom' + (it.el ? ' ' + xml(it.el) : '') + '" cx="' + n2(s[0]) + '" cy="' + n2(s[1]) + '" r="' + n2(it.r * scale) +
+          '" fill="' + fill + '" stroke="' + shade(it.color, -0.55) + '" stroke-width="' + n2(Math.max(0.4, 0.02 * scale)) + '"/>' });
+      } else if (it.t === 'bond') {
+        const s = P(it.p), e = P(it.q);
+        const w = 2 * it.r * scale;
+        const xy = 'x1="' + n2(s[0]) + '" y1="' + n2(s[1]) + '" x2="' + n2(e[0]) + '" y2="' + n2(e[1]) + '"';
+        // a dark line under a slightly thinner coloured one gives the stick its outline
+        body.push({ z: depth(midp(it.p, it.q, 0.5)), s: '<g class="bond"><line ' + xy + ' stroke="' + shade(it.color, -0.55) + '" stroke-width="' + n2(w + Math.max(0.6, 0.03 * scale)) + '"/>' +
+          '<line ' + xy + ' stroke="' + it.color + '" stroke-width="' + n2(w) + '"/></g>' });
+      } else if (it.t === 'face') {
+        let z = 0;
+        for (const p of it.pts) z += depth(p);
+        body.push({ z: z / it.pts.length, s: '<polygon class="' + xml(it.cls || 'face') + '" points="' + it.pts.map(pt).join(' ') + '" fill="' + it.color + '" fill-opacity="' + (it.opacity === undefined ? 0.45 : it.opacity) +
+          '" stroke="' + shade(it.color, -0.35) + '" stroke-opacity="0.7" stroke-width="' + n2(Math.max(0.4, 0.015 * scale)) + '" stroke-linejoin="round"/>' });
+      } else if (it.t === 'line') {
+        const s = P(it.p), e = P(it.q);
+        body.push({ z: depth(midp(it.p, it.q, 0.5)), s: '<line class="' + xml(it.cls || 'line') + '" x1="' + n2(s[0]) + '" y1="' + n2(s[1]) + '" x2="' + n2(e[0]) + '" y2="' + n2(e[1]) + '" stroke="' + it.color +
+          '" stroke-width="' + n2(it.w) + '" stroke-linecap="round"' + (it.dash ? ' stroke-dasharray="' + it.dash.map(n2).join(' ') + '"' : '') + '/>' });
+      } else if (it.t === 'arrow') {
+        const s = P(it.p), e = P(it.q);
+        const len = Math.hypot(e[0] - s[0], e[1] - s[1]);
+        const w = 2 * it.r * scale;
+        if (len < 1e-6) continue;   // seen end-on: nothing to draw
+        const ux = (e[0] - s[0]) / len, uy = (e[1] - s[1]) / len;
+        const head = Math.min(len, 3 * w);
+        const nx = e[0] - ux * head, ny = e[1] - uy * head;
+        body.push({ z: depth(midp(it.p, it.q, 0.5)), s: '<g class="arrow"><line x1="' + n2(s[0]) + '" y1="' + n2(s[1]) + '" x2="' + n2(nx) + '" y2="' + n2(ny) + '" stroke="' + it.color + '" stroke-width="' + n2(w) + '"/>' +
+          '<polygon points="' + n2(e[0]) + ',' + n2(e[1]) + ' ' + n2(nx - uy * w * 1.1) + ',' + n2(ny + ux * w * 1.1) + ' ' + n2(nx + uy * w * 1.1) + ',' + n2(ny - ux * w * 1.1) + '" fill="' + it.color + '"/></g>' });
+      } else if (it.t === 'text') {
+        const s = P(it.p);
+        const size = it.size || 12;
+        const txt = '<text x="' + n2(s[0]) + '" y="' + n2(s[1]) + '" font-size="' + n2(size) + '" fill="' + it.color + '" text-anchor="middle" dominant-baseline="central">' + xml(it.text) + '</text>';
+        if (it.bg) {
+          const w = String(it.text).length * size * 0.62 + size * 0.6, h = size * 1.35;
+          top.push('<g class="' + xml(it.cls || 'label') + '"><rect x="' + n2(s[0] - w / 2) + '" y="' + n2(s[1] - h / 2) + '" width="' + n2(w) + '" height="' + n2(h) + '" rx="' + n2(size * 0.2) + '" fill="' + it.bg + '" fill-opacity="' + (it.bgOpacity === undefined ? 0.85 : it.bgOpacity) + '"/>' + txt + '</g>');
+        } else top.push('<g class="' + xml(it.cls || 'label') + '">' + txt + '</g>');
+      }
+    }
+    // far objects first; equal depths keep the order they were given in
+    body.forEach((o, i) => { o.i = i; });
+    body.sort((p, q) => (p.z - q.z) || (p.i - q.i));
+    const defs = Array.from(grads.entries()).map(([id, c]) =>
+      '<radialGradient id="' + id + '" cx="0.36" cy="0.32" r="0.72"><stop offset="0" stop-color="' + shade(c, 0.62) + '"/><stop offset="0.45" stop-color="' + c + '"/><stop offset="1" stop-color="' + shade(c, -0.38) + '"/></radialGradient>');
+    return ['<?xml version="1.0" encoding="UTF-8"?>',
+      '<svg xmlns="http://www.w3.org/2000/svg" width="' + n2(width) + '" height="' + n2(height) + '" viewBox="0 0 ' + n2(width) + ' ' + n2(height) + '" font-family="' + xml(font) + '">',
+      scene.title ? '<title>' + xml(scene.title) + '</title>' : '',
+      defs.length ? '<defs>' + defs.join('') + '</defs>' : '',
+      scene.background ? '<rect class="background" width="100%" height="100%" fill="' + scene.background + '"/>' : '',
+      '<g class="structure" stroke-linecap="butt">'].concat(body.map((o) => o.s), ['</g>', '<g class="labels">'], top, ['</g>', '</svg>', '']).filter((l) => l !== '').join('\n') + '\n';
+  }
+
   /* triangles of the convex hull of a small point set (coordination polyhedron) */
   function hullFaces(points) {
     const n = points.length;
@@ -1599,6 +1713,6 @@
     return faces;
   }
 
-  root.XtalCore = { readStructure, readCif, readPoscar, readXyz, readShelx, buildCell, analyse, assemble, hullFaces, planePolys, tetrazineDefs, chromoInstances, stateDir, orientReport, hallOps, symbolOps, setSgTable, isMetal, isCenter, isDonor, HALIDE, RC, MASS, parseSymop, MAX_POLY_CN, distance, bondAngle, torsion, toMol2 };
+  root.XtalCore = { readStructure, readCif, readPoscar, readXyz, readShelx, buildCell, analyse, assemble, hullFaces, planePolys, tetrazineDefs, chromoInstances, stateDir, orientReport, hallOps, symbolOps, setSgTable, isMetal, isCenter, isDonor, HALIDE, RC, MASS, parseSymop, MAX_POLY_CN, distance, bondAngle, torsion, toMol2, toSvg, hullPolygons };
   if (typeof module !== 'undefined' && module.exports) module.exports = root.XtalCore;
 })(typeof window !== 'undefined' ? window : globalThis);

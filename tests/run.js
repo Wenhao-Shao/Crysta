@@ -215,5 +215,31 @@ const formula = (info) => info.formula.map((e) => e.el + e.n).join(' ');
   check('mol2 respects hidden atoms', noH.split('\n')[2].trim().split(/\s+/).map(Number).join() === '8,6,3,0,0');
 }
 
+// 8. vector drawing
+{
+  // view down -z with y up: screen x = 20 x, screen y = -20 y; the viewer sits at +z
+  const view = { width: 200, height: 200, M: [[20, 0, 0], [0, -20, 0]], b: [100, 100] };
+  const svg = X.toSvg(Object.assign({ shaded: true, background: '#ffffff', title: 'a < b', items: [
+    { t: 'atom', p: [0, 0, 2], r: 0.5, color: '#ff0000', el: 'O' },     // near
+    { t: 'atom', p: [0, 0, -2], r: 0.5, color: '#0000ff', el: 'N' },    // far
+    { t: 'bond', p: [0, 0, -2], q: [0, 0, 0], r: 0.1, color: '#0000ff' },
+    { t: 'face', pts: [[0, 0, -3], [1, 0, -3], [0, 1, -3]], color: '#00ff00' },
+    { t: 'text', p: [1, 1, 0], text: 'C1 & <x>', size: 10, color: '#000000', bg: '#ffffff' }
+  ] }, view));
+  const at = (k) => svg.indexOf(k);
+  check('svg is one document', svg.startsWith('<?xml') && svg.trim().endsWith('</svg>') && (svg.match(/<svg /g) || []).length === 1);
+  check('svg far to near', at('class="face"') < at('class="atom N"') && at('class="atom N"') < at('class="bond"') && at('class="bond"') < at('class="atom O"'));
+  check('svg projection', /class="atom O" cx="100" cy="100" r="10"/.test(svg));
+  check('svg text escaped and on top', svg.includes('C1 &amp; &lt;x&gt;') && svg.includes('<title>a &lt; b</title>') && at('class="atom O"') < at('C1 &amp;'));
+  check('svg one gradient per colour', (svg.match(/<radialGradient/g) || []).length === 2);
+  const flat = X.toSvg(Object.assign({ shaded: false, items: [{ t: 'atom', p: [1, 2, 0], r: 1, color: '#123456' }] }, view));
+  check('svg flat fill, no background', flat.includes('fill="#123456"') && !flat.includes('radialGradient') && !flat.includes('class="background"') && /cx="120" cy="60"/.test(flat));
+  // an octahedron has 8 faces; a cube's 12 hull triangles join into 6 squares
+  const oct = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
+  const cube = [];
+  for (const x of [-1, 1]) for (const y of [-1, 1]) for (const z of [-1, 1]) cube.push([x, y, z]);
+  check('polyhedron faces joined', X.hullPolygons(oct).length === 8 && X.hullPolygons(cube).length === 6 && X.hullPolygons(cube).every((f) => f.length === 4));
+}
+
 console.log(passed + ' passed, ' + failed + ' failed');
 process.exit(failed ? 1 : 0);
