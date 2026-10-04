@@ -78,6 +78,19 @@ button.chip[aria-expanded="true"] { border-color: var(--accent); }
   box-shadow: 0 6px 18px rgba(20, 16, 24, 0.22); }
 .ctx button { border: 0; text-align: left; white-space: nowrap; }
 .ctx button:hover { background: var(--accent-soft); }
+.prule { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 4px 8px; align-items: center; font-size: 13px; border-top: 1px solid var(--line); padding-top: 8px; }
+.prule:first-child { border-top: 0; padding-top: 0; }
+.prule .what { min-width: 0; }
+.prule .what b { font-weight: 600; }
+.prule .sub2 { grid-column: 2 / 4; display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; color: var(--muted); font-size: 12.5px; }
+.prule .sub2 input { width: 64px; }
+.pform { display: grid; gap: 8px; border-top: 1px solid var(--line); padding-top: 10px; }
+.pform .line { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; font-size: 13px; }
+.pform .lab { color: var(--muted); min-width: 58px; }
+.elchips { display: flex; flex-wrap: wrap; gap: 4px; }
+.elchips button { padding: 2px 9px; font-family: var(--font-data); font-size: 12.5px; border-radius: 999px; }
+.pprev { font-size: 13px; }
+.pprev.warn { color: var(--warn); }
 .mlist { display: grid; gap: 4px; }
 .mlist .mrow { display: flex; align-items: center; gap: 8px; font-family: var(--font-data); font-size: 12.5px; font-variant-numeric: tabular-nums; }
 .mlist .mrow button { margin-left: auto; }
@@ -312,6 +325,21 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
         <div class="small">All three save what is shown: the packing block, with hidden atoms left out. The SVG is a vector drawing in which every atom, bond and face is a separate object to edit; it is drawn without perspective, and objects that pass through each other are approximated. The mol2 file carries the cell; its atom types are guessed from the number of neighbours and every bond is written as single.</div>
       </section>
 
+      <section class="card" id="cardPoly">
+        <h2>Polyhedra</h2>
+        <div id="polyList"></div>
+        <div class="pform">
+          <div class="line"><span class="lab">Around</span><select id="pfCentre" aria-label="Element at the centre"></select>
+            <button type="button" class="mini" id="pfPick">Pick in the picture</button></div>
+          <div class="line"><span class="lab">Corners</span><div class="elchips" id="pfCorners" role="group" aria-label="Elements at the corners"></div></div>
+          <div class="line"><span class="lab">Within</span><input type="number" id="pfMax" step="0.05" min="0.5" max="12" aria-label="Largest centre to corner distance in angstrom"> Å
+            <button type="button" class="mini" id="pfSuggest" title="Set the distance that takes the nearest shell of corners">Nearest shell</button></div>
+          <div class="pprev" id="pfPreview" aria-live="polite"></div>
+          <div class="row"><button type="button" class="primary" id="pfAdd">Add these polyhedra</button></div>
+        </div>
+        <div class="small">Any element can be the centre and any elements the corners. Polyhedra you add replace the automatic ones around the same element. They change the picture only, not the coordination numbers in the data cards.</div>
+      </section>
+
       <section class="card">
         <h2>Packing</h2>
         <div class="ranges" id="ranges"></div>
@@ -477,7 +505,7 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
   /* ---------- documents ---------- */
   function makeDoc(src) {
     const struct = C.readStructure(src.text, src.name);
-    const d = { src, struct, minor: false, planes: [], chromos: [], measures: [], picks: [], name: src.name.replace(/\.[^.]+$/, '') };
+    const d = { src, struct, minor: false, planes: [], chromos: [], measures: [], picks: [], polyRules: [], name: src.name.replace(/\.[^.]+$/, '') };
     rebuildCell(d);
     const L = [struct.cell.a, struct.cell.b, struct.cell.c];
     // a molecule without a lattice sits in a box of its own: one copy is the whole picture
@@ -536,6 +564,7 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
   function activate(i) {
     st.cur = i;
     st.picking = null;
+    st.polyPick = null;
     const d = D();
     $('main').classList.toggle('solo', !d);
     $('rail').hidden = !d;
@@ -559,6 +588,7 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
     drawRanges();
     drawPlanes();
     drawChromos();
+    drawPolyCard();
     drawCompare();
     if (viewer) viewer.resize();
     render(false);
@@ -767,8 +797,72 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
     const o = elemLook[el] || (elemLook[el] = {});
     o[key] = value;
     drawLegend();
+    if (key === 'poly') drawPolyCard();
     render(true);
   }
+
+  /* ---------- polyhedra: automatic ones per element, and the user's own rules ---------- */
+  const elementsOf = (d) => {
+    const present = [];
+    for (const a of d.uc.atoms) if (!present.includes(a.el)) present.push(a.el);
+    return present.sort((p, q) => (C.isMetal(q) - C.isMetal(p)) || p.localeCompare(q));
+  };
+  const cornerText = (rule) => (rule.corners ? rule.corners.join(', ') : 'any element');
+  function ruleSummary(d, rule) {
+    const r = C.polyhedraStats(d.uc, rule);
+    if (!r.centres) return 'no ' + rule.center + ' in this structure';
+    const cn = r.cnMin === r.cnMax ? String(r.cnMax) : r.cnMin + ' to ' + r.cnMax;
+    return cn + (r.cnMax === 1 ? ' corner' : ' corners') + ' around each ' + rule.center + (r.cnMax < 4 ? '; a polyhedron needs at least 4' : r.cnMin < 4 ? '; centres with fewer than 4 are not drawn' : '');
+  }
+  function drawPolyCard() {
+    const d = D();
+    if (!d) return;
+    const custom = new Set(d.polyRules.map((r) => r.center));
+    // automatic polyhedra, one row per centre element that has no rule of its own
+    const auto = [];
+    for (const sIt of d.info.metalSites) if (sIt.cn >= 4 && sIt.cn <= C.MAX_POLY_CN && !auto.some((x) => x.el === sIt.el)) auto.push({ el: sIt.el, cn: sIt.cn });
+    for (const i of d.uc.polyAt) { const el = d.uc.atoms[i].el; if (!auto.some((x) => x.el === el)) auto.push({ el, cn: d.uc.adj[i].length }); }
+    const rows = auto.filter((x) => !custom.has(x.el)).map((x) =>
+      '<div class="prule"><input type="checkbox" data-pauto="' + esc(x.el) + '"' + (polyOn(x.el) ? ' checked' : '') + ' aria-label="Show polyhedra around ' + esc(x.el) + '">' +
+      '<span class="what"><b>' + esc(x.el) + '</b> with its bonded neighbours</span><span class="small">automatic</span></div>');
+    d.polyRules.forEach((r, i) => {
+      rows.push('<div class="prule"><input type="checkbox" data-pon="' + i + '"' + (r.on !== false ? ' checked' : '') + ' aria-label="Show these polyhedra">' +
+        '<span class="what"><b>' + esc(r.center) + '</b> with ' + esc(cornerText(r)) + '</span>' +
+        '<button type="button" class="xbtn" data-prm="' + i + '" aria-label="Remove the polyhedra around ' + esc(r.center) + '" title="Remove">×</button>' +
+        '<div class="sub2"><label>within <input type="number" data-pmax="' + i + '" step="0.05" min="0.5" max="12" value="' + r.max + '"> Å</label><span>' + esc(ruleSummary(d, r)) + '</span></div></div>');
+    });
+    $('polyList').innerHTML = rows.join('') || '<div class="small">No polyhedra in this structure yet.</div>';
+    // the form: elements of this structure
+    const els = elementsOf(d);
+    const f = d.polyForm || (d.polyForm = { center: els[0], corners: [], max: null });
+    if (!els.includes(f.center)) f.center = els[0];
+    $('pfCentre').innerHTML = els.map((el) => '<option' + (el === f.center ? ' selected' : '') + '>' + esc(el) + '</option>').join('');
+    $('pfCorners').innerHTML = els.map((el) => '<button type="button" data-el="' + esc(el) + '" aria-pressed="' + f.corners.includes(el) + '">' + esc(el) + '</button>').join('');
+    $('pfMax').value = f.max === null ? '' : f.max;
+    drawPolyPreview();
+  }
+  function drawPolyPreview() {
+    const d = D();
+    const f = d.polyForm;
+    const box = $('pfPreview');
+    const ready = f.corners.length > 0 && f.max > 0;
+    $('pfAdd').disabled = !ready;
+    $('pfSuggest').disabled = !f.corners.length;
+    box.classList.remove('warn');
+    if (!f.corners.length) { box.textContent = 'Choose the corner elements.'; return; }
+    if (!(f.max > 0)) { box.textContent = 'Enter a distance, or press Nearest shell.'; return; }
+    const r = C.polyhedraStats(d.uc, f);
+    box.textContent = ruleSummary(d, f) + '.';
+    box.classList.toggle('warn', r.cnMax < 4);
+  }
+  function suggestPolyForm() {
+    const d = D();
+    const f = d.polyForm;
+    f.max = f.corners.length ? C.suggestPolyMax(d.uc, f.center, f.corners) : null;
+    $('pfMax').value = f.max === null ? '' : f.max;
+    drawPolyPreview();
+  }
+  function polyChanged() { drawPolyCard(); render(true); }
 
   function drawRanges() {
     const d = D();
@@ -967,6 +1061,11 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
       $('readout').innerHTML = lines.join('');
       return;
     }
+    if (st.polyPick) {
+      const pk = st.polyPick;
+      lines.push('<div class="pickbar"><span>' + (pk.centre ? 'Centre: ' + esc(pk.centre.label) + '. Now click one atom at a corner of the polyhedron.' : 'Click the atom at the centre of the polyhedron.') + '</span>' +
+        '<button type="button" id="polyPickCancel">Cancel</button></div>');
+    }
     if (st.picking) {
       const pk = st.picking;
       if (pk.step === 1) {
@@ -1010,7 +1109,7 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
     viewer.removeAllLabels();
     hoverLabel = null;
     const uc = d.uc;
-    const blk = C.assemble(uc, d.lo, d.hi);
+    const blk = C.assemble(uc, d.lo, d.hi, d.polyRules);
     const visible = (a) => isVisible(a);
     const px = st.px;
     // a label added with the last argument set does not redraw the scene; it is drawn once at the end
@@ -1168,6 +1267,7 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
       });
     }
     for (const a of d.picks) viewer.addSphere({ center: V3(a.p), radius: 0.75, color: accent, opacity: 0.4 });
+    if (st.polyPick && st.polyPick.centre) viewer.addSphere({ center: V3(st.polyPick.centre.p), radius: 0.75, color: accent, opacity: 0.4 });
     if (st.picking) {
       for (const a of st.picking.plane) viewer.addSphere({ center: V3(a.p), radius: 0.6, color: accent, opacity: 0.45 });
       for (const a of st.picking.axis) viewer.addSphere({ center: V3(a.p), radius: 0.6, color: ink, opacity: 0.45 });
@@ -1193,6 +1293,24 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
       viewer.render();
     };
     const onClick = (atom) => {
+      if (st.polyPick) {
+        const pk = st.polyPick;
+        if (!pk.centre) { pk.centre = { el: atom.elem, label: atom.xl, p: [atom.x, atom.y, atom.z] }; render(true); return; }
+        // the two clicked atoms give the centre element, the corner element and a first distance
+        const dist = C.distance(pk.centre.p, [atom.x, atom.y, atom.z]);
+        st.polyPick = null;
+        if (dist > 0.01) {
+          const f = d.polyForm;
+          f.center = pk.centre.el;
+          f.corners = [atom.elem];
+          const shell = C.suggestPolyMax(d.uc, f.center, f.corners);
+          f.max = shell !== null && shell >= dist ? shell : Math.ceil((dist + 0.1) * 20) / 20;
+          drawPolyCard();
+          $('cardPoly').scrollIntoView({ block: 'nearest' });
+        }
+        render(true);
+        return;
+      }
       if (st.picking) {
         pickAtom(atom);
         render(true);
@@ -1393,7 +1511,7 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
     if (!isFinite(scale) || scale <= 0) { st.notice = 'The drawing could not be made in this browser.'; drawReadout(); return; }
 
     const uc = d.uc;
-    const blk = C.assemble(uc, d.lo, d.hi);
+    const blk = C.assemble(uc, d.lo, d.hi, d.polyRules);
     const ink = cssVar('--ink'), muted = cssVar('--muted'), accent = cssVar('--accent'), panel = cssVar('--panel');
     const items = [];
     const mid = (p, q) => [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2, (p[2] + q[2]) / 2];
@@ -1476,7 +1594,7 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
   function exportMol2() {
     const d = D();
     if (!d) return;
-    const blk = C.assemble(d.uc, d.lo, d.hi);
+    const blk = C.assemble(d.uc, d.lo, d.hi, d.polyRules);
     const text = C.toMol2(blk.atoms, d.uc.cell, d.name, isVisible);
     const url = URL.createObjectURL(new Blob([text], { type: 'chemical/x-mol2' }));
     saveAs(url, fileStem(d) + '.mol2');
@@ -1546,6 +1664,46 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
       if (!b) return;
       if (st.editEl === b.dataset.el) closeElPop(); else openElPop(b.dataset.el);
     };
+    // polyhedra card
+    $('polyList').onchange = (e) => {
+      const d = D();
+      const t = e.target;
+      if (t.dataset.pauto !== undefined) { setLook(t.dataset.pauto, 'poly', t.checked); return; }
+      if (t.dataset.pon !== undefined) d.polyRules[+t.dataset.pon].on = t.checked;
+      if (t.dataset.pmax !== undefined) { const v = parseFloat(t.value); if (v > 0) d.polyRules[+t.dataset.pmax].max = v; }
+      setTimeout(polyChanged, 0);
+    };
+    $('polyList').onclick = (e) => {
+      const b = e.target.closest('button[data-prm]');
+      if (!b) return;
+      D().polyRules.splice(+b.dataset.prm, 1);
+      polyChanged();
+    };
+    $('pfCentre').onchange = (e) => { const f = D().polyForm; f.center = e.target.value; if (f.corners.length) suggestPolyForm(); else drawPolyPreview(); };
+    $('pfCorners').onclick = (e) => {
+      const b = e.target.closest('button[data-el]');
+      if (!b) return;
+      const f = D().polyForm;
+      const at = f.corners.indexOf(b.dataset.el);
+      if (at >= 0) f.corners.splice(at, 1); else f.corners.push(b.dataset.el);
+      b.setAttribute('aria-pressed', String(at < 0));
+      suggestPolyForm();
+    };
+    $('pfMax').oninput = (e) => { const v = parseFloat(e.target.value); D().polyForm.max = v > 0 ? v : null; drawPolyPreview(); };
+    $('pfSuggest').onclick = suggestPolyForm;
+    $('pfPick').onclick = () => { st.picking = null; st.polyPick = { centre: null }; D().picks = []; render(true); $('stage').scrollIntoView({ block: 'nearest' }); };
+    $('pfAdd').onclick = () => {
+      const d = D();
+      const f = d.polyForm;
+      if (!f.corners.length || !(f.max > 0)) return;
+      const els = elementsOf(d);
+      // every element chosen is the same as "any element"; a second rule for a centre replaces the first
+      const rule = { center: f.center, corners: f.corners.length === els.length ? null : f.corners.slice().sort(), max: f.max, on: true };
+      d.polyRules = d.polyRules.filter((r) => r.center !== rule.center).concat([rule]);
+      if (!st.poly) { st.poly = true; $('chkPoly').checked = true; }
+      d.polyForm = { center: f.center, corners: [], max: null };
+      polyChanged();
+    };
     $('elClose').onclick = closeElPop;
     $('elColor').onchange = (e) => setLook(st.editEl, 'color', e.target.value);
     $('elSize').oninput = (e) => { $('elSizeOut').textContent = fmt(+e.target.value, 2) + '×'; };
@@ -1553,7 +1711,7 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
     $('elOpacity').oninput = (e) => { $('elOpacityOut').textContent = Math.round(100 * e.target.value) + '%'; };
     $('elOpacity').onchange = (e) => setLook(st.editEl, 'opacity', +e.target.value);
     $('elPoly').onchange = (e) => setLook(st.editEl, 'poly', e.target.checked);
-    $('elReset').onclick = () => { const el = st.editEl; delete elemLook[el]; drawLegend(); render(true); openElPop(el); };
+    $('elReset').onclick = () => { const el = st.editEl; delete elemLook[el]; drawLegend(); drawPolyCard(); render(true); openElPop(el); };
     $('selLabels').onchange = (e) => { st.labels = e.target.value; render(true); };
     $('btnPng').onclick = exportPng;
     $('btnMol2').onclick = exportMol2;
@@ -1702,6 +1860,7 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
       if (id === 'pickNext') { st.picking.step = 2; render(true); }
       if (id === 'pickDone') finishPicking();
       if (id === 'pickCancel') { st.picking = null; st.notice = ''; render(true); }
+      if (id === 'polyPickCancel') { st.polyPick = null; render(true); }
     };
 
     // files and the structures table

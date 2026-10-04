@@ -1385,8 +1385,69 @@
     return out;
   }
 
+  /* ---------- user-defined polyhedra ----------
+     A rule is { center: 'Pb', corners: ['Br', 'I'] or null for any element, max: 3.4 (angstrom) }.
+     Any element can be a centre and any element a corner; this is a drawing aid and changes no reported number. */
+  const shiftsWithin = (cell, dist) => {
+    const n = cell.recip.map((r) => Math.max(1, Math.ceil(dist * norm(r))));
+    const out = [];
+    for (let i = -n[0]; i <= n[0]; i++) for (let j = -n[1]; j <= n[1]; j++) for (let k = -n[2]; k <= n[2]; k++) out.push([i, j, k]);
+    return out;
+  };
+  const cornerOk = (rule, el) => !rule.corners || rule.corners.includes(el);
+  /* centre atom of the cell -> its corners [{ j, off, d }], off = corner - centre in fractional coordinates */
+  function polyhedraFor(uc, rules) {
+    const { cell, atoms } = uc;
+    const map = new Map();
+    for (const rule of rules || []) {
+      if (!rule || rule.on === false || !(rule.max > 0)) continue;
+      const shifts = shiftsWithin(cell, rule.max);
+      atoms.forEach((a, i) => {
+        if (a.el !== rule.center) return;
+        const list = map.get(i) || [];
+        atoms.forEach((b, j) => {
+          if (!cornerOk(rule, b.el) || !compatible(a, b)) return;
+          const base = sub(b.f, a.f);
+          for (const sft of shifts) {
+            if (i === j && !sft[0] && !sft[1] && !sft[2]) continue;
+            const off = add(base, sft);
+            const d = norm(cell.toCart(off));
+            if (d > rule.max || d < 0.4) continue;
+            if (!list.some((v) => v.j === j && norm(sub(v.off, off)) < 1e-6)) list.push({ j, off, d });
+          }
+        });
+        map.set(i, list);
+      });
+    }
+    return map;
+  }
+  /* what one rule gives in this structure: how many centres, and the smallest and largest number of corners */
+  function polyhedraStats(uc, rule) {
+    const map = polyhedraFor(uc, [Object.assign({}, rule, { on: true })]);
+    const cn = Array.from(map.values()).map((v) => v.length);
+    return { centres: cn.length, cnMin: cn.length ? Math.min(...cn) : 0, cnMax: cn.length ? Math.max(...cn) : 0 };
+  }
+  /* a distance limit that takes the first shell of corners around the centre: the shell ends at the first
+     jump of more than 20 % in the sorted distances (later, if that leaves fewer than 4 corners); the limit
+     sits just outside it, well short of the next shell */
+  function suggestPolyMax(uc, center, corners) {
+    const reach = 8;
+    const map = polyhedraFor(uc, [{ center, corners, max: reach }]);
+    let best = null;
+    for (const list of map.values()) {
+      const d = list.map((v) => v.d).sort((p, q) => p - q);
+      if (!d.length) continue;
+      // the nearest shell, and further shells while there are fewer than the 4 corners a polyhedron needs
+      let k = 0;
+      while (k + 1 < d.length && (d[k + 1] <= d[k] * 1.2 || k + 1 < 4)) k++;
+      const lim = k + 1 < d.length ? Math.min(d[k] * 1.15, (d[k] + d[k + 1]) / 2) : d[k] * 1.15;
+      if (best === null || lim > best) best = lim;
+    }
+    return best === null ? null : Math.ceil(best * 20) / 20;
+  }
+
   /* ---------- unit cell -> displayed block of n1 x n2 x n3 cells ---------- */
-  function assemble(uc, lo, hi) {
+  function assemble(uc, lo, hi, rules) {
     const { cell, atoms, ligs, molecules, adj } = uc;
     const out = [];
     const polyhedra = [];
@@ -1476,6 +1537,28 @@
           verts.push(ix);
         }
         if (verts.length >= 4 && verts.length <= MAX_POLY_CN) polyhedra.push({ center: im, verts });
+      }
+    }
+
+    // user-defined polyhedra replace the automatic ones around the same element. A corner that is not
+    // drawn yet is added as a lone atom, without a bond, so every polyhedron has all its corners.
+    if (rules && rules.some((r) => r && r.on !== false)) {
+      const map = polyhedraFor(uc, rules);
+      const centres = new Set(rules.filter((r) => r && r.on !== false).map((r) => r.center));
+      for (let k = polyhedra.length - 1; k >= 0; k--) if (centres.has(out[polyhedra[k].center].el)) polyhedra.splice(k, 1);
+      const before = out.length;
+      for (let ix = 0; ix < before; ix++) {
+        const a = out[ix];
+        const list = map.get(a.src);
+        if (!list || list.length < 4 || !(a.group >= 0 || inside(a.f))) continue;
+        const verts = list.map((v) => {
+          const f = add(a.f, v.off);
+          const key = keyOf(v.j, f);
+          let jx = placed.get(key);
+          if (jx === undefined) { jx = push(v.j, f, 'ligand', -1); placed.set(key, jx); }
+          return jx;
+        });
+        polyhedra.push({ center: ix, verts, custom: true });
       }
     }
 
@@ -1714,6 +1797,6 @@
     return faces;
   }
 
-  root.XtalCore = { readStructure, readCif, readPoscar, readXyz, readShelx, buildCell, analyse, assemble, hullFaces, planePolys, tetrazineDefs, chromoInstances, stateDir, orientReport, hallOps, symbolOps, setSgTable, isMetal, isCenter, isDonor, HALIDE, RC, MASS, parseSymop, MAX_POLY_CN, distance, bondAngle, torsion, toMol2, toSvg, hullPolygons };
+  root.XtalCore = { readStructure, readCif, readPoscar, readXyz, readShelx, buildCell, analyse, assemble, hullFaces, planePolys, tetrazineDefs, chromoInstances, stateDir, orientReport, hallOps, symbolOps, setSgTable, isMetal, isCenter, isDonor, HALIDE, RC, MASS, parseSymop, MAX_POLY_CN, distance, bondAngle, torsion, toMol2, toSvg, hullPolygons, polyhedraFor, polyhedraStats, suggestPolyMax };
   if (typeof module !== 'undefined' && module.exports) module.exports = root.XtalCore;
 })(typeof window !== 'undefined' ? window : globalThis);

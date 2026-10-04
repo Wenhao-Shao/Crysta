@@ -243,5 +243,37 @@ const formula = (info) => info.formula.map((e) => e.el + e.n).join(' ');
   check('polyhedron faces joined', X.hullPolygons(oct).length === 8 && X.hullPolygons(cube).length === 6 && X.hullPolygons(cube).every((f) => f.length === 4));
 }
 
+// 9. user-defined polyhedra: any centre, any corner
+{
+  // Cs in cubic CsPbBr3 sits in a cuboctahedron of 12 Br at a/sqrt(2) = 4.154 A
+  const { uc } = load('tests/cifs/CsPbBr3_cubic.cif');
+  const max = X.suggestPolyMax(uc, 'Cs', ['Br']);
+  check('suggested limit takes the first shell', max > 4.154 && max < 5.0, 'got ' + max);
+  check('Pb-Br suggestion', near(X.suggestPolyMax(uc, 'Pb', ['Br']), 3.4, 0.05));
+  const st = X.polyhedraStats(uc, { center: 'Cs', corners: ['Br'], max });
+  check('Cs cuboctahedron', st.centres === 1 && st.cnMin === 12 && st.cnMax === 12);
+  const plain = X.assemble(uc, [0, 0, 0], [1, 1, 1]);
+  const b = X.assemble(uc, [0, 0, 0], [1, 1, 1], [{ center: 'Cs', corners: ['Br'], max }]);
+  const cs = b.polyhedra.filter((p) => p.custom);
+  check('custom polyhedron drawn with all corners', cs.length === 1 && cs[0].verts.length === 12 && cs[0].verts.every((v) => b.atoms[v].el === 'Br'));
+  check('automatic polyhedra kept for other elements', b.polyhedra.length === plain.polyhedra.length + 1);
+  // a rule for Pb replaces the automatic Pb octahedra; with a short limit nothing is drawn around Pb
+  const none = X.assemble(uc, [0, 0, 0], [1, 1, 1], [{ center: 'Pb', corners: ['Br'], max: 2.0 }]);
+  check('a rule replaces the automatic polyhedra of its centre', none.polyhedra.length === 0);
+  const off = X.assemble(uc, [0, 0, 0], [1, 1, 1], [{ center: 'Pb', corners: ['Br'], max: 2.0, on: false }]);
+  check('a rule switched off changes nothing', off.polyhedra.length === plain.polyhedra.length && off.atoms.length === plain.atoms.length);
+  // a non-metal centre with any element as corner: Br with its 2 Pb and 4 Cs
+  const br = X.polyhedraStats(uc, { center: 'Br', corners: null, max: 4.3 });
+  check('non-metal centre, any corner', br.centres === 3 && br.cnMin === 14 && br.cnMax === 14, JSON.stringify(br));
+  const brOnly = X.polyhedraStats(uc, { center: 'Br', corners: ['Pb', 'Cs'], max: 4.3 });
+  check('corners limited to chosen elements', brOnly.cnMin === 6 && brOnly.cnMax === 6, JSON.stringify(brOnly));
+  // two Pb alone are too few for a polyhedron, so the suggestion reaches on to the four Cs
+  const sb = X.suggestPolyMax(uc, 'Br', ['Pb', 'Cs']);
+  check('suggestion reaches four corners', sb > 4.154 && sb < 5.0 && X.polyhedraStats(uc, { center: 'Br', corners: ['Pb', 'Cs'], max: sb }).cnMin === 6, 'got ' + sb);
+
+  const u = load('tests/cifs/urea.cif');
+  check('fewer than four corners: no polyhedron', X.assemble(u.uc, [0, 0, 0], [1, 1, 1], [{ center: 'C', corners: ['N', 'O'], max: 1.5 }]).polyhedra.length === 0);
+}
+
 console.log(passed + ' passed, ' + failed + ' failed');
 process.exit(failed ? 1 : 0);

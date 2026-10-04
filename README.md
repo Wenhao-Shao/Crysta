@@ -35,6 +35,7 @@ Press "Load the sample structures" to load the four built-in samples: (PEA)2PbBr
   and framework toggles; atom labels; packing limits in cell fractions; views down a cell axis, a [uvw]
   direction or an (hkl) normal; lattice planes with an offset.
 - **Measure:** click atoms for a distance (two), an angle (three, at the second) or a torsion (four). Remove one from the list in the Measure card or by a right-click on it in the picture; Clear removes all.
+- **Polyhedra:** automatic around metal centres, and your own: choose a centre element, the corner elements and a distance in the Polyhedra card, or click a centre and a corner in the picture.
 - **Element appearance:** press an element in the legend to set its colour, size and opacity, and to switch its polyhedra on or off.
 - **Structure types:** metal-anion frameworks (oxides, sulfides, halides), frameworks joined through
   molecular linkers, covalent networks, molecular crystals, molecular complexes and salts.
@@ -72,6 +73,8 @@ These choices decide the numbers, so they are stated here. Changing any of them 
 | Metal-donor bond | metal to any other non-metal except H and the noble gases, below the sum of covalent radii plus 0.5 Å |
 | Polyhedron centre | any metal except Li, Na, K, Rb, Cs, Fr, which are free ions unless they are the only metals with anions around them |
 | Polyhedron | drawn for 4 to 8 bonded neighbours |
+| Polyhedron you define | centre element, corner elements and a largest centre-to-corner distance; drawn for 4 or more corners; replaces the automatic polyhedra of that centre element; changes the picture only |
+| Suggested distance | the nearest shell of corners (ending at the first jump of more than 20 % in the sorted distances, or later if that gives fewer than 4 corners), times 1.15, but at most halfway to the next shell |
 | Covalent network | a set of covalently bonded atoms that a lattice translation joins to itself (diamond, quartz, graphite) |
 | Network polyhedron | B, Si, P or As in a covalent network with 4 or more neighbours, all of them O, N, F, S, Se or Cl |
 | Molecular complex | a finite bonded unit that holds a metal and its ligands; drawn whole |
@@ -118,6 +121,7 @@ These choices decide the numbers, so they are stated here. Changing any of them 
 - A chromophore follows crystallographic sites, so a structure with two independent cations needs one
   definition per cation.
 - The stacking-offset and tilt descriptors assume corner-sharing layers.
+- Polyhedra you define use one distance for all their corner elements, and are not kept after the page is closed.
 - Appearance is set per element, not per atom or per site, and is not kept after the page is closed.
 - An element drawn see-through keeps solid bonds.
 - The mol2 file carries no bond orders or charges.
