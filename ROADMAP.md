@@ -27,7 +27,9 @@ Status marks: **done** (released), **next** (agreed, not started), **later** (ag
 | Dimensionality from the whole bond graph, through molecular linkers (MOF-type frameworks) | done, v0.2.0 |
 | Molecular complexes and clusters drawn as whole units | done, v0.2.0 |
 | Alkali ions as polyhedron centres when they are the only metals (NaCl) | done, v0.2.0 |
-| Choose which elements get polyhedra and bonds (A-site ions in oxide perovskites, CN above 8) | next |
+| Switch polyhedra on or off per element | done, v0.2.1 |
+| Manual polyhedra: editable centre-to-vertex distance limits per element pair, and CN above 8 | open, see below |
+| Manual polyhedra: pick a centre and its vertices by clicking, copied to symmetry-equivalent sites | open, see below |
 | Editable bond cutoffs per element pair | next |
 | Polyhedra around P and S inside molecular oxyanions (PO4 in LiFePO4, SO4) | later |
 
@@ -45,6 +47,9 @@ Status marks: **done** (released), **next** (agreed, not started), **later** (ag
 | Item | Status |
 |---|---|
 | Angle and torsion measurement | done, v0.2.0 |
+| Remove single measurements (panel list, right-click menu, Clear) | done, v0.2.1 |
+| Colour, size and opacity per element, from the legend | done, v0.2.1 |
+| Appearance per atom or per crystallographic site; remembered between visits | later |
 | Atom labels | done, v0.2.0 |
 | PNG export, 1x to 4x, optional transparent background | done, v0.2.0 |
 | mol2 export of the shown block | done, v0.2.0 |
@@ -57,6 +62,21 @@ Status marks: **done** (released), **next** (agreed, not started), **later** (ag
 | Simulated powder XRD pattern | later |
 | Symmetry elements, voids, contacts shorter than van der Waals | later |
 | Bond orders and aromatic rings in the mol2 file | later |
+
+### Manual polyhedra: options to decide
+
+Now a polyhedron is automatic: the centre is a metal (or B, Si, P, As in a covalent network), the
+vertices are all bonded non-metal atoms within the bond cutoff, and it is drawn for 4 to 8 vertices.
+
+1. **Distance table (recommended).** A small table of centre element, vertex element and maximum
+   distance, filled with the automatic values and editable, as in VESTA. It also changes which bonds are
+   drawn, so the picture and the coordination numbers stay consistent. It would lift the limit of 8.
+2. **Pick by clicking.** Click a centre atom, then its vertices; the definition is copied to every
+   symmetry-equivalent centre, as chromophores are. Good for odd cases (a polyhedron around a
+   non-metal, a cage, a secondary building unit), slower for routine use.
+
+Open question for option 1: whether an edited cutoff should also change the reported numbers
+(coordination number, framework dimensionality) or only the drawing.
 
 ### SVG export: what was chosen
 

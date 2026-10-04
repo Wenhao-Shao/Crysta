@@ -2,7 +2,7 @@
   "name": "crysta",
   "displayName": "Crysta",
   "tagline": "A crystal workbench in the browser: view, measure, export",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Browser tool for crystal structures: 3D view, bonding and frameworks, measurements, PNG, SVG and mol2 export, with 2D perovskite layer descriptors, transition-dipole axes and multi-structure comparison",
   "license": "MIT",
   "private": true,

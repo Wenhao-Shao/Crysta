@@ -34,7 +34,8 @@ Press "Load the sample structures" to load the four built-in samples: (PEA)2PbBr
 - **Viewer:** ball and stick, space-filling or sticks; coordination polyhedra; hydrogen bonds; molecule
   and framework toggles; atom labels; packing limits in cell fractions; views down a cell axis, a [uvw]
   direction or an (hkl) normal; lattice planes with an offset.
-- **Measure:** click atoms for a distance (two), an angle (three, at the second) or a torsion (four).
+- **Measure:** click atoms for a distance (two), an angle (three, at the second) or a torsion (four). Remove one from the list in the Measure card or by a right-click on it in the picture; Clear removes all.
+- **Element appearance:** press an element in the legend to set its colour, size and opacity, and to switch its polyhedra on or off.
 - **Structure types:** metal-anion frameworks (oxides, sulfides, halides), frameworks joined through
   molecular linkers, covalent networks, molecular crystals, molecular complexes and salts.
 - **2D perovskite module:** layer thickness n, spacing, slab and gallery height, in-plane and out-of-plane
@@ -117,6 +118,8 @@ These choices decide the numbers, so they are stated here. Changing any of them 
 - A chromophore follows crystallographic sites, so a structure with two independent cations needs one
   definition per cation.
 - The stacking-offset and tilt descriptors assume corner-sharing layers.
+- Appearance is set per element, not per atom or per site, and is not kept after the page is closed.
+- An element drawn see-through keeps solid bonds.
 - The mol2 file carries no bond orders or charges.
 - The SVG drawing sorts whole objects by depth, so objects that pass through each other (a bond through a polyhedron face, crossing lattice planes) can overlap in the wrong order. It has no perspective and no lighting beyond the shaded atom fill.
 

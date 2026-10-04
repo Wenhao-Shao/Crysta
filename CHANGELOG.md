@@ -2,6 +2,13 @@
 
 Any change to how a number is defined gets a new version and a line here.
 
+## v0.2.1
+
+- Measurements can be removed one at a time: each is listed in the Measure card with a Remove button, a Clear button removes them all, and a right-click on a measurement in the picture opens a menu to remove it. Up to 20 are kept.
+- Element appearance: press an element in the legend to change its colour, size and opacity, and to switch its polyhedra on or off. The change applies to every atom of that element in every loaded structure, and is used by the PNG and SVG exports. A see-through element keeps solid bonds.
+- In the Structures table the control that removes a structure is a cross at the left of its name.
+- No change to any definition.
+
 ## v0.2.0
 
 The workbench becomes a general crystal viewer and is renamed **Crysta**. The 2D perovskite analysis is unchanged and now runs as a module.

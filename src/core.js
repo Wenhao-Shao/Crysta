@@ -1582,7 +1582,7 @@
      scene = { width, height, M: [[3],[3]], b: [2], background, shaded, font, items }
        M, b: screen = M p + b, in pixels, y down. The scale (pixels per angstrom) is |M[0]|.
      items:
-       { t: 'atom', p, r, color, el }                    sphere of radius r (angstrom)
+       { t: 'atom', p, r, color, el, opacity }           sphere of radius r (angstrom)
        { t: 'bond', p, q, r, color }                     one half of a stick, radius r (angstrom)
        { t: 'face', pts, color, opacity, cls }           flat polygon (polyhedron face, lattice plane)
        { t: 'line', p, q, w, color, dash, cls }          line of width w (pixels)
@@ -1638,7 +1638,8 @@
           fill = 'url(#' + id + ')';
         }
         body.push({ z: depth(it.p), s: '<circle class="atom' + (it.el ? ' ' + xml(it.el) : '') + '" cx="' + n2(s[0]) + '" cy="' + n2(s[1]) + '" r="' + n2(it.r * scale) +
-          '" fill="' + fill + '" stroke="' + shade(it.color, -0.55) + '" stroke-width="' + n2(Math.max(0.4, 0.02 * scale)) + '"/>' });
+          '" fill="' + fill + '" stroke="' + shade(it.color, -0.55) + '" stroke-width="' + n2(Math.max(0.4, 0.02 * scale)) + '"' +
+          (it.opacity !== undefined && it.opacity < 1 ? ' fill-opacity="' + n2(it.opacity) + '" stroke-opacity="' + n2(it.opacity) + '"' : '') + '/>' });
       } else if (it.t === 'bond') {
         const s = P(it.p), e = P(it.q);
         const w = 2 * it.r * scale;

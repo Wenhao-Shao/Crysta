@@ -234,6 +234,8 @@ const formula = (info) => info.formula.map((e) => e.el + e.n).join(' ');
   check('svg one gradient per colour', (svg.match(/<radialGradient/g) || []).length === 2);
   const flat = X.toSvg(Object.assign({ shaded: false, items: [{ t: 'atom', p: [1, 2, 0], r: 1, color: '#123456' }] }, view));
   check('svg flat fill, no background', flat.includes('fill="#123456"') && !flat.includes('radialGradient') && !flat.includes('class="background"') && /cx="120" cy="60"/.test(flat));
+  const glass = X.toSvg(Object.assign({ shaded: false, items: [{ t: 'atom', p: [0, 0, 0], r: 1, color: '#123456', opacity: 0.4 }] }, view));
+  check('svg atom transparency', glass.includes('fill-opacity="0.4"') && !flat.includes('fill-opacity'));
   // an octahedron has 8 faces; a cube's 12 hull triangles join into 6 squares
   const oct = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
   const cube = [];
