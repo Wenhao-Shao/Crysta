@@ -325,5 +325,39 @@ const formula = (info) => info.formula.map((e) => e.el + e.n).join(' ');
   check('svg faded bond carries its opacity once, on the group', (faded.match(/<g class="bond" opacity="0.35">/g) || []).length === 1 && (faded.match(/opacity=/g) || []).length === 1);
 }
 
+{
+  // see-through faces: only the nearest is seen where they overlap
+  const sq = (x, y, s, dz) => ({ pts: [[x, y], [x + s, y], [x + s, y + s], [x, y + s]].map((p) => [p[0], p[1], dz(p[0], p[1])]) });
+  const flat = (z) => () => z;
+  const area = (poly) => { let s = 0; for (let i = 0; i < poly.length; i++) { const a = poly[i], b = poly[(i + 1) % poly.length]; s += a[0] * b[1] - b[0] * a[1]; } return Math.abs(s / 2); };
+  const total = (pieces) => pieces.reduce((s, pc) => s + area(pc), 0);
+  let v = X.visibleParts([sq(0, 0, 2, flat(0)), sq(1, 1, 2, flat(1))], 1e-6);
+  check('a far face loses the part under a nearer face', v[1] === null && near(total(v[0]), 3, 1e-9));
+  v = X.visibleParts([sq(1, 1, 2, flat(1)), sq(0, 0, 2, flat(0))].map((f) => ({ pts: f.pts.slice().reverse() })), 1e-6);
+  check('the order and the winding of the faces do not matter', v[0] === null && near(total(v[1]), 3, 1e-9));
+  v = X.visibleParts([sq(0, 0, 2, flat(0)), sq(5, 5, 2, flat(1))], 1e-6);
+  check('faces that do not overlap stay whole', v[0] === null && v[1] === null);
+  v = X.visibleParts([sq(1, 1, 1, flat(0)), sq(0, 0, 3, flat(1))], 1e-6);
+  check('a face fully behind a nearer one has no visible part', Array.isArray(v[0]) && v[0].length === 0 && v[1] === null);
+  v = X.visibleParts([sq(0, 0, 2, flat(1)), sq(1, 1, 2, flat(1))], 1e-6);
+  check('of two faces at the same depth the earlier one is kept whole', v[0] === null && near(total(v[1]), 3, 1e-9));
+  // the first face is farther on average but nearer where the two overlap (depth grows with x)
+  v = X.visibleParts([sq(0, 0, 2, (x) => x), sq(1, 0, 2, flat(1.2))], 1e-6);
+  check('depth is compared where the faces overlap, not at their centres', v[0] === null && near(total(v[1]), 2, 1e-9));
+  v = X.visibleParts([sq(0, 0, 4, flat(0)), sq(1, 1, 1, flat(1)), sq(2.5, 2.5, 1, flat(2))], 1e-6);
+  check('several nearer faces are all cut away', near(total(v[0]), 14, 1e-9) && v[1] === null && v[2] === null);
+  const view = { width: 100, height: 100, M: [[10, 0, 0], [0, -10, 0]], b: [50, 50] };
+  const tri = (z, dx) => [[dx, 0, z], [dx + 2, 0, z], [dx, 2, z]];
+  const svg = X.toSvg(Object.assign({ items: [
+    { t: 'face', pts: tri(0, 0), color: '#112233', opacity: 0.25, cls: 'polyhedron', nearest: true },
+    { t: 'face', pts: tri(1, 0.5), color: '#445566', opacity: 0.25, cls: 'polyhedron', nearest: true, edge: 1.5, edgeColor: '#000000' },
+    { t: 'face', pts: tri(2, 0), color: '#778899', cls: 'plane' }] }, view));
+  check('svg nearest faces: the far one is a cut path, the near one a whole polygon, neither has an outline',
+    (svg.match(/<path class="polyhedron" d="M[^"]+Z" fill="#112233" fill-opacity="0.25" stroke="none"\/>/g) || []).length === 1 &&
+    (svg.match(/<polygon class="polyhedron" points="[^"]+" fill="#445566" fill-opacity="0.25" stroke="none"\/>/g) || []).length === 1);
+  check('svg nearest face with edges: the whole outline is a separate polygon', (svg.match(/<polygon class="polyhedron-edge" [^>]*fill="none" stroke="#000000" stroke-width="1.5"/g) || []).length === 1);
+  check('svg other faces keep their thin outline', /<polygon class="plane" [^>]*stroke-opacity="0.7"/.test(svg));
+}
+
 console.log(passed + ' passed, ' + failed + ' failed');
 process.exit(failed ? 1 : 0);

@@ -2225,6 +2225,85 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
       return idx;
     });
   }
+  /* ---- convex polygons in the plane of the drawing, used to cut see-through faces where a nearer one covers them ---- */
+  const area2d = (p) => { let s = 0; for (let i = 0; i < p.length; i++) { const a = p[i], b = p[(i + 1) % p.length]; s += a[0] * b[1] - b[0] * a[1]; } return s / 2; };
+  /* the part of a convex polygon on one side of the line a -> b: side +1 is the left, -1 the right */
+  function cutPolygon(poly, a, b, side) {
+    const out = [];
+    const dist = (p) => side * ((b[0] - a[0]) * (p[1] - a[1]) - (b[1] - a[1]) * (p[0] - a[0]));
+    for (let i = 0; i < poly.length; i++) {
+      const p = poly[i], q = poly[(i + 1) % poly.length];
+      const dp = dist(p), dq = dist(q);
+      if (dp >= 0) out.push(p);
+      if ((dp > 0 && dq < 0) || (dp < 0 && dq > 0)) { const t = dp / (dp - dq); out.push([p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t]); }
+    }
+    return out;
+  }
+  /* both polygons counter-clockwise (positive area2d) */
+  function intersectConvex(f, g) {
+    let r = f;
+    for (let i = 0; i < g.length && r.length >= 3; i++) r = cutPolygon(r, g[i], g[(i + 1) % g.length], 1);
+    return r.length >= 3 ? r : [];
+  }
+  /* f without g, as convex pieces */
+  function subtractConvex(f, g, minArea) {
+    const out = [];
+    let r = f;
+    for (let i = 0; i < g.length && r.length >= 3; i++) {
+      const a = g[i], b = g[(i + 1) % g.length];
+      const outside = cutPolygon(r, a, b, -1);
+      if (outside.length >= 3 && Math.abs(area2d(outside)) > minArea) out.push(outside);
+      r = cutPolygon(r, a, b, 1);
+    }
+    return out;
+  }
+  /* For see-through faces of which only the nearest is seen (as a 3D viewer with one see-through layer shows them):
+     the parts of each face that no nearer face covers. faces: [{ pts: [[x, y, depth], ...] }], convex, depth growing
+     towards the eye. Returns, per face, null when the whole face is seen, or its visible convex pieces (maybe none). */
+  function visibleParts(faces, minArea) {
+    const eps = minArea === undefined ? 0.05 : minArea;
+    const shapes = faces.map((f) => {
+      let q = f.pts.map((p) => [p[0], p[1]]);
+      const A = area2d(q);
+      if (A < 0) q = q.slice().reverse();
+      // depth as a plane over the drawing, from the three vertices that span the largest triangle with the first edge
+      const p0 = f.pts[0];
+      let best = null, bd = 0;
+      for (let i = 1; i + 1 < f.pts.length; i++) {
+        const u = f.pts[i], v = f.pts[i + 1];
+        const det = (u[0] - p0[0]) * (v[1] - p0[1]) - (v[0] - p0[0]) * (u[1] - p0[1]);
+        if (Math.abs(det) > Math.abs(bd)) { bd = det; best = [u, v]; }
+      }
+      let plane = null;
+      if (best && Math.abs(bd) > 1e-9) {
+        const [u, v] = best;
+        const ax = ((u[2] - p0[2]) * (v[1] - p0[1]) - (v[2] - p0[2]) * (u[1] - p0[1])) / bd;
+        const ay = ((u[0] - p0[0]) * (v[2] - p0[2]) - (v[0] - p0[0]) * (u[2] - p0[2])) / bd;
+        plane = (x, y) => p0[2] + ax * (x - p0[0]) + ay * (y - p0[1]);
+      }
+      const xs = q.map((p) => p[0]), ys = q.map((p) => p[1]);
+      return { q, area: Math.abs(A), plane, x0: Math.min(...xs), x1: Math.max(...xs), y0: Math.min(...ys), y1: Math.max(...ys) };
+    });
+    return shapes.map((F, i) => {
+      if (!F.plane || F.area <= eps) return null;
+      let pieces = null;
+      for (let j = 0; j < shapes.length; j++) {
+        const G = shapes[j];
+        if (j === i || !G.plane || G.area <= eps || G.x1 <= F.x0 || G.x0 >= F.x1 || G.y1 <= F.y0 || G.y0 >= F.y1) continue;
+        const I = intersectConvex(F.q, G.q);
+        if (I.length < 3 || Math.abs(area2d(I)) <= eps) continue;
+        let cx = 0, cy = 0;
+        for (const p of I) { cx += p[0] / I.length; cy += p[1] / I.length; }
+        const dz = G.plane(cx, cy) - F.plane(cx, cy);
+        // the nearer face covers; of two faces at the same depth the earlier one is kept
+        if (!(dz > 1e-7 || (Math.abs(dz) <= 1e-7 && j < i))) continue;
+        pieces = (pieces || [F.q]).flatMap((pc) => subtractConvex(pc, G.q, eps));
+        if (!pieces.length) break;
+      }
+      return pieces;
+    });
+  }
+
   function toSvg(scene) {
     const { M, b, width, height } = scene;
     const scale = norm(M[0]);
@@ -2241,6 +2320,10 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     const bondGrads = [];
     const body = [];
     const top = [];
+    // see-through faces of which only the nearest is seen: what is left of each after the nearer ones are cut away
+    const nearest = scene.items.filter((it) => it.t === 'face' && it.nearest);
+    const parts = new Map();
+    visibleParts(nearest.map((it) => ({ pts: it.pts.map((p) => { const s = P(p); return [s[0], s[1], depth(p)]; }) }))).forEach((v, i) => parts.set(nearest[i], v));
     for (const it of scene.items) {
       if (it.t === 'atom') {
         const s = P(it.p);
@@ -2271,8 +2354,20 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
       } else if (it.t === 'face') {
         let z = 0;
         for (const p of it.pts) z += depth(p);
-        body.push({ z: z / it.pts.length, s: '<polygon class="' + xml(it.cls || 'face') + '" points="' + it.pts.map(pt).join(' ') + '" fill="' + it.color + '" fill-opacity="' + (it.opacity === undefined ? 0.45 : it.opacity) +
-          '" stroke="' + (it.edgeColor || shade(it.color, -0.35)) + '" stroke-opacity="' + (it.edge ? 1 : 0.7) + '" stroke-width="' + n2(it.edge || Math.max(0.4, 0.015 * scale)) + '" stroke-linejoin="round"/>' });
+        z /= it.pts.length;
+        const cls = xml(it.cls || 'face');
+        const paint = 'fill="' + it.color + '" fill-opacity="' + (it.opacity === undefined ? 0.45 : it.opacity) + '"';
+        if (it.nearest) {
+          // no outline; cut where a nearer face covers it. The pieces go into one path, so no seams show between them.
+          const pieces = parts.get(it);
+          if (!pieces) body.push({ z, s: '<polygon class="' + cls + '" points="' + it.pts.map(pt).join(' ') + '" ' + paint + ' stroke="none"/>' });
+          else if (pieces.length) body.push({ z, s: '<path class="' + cls + '" d="' + pieces.map((pc) => 'M' + pc.map((q) => n2(q[0]) + ',' + n2(q[1])).join('L') + 'Z').join('') + '" ' + paint + ' stroke="none"/>' });
+          // edges are solid lines on the screen and are seen through nearer faces, so the whole outline is drawn
+          if (it.edge) body.push({ z, s: '<polygon class="' + cls + '-edge" points="' + it.pts.map(pt).join(' ') + '" fill="none" stroke="' + (it.edgeColor || shade(it.color, -0.35)) + '" stroke-width="' + n2(it.edge) + '" stroke-linejoin="round"/>' });
+        } else {
+          body.push({ z, s: '<polygon class="' + cls + '" points="' + it.pts.map(pt).join(' ') + '" ' + paint +
+            ' stroke="' + (it.edgeColor || shade(it.color, -0.35)) + '" stroke-opacity="' + (it.edge ? 1 : 0.7) + '" stroke-width="' + n2(it.edge || Math.max(0.4, 0.015 * scale)) + '" stroke-linejoin="round"/>' });
+        }
       } else if (it.t === 'line') {
         const s = P(it.p), e = P(it.q);
         body.push({ z: depth(midp(it.p, it.q, 0.5)), s: '<line class="' + xml(it.cls || 'line') + '" x1="' + n2(s[0]) + '" y1="' + n2(s[1]) + '" x2="' + n2(e[0]) + '" y2="' + n2(e[1]) + '" stroke="' + it.color +
@@ -2371,7 +2466,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     return faces;
   }
 
-  root.XtalCore = { readStructure, readCif, readPoscar, readXyz, readShelx, buildCell, analyse, assemble, hullFaces, planePolys, tetrazineDefs, chromoInstances, stateDir, orientReport, hallOps, symbolOps, setSgTable, isMetal, isCenter, isDonor, HALIDE, RC, MASS, parseSymop, MAX_POLY_CN, distance, bondAngle, torsion, toMol2, toSvg, hullPolygons, bondTubes, polyhedraFor, polyhedraStats, suggestPolyMax };
+  root.XtalCore = { readStructure, readCif, readPoscar, readXyz, readShelx, buildCell, analyse, assemble, hullFaces, planePolys, tetrazineDefs, chromoInstances, stateDir, orientReport, hallOps, symbolOps, setSgTable, isMetal, isCenter, isDonor, HALIDE, RC, MASS, parseSymop, MAX_POLY_CN, distance, bondAngle, torsion, toMol2, toSvg, visibleParts, hullPolygons, bondTubes, polyhedraFor, polyhedraStats, suggestPolyMax };
   if (typeof module !== 'undefined' && module.exports) module.exports = root.XtalCore;
 })(typeof window !== 'undefined' ? window : globalThis);
 
@@ -2797,6 +2892,10 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     }
     return fade;
   }
+  /* The colour of a faded centre atom or of its bonds. The viewer shows only the nearest see-through surface, so a
+     see-through atom inside a see-through polyhedron would vanish. A faded atom is therefore drawn solid, in its
+     colour mixed with what lies behind it: the polyhedron over the stage. The SVG uses the same colour. */
+  const ghostColour = (el, g, stage) => blendHex(colorOf(el), /^#[0-9a-f]{6}$/i.test(stage) ? blendHex(g.poly.color, stage, g.poly.opacity) : g.poly.color, g.f);
   const styleStore = (d, key) => {
     if (key[0] === 'a') return d.autoStyle[key.slice(2)] || (d.autoStyle[key.slice(2)] = {});
     const rule = d.polyRules[+key.slice(2)];
@@ -3146,11 +3245,9 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     const ink = cssVar('--ink'), muted = cssVar('--muted'), accent = cssVar('--accent'), panel = cssVar('--panel');
     viewer.setBackgroundColor(cssVar('--stage'), st.clear ? 0 : 1);
 
-    // Atoms of the model. A polyhedron centre below 100 % is a 'ghost'. 3Dmol shows only the nearest see-through
-    // surface, so a see-through atom inside a see-through polyhedron would vanish. A ghost and its bonds are
-    // therefore drawn solid, in their colours mixed with what lies behind them: the polyhedron over the stage.
+    // Atoms of the model. A polyhedron centre below 100 % is a 'ghost', drawn solid in a faded colour (see ghostColour).
     const stageHex = cssVar('--stage');
-    const ghostHex = (el, g) => blendHex(colorOf(el), /^#[0-9a-f]{6}$/i.test(stageHex) ? blendHex(g.poly.color, stageHex, g.poly.opacity) : g.poly.color, g.f);
+    const ghostHex = (el, g) => ghostColour(el, g, stageHex);
     const map = new Map();
     const list = [];
     blk.atoms.forEach((a, i) => {
@@ -3586,7 +3683,9 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     const scale = Math.hypot(M[0][0], M[0][1], M[0][2]);
     // direction to the viewer: screen right x screen up (the screen y axis points down)
     const zdir = [M[0][1] * -M[1][2] - M[0][2] * -M[1][1], M[0][2] * -M[1][0] - M[0][0] * -M[1][2], M[0][0] * -M[1][1] - M[0][1] * -M[1][0]];
-    const tint = (hex) => '#' + [1, 3, 5].map((k) => { const v = parseInt(hex.slice(k, k + 2), 16); return Math.round(v + (255 - v) * 0.4).toString(16).padStart(2, '0'); }).join('');
+    const zl = Math.hypot(zdir[0], zdir[1], zdir[2]) || 1;
+    // the viewer's one light, in screen axes (right, up, towards the eye)
+    const LIGHT = [0.2, 0.2, 1].map((x) => x / Math.hypot(0.2, 0.2, 1));
     if (!isFinite(scale) || scale <= 0) { st.notice = 'The drawing could not be made in this browser.'; drawReadout(); return; }
 
     const uc = d.uc;
@@ -3597,16 +3696,21 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     // a faded polyhedron centre and its bonds carry that opacity; one set to 0 is left out
     const fade = centreFade(d, blk);
     const solid = (i) => (fade.has(i) ? fade.get(i).f : 1);
+    const stageHex = cssVar('--stage');
+    // the colour of an atom, or of its end of a bond, as on the screen: g is the fading that applies, if any
+    const hue = (el, g) => (g ? ghostColour(el, g, stageHex) : colorOf(el));
     blk.atoms.forEach((a, i) => {
       if (!isVisible(a) || solid(i) <= 0) return;
-      const color = colorOf(a.el);
-      items.push({ t: 'atom', p: a.xyz, r: sphereR(a.el), color, el: a.el, opacity: opacityOf(a.el) * solid(i) });
+      items.push({ t: 'atom', p: a.xyz, r: sphereR(a.el), color: hue(a.el, fade.get(i)), el: a.el, opacity: opacityOf(a.el) });
       if (st.style === 'sf') return;
       for (const j of a.bonds) {
         const o = blk.atoms[j];
         if (!isVisible(o) || solid(j) <= 0) continue;
+        // a bond to a faded centre is faded over its whole length, with the lower value if both ends are centres
+        const g = fade.has(i) && fade.has(j) ? (solid(i) <= solid(j) ? fade.get(i) : fade.get(j)) : (fade.get(i) || fade.get(j));
+        const color = hue(a.el, g);
         // each atom draws its half of the bond; with gradient bonds the half fades to the midpoint colour
-        items.push({ t: 'bond', p: a.xyz, q: mid(a.xyz, o.xyz), r: stickR(a.el), color, color2: st.bondGrad ? mixHex(color, colorOf(o.el)) : undefined, opacity: Math.min(solid(i), solid(j)) });
+        items.push({ t: 'bond', p: a.xyz, q: mid(a.xyz, o.xyz), r: stickR(a.el), color, color2: st.bondGrad ? mixHex(color, hue(o.el, g)) : undefined });
       }
     });
     if (st.poly && st.inorg && st.style !== 'sf') {
@@ -3614,13 +3718,22 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
         if (!polyShown(d, polyKey(blk, pl))) continue;
         const pts = pl.verts.map((i) => blk.atoms[i].xyz);
         const sty = polyStyle(d, polyKey(blk, pl), blk.atoms[pl.center].el);
-        // only the faces turned to the viewer, in a lighter tint: stacked translucent faces would add up to a dark block
+        // As on the screen: only the faces turned to the viewer (the viewer shows the nearest see-through surface),
+        // each as bright as the viewer's one light makes it, with the viewer's opacity (the set value, squared),
+        // and no outline unless the edges are switched on.
         const cen = pts.reduce((t, q) => [t[0] + q[0], t[1] + q[1], t[2] + q[2]], [0, 0, 0]).map((x) => x / pts.length);
         for (const f of C.hullPolygons(pts)) {
           const fp = f.map((k) => pts[k]);
           const fc = fp.reduce((t, q) => [t[0] + q[0], t[1] + q[1], t[2] + q[2]], [0, 0, 0]).map((x) => x / fp.length);
           if ((fc[0] - cen[0]) * zdir[0] + (fc[1] - cen[1]) * zdir[1] + (fc[2] - cen[2]) * zdir[2] < -1e-6) continue;
-          items.push({ t: 'face', pts: fp, color: sty.own ? sty.color : tint(sty.color), opacity: Math.min(1, sty.opacity * 0.68), cls: 'polyhedron',
+          const u = [0, 1, 2].map((k) => fp[1][k] - fp[0][k]), v = [0, 1, 2].map((k) => fp[2][k] - fp[0][k]);
+          let n = [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]];
+          const nl = Math.hypot(n[0], n[1], n[2]) || 1;
+          const out = (fc[0] - cen[0]) * n[0] + (fc[1] - cen[1]) * n[1] + (fc[2] - cen[2]) * n[2] < 0 ? -1 : 1;
+          n = n.map((x) => out * x / nl);
+          const lit = Math.max(0, LIGHT[0] * (M[0][0] * n[0] + M[0][1] * n[1] + M[0][2] * n[2]) / scale - LIGHT[1] * (M[1][0] * n[0] + M[1][1] * n[1] + M[1][2] * n[2]) / scale +
+            LIGHT[2] * (zdir[0] * n[0] + zdir[1] * n[1] + zdir[2] * n[2]) / zl);
+          items.push({ t: 'face', pts: fp, color: blendHex(sty.color, '#000000', lit), opacity: sty.opacity * sty.opacity, cls: 'polyhedron', nearest: true,
             edge: sty.edges ? Math.max(1, 0.07 * scale) : undefined, edgeColor: sty.edges ? darker(sty.color) : undefined });
         }
       }

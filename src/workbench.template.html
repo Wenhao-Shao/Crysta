@@ -908,6 +908,10 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
     }
     return fade;
   }
+  /* The colour of a faded centre atom or of its bonds. The viewer shows only the nearest see-through surface, so a
+     see-through atom inside a see-through polyhedron would vanish. A faded atom is therefore drawn solid, in its
+     colour mixed with what lies behind it: the polyhedron over the stage. The SVG uses the same colour. */
+  const ghostColour = (el, g, stage) => blendHex(colorOf(el), /^#[0-9a-f]{6}$/i.test(stage) ? blendHex(g.poly.color, stage, g.poly.opacity) : g.poly.color, g.f);
   const styleStore = (d, key) => {
     if (key[0] === 'a') return d.autoStyle[key.slice(2)] || (d.autoStyle[key.slice(2)] = {});
     const rule = d.polyRules[+key.slice(2)];
@@ -1257,11 +1261,9 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
     const ink = cssVar('--ink'), muted = cssVar('--muted'), accent = cssVar('--accent'), panel = cssVar('--panel');
     viewer.setBackgroundColor(cssVar('--stage'), st.clear ? 0 : 1);
 
-    // Atoms of the model. A polyhedron centre below 100 % is a 'ghost'. 3Dmol shows only the nearest see-through
-    // surface, so a see-through atom inside a see-through polyhedron would vanish. A ghost and its bonds are
-    // therefore drawn solid, in their colours mixed with what lies behind them: the polyhedron over the stage.
+    // Atoms of the model. A polyhedron centre below 100 % is a 'ghost', drawn solid in a faded colour (see ghostColour).
     const stageHex = cssVar('--stage');
-    const ghostHex = (el, g) => blendHex(colorOf(el), /^#[0-9a-f]{6}$/i.test(stageHex) ? blendHex(g.poly.color, stageHex, g.poly.opacity) : g.poly.color, g.f);
+    const ghostHex = (el, g) => ghostColour(el, g, stageHex);
     const map = new Map();
     const list = [];
     blk.atoms.forEach((a, i) => {
@@ -1697,7 +1699,9 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
     const scale = Math.hypot(M[0][0], M[0][1], M[0][2]);
     // direction to the viewer: screen right x screen up (the screen y axis points down)
     const zdir = [M[0][1] * -M[1][2] - M[0][2] * -M[1][1], M[0][2] * -M[1][0] - M[0][0] * -M[1][2], M[0][0] * -M[1][1] - M[0][1] * -M[1][0]];
-    const tint = (hex) => '#' + [1, 3, 5].map((k) => { const v = parseInt(hex.slice(k, k + 2), 16); return Math.round(v + (255 - v) * 0.4).toString(16).padStart(2, '0'); }).join('');
+    const zl = Math.hypot(zdir[0], zdir[1], zdir[2]) || 1;
+    // the viewer's one light, in screen axes (right, up, towards the eye)
+    const LIGHT = [0.2, 0.2, 1].map((x) => x / Math.hypot(0.2, 0.2, 1));
     if (!isFinite(scale) || scale <= 0) { st.notice = 'The drawing could not be made in this browser.'; drawReadout(); return; }
 
     const uc = d.uc;
@@ -1708,16 +1712,21 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
     // a faded polyhedron centre and its bonds carry that opacity; one set to 0 is left out
     const fade = centreFade(d, blk);
     const solid = (i) => (fade.has(i) ? fade.get(i).f : 1);
+    const stageHex = cssVar('--stage');
+    // the colour of an atom, or of its end of a bond, as on the screen: g is the fading that applies, if any
+    const hue = (el, g) => (g ? ghostColour(el, g, stageHex) : colorOf(el));
     blk.atoms.forEach((a, i) => {
       if (!isVisible(a) || solid(i) <= 0) return;
-      const color = colorOf(a.el);
-      items.push({ t: 'atom', p: a.xyz, r: sphereR(a.el), color, el: a.el, opacity: opacityOf(a.el) * solid(i) });
+      items.push({ t: 'atom', p: a.xyz, r: sphereR(a.el), color: hue(a.el, fade.get(i)), el: a.el, opacity: opacityOf(a.el) });
       if (st.style === 'sf') return;
       for (const j of a.bonds) {
         const o = blk.atoms[j];
         if (!isVisible(o) || solid(j) <= 0) continue;
+        // a bond to a faded centre is faded over its whole length, with the lower value if both ends are centres
+        const g = fade.has(i) && fade.has(j) ? (solid(i) <= solid(j) ? fade.get(i) : fade.get(j)) : (fade.get(i) || fade.get(j));
+        const color = hue(a.el, g);
         // each atom draws its half of the bond; with gradient bonds the half fades to the midpoint colour
-        items.push({ t: 'bond', p: a.xyz, q: mid(a.xyz, o.xyz), r: stickR(a.el), color, color2: st.bondGrad ? mixHex(color, colorOf(o.el)) : undefined, opacity: Math.min(solid(i), solid(j)) });
+        items.push({ t: 'bond', p: a.xyz, q: mid(a.xyz, o.xyz), r: stickR(a.el), color, color2: st.bondGrad ? mixHex(color, hue(o.el, g)) : undefined });
       }
     });
     if (st.poly && st.inorg && st.style !== 'sf') {
@@ -1725,13 +1734,22 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
         if (!polyShown(d, polyKey(blk, pl))) continue;
         const pts = pl.verts.map((i) => blk.atoms[i].xyz);
         const sty = polyStyle(d, polyKey(blk, pl), blk.atoms[pl.center].el);
-        // only the faces turned to the viewer, in a lighter tint: stacked translucent faces would add up to a dark block
+        // As on the screen: only the faces turned to the viewer (the viewer shows the nearest see-through surface),
+        // each as bright as the viewer's one light makes it, with the viewer's opacity (the set value, squared),
+        // and no outline unless the edges are switched on.
         const cen = pts.reduce((t, q) => [t[0] + q[0], t[1] + q[1], t[2] + q[2]], [0, 0, 0]).map((x) => x / pts.length);
         for (const f of C.hullPolygons(pts)) {
           const fp = f.map((k) => pts[k]);
           const fc = fp.reduce((t, q) => [t[0] + q[0], t[1] + q[1], t[2] + q[2]], [0, 0, 0]).map((x) => x / fp.length);
           if ((fc[0] - cen[0]) * zdir[0] + (fc[1] - cen[1]) * zdir[1] + (fc[2] - cen[2]) * zdir[2] < -1e-6) continue;
-          items.push({ t: 'face', pts: fp, color: sty.own ? sty.color : tint(sty.color), opacity: Math.min(1, sty.opacity * 0.68), cls: 'polyhedron',
+          const u = [0, 1, 2].map((k) => fp[1][k] - fp[0][k]), v = [0, 1, 2].map((k) => fp[2][k] - fp[0][k]);
+          let n = [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]];
+          const nl = Math.hypot(n[0], n[1], n[2]) || 1;
+          const out = (fc[0] - cen[0]) * n[0] + (fc[1] - cen[1]) * n[1] + (fc[2] - cen[2]) * n[2] < 0 ? -1 : 1;
+          n = n.map((x) => out * x / nl);
+          const lit = Math.max(0, LIGHT[0] * (M[0][0] * n[0] + M[0][1] * n[1] + M[0][2] * n[2]) / scale - LIGHT[1] * (M[1][0] * n[0] + M[1][1] * n[1] + M[1][2] * n[2]) / scale +
+            LIGHT[2] * (zdir[0] * n[0] + zdir[1] * n[1] + zdir[2] * n[2]) / zl);
+          items.push({ t: 'face', pts: fp, color: blendHex(sty.color, '#000000', lit), opacity: sty.opacity * sty.opacity, cls: 'polyhedron', nearest: true,
             edge: sty.edges ? Math.max(1, 0.07 * scale) : undefined, edgeColor: sty.edges ? darker(sty.color) : undefined });
         }
       }
