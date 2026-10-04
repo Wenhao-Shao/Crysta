@@ -31,10 +31,12 @@ Press "Load the sample structures" to load the four built-in samples: (PEA)2PbBr
 
 ## What it does
 
-- **Viewer:** ball and stick, space-filling or sticks; coordination polyhedra; hydrogen bonds; molecule
+- **Viewer:** ball and stick, space-filling or sticks; two-tone or gradient bonds; coordination polyhedra; hydrogen bonds; molecule
   and framework toggles; atom labels; packing limits in cell fractions; views down a cell axis, a [uvw]
   direction or an (hkl) normal; lattice planes with an offset.
-- **Measure:** click atoms for a distance (two), an angle (three, at the second) or a torsion (four).
+- **Measure:** click atoms for a distance (two), an angle (three, at the second) or a torsion (four). Remove one from the list in the Measure card or by a right-click on it in the picture; Clear removes all.
+- **Polyhedra:** automatic around metal centres, and your own: choose a centre element, the corner elements and a distance in the Polyhedra card, or click a centre and a corner in the picture. Press a row to set colour, opacity and edges.
+- **Element appearance:** press an element in the legend to set its colour, size and opacity.
 - **Structure types:** metal-anion frameworks (oxides, sulfides, halides), frameworks joined through
   molecular linkers, covalent networks, molecular crystals, molecular complexes and salts.
 - **2D perovskite module:** layer thickness n, spacing, slab and gallery height, in-plane and out-of-plane
@@ -68,11 +70,13 @@ These choices decide the numbers, so they are stated here. Changing any of them 
 |---|---|
 | Covalent bond | two non-metals closer than the sum of Cordero covalent radii plus 0.45 Å |
 | Metal-halide bond | distance below the sum of covalent radii plus 0.75 Å |
-| Metal-donor bond | metal to any other non-metal except H and the noble gases, below the sum of covalent radii plus 0.5 Å |
+| Metal-donor bond | metal to any other non-metal except H and the noble gases, below the sum of covalent radii plus 0.5 Å; an atom with four or more covalent bonds is not a donor |
 | Polyhedron centre | any metal except Li, Na, K, Rb, Cs, Fr, which are free ions unless they are the only metals with anions around them |
 | Polyhedron | drawn for 4 to 8 bonded neighbours |
+| Polyhedron you define | centre element, corner elements and a largest centre-to-corner distance; drawn for 3 or more corners (3 is a triangle); drawn next to the automatic polyhedra and to other sets, also with the same centre element; changes the picture only |
+| Suggested distance | for each centre the nearest shell ends at the widest relative gap (at least 12 %) among its first 12 sorted distances; the suggestion is the widest shell times 1.08, but at most halfway to the nearest next shell |
 | Covalent network | a set of covalently bonded atoms that a lattice translation joins to itself (diamond, quartz, graphite) |
-| Network polyhedron | B, Si, P or As in a covalent network with 4 or more neighbours, all of them O, N, F, S, Se or Cl |
+| Non-metal polyhedron | B, Si, P, As, S, Se or Te with 4 to 8 bonded neighbours, all of them O, N, F, S, Se, Cl, Br or I; in networks, molecules and molecular ions |
 | Molecular complex | a finite bonded unit that holds a metal and its ligands; drawn whole |
 | Framework dimensionality | number of independent lattice translations that join the bonded network holding the metal centres to itself |
 | Layer spacing | d(hkl) of the layer plane divided by the number of layers per repeat |
@@ -117,6 +121,9 @@ These choices decide the numbers, so they are stated here. Changing any of them 
 - A chromophore follows crystallographic sites, so a structure with two independent cations needs one
   definition per cation.
 - The stacking-offset and tilt descriptors assume corner-sharing layers.
+- Polyhedra you define use one distance for all their corner elements, and are not kept after the page is closed.
+- Appearance is set per element, not per atom or per site, and is not kept after the page is closed.
+- An element drawn see-through keeps solid bonds.
 - The mol2 file carries no bond orders or charges.
 - The SVG drawing sorts whole objects by depth, so objects that pass through each other (a bond through a polyhedron face, crossing lattice planes) can overlap in the wrong order. It has no perspective and no lighting beyond the shaded atom fill.
 

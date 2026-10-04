@@ -234,11 +234,92 @@ const formula = (info) => info.formula.map((e) => e.el + e.n).join(' ');
   check('svg one gradient per colour', (svg.match(/<radialGradient/g) || []).length === 2);
   const flat = X.toSvg(Object.assign({ shaded: false, items: [{ t: 'atom', p: [1, 2, 0], r: 1, color: '#123456' }] }, view));
   check('svg flat fill, no background', flat.includes('fill="#123456"') && !flat.includes('radialGradient') && !flat.includes('class="background"') && /cx="120" cy="60"/.test(flat));
+  const glass = X.toSvg(Object.assign({ shaded: false, items: [{ t: 'atom', p: [0, 0, 0], r: 1, color: '#123456', opacity: 0.4 }] }, view));
+  check('svg atom transparency', glass.includes('fill-opacity="0.4"') && !flat.includes('fill-opacity'));
   // an octahedron has 8 faces; a cube's 12 hull triangles join into 6 squares
   const oct = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
   const cube = [];
   for (const x of [-1, 1]) for (const y of [-1, 1]) for (const z of [-1, 1]) cube.push([x, y, z]);
   check('polyhedron faces joined', X.hullPolygons(oct).length === 8 && X.hullPolygons(cube).length === 6 && X.hullPolygons(cube).every((f) => f.length === 4));
+}
+
+// 9. user-defined polyhedra: any centre, any corner
+{
+  // Cs in cubic CsPbBr3 sits in a cuboctahedron of 12 Br at a/sqrt(2) = 4.154 A
+  const { uc } = load('tests/cifs/CsPbBr3_cubic.cif');
+  const max = X.suggestPolyMax(uc, 'Cs', ['Br']);
+  check('suggested limit takes the first shell', max > 4.154 && max < 5.0, 'got ' + max);
+  check('Pb-Br suggestion', X.suggestPolyMax(uc, 'Pb', ['Br']) > 2.94 && X.suggestPolyMax(uc, 'Pb', ['Br']) < 3.5);
+  const st = X.polyhedraStats(uc, { center: 'Cs', corners: ['Br'], max });
+  check('Cs cuboctahedron', st.centres === 1 && st.cnMin === 12 && st.cnMax === 12);
+  const plain = X.assemble(uc, [0, 0, 0], [1, 1, 1]);
+  const b = X.assemble(uc, [0, 0, 0], [1, 1, 1], [{ center: 'Cs', corners: ['Br'], max }]);
+  const cs = b.polyhedra.filter((p) => p.custom);
+  check('custom polyhedron drawn with all corners', cs.length === 1 && cs[0].verts.length === 12 && cs[0].verts.every((v) => b.atoms[v].el === 'Br'));
+  check('automatic polyhedra kept for other elements', b.polyhedra.length === plain.polyhedra.length + 1);
+  // a rule for Pb is a set of its own: the automatic Pb octahedra stay, and two rules can share a centre
+  const kept = X.assemble(uc, [0, 0, 0], [1, 1, 1], [{ center: 'Pb', corners: ['Br'], max: 2.0 }]);
+  check('a rule leaves the automatic polyhedra alone', kept.polyhedra.length === plain.polyhedra.length && kept.polyhedra.every((p) => !p.custom));
+  const two = X.assemble(uc, [0, 0, 0], [1, 1, 1], [{ center: 'Pb', corners: ['Cs'], max: 5.2 }, { center: 'Pb', corners: ['Br'], max: 3.4 }]);
+  const byRule = [0, 1].map((k) => two.polyhedra.filter((p) => p.rule === k));
+  check('two rules with one centre element', byRule[0].length > 0 && byRule[0].every((p) => p.verts.length === 8) && byRule[1].length === byRule[0].length && byRule[1].every((p) => p.verts.length === 6) &&
+    two.polyhedra.filter((p) => !p.custom).length === plain.polyhedra.length);
+  const off = X.assemble(uc, [0, 0, 0], [1, 1, 1], [{ center: 'Pb', corners: ['Br'], max: 2.0, on: false }]);
+  check('a rule switched off changes nothing', off.polyhedra.length === plain.polyhedra.length && off.atoms.length === plain.atoms.length);
+  // a non-metal centre with any element as corner: Br with its 2 Pb and 4 Cs
+  const br = X.polyhedraStats(uc, { center: 'Br', corners: null, max: 4.3 });
+  check('non-metal centre, any corner', br.centres === 3 && br.cnMin === 14 && br.cnMax === 14, JSON.stringify(br));
+  const brOnly = X.polyhedraStats(uc, { center: 'Br', corners: ['Pb', 'Cs'], max: 4.3 });
+  check('corners limited to chosen elements', brOnly.cnMin === 6 && brOnly.cnMax === 6, JSON.stringify(brOnly));
+  // around Br the widest gap comes after the two Pb and four Cs, not after the two Pb alone
+  const sb = X.suggestPolyMax(uc, 'Br', ['Pb', 'Cs']);
+  check('suggestion ends at the widest gap', sb > 4.154 && sb < 5.5 && X.polyhedraStats(uc, { center: 'Br', corners: ['Pb', 'Cs'], max: sb }).cnMax === 6, 'got ' + sb);
+  check('centre inside its polyhedron', X.polyhedraStats(uc, { center: 'Cs', corners: ['Br'], max }).outside === 0);
+
+  const u = load('tests/cifs/urea.cif');
+  const tri = X.assemble(u.uc, [0, 0, 0], [1, 1, 1], [{ center: 'C', corners: ['N', 'O'], max: 1.5 }]).polyhedra;
+  check('three corners: a triangle', tri.length === 2 && tri.every((p) => p.verts.length === 3));
+  check('fewer than three corners: nothing', X.assemble(u.uc, [0, 0, 0], [1, 1, 1], [{ center: 'C', corners: ['O'], max: 1.5 }]).polyhedra.length === 0);
+  check('a flat face is one polygon seen from both sides', X.hullFaces([[0, 0, 0], [1, 0, 0], [0, 1, 0]]).length === 2 && X.hullPolygons([[0, 0, 0], [1, 0, 0], [0, 1, 0]]).length === 1 &&
+    X.hullPolygons([[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0]]).length === 1);
+}
+
+// 10. molecular ions with a non-metal centre, next to a large cation: Cs2[TeCl6] (K2PtCl6 type, Fm-3m)
+{
+  const { uc, info } = load('tests/cifs/Cs2TeCl6.cif');
+  const b = X.assemble(uc, [0, 0, 0], [1, 1, 1]);
+  const te = b.polyhedra.filter((p) => b.atoms[p.center].el === 'Te');
+  check('TeCl6 octahedra drawn automatically', te.length > 0 && te.every((p) => p.verts.length === 6 && p.verts.every((v) => b.atoms[v].el === 'Cl')));
+  check('Te is not a ligand of Cs', info.metalSites.every((m) => m.bonds.every((x) => x.el !== 'Te')));
+  // Cs has 12 Cl at 3.69 A; the far Cl of each octahedron are at 6.4 A and must not be suggested
+  const max = X.suggestPolyMax(uc, 'Cs', ['Cl']);
+  const st = X.polyhedraStats(uc, { center: 'Cs', corners: ['Cl'], max });
+  check('Cs-Cl nearest shell', max < 4.5 && st.cnMin === 12 && st.cnMax === 12 && st.outside === 0, 'max ' + max + ' ' + JSON.stringify(st));
+  // a limit that takes only the corners of a neighbouring unit puts the centre outside its polyhedron
+  const far = X.polyhedraStats(uc, { center: 'Te', corners: ['Cs'], max: 4.7 });
+  check('Te with 8 Cs: centre inside a cube', far.cnMin === 8 && far.outside === 0, JSON.stringify(far));
+}
+
+// 11. gradient bonds
+{
+  const tubes = X.bondTubes([{ p: [0, 0, 0], q: [0, 0, 2], rp: 0.1, rq: 0.07, cp: [1, 0, 0], cq: [0, 0, 1] }], 8);
+  const m = tubes[0];
+  check('tube mesh size', tubes.length === 1 && m.vertexArr.length === 16 && m.faceArr.length === 48 && m.colorArr.length === 16);
+  check('tube tapers and keeps a colour at each end', near(Math.hypot(m.vertexArr[0][0], m.vertexArr[0][1]), 0.1, 1e-9) && near(Math.hypot(m.vertexArr[1][0], m.vertexArr[1][1]), 0.07, 1e-9) &&
+    m.colorArr[0][0] === 1 && m.colorArr[1][2] === 1);
+  // every triangle faces outward: its normal points away from the axis
+  let outward = true;
+  for (let f = 0; f < m.faceArr.length; f += 3) {
+    const [a, b, c] = [m.vertexArr[m.faceArr[f]], m.vertexArr[m.faceArr[f + 1]], m.vertexArr[m.faceArr[f + 2]]];
+    const u = [b[0] - a[0], b[1] - a[1], b[2] - a[2]], v = [c[0] - a[0], c[1] - a[1], c[2] - a[2]];
+    const nrm = [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]];
+    if (nrm[0] * a[0] + nrm[1] * a[1] <= 0) outward = false;
+  }
+  check('tube faces point outward', outward);
+  check('long bond lists are split below the mesh limit', X.bondTubes(new Array(50).fill({ p: [0, 0, 0], q: [1, 0, 0], rp: 0.1, rq: 0.1, cp: [0, 0, 0], cq: [1, 1, 1] }), 10, 200).length === 5);
+  const view = { width: 100, height: 100, M: [[10, 0, 0], [0, -10, 0]], b: [50, 50] };
+  const svg = X.toSvg(Object.assign({ items: [{ t: 'bond', p: [0, 0, 0], q: [1, 0, 0], r: 0.1, color: '#ff0000', color2: '#800080' }, { t: 'bond', p: [0, 0, 0], q: [0, 1, 0], r: 0.1, color: '#ff0000' }] }, view));
+  check('svg gradient bond', (svg.match(/<linearGradient/g) || []).length === 1 && svg.includes('stroke="url(#b1)"') && svg.includes('stop-color="#800080"') && svg.includes('x1="50" y1="50" x2="60" y2="50"'));
 }
 
 console.log(passed + ' passed, ' + failed + ' failed');

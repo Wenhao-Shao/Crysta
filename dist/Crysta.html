@@ -71,6 +71,43 @@ h1 { font-family: var(--font-display); font-weight: 600; font-size: 28px; line-h
 .chip { display: inline-flex; align-items: center; gap: 5px; font-family: var(--font-data); font-size: 12px;
   background: var(--panel); border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px 1px 5px; pointer-events: none; }
 .chip i { width: 10px; height: 10px; border-radius: 50%; border: 1px solid var(--line); }
+button.chip { pointer-events: auto; cursor: pointer; color: var(--ink); }
+button.chip[aria-expanded="true"] { border-color: var(--accent); }
+.elpop { position: absolute; left: 10px; bottom: 44px; z-index: 3; width: min(300px, calc(100% - 20px)); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; padding: 10px 12px 12px; display: grid; gap: 8px; font-size: 13px; box-shadow: 0 6px 18px rgba(20, 16, 24, 0.18); }
+.elpop .grid { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 6px 10px; align-items: center; }
+.elpop strong { font-family: var(--font-display); font-size: 16px; }
+.elpop input[type="range"] { width: 100%; accent-color: var(--accent); }
+.elpop input[type="color"] { width: 44px; height: 26px; padding: 0; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); }
+.elpop output { font-family: var(--font-data); font-size: 12px; min-width: 4ch; text-align: right; }
+.ctx { position: fixed; z-index: 20; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 4px; display: grid; gap: 2px;
+  box-shadow: 0 6px 18px rgba(20, 16, 24, 0.22); }
+.ctx button { border: 0; text-align: left; white-space: nowrap; }
+.ctx button:hover { background: var(--accent-soft); }
+.prule { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 4px 8px; align-items: center; font-size: 13px; border-top: 1px solid var(--line); padding-top: 8px; }
+.prule:first-child { border-top: 0; padding-top: 0; }
+.prule .what { min-width: 0; border: 0; background: none; padding: 0; text-align: left; display: flex; align-items: center; gap: 6px; }
+.prule .what:hover b { text-decoration: underline; }
+.prule .what .sw { border: 1px solid var(--line); border-radius: 3px; }
+.prule .what .car { color: var(--muted); font-size: 11px; width: 10px; }
+.prule .look { grid-column: 2 / 4; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 6px 8px; align-items: center; font-size: 12.5px; color: var(--muted); }
+.prule .look input[type="range"] { width: 100%; accent-color: var(--accent); }
+.prule .look input[type="color"] { width: 44px; height: 24px; padding: 0; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); }
+.prule .look .full { grid-column: 1 / 4; display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center; justify-content: space-between; }
+.prule .look label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.prule .what b { font-weight: 600; }
+.prule .sub2 { grid-column: 2 / 4; display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; color: var(--muted); font-size: 12.5px; }
+.prule .sub2 input { width: 64px; }
+.pform { display: grid; gap: 8px; border-top: 1px solid var(--line); padding-top: 10px; }
+.pform .line { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; font-size: 13px; }
+.pform .lab { color: var(--muted); min-width: 58px; }
+.elchips { display: flex; flex-wrap: wrap; gap: 4px; }
+.elchips button { padding: 2px 9px; font-family: var(--font-data); font-size: 12.5px; border-radius: 999px; }
+.pprev { font-size: 13px; }
+.pprev.warn { color: var(--warn); }
+.mlist { display: grid; gap: 4px; }
+.mlist .mrow { display: flex; align-items: center; gap: 8px; font-family: var(--font-data); font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.mlist .mrow button { margin-left: auto; }
 .stage-msg { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 12px; padding: 24px; text-align: center; color: var(--muted); }
 .stage-msg strong { font-family: var(--font-display); font-size: 22px; font-weight: 600; color: var(--ink); }
 .stage-msg p { margin: 0; max-width: 52ch; }
@@ -85,7 +122,9 @@ h1 { font-family: var(--font-display); font-weight: 600; font-size: 28px; line-h
 
 .rail { display: flex; flex-direction: column; gap: 12px; min-width: 0; min-height: 0; overflow-y: auto; padding-right: 2px; }
 .card { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px 14px; display: grid; gap: 10px; min-width: 0; }
-.cmp { max-height: 30vh; overflow-y: auto; }
+.cmp .tbl-wrap { overflow: auto; }
+#tblCmp thead th { position: sticky; top: 0; background: var(--panel); z-index: 2; }
+#tblCmp thead th:first-child { left: 0; z-index: 3; }
 h2 { font-size: 11.5px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; color: var(--muted); margin: 0; }
 .row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
 .between { justify-content: space-between; }
@@ -147,6 +186,8 @@ th:first-child, td:first-child { text-align: left; padding-left: 0; }
 #tblCmp td:first-child { position: sticky; left: 0; background: var(--panel); }
 #tblCmp tr.on td { background: var(--accent-soft); }
 #tblCmp tr.on td:first-child { background: var(--accent-soft); }
+.xbtn { border: 0; background: none; padding: 0 6px 0 0; margin-right: 4px; font-size: 16px; line-height: 1; color: var(--muted); }
+.xbtn:hover { color: var(--warn); }
 .linkbtn { border: 0; background: none; padding: 0; font-family: var(--font-ui); font-weight: 500; text-decoration: underline; text-underline-offset: 2px; }
 #tsvBox { width: 100%; height: 90px; font-family: var(--font-data); font-size: 12px; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 4px; }
 .foot { font-size: 12px; color: var(--muted); }
@@ -176,7 +217,6 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
   .stage-col { grid-template-rows: auto auto auto; }
   .stage { height: clamp(340px, 62vh, 560px); }
   .rail { overflow: visible; }
-  .cmp { max-height: none; }
   h1 { font-size: 24px; }
 }
 </style>
@@ -216,7 +256,16 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
           <button type="button" id="viewLayer">Layer normal</button>
           <button type="button" id="viewReset">Reset view</button>
         </div>
-        <div class="overlay bl" id="legend" aria-label="Element colours"></div>
+        <div class="overlay bl" id="legend" aria-label="Elements: press one to change how it is drawn"></div>
+        <div class="elpop" id="elPop" role="dialog" aria-label="Element appearance" hidden>
+          <div class="row between"><strong id="elName"></strong><button type="button" class="mini" id="elClose">Close</button></div>
+          <div class="grid">
+            <label for="elColor">Colour</label><input type="color" id="elColor"><span></span>
+            <label for="elSize">Size</label><input type="range" id="elSize" min="0.3" max="2.5" step="0.05"><output id="elSizeOut"></output>
+            <label for="elOpacity">Opacity</label><input type="range" id="elOpacity" min="0.1" max="1" step="0.05"><output id="elOpacityOut"></output>
+          </div>
+          <div class="row between"><span class="small">Applies to every atom of this element, in every loaded structure.</span><button type="button" class="mini" id="elReset">Reset</button></div>
+        </div>
       </div>
       <div class="readout" id="readout" aria-live="polite"></div>
       <section class="card cmp" id="cardCmp" hidden>
@@ -236,6 +285,13 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
           <button type="button" id="styleBS" aria-pressed="true">Ball and stick</button>
           <button type="button" id="styleSF" aria-pressed="false">Space-filling</button>
           <button type="button" id="styleST" aria-pressed="false">Sticks</button>
+        </div>
+        <div class="row">
+          <span class="small" id="bondLbl">Bond colour</span>
+          <div class="seg" role="group" aria-labelledby="bondLbl">
+            <button type="button" id="bondSplit" aria-pressed="true">Two-tone</button>
+            <button type="button" id="bondGrad" aria-pressed="false">Gradient</button>
+          </div>
         </div>
         <div class="checks">
           <label><input type="checkbox" id="chkOrg" checked>Molecules</label>
@@ -266,6 +322,8 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
           <button type="button" id="measTors" aria-pressed="false">Torsion</button>
         </div>
         <div class="small" id="measHint">Click two atoms in the picture.</div>
+        <div class="mlist" id="measList"></div>
+        <div class="row"><button type="button" id="measClear" disabled>Clear</button><span class="small">Right-click a measurement in the picture to remove it.</span></div>
       </section>
 
       <section class="card">
@@ -288,6 +346,22 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
         <div class="checks"><label><input type="checkbox" id="pngClear">Transparent background</label></div>
         <div class="row"><button type="button" id="btnMol2">Save mol2 file</button></div>
         <div class="small">All three save what is shown: the packing block, with hidden atoms left out. The SVG is a vector drawing in which every atom, bond and face is a separate object to edit; it is drawn without perspective, and objects that pass through each other are approximated. The mol2 file carries the cell; its atom types are guessed from the number of neighbours and every bond is written as single.</div>
+      </section>
+
+      <section class="card" id="cardPoly">
+        <h2>Polyhedra</h2>
+        <div id="polyList"></div>
+        <div class="row" id="polyRestoreRow" hidden><button type="button" class="mini" id="polyRestore">Bring back the automatic polyhedra</button></div>
+        <div class="pform">
+          <div class="line"><span class="lab">Around</span><select id="pfCentre" aria-label="Element at the centre"></select>
+            <button type="button" class="mini" id="pfPick">Pick in the picture</button></div>
+          <div class="line"><span class="lab">Corners</span><div class="elchips" id="pfCorners" role="group" aria-label="Elements at the corners"></div></div>
+          <div class="line"><span class="lab">Within</span><input type="number" id="pfMax" step="0.05" min="0.5" max="12" aria-label="Largest centre to corner distance in angstrom"> Å
+            <button type="button" class="mini" id="pfSuggest" title="Set the distance that takes the nearest shell of corners">Nearest shell</button></div>
+          <div class="pprev" id="pfPreview" aria-live="polite"></div>
+          <div class="row"><button type="button" class="primary" id="pfAdd">Add these polyhedra</button></div>
+        </div>
+        <div class="small">Any element can be the centre and any elements the corners. Press a row to change its colour, opacity and edges; the cross removes it. Polyhedra you add are drawn next to the others, so one element can be the centre of several sets. They change the picture only, not the coordination numbers in the data cards.</div>
       </section>
 
       <section class="card">
@@ -343,10 +417,12 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
         <div class="small" id="hbNote"></div>
       </section>
 
-      <div class="foot">Crysta v0.2.0. Drawn with 3Dmol.js. Symmetry expansion, bonding, molecule assembly and every distance and angle are computed in this page from the file. Nothing is uploaded.</div>
+      <div class="foot">Crysta v0.2.1. Drawn with 3Dmol.js. Symmetry expansion, bonding, molecule assembly and every distance and angle are computed in this page from the file. Nothing is uploaded.</div>
     </aside>
   </div>
 </div>
+
+<div class="ctx" id="ctxMenu" role="menu" hidden></div>
 
 <dialog class="fb" id="fbDlg" aria-labelledby="fbTitle">
   <form id="fbForm">
@@ -434,9 +510,10 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
   const isDonor = (el) => NONMETAL.has(el) && el !== 'H' && el !== 'D' && !NOBLE.has(el);
   /* extra length allowed on top of the covalent radii */
   const TOL_COVALENT = 0.45, TOL_HALIDE = 0.75, TOL_DONOR = 0.5;
-  /* network formers that get a polyhedron inside a covalent network (SiO4 in quartz), and what may surround them */
-  const NET_CENTER = new Set(['B', 'Si', 'P', 'As']);
-  const NET_VERTEX = new Set(['O', 'N', 'F', 'S', 'Se', 'Cl']);
+  /* non-metal centres that get a polyhedron when four or more atoms of the listed kinds, and nothing else,
+     are bonded to them: SiO4 in quartz, PO4, SO4, BF4, PF6, TeCl6 */
+  const NET_CENTER = new Set(['B', 'Si', 'P', 'As', 'S', 'Se', 'Te']);
+  const NET_VERTEX = new Set(['O', 'N', 'F', 'S', 'Se', 'Cl', 'Br', 'I']);
   /* largest coordination number drawn as a polyhedron; larger shells (A-site cuboctahedra) only clutter */
   const MAX_POLY_CN = 8;
 
@@ -1086,7 +1163,8 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     const adj = atoms.map(() => []);
     const thin = Math.min(...cell.recip.map((r) => 1 / norm(r))) < 7.0;
     const covShifts = thin ? shifts : [[0, 0, 0]];
-    const noCovalent = (i) => isMetal(atoms[i].el) || (HALIDE.has(atoms[i].el) && metalsOf[i].length > 0);
+    // a halide next to a metal can still be covalently bound to a non-metal centre (Cl of TeCl6 beside Cs)
+    const noCovalent = (i) => isMetal(atoms[i].el);
     for (let i = 0; i < N; i++) {
       const a = atoms[i];
       if (noCovalent(i)) continue;
@@ -1111,6 +1189,15 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
         }
       }
     }
+
+    // an atom that already has four or more covalent bonds has no lone pair left to give: it is not a
+    // ligand, however close a large cation sits (Te of TeCl6 next to Cs, N of an ammonium, sp3 C)
+    for (let j = 0; j < N; j++) {
+      if (!metalsOf[j].length || adj[j].length < 4) continue;
+      for (const m of metalsOf[j]) ligs[m.i] = ligs[m.i].filter((l) => l.j !== j);
+      metalsOf[j] = [];
+    }
+    const covCentre = (i) => NET_CENTER.has(atoms[i].el) && adj[i].length >= 4 && adj[i].length <= MAX_POLY_CN && adj[i].every((nb) => NET_VERTEX.has(atoms[nb.j].el));
 
     // 4. connected components of the whole bond graph (coordination and covalent), each with the
     //    lattice translations that join it to itself: none for a molecule, 1 to 3 for a chain, layer or framework
@@ -1179,7 +1266,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
       if (loops.length) {
         networks.push({ atoms: order, dim: loops.length, vecs: loops });
         for (const i of order) {
-          if (NET_CENTER.has(atoms[i].el) && adj[i].length >= 4 && adj[i].length <= MAX_POLY_CN && adj[i].every((nb) => NET_VERTEX.has(atoms[nb.j].el))) polyAt.add(i);
+          if (covCentre(i)) polyAt.add(i);
         }
         continue;
       }
@@ -1199,6 +1286,10 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
         ion: order.length === 1 && (HALIDE.has(atoms[s].el) || isMetal(atoms[s].el)),
         symdis: order.some((i) => atoms[i].symdis)
       };
+      // polyhedra inside a molecule or molecular ion: PF6, SO4, TeCl6
+      const mp = [];
+      for (const i of order) if (covCentre(i) && adj[i].every((nb) => local.has(nb.j))) mp.push({ center: local.get(i), verts: adj[i].map((nb) => local.get(nb.j)) });
+      if (mp.length) mol.polys = mp;
       mol.cen = cen.map((x, k) => x / order.length + shift[k]);
       // a molecule disordered over a symmetry element: keep one orientation
       if (mol.symdis && !showMinor && molecules.some((m) => m.symdis && norm(cell.toCart(mi(sub(m.cen, mol.cen)))) < 1.0)) continue;
@@ -1222,6 +1313,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
           const sft = [0, 1, 2].map((k) => Math.round(nb.d[k] - (atoms[nb.j].f[k] - atoms[i].f[k])));
           if (same(add(offs[i], sft), offs[nb.j])) bonds.push([local.get(i), local.get(nb.j)]);
         }
+        if (covCentre(i) && adj[i].every((nb) => local.has(nb.j))) polys.push({ center: local.get(i), verts: adj[i].map((nb) => local.get(nb.j)) });
         if (!center[i]) continue;
         const verts = [];
         for (const l of ligs[i]) {
@@ -1774,8 +1866,80 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     return out;
   }
 
+  /* ---------- user-defined polyhedra ----------
+     A rule is { center: 'Pb', corners: ['Br', 'I'] or null for any element, max: 3.4 (angstrom) }.
+     Any element can be a centre and any element a corner; this is a drawing aid and changes no reported number. */
+  const shiftsWithin = (cell, dist) => {
+    const n = cell.recip.map((r) => Math.max(1, Math.ceil(dist * norm(r))));
+    const out = [];
+    for (let i = -n[0]; i <= n[0]; i++) for (let j = -n[1]; j <= n[1]; j++) for (let k = -n[2]; k <= n[2]; k++) out.push([i, j, k]);
+    return out;
+  };
+  const cornerOk = (rule, el) => !rule.corners || rule.corners.includes(el);
+  /* centre atom of the cell -> its corners [{ j, off, d }], off = corner - centre in fractional coordinates */
+  function polyhedraFor(uc, rules) {
+    const { cell, atoms } = uc;
+    const map = new Map();
+    for (const rule of rules || []) {
+      if (!rule || rule.on === false || !(rule.max > 0)) continue;
+      const shifts = shiftsWithin(cell, rule.max);
+      atoms.forEach((a, i) => {
+        if (a.el !== rule.center) return;
+        const list = map.get(i) || [];
+        atoms.forEach((b, j) => {
+          if (!cornerOk(rule, b.el) || !compatible(a, b)) return;
+          const base = sub(b.f, a.f);
+          for (const sft of shifts) {
+            if (i === j && !sft[0] && !sft[1] && !sft[2]) continue;
+            const off = add(base, sft);
+            const d = norm(cell.toCart(off));
+            if (d > rule.max || d < 0.4) continue;
+            if (!list.some((v) => v.j === j && norm(sub(v.off, off)) < 1e-6)) list.push({ j, off, d });
+          }
+        });
+        map.set(i, list);
+      });
+    }
+    return map;
+  }
+  /* what one rule gives in this structure: how many centres, and the smallest and largest number of corners */
+  function polyhedraStats(uc, rule) {
+    const map = polyhedraFor(uc, [Object.assign({}, rule, { on: true })]);
+    const cn = [];
+    let outside = 0;
+    for (const list of map.values()) {
+      cn.push(list.length);
+      if (list.length < 4) continue;
+      // corners relative to the centre: the centre is outside when it lies beyond one of the faces
+      const pts = list.map((v) => uc.cell.toCart(v.off));
+      if (hullFaces(pts).some((f) => -dot(f.n, pts[f.v[0]]) > 0.05)) outside++;
+    }
+    return { centres: cn.length, cnMin: cn.length ? Math.min(...cn) : 0, cnMax: cn.length ? Math.max(...cn) : 0, outside };
+  }
+  /* a distance limit that takes the first shell of corners around the centre. For each centre the shell
+     ends at the widest relative gap among its first 12 sorted distances; the limit sits just outside the
+     widest shell (times 1.08), but inside the next shell of every centre where that is possible. It never
+     reaches for a further shell to make up the numbers: those corners belong to a neighbouring unit. */
+  function suggestPolyMax(uc, center, corners) {
+    const reach = 8;
+    const map = polyhedraFor(uc, [{ center, corners, max: reach }]);
+    let end = null, next = null;
+    for (const list of map.values()) {
+      const d = list.map((v) => v.d).sort((p, q) => p - q);
+      if (!d.length) continue;
+      let k = d.length - 1, best = 1.12;                       // a gap has to be at least 12 % to end a shell
+      for (let i = 0; i + 1 < d.length && i < 12; i++) if (d[i + 1] / d[i] > best) { best = d[i + 1] / d[i]; k = i; }
+      if (end === null || d[k] > end) end = d[k];
+      if (k + 1 < d.length && (next === null || d[k + 1] < next)) next = d[k + 1];
+    }
+    if (end === null) return null;
+    let lim = end * 1.08;
+    if (next !== null && next > end) lim = Math.min(lim, (end + next) / 2);
+    return Math.ceil(lim * 20) / 20;
+  }
+
   /* ---------- unit cell -> displayed block of n1 x n2 x n3 cells ---------- */
-  function assemble(uc, lo, hi) {
+  function assemble(uc, lo, hi, rules) {
     const { cell, atoms, ligs, molecules, adj } = uc;
     const out = [];
     const polyhedra = [];
@@ -1866,6 +2030,30 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
         }
         if (verts.length >= 4 && verts.length <= MAX_POLY_CN) polyhedra.push({ center: im, verts });
       }
+    }
+
+    // user-defined polyhedra: each rule is a set of its own, drawn next to the automatic ones and to the
+    // other rules (two rules may share a centre element). A corner that is not drawn yet is added as a lone
+    // atom, without a bond, so every polyhedron has all its corners.
+    if (rules && rules.length) {
+      const before = out.length;
+      rules.forEach((rule, k) => {
+        if (!rule || rule.on === false) return;
+        const map = polyhedraFor(uc, [rule]);
+        for (let ix = 0; ix < before; ix++) {
+          const a = out[ix];
+          const list = map.get(a.src);
+          if (!list || list.length < 3 || !(a.group >= 0 || inside(a.f))) continue;
+          const verts = list.map((v) => {
+            const f = add(a.f, v.off);
+            const key = keyOf(v.j, f);
+            let jx = placed.get(key);
+            if (jx === undefined) { jx = push(v.j, f, 'ligand', -1); placed.set(key, jx); }
+            return jx;
+          });
+          polyhedra.push({ center: ix, verts, custom: true, rule: k });
+        }
+      });
     }
 
     // hydrogen bonds: N-H...A / O-H...A. Acceptors are O and N of another molecule, and the anions
@@ -1971,9 +2159,9 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
      scene = { width, height, M: [[3],[3]], b: [2], background, shaded, font, items }
        M, b: screen = M p + b, in pixels, y down. The scale (pixels per angstrom) is |M[0]|.
      items:
-       { t: 'atom', p, r, color, el }                    sphere of radius r (angstrom)
-       { t: 'bond', p, q, r, color }                     one half of a stick, radius r (angstrom)
-       { t: 'face', pts, color, opacity, cls }           flat polygon (polyhedron face, lattice plane)
+       { t: 'atom', p, r, color, el, opacity }           sphere of radius r (angstrom)
+       { t: 'bond', p, q, r, color, color2 }             one half of a stick, radius r (angstrom); fades to color2 at q
+       { t: 'face', pts, color, opacity, cls, edge, edgeColor }   flat polygon; edge = outline width in pixels
        { t: 'line', p, q, w, color, dash, cls }          line of width w (pixels)
        { t: 'arrow', p, q, r, color }                    arrow from p to q, shaft radius r (angstrom)
        { t: 'text', p, text, size, color, bg, cls }      label, always drawn on top                */
@@ -1990,6 +2178,8 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
       if (!g) { g = { n: f.n, d, idx: new Set() }; groups.push(g); }
       for (const k of f.v) g.idx.add(k);
     }
+    // a flat set gives the same polygon twice, once for each side: keep one
+    if (groups.length === 2 && dot(groups[0].n, groups[1].n) < -0.999) groups.pop();
     return groups.map((g) => {
       const idx = Array.from(g.idx);
       let cen = [0, 0, 0];
@@ -2015,6 +2205,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     const midp = (p, q, k) => [0, 1, 2].map((i) => p[i] + (q[i] - p[i]) * k);
     const font = scene.font || 'Helvetica, Arial, sans-serif';
     const grads = new Map();
+    const bondGrads = [];
     const body = [];
     const top = [];
     for (const it of scene.items) {
@@ -2027,19 +2218,28 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
           fill = 'url(#' + id + ')';
         }
         body.push({ z: depth(it.p), s: '<circle class="atom' + (it.el ? ' ' + xml(it.el) : '') + '" cx="' + n2(s[0]) + '" cy="' + n2(s[1]) + '" r="' + n2(it.r * scale) +
-          '" fill="' + fill + '" stroke="' + shade(it.color, -0.55) + '" stroke-width="' + n2(Math.max(0.4, 0.02 * scale)) + '"/>' });
+          '" fill="' + fill + '" stroke="' + shade(it.color, -0.55) + '" stroke-width="' + n2(Math.max(0.4, 0.02 * scale)) + '"' +
+          (it.opacity !== undefined && it.opacity < 1 ? ' fill-opacity="' + n2(it.opacity) + '" stroke-opacity="' + n2(it.opacity) + '"' : '') + '/>' });
       } else if (it.t === 'bond') {
         const s = P(it.p), e = P(it.q);
         const w = 2 * it.r * scale;
         const xy = 'x1="' + n2(s[0]) + '" y1="' + n2(s[1]) + '" x2="' + n2(e[0]) + '" y2="' + n2(e[1]) + '"';
+        // with a second colour the stick fades from one to the other along its length
+        let paint = it.color;
+        if (it.color2 && it.color2 !== it.color) {
+          const id = 'b' + (bondGrads.length + 1);
+          bondGrads.push('<linearGradient id="' + id + '" gradientUnits="userSpaceOnUse" x1="' + n2(s[0]) + '" y1="' + n2(s[1]) + '" x2="' + n2(e[0]) + '" y2="' + n2(e[1]) +
+            '"><stop offset="0" stop-color="' + it.color + '"/><stop offset="1" stop-color="' + it.color2 + '"/></linearGradient>');
+          paint = 'url(#' + id + ')';
+        }
         // a dark line under a slightly thinner coloured one gives the stick its outline
         body.push({ z: depth(midp(it.p, it.q, 0.5)), s: '<g class="bond"><line ' + xy + ' stroke="' + shade(it.color, -0.55) + '" stroke-width="' + n2(w + Math.max(0.6, 0.03 * scale)) + '"/>' +
-          '<line ' + xy + ' stroke="' + it.color + '" stroke-width="' + n2(w) + '"/></g>' });
+          '<line ' + xy + ' stroke="' + paint + '" stroke-width="' + n2(w) + '"/></g>' });
       } else if (it.t === 'face') {
         let z = 0;
         for (const p of it.pts) z += depth(p);
         body.push({ z: z / it.pts.length, s: '<polygon class="' + xml(it.cls || 'face') + '" points="' + it.pts.map(pt).join(' ') + '" fill="' + it.color + '" fill-opacity="' + (it.opacity === undefined ? 0.45 : it.opacity) +
-          '" stroke="' + shade(it.color, -0.35) + '" stroke-opacity="0.7" stroke-width="' + n2(Math.max(0.4, 0.015 * scale)) + '" stroke-linejoin="round"/>' });
+          '" stroke="' + (it.edgeColor || shade(it.color, -0.35)) + '" stroke-opacity="' + (it.edge ? 1 : 0.7) + '" stroke-width="' + n2(it.edge || Math.max(0.4, 0.015 * scale)) + '" stroke-linejoin="round"/>' });
       } else if (it.t === 'line') {
         const s = P(it.p), e = P(it.q);
         body.push({ z: depth(midp(it.p, it.q, 0.5)), s: '<line class="' + xml(it.cls || 'line') + '" x1="' + n2(s[0]) + '" y1="' + n2(s[1]) + '" x2="' + n2(e[0]) + '" y2="' + n2(e[1]) + '" stroke="' + it.color +
@@ -2072,9 +2272,40 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     return ['<?xml version="1.0" encoding="UTF-8"?>',
       '<svg xmlns="http://www.w3.org/2000/svg" width="' + n2(width) + '" height="' + n2(height) + '" viewBox="0 0 ' + n2(width) + ' ' + n2(height) + '" font-family="' + xml(font) + '">',
       scene.title ? '<title>' + xml(scene.title) + '</title>' : '',
-      defs.length ? '<defs>' + defs.join('') + '</defs>' : '',
+      defs.length || bondGrads.length ? '<defs>' + defs.join('') + bondGrads.join('') + '</defs>' : '',
       scene.background ? '<rect class="background" width="100%" height="100%" fill="' + scene.background + '"/>' : '',
       '<g class="structure" stroke-linecap="butt">'].concat(body.map((o) => o.s), ['</g>', '<g class="labels">'], top, ['</g>', '</svg>', '']).filter((l) => l !== '').join('\n') + '\n';
+  }
+
+  /* one tube per bond as a mesh with a colour at each end, so the graphics card blends them along the bond.
+     bonds: [{ p, q, rp, rq, cp: [r, g, b], cq: [r, g, b] }] with colours 0 to 1. Returns vertex, normal,
+     colour and face arrays in chunks that stay below the vertex limit of one mesh. */
+  function bondTubes(bonds, sides, maxVerts) {
+    const n = sides || 10;
+    const cap = maxVerts || 60000;
+    const out = [];
+    let cur = null;
+    for (const bd of bonds) {
+      let u = sub(bd.q, bd.p);
+      const len = norm(u);
+      if (len < 1e-6) continue;
+      u = u.map((x) => x / len);
+      let e1 = cross(u, Math.abs(u[0]) < 0.9 ? [1, 0, 0] : [0, 1, 0]);
+      e1 = e1.map((x) => x / norm(e1));
+      const e2 = cross(u, e1);
+      if (!cur || cur.vertexArr.length + 2 * n > cap) { cur = { vertexArr: [], normalArr: [], colorArr: [], faceArr: [] }; out.push(cur); }
+      const base = cur.vertexArr.length;
+      for (let k = 0; k < n; k++) {
+        const th = 2 * Math.PI * k / n;
+        const r = [0, 1, 2].map((i) => Math.cos(th) * e1[i] + Math.sin(th) * e2[i]);
+        cur.vertexArr.push([0, 1, 2].map((i) => bd.p[i] + bd.rp * r[i]), [0, 1, 2].map((i) => bd.q[i] + bd.rq * r[i]));
+        cur.normalArr.push(r, r);
+        cur.colorArr.push(bd.cp, bd.cq);
+        const a0 = base + 2 * k, b0 = a0 + 1, a1 = base + 2 * ((k + 1) % n), b1 = a1 + 1;
+        cur.faceArr.push(a0, a1, b0, a1, b1, b0);
+      }
+    }
+    return out;
   }
 
   /* triangles of the convex hull of a small point set (coordination polyhedron) */
@@ -2096,13 +2327,18 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
         if (s > 0.05) pos++; else if (s < -0.05) neg++;
       }
       if (pos && neg) continue;
+      if (!pos && !neg) {
+        // every point lies in this plane (a triangle, a square): the face is seen from both sides
+        faces.push({ v: [i, j, k], n: nrm }, { v: [i, k, j], n: nrm.map((x) => -x) });
+        continue;
+      }
       const outward = dot(nrm, sub(points[i], cen)) >= 0;
       faces.push(outward ? { v: [i, j, k], n: nrm } : { v: [i, k, j], n: nrm.map((x) => -x) });
     }
     return faces;
   }
 
-  root.XtalCore = { readStructure, readCif, readPoscar, readXyz, readShelx, buildCell, analyse, assemble, hullFaces, planePolys, tetrazineDefs, chromoInstances, stateDir, orientReport, hallOps, symbolOps, setSgTable, isMetal, isCenter, isDonor, HALIDE, RC, MASS, parseSymop, MAX_POLY_CN, distance, bondAngle, torsion, toMol2, toSvg, hullPolygons };
+  root.XtalCore = { readStructure, readCif, readPoscar, readXyz, readShelx, buildCell, analyse, assemble, hullFaces, planePolys, tetrazineDefs, chromoInstances, stateDir, orientReport, hallOps, symbolOps, setSgTable, isMetal, isCenter, isDonor, HALIDE, RC, MASS, parseSymop, MAX_POLY_CN, distance, bondAngle, torsion, toMol2, toSvg, hullPolygons, bondTubes, polyhedraFor, polyhedraStats, suggestPolyMax };
   if (typeof module !== 'undefined' && module.exports) module.exports = root.XtalCore;
 })(typeof window !== 'undefined' ? window : globalThis);
 
@@ -2126,6 +2362,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
   const MAX_ATOMS = 15000;
   const MAX_PLANES = 60;
   const MAX_LABELS = 400;
+  const MAX_MEASURES = 20;
   const MAX_IMAGE_SIDE = 8000;   // pixels; larger canvases are cut or left black by many graphics cards
   const MEASURE = { dist: { n: 2, name: 'Distance', hint: 'Click two atoms in the picture.' }, angle: { n: 3, name: 'Angle', hint: 'Click three atoms; the angle is at the second.' }, tors: { n: 4, name: 'Torsion', hint: 'Click four atoms in a chain; the torsion is about the middle two.' } };
   const PLANE_COLORS = ['#8a63ff', '#d1a800', '#00a3a3', '#d4577b'];
@@ -2134,21 +2371,39 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
   const st = {
     docs: [], cur: -1,
     style: 'bs', poly: true, cellBox: true, H: true, hb: true, org: true, inorg: true,
-    arrow: 1.9, notice: '', shown: 0, picking: null, measure: 'dist', labels: 'off', px: 1
+    arrow: 1.9, notice: '', shown: 0, picking: null, measure: 'dist', labels: 'off', px: 1, bondGrad: false
   };
   let viewer = null;
   let hoverLabel = null;
   const D = () => st.docs[st.cur] || null;
 
   const cssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-  function colorOf(el) {
+  /* what the user changed per element: { color, scale, opacity, poly }. Kept for the whole session. */
+  const elemLook = {};
+  const look = (el) => elemLook[el] || {};
+  const defaultColorOf = (el) => {
     if (el === 'Pb') return cssVar('--atom-pb');
     if (el === 'C') return cssVar('--atom-c');
     if (PAL[el]) return PAL[el];
     const j = window.$3Dmol && $3Dmol.elementColors && $3Dmol.elementColors.Jmol && $3Dmol.elementColors.Jmol[el];
     return typeof j === 'number' ? '#' + j.toString(16).padStart(6, '0') : '#b477b4';
+  };
+  const vdwOf = (el) => (window.$3Dmol && $3Dmol.GLModel && $3Dmol.GLModel.vdwRadii && $3Dmol.GLModel.vdwRadii[el]) || 1.7;
+  /* drawn sphere and stick radius of an element in the current style, in angstrom */
+  const sphereR = (el) => {
+    const k = look(el).scale || 1;
+    if (st.style === 'sf') return k * vdwOf(el);
+    if (st.style === 'st') return k * (C.isMetal(el) ? 0.3 : C.HALIDE.has(el) ? 0.2 : 0.13);
+    return k * (C.isMetal(el) ? 0.55 : C.HALIDE.has(el) ? 0.42 : el === 'H' ? 0.16 : 0.3);
+  };
+  const stickR = (el) => (st.style === 'st' ? 0.13 : el === 'H' ? 0.07 : 0.1);
+  const opacityOf = (el) => (look(el).opacity === undefined ? 1 : look(el).opacity);
+  function colorOf(el) {
+    return look(el).color || defaultColorOf(el);
   }
   const hexInt = (h) => parseInt(h.slice(1), 16);
+  const mixHex = (a, b) => '#' + [1, 3, 5].map((k) => Math.round((parseInt(a.slice(k, k + 2), 16) + parseInt(b.slice(k, k + 2), 16)) / 2).toString(16).padStart(2, '0')).join('');
+  const darker = (hex) => '#' + [1, 3, 5].map((k) => Math.round(parseInt(hex.slice(k, k + 2), 16) * 0.5).toString(16).padStart(2, '0')).join('');
   const fmt = (x, d) => x.toFixed(d);
   const V3 = (p) => ({ x: p[0], y: p[1], z: p[2] });
   const mean = (a) => a.reduce((t, x) => t + x, 0) / a.length;
@@ -2156,7 +2411,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
   /* ---------- documents ---------- */
   function makeDoc(src) {
     const struct = C.readStructure(src.text, src.name);
-    const d = { src, struct, minor: false, planes: [], chromos: [], measures: [], picks: [], name: src.name.replace(/\.[^.]+$/, '') };
+    const d = { src, struct, minor: false, planes: [], chromos: [], measures: [], picks: [], polyRules: [], autoStyle: {}, autoHide: {}, autoGone: {}, polyOpen: null, name: src.name.replace(/\.[^.]+$/, '') };
     rebuildCell(d);
     const L = [struct.cell.a, struct.cell.b, struct.cell.c];
     // a molecule without a lattice sits in a box of its own: one copy is the whole picture
@@ -2192,6 +2447,14 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     }
     d.hbRows = Array.from(seen.values()).sort((p, q) => p.dDA - q.dDA);
     d.hbFromH = big.hasH;
+    // automatic polyhedra of this structure: centre element, and what sits at the corners
+    d.autoPoly = [];
+    for (const pl of big.polyhedra) {
+      const el = big.atoms[pl.center].el;
+      let rec = d.autoPoly.find((x) => x.el === el);
+      if (!rec) { rec = { el, corners: [], cn: pl.verts.length }; d.autoPoly.push(rec); }
+      for (const v of pl.verts) if (!rec.corners.includes(big.atoms[v].el)) rec.corners.push(big.atoms[v].el);
+    }
     if (d.chromos) refreshChromos(d);
   }
   function refreshChromos(d) {
@@ -2215,6 +2478,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
   function activate(i) {
     st.cur = i;
     st.picking = null;
+    st.polyPick = null;
     const d = D();
     $('main').classList.toggle('solo', !d);
     $('rail').hidden = !d;
@@ -2238,6 +2502,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     drawRanges();
     drawPlanes();
     drawChromos();
+    drawPolyCard();
     drawCompare();
     if (viewer) viewer.resize();
     render(false);
@@ -2417,8 +2682,133 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     const present = [];
     for (const a of d.uc.atoms) if (!present.includes(a.el)) present.push(a.el);
     present.sort((p, q) => (C.isMetal(q) - C.isMetal(p)) || (C.HALIDE.has(q) - C.HALIDE.has(p)) || p.localeCompare(q));
-    $('legend').innerHTML = present.map((el) => '<span class="chip"><i style="background:' + colorOf(el) + '"></i>' + esc(el) + '</span>').join('');
+    $('legend').innerHTML = present.map((el) => '<button type="button" class="chip" data-el="' + esc(el) + '" aria-expanded="' + (st.editEl === el) + '" title="Change how ' + esc(el) + ' is drawn"><i style="background:' + colorOf(el) + ';opacity:' + opacityOf(el) + '"></i>' + esc(el) + '</button>').join('');
+    if (st.editEl && !present.includes(st.editEl)) closeElPop();
   }
+
+  /* the small panel over the legend that edits one element */
+  function openElPop(el) {
+    st.editEl = el;
+    const d = D();
+    $('elName').textContent = el;
+    $('elColor').value = colorOf(el);
+    $('elSize').value = look(el).scale || 1;
+    $('elOpacity').value = opacityOf(el);
+    $('elSizeOut').textContent = fmt(+$('elSize').value, 2) + '×';
+    $('elOpacityOut').textContent = Math.round(100 * $('elOpacity').value) + '%';
+    $('elPop').hidden = false;
+    drawLegend();
+  }
+  function closeElPop() {
+    st.editEl = null;
+    $('elPop').hidden = true;
+    if (D()) drawLegend();
+  }
+  function setLook(el, key, value) {
+    const o = elemLook[el] || (elemLook[el] = {});
+    o[key] = value;
+    drawLegend();
+    render(true);
+  }
+
+  /* ---------- polyhedra: automatic ones per element, and the user's own rules ---------- */
+  const elementsOf = (d) => {
+    const present = [];
+    for (const a of d.uc.atoms) if (!present.includes(a.el)) present.push(a.el);
+    return present.sort((p, q) => (C.isMetal(q) - C.isMetal(p)) || p.localeCompare(q));
+  };
+  const cornerText = (rule) => (rule.corners ? rule.corners.join(', ') : 'any element');
+  /* what a rule gives, in words, and whether it needs a warning */
+  function ruleReport(d, rule) {
+    const r = C.polyhedraStats(d.uc, rule);
+    if (!r.centres) return { text: 'no ' + rule.center + ' in this structure', warn: true };
+    const cn = r.cnMin === r.cnMax ? String(r.cnMax) : r.cnMin + ' to ' + r.cnMax;
+    let text = cn + (r.cnMax === 1 ? ' corner' : ' corners') + ' around each ' + rule.center;
+    let warn = false;
+    if (r.cnMax < 3) { text += '; a polyhedron needs at least 3. Add a corner element or a longer distance'; warn = true; }
+    else if (r.cnMax === 3) text += ', drawn as a triangle. Add a corner element for a polyhedron';
+    else if (r.cnMin < 3) text += '; centres with fewer than 3 are not drawn';
+    if (r.outside) { text += '. The ' + rule.center + ' lies outside these corners: the distance reaches a neighbouring unit, so try a shorter one'; warn = true; }
+    return { text, warn };
+  }
+  const ruleSummary = (d, rule) => ruleReport(d, rule).text;
+  /* how the polyhedra around one element are drawn: the user's rule if there is one, else the automatic style */
+  const POLY_DEFAULT = { opacity: 0.5, edges: false };
+  /* one set of polyhedra is 'a:El' (automatic, around element El) or 'r:n' (the user's rule n) */
+  const polyKey = (blk, pl) => (pl.custom ? 'r:' + pl.rule : 'a:' + blk.atoms[pl.center].el);
+  const polyShown = (d, key) => (key[0] === 'r' ? true : !d.autoHide[key.slice(2)] && !d.autoGone[key.slice(2)]);
+  function polyStyle(d, key, el) {
+    const o = (key[0] === 'r' ? (d.polyRules[+key.slice(2)] || {}).style : d.autoStyle[key.slice(2)]) || {};
+    return { color: o.color || colorOf(el), own: !!o.color, opacity: o.opacity === undefined ? POLY_DEFAULT.opacity : o.opacity, edges: o.edges === undefined ? POLY_DEFAULT.edges : o.edges };
+  }
+  const styleStore = (d, key) => {
+    if (key[0] === 'a') return d.autoStyle[key.slice(2)] || (d.autoStyle[key.slice(2)] = {});
+    const rule = d.polyRules[+key.slice(2)];
+    return rule.style || (rule.style = {});
+  };
+  function drawPolyCard() {
+    const d = D();
+    if (!d) return;
+    const look = (key, el, o) => {
+      if (d.polyOpen !== key) return '';
+      const col = (o && o.color) || colorOf(el);
+      const op = o && o.opacity !== undefined ? o.opacity : POLY_DEFAULT.opacity;
+      const ed = o && o.edges !== undefined ? o.edges : POLY_DEFAULT.edges;
+      return '<div class="look"><span>Colour</span><input type="color" data-pcol="' + key + '" value="' + esc(col) + '" aria-label="Colour of these polyhedra"><span></span>' +
+        '<span>Opacity</span><input type="range" data-pop="' + key + '" min="0.05" max="1" step="0.05" value="' + op + '" aria-label="Opacity of these polyhedra"><span>' + Math.round(100 * op) + '%</span>' +
+        '<div class="full"><label><input type="checkbox" data-pedge="' + key + '"' + (ed ? ' checked' : '') + '>Draw the edges</label><button type="button" class="mini" data-prst="' + key + '">Reset look</button></div></div>';
+    };
+    const head = (key, el, o, html) => '<button type="button" class="what" data-ptog="' + key + '" aria-expanded="' + (d.polyOpen === key) + '" title="Colour, opacity and edges">' +
+      '<span class="car" aria-hidden="true">' + (d.polyOpen === key ? '▾' : '▸') + '</span><i class="sw" style="background:' + ((o && o.color) || colorOf(el)) + '"></i><span>' + html + '</span></button>';
+    // automatic polyhedra, one row per centre element
+    const rows = d.autoPoly.filter((x) => !d.autoGone[x.el]).map((x) => {
+      const key = 'a:' + x.el;
+      return '<div class="prule"><input type="checkbox" data-pauto="' + esc(x.el) + '"' + (!d.autoHide[x.el] ? ' checked' : '') + ' aria-label="Show polyhedra around ' + esc(x.el) + '">' +
+        head(key, x.el, d.autoStyle[x.el], '<b>' + esc(x.el) + '</b> with ' + esc(x.corners.join(', ')) + ' <span class="small">· automatic</span>') +
+        '<button type="button" class="xbtn" data-pgone="' + esc(x.el) + '" aria-label="Remove the automatic polyhedra around ' + esc(x.el) + '" title="Remove">×</button>' + look(key, x.el, d.autoStyle[x.el]) + '</div>';
+    });
+    $('polyRestoreRow').hidden = !d.autoPoly.some((x) => d.autoGone[x.el]);
+    d.polyRules.forEach((r, i) => {
+      const key = 'r:' + i;
+      const rep = ruleReport(d, r);
+      rows.push('<div class="prule"><input type="checkbox" data-pon="' + i + '"' + (r.on !== false ? ' checked' : '') + ' aria-label="Show these polyhedra">' +
+        head(key, r.center, r.style, '<b>' + esc(r.center) + '</b> with ' + esc(cornerText(r))) +
+        '<button type="button" class="xbtn" data-prm="' + i + '" aria-label="Remove the polyhedra around ' + esc(r.center) + '" title="Remove">×</button>' +
+        '<div class="sub2"><label>within <input type="number" data-pmax="' + i + '" step="0.05" min="0.5" max="12" value="' + r.max + '"> Å</label><span' + (rep.warn ? ' style="color:var(--warn)"' : '') + '>' + esc(rep.text) + '</span></div>' +
+        look(key, r.center, r.style) + '</div>');
+    });
+    $('polyList').innerHTML = rows.join('') || '<div class="small">No polyhedra in this structure yet.</div>';
+    // the form: elements of this structure
+    const els = elementsOf(d);
+    const f = d.polyForm || (d.polyForm = { center: els[0], corners: [], max: null });
+    if (!els.includes(f.center)) f.center = els[0];
+    $('pfCentre').innerHTML = els.map((el) => '<option' + (el === f.center ? ' selected' : '') + '>' + esc(el) + '</option>').join('');
+    $('pfCorners').innerHTML = els.map((el) => '<button type="button" data-el="' + esc(el) + '" aria-pressed="' + f.corners.includes(el) + '">' + esc(el) + '</button>').join('');
+    $('pfMax').value = f.max === null ? '' : f.max;
+    drawPolyPreview();
+  }
+  function drawPolyPreview() {
+    const d = D();
+    const f = d.polyForm;
+    const box = $('pfPreview');
+    const ready = f.corners.length > 0 && f.max > 0;
+    $('pfAdd').disabled = !ready;
+    $('pfSuggest').disabled = !f.corners.length;
+    box.classList.remove('warn');
+    if (!f.corners.length) { box.textContent = 'Choose the corner elements.'; return; }
+    if (!(f.max > 0)) { box.textContent = 'Enter a distance, or press Nearest shell.'; return; }
+    const rep = ruleReport(d, f);
+    box.textContent = rep.text + '.';
+    box.classList.toggle('warn', rep.warn);
+  }
+  function suggestPolyForm() {
+    const d = D();
+    const f = d.polyForm;
+    f.max = f.corners.length ? C.suggestPolyMax(d.uc, f.center, f.corners) : null;
+    $('pfMax').value = f.max === null ? '' : f.max;
+    drawPolyPreview();
+  }
+  function polyChanged() { drawPolyCard(); render(true); }
 
   function drawRanges() {
     const d = D();
@@ -2544,7 +2934,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
       ['Axial tilt (°)', L && L.axialTilt ? num(L.axialTilt.mean, 1) : ''],
       ['N penetration (Å)', L && L.penetration.length ? num(mean(L.penetration.map((p) => p.depth)), 3) : ''],
       ['Stacking offset', L && L.offset ? '(' + fmt(L.offset.s1, 2) + ', ' + fmt(L.offset.s2, 2) + ')' : ''],
-      ['Crysta version', 'v0.2.0']
+      ['Crysta version', 'v0.2.1']
     ];
   }
   /* the table as rows of [heading, value], without the columns that are empty for every structure */
@@ -2556,12 +2946,25 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
   function drawCompare() {
     if (!st.docs.length) { $('tblCmp').innerHTML = ''; return; }
     const rows = compareRows();
-    const head = rows[0].map((c) => '<th>' + esc(c[0]) + '</th>').join('') + '<th></th>';
+    const head = rows[0].map((c) => '<th>' + esc(c[0]) + '</th>').join('');
     $('tblCmp').innerHTML = '<thead><tr>' + head + '</tr></thead><tbody>' + rows.map((r, i) =>
-      '<tr class="' + (i === st.cur ? 'on' : '') + '">' + r.map((c, k) => '<td>' + (k === 0 ? '<button type="button" class="linkbtn" data-open="' + i + '">' + esc(c[1]) + '</button>' : esc(c[1])) + '</td>').join('') +
-      '<td><button type="button" class="mini" data-close="' + i + '" aria-label="Remove ' + esc(r[0][1]) + '">Remove</button></td></tr>').join('') + '</tbody>';
+      '<tr class="' + (i === st.cur ? 'on' : '') + '">' + r.map((c, k) => '<td>' + (k === 0 ? '<button type="button" class="xbtn" data-close="' + i + '" aria-label="Remove ' + esc(c[1]) + '" title="Remove this structure">×</button>' +
+        '<button type="button" class="linkbtn" data-open="' + i + '">' + esc(c[1]) + '</button>' : esc(c[1])) + '</td>').join('') + '</tr>').join('') + '</tbody>';
+    fitCompare();
     $('tsvBox').hidden = true;
     $('copyMsg').textContent = st.docs.length > 1 ? 'Means over the independent sites of each structure.' : '';
+  }
+  /* the table shows three structures; more are reached by scrolling inside it */
+  function fitCompare() {
+    const tbl = $('tblCmp');
+    const wrap = tbl.parentElement;
+    const rows = tbl.tBodies[0] ? Array.from(tbl.tBodies[0].rows) : [];
+    if (rows.length <= 3 || !tbl.tHead) { wrap.style.maxHeight = ''; return; }
+    const h = tbl.tHead.getBoundingClientRect().height + rows.slice(0, 3).reduce((t, r) => t + r.getBoundingClientRect().height, 0);
+    // room for the horizontal scroll bar, so it does not cover the third row
+    wrap.style.maxHeight = Math.ceil(h + (wrap.offsetHeight - wrap.clientHeight) + 2) + 'px';
+    const on = tbl.querySelector('tr.on');
+    if (on && on.scrollIntoView) on.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   }
   function tsv() {
     const rows = compareRows();
@@ -2577,6 +2980,37 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     if (m.type === 'dist') return fmt(m.value, 3) + ' Å';
     return (m.value < 0 ? '−' : '') + fmt(Math.abs(m.value), m.type === 'angle' ? 2 : 1) + '°';
   }
+  function drawMeasures() {
+    const d = D();
+    const ms = d ? d.measures : [];
+    $('measList').innerHTML = ms.map((m, i) => '<div class="mrow"><span>' + esc(measureText(m)) + '</span><button type="button" class="mini" data-mrm="' + i + '" aria-label="Remove ' + esc(measureText(m)) + '">Remove</button></div>').join('');
+    $('measClear').disabled = !ms.length && !(d && d.picks.length);
+  }
+  function removeMeasure(i) {
+    const d = D();
+    if (!d) return;
+    if (i === 'all') { d.measures = []; d.picks = []; } else d.measures.splice(i, 1);
+    render(true);
+  }
+  /* the measurement under a point of the page, if any: near one of its dashed lines or its value label */
+  function measureAt(pageX, pageY) {
+    const d = D();
+    if (!viewer || !d) return -1;
+    const S = (q) => { const s = viewer.modelToScreen({ x: q[0], y: q[1], z: q[2] }); return [s.x, s.y]; };
+    const seg = (a, b) => {
+      const vx = b[0] - a[0], vy = b[1] - a[1];
+      const L = vx * vx + vy * vy;
+      const t = L ? Math.max(0, Math.min(1, ((pageX - a[0]) * vx + (pageY - a[1]) * vy) / L)) : 0;
+      return Math.hypot(pageX - a[0] - t * vx, pageY - a[1] - t * vy);
+    };
+    let best = -1, bd = 14;
+    d.measures.forEach((m, i) => {
+      const pts = m.pts.map(S);
+      for (let k = 0; k + 1 < pts.length; k++) { const dd = seg(pts[k], pts[k + 1]); if (dd < bd) { bd = dd; best = i; } }
+    });
+    return best;
+  }
+  function closeMenu() { $('ctxMenu').hidden = true; }
   function drawReadout(hoverText) {
     const d = D();
     const lines = [];
@@ -2585,6 +3019,11 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
       if (!st.notice) lines.push('<div class="hint">No structure loaded yet.</div>');
       $('readout').innerHTML = lines.join('');
       return;
+    }
+    if (st.polyPick) {
+      const pk = st.polyPick;
+      lines.push('<div class="pickbar"><span>' + (pk.centre ? 'Centre: ' + esc(pk.centre.label) + '. Now click one atom at a corner of the polyhedron.' : 'Click the atom at the centre of the polyhedron.') + '</span>' +
+        '<button type="button" id="polyPickCancel">Cancel</button></div>');
     }
     if (st.picking) {
       const pk = st.picking;
@@ -2629,7 +3068,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     viewer.removeAllLabels();
     hoverLabel = null;
     const uc = d.uc;
-    const blk = C.assemble(uc, d.lo, d.hi);
+    const blk = C.assemble(uc, d.lo, d.hi, d.polyRules);
     const visible = (a) => isVisible(a);
     const px = st.px;
     // a label added with the last argument set does not redraw the scene; it is drawn once at the end
@@ -2659,33 +3098,61 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     const cs = { prop: 'elem', map: elMap };
     const metals = Object.keys(elMap).filter((e) => C.isMetal(e));
     const halides = Object.keys(elMap).filter((e) => C.HALIDE.has(e));
-    if (st.style === 'sf') {
-      model.setStyle({}, { sphere: { colorscheme: cs } });
-    } else if (st.style === 'st') {
-      model.setStyle({}, { stick: { radius: 0.13, colorscheme: cs } });
-      if (metals.length) model.setStyle({ elem: metals }, { stick: { radius: 0.13, colorscheme: cs }, sphere: { radius: 0.3, colorscheme: cs } });
-      if (halides.length) model.setStyle({ elem: halides }, { stick: { radius: 0.13, colorscheme: cs }, sphere: { radius: 0.2, colorscheme: cs } });
-    } else {
-      model.setStyle({}, { stick: { radius: 0.1, colorscheme: cs }, sphere: { radius: 0.3, colorscheme: cs } });
-      model.setStyle({ elem: 'H' }, { stick: { radius: 0.07, colorscheme: cs }, sphere: { radius: 0.16, colorscheme: cs } });
-      if (halides.length) model.setStyle({ elem: halides }, { stick: { radius: 0.1, colorscheme: cs }, sphere: { radius: 0.42, colorscheme: cs } });
-      if (metals.length) model.setStyle({ elem: metals }, { stick: { radius: 0.1, colorscheme: cs }, sphere: { radius: 0.55, colorscheme: cs } });
+    // one style per element, so a colour, size or opacity set by the user applies to that element only.
+    // 3Dmol draws all spheres of a model with one opacity, so a see-through element gets its spheres
+    // as separate shapes (added below, with the same hover and click behaviour) and keeps solid bonds.
+    const glassy = [];
+    for (const el of Object.keys(elMap)) {
+      const sty = {};
+      const solid = opacityOf(el) >= 1;
+      if (!solid) glassy.push(el);
+      if (st.style === 'sf') { if (solid) sty.sphere = { radius: sphereR(el), colorscheme: cs }; } else if (st.bondGrad) {
+        // gradient bonds are drawn below as one mesh; every atom keeps a sphere, which also rounds the joints of sticks
+        if (solid) sty.sphere = { radius: sphereR(el), colorscheme: cs };
+      } else {
+        sty.stick = { radius: stickR(el), colorscheme: cs };
+        if (solid && (st.style === 'bs' || C.isMetal(el) || C.HALIDE.has(el))) sty.sphere = { radius: sphereR(el), colorscheme: cs };
+      }
+      model.setStyle({ elem: el }, sty);
+    }
+    if (st.bondGrad && st.style !== 'sf') {
+      const rgb = (el) => { const v = hexInt(colorOf(el)); return [((v >> 16) & 255) / 255, ((v >> 8) & 255) / 255, (v & 255) / 255]; };
+      const bonds = [];
+      list.forEach((a, i) => { for (const j of a.bonds) if (j > i) bonds.push({ p: [a.x, a.y, a.z], q: [list[j].x, list[j].y, list[j].z], rp: stickR(a.elem), rq: stickR(list[j].elem), cp: rgb(a.elem), cq: rgb(list[j].elem) }); });
+      for (const m of C.bondTubes(bonds, 10)) {
+        // 3Dmol repaints a shape with its own colour when it draws it; a list of colours, one per vertex, is kept as given
+        const colours = m.colorArr.map((c) => ({ r: c[0], g: c[1], b: c[2] }));
+        const shape = viewer.addCustom({ vertexArr: m.vertexArr.map(V3), normalArr: m.normalArr.map(V3), faceArr: m.faceArr, colorArr: colours });
+        shape.color = colours;
+      }
     }
 
-    // coordination polyhedra, one mesh per metal element
+    // polyhedra, one mesh per set (automatic per centre element, or one of the user's rules), in that set's style
     if (st.poly && st.inorg && st.style !== 'sf') {
       const meshes = {};
       for (const p of blk.polyhedra) {
-        const el = blk.atoms[p.center].el;
-        const mesh = meshes[el] || (meshes[el] = { vertexArr: [], normalArr: [], faceArr: [] });
+        const key = polyKey(blk, p);
+        if (!polyShown(d, key)) continue;
+        const sty = polyStyle(d, key, blk.atoms[p.center].el);
+        const mesh = meshes[key] || (meshes[key] = { vertexArr: [], normalArr: [], faceArr: [], sty });
         const pts = p.verts.map((i) => blk.atoms[i].xyz);
         for (const f of C.hullFaces(pts)) {
           const base = mesh.vertexArr.length;
           for (const k of f.v) { mesh.vertexArr.push(V3(pts[k])); mesh.normalArr.push(V3(f.n)); }
           mesh.faceArr.push(base, base + 1, base + 2);
         }
+        if (sty.edges) {
+          const seen = new Set();
+          for (const poly of C.hullPolygons(pts)) for (let k = 0; k < poly.length; k++) {
+            const u = poly[k], v = poly[(k + 1) % poly.length];
+            const ek = Math.min(u, v) + '-' + Math.max(u, v);
+            if (seen.has(ek)) continue;
+            seen.add(ek);
+            viewer.addCylinder({ start: V3(pts[u]), end: V3(pts[v]), radius: 0.035, color: darker(sty.color), fromCap: 1, toCap: 1 });
+          }
+        }
       }
-      for (const el of Object.keys(meshes)) viewer.addCustom(Object.assign(meshes[el], { color: colorOf(el), opacity: 0.5 }));
+      for (const key of Object.keys(meshes)) { const m = meshes[key]; viewer.addCustom({ vertexArr: m.vertexArr, normalArr: m.normalArr, faceArr: m.faceArr, color: m.sty.color, opacity: m.sty.opacity }); }
     }
 
     // unit cell outline with axis letters
@@ -2784,6 +3251,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
       });
     }
     for (const a of d.picks) viewer.addSphere({ center: V3(a.p), radius: 0.75, color: accent, opacity: 0.4 });
+    if (st.polyPick && st.polyPick.centre) viewer.addSphere({ center: V3(st.polyPick.centre.p), radius: 0.75, color: accent, opacity: 0.4 });
     if (st.picking) {
       for (const a of st.picking.plane) viewer.addSphere({ center: V3(a.p), radius: 0.6, color: accent, opacity: 0.45 });
       for (const a of st.picking.axis) viewer.addSphere({ center: V3(a.p), radius: 0.6, color: ink, opacity: 0.45 });
@@ -2794,7 +3262,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
       const f = atom.xf.map((x) => fmt(x, 4)).join(', ');
       return '<b>' + esc(atom.xl) + '</b> (' + esc(atom.elem) + ')  ·  x, y, z = ' + f;
     };
-    if (list.length) model.setHoverable({}, true, (atom) => {
+    const onHover = (atom) => {
       if (hoverLabel) viewer.removeLabel(hoverLabel);
       hoverLabel = viewer.addLabel(atom.xl, {
         position: { x: atom.x, y: atom.y, z: atom.z }, font: 'IBM Plex Mono, monospace', fontSize: 13, fontColor: cssVar('--on-accent'),
@@ -2802,12 +3270,31 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
       });
       drawReadout(describe(atom));
       viewer.render();
-    }, () => {
+    };
+    const onLeave = () => {
       if (hoverLabel) { viewer.removeLabel(hoverLabel); hoverLabel = null; }
       drawReadout();
       viewer.render();
-    });
-    if (list.length) model.setClickable({}, true, (atom) => {
+    };
+    const onClick = (atom) => {
+      if (st.polyPick) {
+        const pk = st.polyPick;
+        if (!pk.centre) { pk.centre = { el: atom.elem, label: atom.xl, p: [atom.x, atom.y, atom.z] }; render(true); return; }
+        // the two clicked atoms give the centre element, the corner element and a first distance
+        const dist = C.distance(pk.centre.p, [atom.x, atom.y, atom.z]);
+        st.polyPick = null;
+        if (dist > 0.01) {
+          const f = d.polyForm;
+          f.center = pk.centre.el;
+          f.corners = [atom.elem];
+          const shell = C.suggestPolyMax(d.uc, f.center, f.corners);
+          f.max = shell !== null && shell >= dist ? shell : Math.ceil((dist + 0.1) * 20) / 20;
+          drawPolyCard();
+          $('cardPoly').scrollIntoView({ block: 'nearest' });
+        }
+        render(true);
+        return;
+      }
       if (st.picking) {
         pickAtom(atom);
         render(true);
@@ -2823,17 +3310,25 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
         const value = st.measure === 'dist' ? C.distance(pts[0], pts[1]) : st.measure === 'angle' ? C.bondAngle(pts[0], pts[1], pts[2]) : C.torsion(pts[0], pts[1], pts[2], pts[3]);
         if (isFinite(value)) {
           d.measures.push({ type: st.measure, pts, labels: d.picks.map((a) => a.label), value });
-          if (d.measures.length > 8) d.measures.shift();
+          if (d.measures.length > MAX_MEASURES) d.measures.shift();
         }
         d.picks = [];
       }
       render(true);
       drawReadout(describe(atom));
-    });
+    };
+    if (list.length) model.setHoverable({}, true, onHover, onLeave);
+    if (list.length) model.setClickable({}, true, onClick);
+    for (const a of list) {
+      if (!glassy.includes(a.elem)) continue;
+      viewer.addSphere({ center: { x: a.x, y: a.y, z: a.z }, radius: sphereR(a.elem), color: colorOf(a.elem), opacity: opacityOf(a.elem),
+        clickable: true, callback: () => onClick(a), hoverable: true, hover_callback: () => onHover(a), unhover_callback: onLeave });
+    }
 
     if (view) viewer.setView(view); else defaultView();
     viewer.render();
     drawReadout();
+    drawMeasures();
   }
 
   /* camera: look down one direction with another pointing up the screen */
@@ -3000,35 +3495,35 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     if (!isFinite(scale) || scale <= 0) { st.notice = 'The drawing could not be made in this browser.'; drawReadout(); return; }
 
     const uc = d.uc;
-    const blk = C.assemble(uc, d.lo, d.hi);
+    const blk = C.assemble(uc, d.lo, d.hi, d.polyRules);
     const ink = cssVar('--ink'), muted = cssVar('--muted'), accent = cssVar('--accent'), panel = cssVar('--panel');
-    const vdw = (el) => (window.$3Dmol && $3Dmol.GLModel && $3Dmol.GLModel.vdwRadii && $3Dmol.GLModel.vdwRadii[el]) || 1.7;
-    const sphere = (el) => {
-      if (st.style === 'sf') return vdw(el);
-      if (st.style === 'st') return C.isMetal(el) ? 0.3 : C.HALIDE.has(el) ? 0.2 : 0.13;
-      return C.isMetal(el) ? 0.55 : C.HALIDE.has(el) ? 0.42 : el === 'H' ? 0.16 : 0.3;
-    };
-    const stick = (el) => (st.style === 'st' ? 0.13 : el === 'H' ? 0.07 : 0.1);
     const items = [];
     const mid = (p, q) => [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2, (p[2] + q[2]) / 2];
     blk.atoms.forEach((a) => {
       if (!isVisible(a)) return;
       const color = colorOf(a.el);
-      items.push({ t: 'atom', p: a.xyz, r: sphere(a.el), color, el: a.el });
+      items.push({ t: 'atom', p: a.xyz, r: sphereR(a.el), color, el: a.el, opacity: opacityOf(a.el) });
       if (st.style === 'sf') return;
-      for (const j of a.bonds) if (isVisible(blk.atoms[j])) items.push({ t: 'bond', p: a.xyz, q: mid(a.xyz, blk.atoms[j].xyz), r: stick(a.el), color });
+      for (const j of a.bonds) {
+        const o = blk.atoms[j];
+        if (!isVisible(o)) continue;
+        // each atom draws its half of the bond; with gradient bonds the half fades to the midpoint colour
+        items.push({ t: 'bond', p: a.xyz, q: mid(a.xyz, o.xyz), r: stickR(a.el), color, color2: st.bondGrad ? mixHex(color, colorOf(o.el)) : undefined });
+      }
     });
     if (st.poly && st.inorg && st.style !== 'sf') {
       for (const pl of blk.polyhedra) {
+        if (!polyShown(d, polyKey(blk, pl))) continue;
         const pts = pl.verts.map((i) => blk.atoms[i].xyz);
-        const color = colorOf(blk.atoms[pl.center].el);
+        const sty = polyStyle(d, polyKey(blk, pl), blk.atoms[pl.center].el);
         // only the faces turned to the viewer, in a lighter tint: stacked translucent faces would add up to a dark block
         const cen = pts.reduce((t, q) => [t[0] + q[0], t[1] + q[1], t[2] + q[2]], [0, 0, 0]).map((x) => x / pts.length);
         for (const f of C.hullPolygons(pts)) {
           const fp = f.map((k) => pts[k]);
           const fc = fp.reduce((t, q) => [t[0] + q[0], t[1] + q[1], t[2] + q[2]], [0, 0, 0]).map((x) => x / fp.length);
           if ((fc[0] - cen[0]) * zdir[0] + (fc[1] - cen[1]) * zdir[1] + (fc[2] - cen[2]) * zdir[2] < -1e-6) continue;
-          items.push({ t: 'face', pts: fp, color: tint(color), opacity: 0.34, cls: 'polyhedron' });
+          items.push({ t: 'face', pts: fp, color: sty.own ? sty.color : tint(sty.color), opacity: Math.min(1, sty.opacity * 0.68), cls: 'polyhedron',
+            edge: sty.edges ? Math.max(1, 0.07 * scale) : undefined, edgeColor: sty.edges ? darker(sty.color) : undefined });
         }
       }
     }
@@ -3089,7 +3584,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
   function exportMol2() {
     const d = D();
     if (!d) return;
-    const blk = C.assemble(d.uc, d.lo, d.hi);
+    const blk = C.assemble(d.uc, d.lo, d.hi, d.polyRules);
     const text = C.toMol2(blk.atoms, d.uc.cell, d.name, isVisible);
     const url = URL.createObjectURL(new Blob([text], { type: 'chemical/x-mol2' }));
     saveAs(url, fileStem(d) + '.mol2');
@@ -3126,9 +3621,115 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     $('styleBS').onclick = () => setStyle('bs');
     $('styleSF').onclick = () => setStyle('sf');
     $('styleST').onclick = () => setStyle('st');
+    const setBonds = (grad) => {
+      st.bondGrad = grad;
+      $('bondSplit').setAttribute('aria-pressed', String(!grad));
+      $('bondGrad').setAttribute('aria-pressed', String(grad));
+      render(true);
+    };
+    $('bondSplit').onclick = () => setBonds(false);
+    $('bondGrad').onclick = () => setBonds(true);
     $('measDist').onclick = () => setMeasure('dist');
     $('measAngle').onclick = () => setMeasure('angle');
     $('measTors').onclick = () => setMeasure('tors');
+    $('measClear').onclick = () => removeMeasure('all');
+    $('measList').onclick = (e) => { const b = e.target.closest('button[data-mrm]'); if (b) removeMeasure(+b.dataset.mrm); };
+    // right-click on a measurement in the picture: a small menu to remove it
+    $('gl').addEventListener('contextmenu', (e) => {
+      const i = measureAt(e.pageX, e.pageY);
+      if (i < 0) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const menu = $('ctxMenu');
+      menu.innerHTML = '<button type="button" role="menuitem" data-mrm="' + i + '">Remove ' + esc(measureText(D().measures[i])) + '</button>' +
+        (D().measures.length > 1 ? '<button type="button" role="menuitem" data-mrm="all">Remove all measurements</button>' : '');
+      menu.hidden = false;
+      menu.style.left = Math.min(e.clientX, window.innerWidth - menu.offsetWidth - 8) + 'px';
+      menu.style.top = Math.min(e.clientY, window.innerHeight - menu.offsetHeight - 8) + 'px';
+      menu.querySelector('button').focus();
+    }, true);
+    $('ctxMenu').onclick = (e) => {
+      const b = e.target.closest('button[data-mrm]');
+      if (!b) return;
+      closeMenu();
+      removeMeasure(b.dataset.mrm === 'all' ? 'all' : +b.dataset.mrm);
+    };
+    document.addEventListener('mousedown', (e) => { if (!$('ctxMenu').hidden && !e.target.closest('#ctxMenu')) closeMenu(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeMenu(); if (st.editEl) closeElPop(); } });
+    // element appearance: press an element in the legend
+    $('legend').onclick = (e) => {
+      const b = e.target.closest('button[data-el]');
+      if (!b) return;
+      if (st.editEl === b.dataset.el) closeElPop(); else openElPop(b.dataset.el);
+    };
+    // polyhedra card
+    $('polyList').onchange = (e) => {
+      const d = D();
+      const t = e.target;
+      if (t.dataset.pauto !== undefined) d.autoHide[t.dataset.pauto] = !t.checked;
+      if (t.dataset.pon !== undefined) d.polyRules[+t.dataset.pon].on = t.checked;
+      if (t.dataset.pcol !== undefined) styleStore(d, t.dataset.pcol).color = t.value;
+      if (t.dataset.pop !== undefined) styleStore(d, t.dataset.pop).opacity = +t.value;
+      if (t.dataset.pedge !== undefined) styleStore(d, t.dataset.pedge).edges = t.checked;
+      if (t.dataset.pmax !== undefined) { const v = parseFloat(t.value); if (v > 0) d.polyRules[+t.dataset.pmax].max = v; }
+      setTimeout(polyChanged, 0);
+    };
+    $('polyList').onclick = (e) => {
+      const d = D();
+      const tog = e.target.closest('button[data-ptog]');
+      if (tog) { d.polyOpen = d.polyOpen === tog.dataset.ptog ? null : tog.dataset.ptog; drawPolyCard(); return; }
+      const rst = e.target.closest('button[data-prst]');
+      if (rst) {
+        const key = rst.dataset.prst;
+        if (key[0] === 'a') delete d.autoStyle[key.slice(2)]; else delete d.polyRules[+key.slice(2)].style;
+        polyChanged();
+        return;
+      }
+      const gone = e.target.closest('button[data-pgone]');
+      if (gone) { d.autoGone[gone.dataset.pgone] = true; d.polyOpen = null; polyChanged(); return; }
+      const b = e.target.closest('button[data-prm]');
+      if (!b) return;
+      d.polyRules.splice(+b.dataset.prm, 1);
+      d.polyOpen = null;
+      polyChanged();
+    };
+    $('polyRestore').onclick = () => { const d = D(); d.autoGone = {}; d.autoHide = {}; polyChanged(); };
+    $('pfCentre').onchange = (e) => { const f = D().polyForm; f.center = e.target.value; if (f.corners.length) suggestPolyForm(); else drawPolyPreview(); };
+    $('pfCorners').onclick = (e) => {
+      const b = e.target.closest('button[data-el]');
+      if (!b) return;
+      const f = D().polyForm;
+      const at = f.corners.indexOf(b.dataset.el);
+      if (at >= 0) f.corners.splice(at, 1); else f.corners.push(b.dataset.el);
+      b.setAttribute('aria-pressed', String(at < 0));
+      suggestPolyForm();
+    };
+    $('pfMax').oninput = (e) => { const v = parseFloat(e.target.value); D().polyForm.max = v > 0 ? v : null; drawPolyPreview(); };
+    $('pfSuggest').onclick = suggestPolyForm;
+    $('pfPick').onclick = () => { st.picking = null; st.polyPick = { centre: null }; D().picks = []; render(true); $('stage').scrollIntoView({ block: 'nearest' }); };
+    $('pfAdd').onclick = () => {
+      const d = D();
+      const f = d.polyForm;
+      if (!f.corners.length || !(f.max > 0)) return;
+      const els = elementsOf(d);
+      // every element chosen is the same as "any element"; adding the same centre and corners again replaces that set
+      const rule = { center: f.center, corners: f.corners.length === els.length ? null : f.corners.slice().sort(), max: f.max, on: true };
+      const sameSet = (r) => r.center === rule.center && cornerText(r) === cornerText(rule);
+      const old = d.polyRules.find(sameSet);
+      if (old) rule.style = old.style;
+      d.polyRules = d.polyRules.filter((r) => !sameSet(r)).concat([rule]);
+      d.polyOpen = null;
+      if (!st.poly) { st.poly = true; $('chkPoly').checked = true; }
+      d.polyForm = { center: f.center, corners: [], max: null };
+      polyChanged();
+    };
+    $('elClose').onclick = closeElPop;
+    $('elColor').onchange = (e) => setLook(st.editEl, 'color', e.target.value);
+    $('elSize').oninput = (e) => { $('elSizeOut').textContent = fmt(+e.target.value, 2) + '×'; };
+    $('elSize').onchange = (e) => setLook(st.editEl, 'scale', +e.target.value);
+    $('elOpacity').oninput = (e) => { $('elOpacityOut').textContent = Math.round(100 * e.target.value) + '%'; };
+    $('elOpacity').onchange = (e) => setLook(st.editEl, 'opacity', +e.target.value);
+    $('elReset').onclick = () => { const el = st.editEl; delete elemLook[el]; drawLegend(); drawPolyCard(); render(true); openElPop(el); };
     $('selLabels').onchange = (e) => { st.labels = e.target.value; render(true); };
     $('btnPng').onclick = exportPng;
     $('btnMol2').onclick = exportMol2;
@@ -3277,6 +3878,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
       if (id === 'pickNext') { st.picking.step = 2; render(true); }
       if (id === 'pickDone') finishPicking();
       if (id === 'pickCancel') { st.picking = null; st.notice = ''; render(true); }
+      if (id === 'polyPickCancel') { st.polyPick = null; render(true); }
     };
 
     // files and the structures table
@@ -3319,7 +3921,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     const ISSUES = 'https://github.com/Wenhao-Shao/Crysta/issues/new';
     const fbUrl = () => {
       const title = '[' + $('fbKind').value + '] ' + $('fbSummary').value.trim();
-      const tail = '\n\n---\nSent from the Crysta feedback box\nCrysta v0.2.0\nBrowser: ' + navigator.userAgent;
+      const tail = '\n\n---\nSent from the Crysta feedback box\nCrysta v0.2.1\nBrowser: ' + navigator.userAgent;
       let details = $('fbDetails').value.trim() || '(no details given)';
       const make = (d) => ISSUES + '?title=' + encodeURIComponent(title) + '&body=' + encodeURIComponent(d + tail);
       let url = make(details);
@@ -3368,7 +3970,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
       data.append('summary', summary);
       data.append('details', $('fbDetails').value.trim() || '(no details given)');
       if (email) data.append('email', email);
-      data.append('workbench', 'v0.2.0');
+      data.append('workbench', 'v0.2.1');
       data.append('browser', navigator.userAgent);
       const buttons = [$('fbDirect'), $('fbGithub')];
       buttons.forEach((b) => { b.disabled = true; });
@@ -3395,7 +3997,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(retheme);
   }
   init();
-  window.crysta = { state: st, viewer: () => viewer, addFiles };
+  window.crysta = { state: st, viewer: () => viewer, addFiles, elemLook };
 })();
 </script>
 

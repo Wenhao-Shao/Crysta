@@ -27,9 +27,13 @@ Status marks: **done** (released), **next** (agreed, not started), **later** (ag
 | Dimensionality from the whole bond graph, through molecular linkers (MOF-type frameworks) | done, v0.2.0 |
 | Molecular complexes and clusters drawn as whole units | done, v0.2.0 |
 | Alkali ions as polyhedron centres when they are the only metals (NaCl) | done, v0.2.0 |
-| Choose which elements get polyhedra and bonds (A-site ions in oxide perovskites, CN above 8) | next |
+| Show, hide or remove each set of polyhedra; several sets per centre element | done, v0.2.1 |
+| Polyhedra defined by the user: any centre element, any corner elements, a distance limit, CN above 8 allowed; filled from the form or by clicking a centre and a corner | done, v0.2.1 |
+| Colour, opacity and edges per polyhedron row | done, v0.2.1 |
+| Automatic polyhedra around non-metal centres in molecular ions (PF6, SO4, TeCl6) | done, v0.2.1 |
+| User polyhedra: a separate distance per corner element; edge width; remembered between visits | later |
+| Option for an edited distance to also change the reported coordination numbers and dimensionality | open |
 | Editable bond cutoffs per element pair | next |
-| Polyhedra around P and S inside molecular oxyanions (PO4 in LiFePO4, SO4) | later |
 
 ## 3. Perovskite analysis as a module
 
@@ -45,6 +49,10 @@ Status marks: **done** (released), **next** (agreed, not started), **later** (ag
 | Item | Status |
 |---|---|
 | Angle and torsion measurement | done, v0.2.0 |
+| Remove single measurements (panel list, right-click menu, Clear) | done, v0.2.1 |
+| Colour, size and opacity per element, from the legend | done, v0.2.1 |
+| Two-tone or gradient bond colour | done, v0.2.1 |
+| Appearance per atom or per crystallographic site; remembered between visits | later |
 | Atom labels | done, v0.2.0 |
 | PNG export, 1x to 4x, optional transparent background | done, v0.2.0 |
 | mol2 export of the shown block | done, v0.2.0 |

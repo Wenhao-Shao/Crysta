@@ -45,9 +45,10 @@
   const isDonor = (el) => NONMETAL.has(el) && el !== 'H' && el !== 'D' && !NOBLE.has(el);
   /* extra length allowed on top of the covalent radii */
   const TOL_COVALENT = 0.45, TOL_HALIDE = 0.75, TOL_DONOR = 0.5;
-  /* network formers that get a polyhedron inside a covalent network (SiO4 in quartz), and what may surround them */
-  const NET_CENTER = new Set(['B', 'Si', 'P', 'As']);
-  const NET_VERTEX = new Set(['O', 'N', 'F', 'S', 'Se', 'Cl']);
+  /* non-metal centres that get a polyhedron when four or more atoms of the listed kinds, and nothing else,
+     are bonded to them: SiO4 in quartz, PO4, SO4, BF4, PF6, TeCl6 */
+  const NET_CENTER = new Set(['B', 'Si', 'P', 'As', 'S', 'Se', 'Te']);
+  const NET_VERTEX = new Set(['O', 'N', 'F', 'S', 'Se', 'Cl', 'Br', 'I']);
   /* largest coordination number drawn as a polyhedron; larger shells (A-site cuboctahedra) only clutter */
   const MAX_POLY_CN = 8;
 
@@ -697,7 +698,8 @@
     const adj = atoms.map(() => []);
     const thin = Math.min(...cell.recip.map((r) => 1 / norm(r))) < 7.0;
     const covShifts = thin ? shifts : [[0, 0, 0]];
-    const noCovalent = (i) => isMetal(atoms[i].el) || (HALIDE.has(atoms[i].el) && metalsOf[i].length > 0);
+    // a halide next to a metal can still be covalently bound to a non-metal centre (Cl of TeCl6 beside Cs)
+    const noCovalent = (i) => isMetal(atoms[i].el);
     for (let i = 0; i < N; i++) {
       const a = atoms[i];
       if (noCovalent(i)) continue;
@@ -722,6 +724,15 @@
         }
       }
     }
+
+    // an atom that already has four or more covalent bonds has no lone pair left to give: it is not a
+    // ligand, however close a large cation sits (Te of TeCl6 next to Cs, N of an ammonium, sp3 C)
+    for (let j = 0; j < N; j++) {
+      if (!metalsOf[j].length || adj[j].length < 4) continue;
+      for (const m of metalsOf[j]) ligs[m.i] = ligs[m.i].filter((l) => l.j !== j);
+      metalsOf[j] = [];
+    }
+    const covCentre = (i) => NET_CENTER.has(atoms[i].el) && adj[i].length >= 4 && adj[i].length <= MAX_POLY_CN && adj[i].every((nb) => NET_VERTEX.has(atoms[nb.j].el));
 
     // 4. connected components of the whole bond graph (coordination and covalent), each with the
     //    lattice translations that join it to itself: none for a molecule, 1 to 3 for a chain, layer or framework
@@ -790,7 +801,7 @@
       if (loops.length) {
         networks.push({ atoms: order, dim: loops.length, vecs: loops });
         for (const i of order) {
-          if (NET_CENTER.has(atoms[i].el) && adj[i].length >= 4 && adj[i].length <= MAX_POLY_CN && adj[i].every((nb) => NET_VERTEX.has(atoms[nb.j].el))) polyAt.add(i);
+          if (covCentre(i)) polyAt.add(i);
         }
         continue;
       }
@@ -810,6 +821,10 @@
         ion: order.length === 1 && (HALIDE.has(atoms[s].el) || isMetal(atoms[s].el)),
         symdis: order.some((i) => atoms[i].symdis)
       };
+      // polyhedra inside a molecule or molecular ion: PF6, SO4, TeCl6
+      const mp = [];
+      for (const i of order) if (covCentre(i) && adj[i].every((nb) => local.has(nb.j))) mp.push({ center: local.get(i), verts: adj[i].map((nb) => local.get(nb.j)) });
+      if (mp.length) mol.polys = mp;
       mol.cen = cen.map((x, k) => x / order.length + shift[k]);
       // a molecule disordered over a symmetry element: keep one orientation
       if (mol.symdis && !showMinor && molecules.some((m) => m.symdis && norm(cell.toCart(mi(sub(m.cen, mol.cen)))) < 1.0)) continue;
@@ -833,6 +848,7 @@
           const sft = [0, 1, 2].map((k) => Math.round(nb.d[k] - (atoms[nb.j].f[k] - atoms[i].f[k])));
           if (same(add(offs[i], sft), offs[nb.j])) bonds.push([local.get(i), local.get(nb.j)]);
         }
+        if (covCentre(i) && adj[i].every((nb) => local.has(nb.j))) polys.push({ center: local.get(i), verts: adj[i].map((nb) => local.get(nb.j)) });
         if (!center[i]) continue;
         const verts = [];
         for (const l of ligs[i]) {
@@ -1385,8 +1401,80 @@
     return out;
   }
 
+  /* ---------- user-defined polyhedra ----------
+     A rule is { center: 'Pb', corners: ['Br', 'I'] or null for any element, max: 3.4 (angstrom) }.
+     Any element can be a centre and any element a corner; this is a drawing aid and changes no reported number. */
+  const shiftsWithin = (cell, dist) => {
+    const n = cell.recip.map((r) => Math.max(1, Math.ceil(dist * norm(r))));
+    const out = [];
+    for (let i = -n[0]; i <= n[0]; i++) for (let j = -n[1]; j <= n[1]; j++) for (let k = -n[2]; k <= n[2]; k++) out.push([i, j, k]);
+    return out;
+  };
+  const cornerOk = (rule, el) => !rule.corners || rule.corners.includes(el);
+  /* centre atom of the cell -> its corners [{ j, off, d }], off = corner - centre in fractional coordinates */
+  function polyhedraFor(uc, rules) {
+    const { cell, atoms } = uc;
+    const map = new Map();
+    for (const rule of rules || []) {
+      if (!rule || rule.on === false || !(rule.max > 0)) continue;
+      const shifts = shiftsWithin(cell, rule.max);
+      atoms.forEach((a, i) => {
+        if (a.el !== rule.center) return;
+        const list = map.get(i) || [];
+        atoms.forEach((b, j) => {
+          if (!cornerOk(rule, b.el) || !compatible(a, b)) return;
+          const base = sub(b.f, a.f);
+          for (const sft of shifts) {
+            if (i === j && !sft[0] && !sft[1] && !sft[2]) continue;
+            const off = add(base, sft);
+            const d = norm(cell.toCart(off));
+            if (d > rule.max || d < 0.4) continue;
+            if (!list.some((v) => v.j === j && norm(sub(v.off, off)) < 1e-6)) list.push({ j, off, d });
+          }
+        });
+        map.set(i, list);
+      });
+    }
+    return map;
+  }
+  /* what one rule gives in this structure: how many centres, and the smallest and largest number of corners */
+  function polyhedraStats(uc, rule) {
+    const map = polyhedraFor(uc, [Object.assign({}, rule, { on: true })]);
+    const cn = [];
+    let outside = 0;
+    for (const list of map.values()) {
+      cn.push(list.length);
+      if (list.length < 4) continue;
+      // corners relative to the centre: the centre is outside when it lies beyond one of the faces
+      const pts = list.map((v) => uc.cell.toCart(v.off));
+      if (hullFaces(pts).some((f) => -dot(f.n, pts[f.v[0]]) > 0.05)) outside++;
+    }
+    return { centres: cn.length, cnMin: cn.length ? Math.min(...cn) : 0, cnMax: cn.length ? Math.max(...cn) : 0, outside };
+  }
+  /* a distance limit that takes the first shell of corners around the centre. For each centre the shell
+     ends at the widest relative gap among its first 12 sorted distances; the limit sits just outside the
+     widest shell (times 1.08), but inside the next shell of every centre where that is possible. It never
+     reaches for a further shell to make up the numbers: those corners belong to a neighbouring unit. */
+  function suggestPolyMax(uc, center, corners) {
+    const reach = 8;
+    const map = polyhedraFor(uc, [{ center, corners, max: reach }]);
+    let end = null, next = null;
+    for (const list of map.values()) {
+      const d = list.map((v) => v.d).sort((p, q) => p - q);
+      if (!d.length) continue;
+      let k = d.length - 1, best = 1.12;                       // a gap has to be at least 12 % to end a shell
+      for (let i = 0; i + 1 < d.length && i < 12; i++) if (d[i + 1] / d[i] > best) { best = d[i + 1] / d[i]; k = i; }
+      if (end === null || d[k] > end) end = d[k];
+      if (k + 1 < d.length && (next === null || d[k + 1] < next)) next = d[k + 1];
+    }
+    if (end === null) return null;
+    let lim = end * 1.08;
+    if (next !== null && next > end) lim = Math.min(lim, (end + next) / 2);
+    return Math.ceil(lim * 20) / 20;
+  }
+
   /* ---------- unit cell -> displayed block of n1 x n2 x n3 cells ---------- */
-  function assemble(uc, lo, hi) {
+  function assemble(uc, lo, hi, rules) {
     const { cell, atoms, ligs, molecules, adj } = uc;
     const out = [];
     const polyhedra = [];
@@ -1477,6 +1565,30 @@
         }
         if (verts.length >= 4 && verts.length <= MAX_POLY_CN) polyhedra.push({ center: im, verts });
       }
+    }
+
+    // user-defined polyhedra: each rule is a set of its own, drawn next to the automatic ones and to the
+    // other rules (two rules may share a centre element). A corner that is not drawn yet is added as a lone
+    // atom, without a bond, so every polyhedron has all its corners.
+    if (rules && rules.length) {
+      const before = out.length;
+      rules.forEach((rule, k) => {
+        if (!rule || rule.on === false) return;
+        const map = polyhedraFor(uc, [rule]);
+        for (let ix = 0; ix < before; ix++) {
+          const a = out[ix];
+          const list = map.get(a.src);
+          if (!list || list.length < 3 || !(a.group >= 0 || inside(a.f))) continue;
+          const verts = list.map((v) => {
+            const f = add(a.f, v.off);
+            const key = keyOf(v.j, f);
+            let jx = placed.get(key);
+            if (jx === undefined) { jx = push(v.j, f, 'ligand', -1); placed.set(key, jx); }
+            return jx;
+          });
+          polyhedra.push({ center: ix, verts, custom: true, rule: k });
+        }
+      });
     }
 
     // hydrogen bonds: N-H...A / O-H...A. Acceptors are O and N of another molecule, and the anions
@@ -1582,9 +1694,9 @@
      scene = { width, height, M: [[3],[3]], b: [2], background, shaded, font, items }
        M, b: screen = M p + b, in pixels, y down. The scale (pixels per angstrom) is |M[0]|.
      items:
-       { t: 'atom', p, r, color, el }                    sphere of radius r (angstrom)
-       { t: 'bond', p, q, r, color }                     one half of a stick, radius r (angstrom)
-       { t: 'face', pts, color, opacity, cls }           flat polygon (polyhedron face, lattice plane)
+       { t: 'atom', p, r, color, el, opacity }           sphere of radius r (angstrom)
+       { t: 'bond', p, q, r, color, color2 }             one half of a stick, radius r (angstrom); fades to color2 at q
+       { t: 'face', pts, color, opacity, cls, edge, edgeColor }   flat polygon; edge = outline width in pixels
        { t: 'line', p, q, w, color, dash, cls }          line of width w (pixels)
        { t: 'arrow', p, q, r, color }                    arrow from p to q, shaft radius r (angstrom)
        { t: 'text', p, text, size, color, bg, cls }      label, always drawn on top                */
@@ -1601,6 +1713,8 @@
       if (!g) { g = { n: f.n, d, idx: new Set() }; groups.push(g); }
       for (const k of f.v) g.idx.add(k);
     }
+    // a flat set gives the same polygon twice, once for each side: keep one
+    if (groups.length === 2 && dot(groups[0].n, groups[1].n) < -0.999) groups.pop();
     return groups.map((g) => {
       const idx = Array.from(g.idx);
       let cen = [0, 0, 0];
@@ -1626,6 +1740,7 @@
     const midp = (p, q, k) => [0, 1, 2].map((i) => p[i] + (q[i] - p[i]) * k);
     const font = scene.font || 'Helvetica, Arial, sans-serif';
     const grads = new Map();
+    const bondGrads = [];
     const body = [];
     const top = [];
     for (const it of scene.items) {
@@ -1638,19 +1753,28 @@
           fill = 'url(#' + id + ')';
         }
         body.push({ z: depth(it.p), s: '<circle class="atom' + (it.el ? ' ' + xml(it.el) : '') + '" cx="' + n2(s[0]) + '" cy="' + n2(s[1]) + '" r="' + n2(it.r * scale) +
-          '" fill="' + fill + '" stroke="' + shade(it.color, -0.55) + '" stroke-width="' + n2(Math.max(0.4, 0.02 * scale)) + '"/>' });
+          '" fill="' + fill + '" stroke="' + shade(it.color, -0.55) + '" stroke-width="' + n2(Math.max(0.4, 0.02 * scale)) + '"' +
+          (it.opacity !== undefined && it.opacity < 1 ? ' fill-opacity="' + n2(it.opacity) + '" stroke-opacity="' + n2(it.opacity) + '"' : '') + '/>' });
       } else if (it.t === 'bond') {
         const s = P(it.p), e = P(it.q);
         const w = 2 * it.r * scale;
         const xy = 'x1="' + n2(s[0]) + '" y1="' + n2(s[1]) + '" x2="' + n2(e[0]) + '" y2="' + n2(e[1]) + '"';
+        // with a second colour the stick fades from one to the other along its length
+        let paint = it.color;
+        if (it.color2 && it.color2 !== it.color) {
+          const id = 'b' + (bondGrads.length + 1);
+          bondGrads.push('<linearGradient id="' + id + '" gradientUnits="userSpaceOnUse" x1="' + n2(s[0]) + '" y1="' + n2(s[1]) + '" x2="' + n2(e[0]) + '" y2="' + n2(e[1]) +
+            '"><stop offset="0" stop-color="' + it.color + '"/><stop offset="1" stop-color="' + it.color2 + '"/></linearGradient>');
+          paint = 'url(#' + id + ')';
+        }
         // a dark line under a slightly thinner coloured one gives the stick its outline
         body.push({ z: depth(midp(it.p, it.q, 0.5)), s: '<g class="bond"><line ' + xy + ' stroke="' + shade(it.color, -0.55) + '" stroke-width="' + n2(w + Math.max(0.6, 0.03 * scale)) + '"/>' +
-          '<line ' + xy + ' stroke="' + it.color + '" stroke-width="' + n2(w) + '"/></g>' });
+          '<line ' + xy + ' stroke="' + paint + '" stroke-width="' + n2(w) + '"/></g>' });
       } else if (it.t === 'face') {
         let z = 0;
         for (const p of it.pts) z += depth(p);
         body.push({ z: z / it.pts.length, s: '<polygon class="' + xml(it.cls || 'face') + '" points="' + it.pts.map(pt).join(' ') + '" fill="' + it.color + '" fill-opacity="' + (it.opacity === undefined ? 0.45 : it.opacity) +
-          '" stroke="' + shade(it.color, -0.35) + '" stroke-opacity="0.7" stroke-width="' + n2(Math.max(0.4, 0.015 * scale)) + '" stroke-linejoin="round"/>' });
+          '" stroke="' + (it.edgeColor || shade(it.color, -0.35)) + '" stroke-opacity="' + (it.edge ? 1 : 0.7) + '" stroke-width="' + n2(it.edge || Math.max(0.4, 0.015 * scale)) + '" stroke-linejoin="round"/>' });
       } else if (it.t === 'line') {
         const s = P(it.p), e = P(it.q);
         body.push({ z: depth(midp(it.p, it.q, 0.5)), s: '<line class="' + xml(it.cls || 'line') + '" x1="' + n2(s[0]) + '" y1="' + n2(s[1]) + '" x2="' + n2(e[0]) + '" y2="' + n2(e[1]) + '" stroke="' + it.color +
@@ -1683,9 +1807,40 @@
     return ['<?xml version="1.0" encoding="UTF-8"?>',
       '<svg xmlns="http://www.w3.org/2000/svg" width="' + n2(width) + '" height="' + n2(height) + '" viewBox="0 0 ' + n2(width) + ' ' + n2(height) + '" font-family="' + xml(font) + '">',
       scene.title ? '<title>' + xml(scene.title) + '</title>' : '',
-      defs.length ? '<defs>' + defs.join('') + '</defs>' : '',
+      defs.length || bondGrads.length ? '<defs>' + defs.join('') + bondGrads.join('') + '</defs>' : '',
       scene.background ? '<rect class="background" width="100%" height="100%" fill="' + scene.background + '"/>' : '',
       '<g class="structure" stroke-linecap="butt">'].concat(body.map((o) => o.s), ['</g>', '<g class="labels">'], top, ['</g>', '</svg>', '']).filter((l) => l !== '').join('\n') + '\n';
+  }
+
+  /* one tube per bond as a mesh with a colour at each end, so the graphics card blends them along the bond.
+     bonds: [{ p, q, rp, rq, cp: [r, g, b], cq: [r, g, b] }] with colours 0 to 1. Returns vertex, normal,
+     colour and face arrays in chunks that stay below the vertex limit of one mesh. */
+  function bondTubes(bonds, sides, maxVerts) {
+    const n = sides || 10;
+    const cap = maxVerts || 60000;
+    const out = [];
+    let cur = null;
+    for (const bd of bonds) {
+      let u = sub(bd.q, bd.p);
+      const len = norm(u);
+      if (len < 1e-6) continue;
+      u = u.map((x) => x / len);
+      let e1 = cross(u, Math.abs(u[0]) < 0.9 ? [1, 0, 0] : [0, 1, 0]);
+      e1 = e1.map((x) => x / norm(e1));
+      const e2 = cross(u, e1);
+      if (!cur || cur.vertexArr.length + 2 * n > cap) { cur = { vertexArr: [], normalArr: [], colorArr: [], faceArr: [] }; out.push(cur); }
+      const base = cur.vertexArr.length;
+      for (let k = 0; k < n; k++) {
+        const th = 2 * Math.PI * k / n;
+        const r = [0, 1, 2].map((i) => Math.cos(th) * e1[i] + Math.sin(th) * e2[i]);
+        cur.vertexArr.push([0, 1, 2].map((i) => bd.p[i] + bd.rp * r[i]), [0, 1, 2].map((i) => bd.q[i] + bd.rq * r[i]));
+        cur.normalArr.push(r, r);
+        cur.colorArr.push(bd.cp, bd.cq);
+        const a0 = base + 2 * k, b0 = a0 + 1, a1 = base + 2 * ((k + 1) % n), b1 = a1 + 1;
+        cur.faceArr.push(a0, a1, b0, a1, b1, b0);
+      }
+    }
+    return out;
   }
 
   /* triangles of the convex hull of a small point set (coordination polyhedron) */
@@ -1707,12 +1862,17 @@
         if (s > 0.05) pos++; else if (s < -0.05) neg++;
       }
       if (pos && neg) continue;
+      if (!pos && !neg) {
+        // every point lies in this plane (a triangle, a square): the face is seen from both sides
+        faces.push({ v: [i, j, k], n: nrm }, { v: [i, k, j], n: nrm.map((x) => -x) });
+        continue;
+      }
       const outward = dot(nrm, sub(points[i], cen)) >= 0;
       faces.push(outward ? { v: [i, j, k], n: nrm } : { v: [i, k, j], n: nrm.map((x) => -x) });
     }
     return faces;
   }
 
-  root.XtalCore = { readStructure, readCif, readPoscar, readXyz, readShelx, buildCell, analyse, assemble, hullFaces, planePolys, tetrazineDefs, chromoInstances, stateDir, orientReport, hallOps, symbolOps, setSgTable, isMetal, isCenter, isDonor, HALIDE, RC, MASS, parseSymop, MAX_POLY_CN, distance, bondAngle, torsion, toMol2, toSvg, hullPolygons };
+  root.XtalCore = { readStructure, readCif, readPoscar, readXyz, readShelx, buildCell, analyse, assemble, hullFaces, planePolys, tetrazineDefs, chromoInstances, stateDir, orientReport, hallOps, symbolOps, setSgTable, isMetal, isCenter, isDonor, HALIDE, RC, MASS, parseSymop, MAX_POLY_CN, distance, bondAngle, torsion, toMol2, toSvg, hullPolygons, bondTubes, polyhedraFor, polyhedraStats, suggestPolyMax };
   if (typeof module !== 'undefined' && module.exports) module.exports = root.XtalCore;
 })(typeof window !== 'undefined' ? window : globalThis);
