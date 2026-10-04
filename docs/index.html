@@ -120,20 +120,32 @@ button.chip[aria-expanded="true"] { border-color: var(--accent); }
 .stage-msg strong { font-family: var(--font-display); font-size: 22px; font-weight: 600; color: var(--ink); }
 .stage-msg p { margin: 0; max-width: 52ch; }
 
-.readout { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 8px 12px;
+.readout { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 0 12px;
   font-family: var(--font-data); font-size: 12.5px; font-variant-numeric: tabular-nums;
-  /* A fixed height: the picture above takes the rest of the column, so a strip that grew by a line
-     (hover, first click, a pick prompt) made the picture shrink and jump. Room for two rows; more scrolls. */
-  height: 72px; overflow-y: auto;
-  display: grid; gap: 4px; align-content: center; }
+  /* One row of fixed height: the picture above takes the rest of the column, so a strip that grew by a line
+     (hover, first click, a pick prompt) made the picture shrink and jump. Text that does not fit is cut
+     with an ellipsis and kept whole in its tooltip. Below 900 px the strip stacks again (see the media rule). */
+  height: 34px; overflow: hidden; white-space: nowrap;
+  display: flex; align-items: center; gap: 16px; }
+.readout > *, .readout .pickbar > span, .readout .meas > span { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.readout button, .readout .meas .more { flex: none; }
+.readout button { padding: 1px 8px; font-size: 12px; }
 .readout .hint { color: var(--muted); font-family: var(--font-ui); font-size: 13px; }
-.readout .meas, .readout .pickbar { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: center; }
+.readout .meas, .readout .pickbar { display: flex; gap: 10px; align-items: center; }
+/* the latest measurement keeps its room; a pick prompt needs the row, and the Measure card lists them all */
+.readout .meas { margin-left: auto; flex: none; max-width: 75%; }
+.readout .pickbar ~ .meas { display: none; }
+.readout .meas .old { display: none; }
+.readout .meas .more { color: var(--muted); font-family: var(--font-ui); font-size: 12px; }
 .readout .pickbar { font-family: var(--font-ui); font-size: 13px; }
+.readout .pickbar > span + span { flex: none; max-width: 45%; }
 .readout .alert { color: var(--warn); font-family: var(--font-ui); font-size: 13px; }
 
 .rail { display: flex; flex-direction: column; gap: 12px; min-width: 0; min-height: 0; overflow-y: auto; padding-right: 2px; }
 .card { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px 14px; display: grid; gap: 10px; min-width: 0; }
+.cmp { padding: 8px 14px 10px; gap: 8px; }
 .cmp .tbl-wrap { overflow: auto; }
+#tblCmp thead th button { margin-left: 10px; }
 #tblCmp thead th { position: sticky; top: 0; background: var(--panel); z-index: 2; }
 #tblCmp thead th:first-child { left: 0; z-index: 3; }
 h2 { font-size: 11.5px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; color: var(--muted); margin: 0; }
@@ -227,7 +239,12 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
   .main { grid-template-columns: minmax(0, 1fr); }
   .stage-col { grid-template-rows: auto auto auto; }
   .stage { height: clamp(340px, 62vh, 560px); }
-  .readout { height: auto; min-height: 44px; overflow-y: visible; align-content: start; }
+  .readout { height: auto; min-height: 44px; padding: 8px 12px; overflow: visible; white-space: normal; display: grid; gap: 4px; align-content: start; }
+  .readout > *, .readout .pickbar > span, .readout .meas > span { overflow: visible; }
+  .readout .meas, .readout .pickbar, .readout .pickbar ~ .meas { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-left: 0; max-width: none; }
+  .readout .pickbar > span + span { max-width: none; }
+  .readout .meas .old { display: inline; }
+  .readout .meas .more, .readout .hint.spare { display: none; }
   .rail { overflow: visible; }
   h1 { font-size: 24px; }
 }
@@ -280,12 +297,9 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
         </div>
       </div>
       <div class="readout" id="readout" aria-live="polite"></div>
-      <section class="card cmp" id="cardCmp" hidden>
-        <div class="row between">
-          <h2>Structures</h2>
-          <div class="row"><span class="small" id="copyMsg"></span><button type="button" id="btnCopy">Copy table for a spreadsheet</button></div>
-        </div>
+      <section class="card cmp" id="cardCmp" aria-label="Structures" hidden>
         <div class="tbl-wrap"><table id="tblCmp"></table></div>
+        <div class="small" id="copyMsg" hidden>Copy the selected text, then paste it into a spreadsheet.</div>
         <textarea id="tsvBox" hidden readonly aria-label="Table as tab-separated text"></textarea>
       </section>
     </div>
@@ -2946,6 +2960,8 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
       ['Crysta version', 'v0.2.1']
     ];
   }
+  /* columns of the table that hold a mean over the independent sites of a structure */
+  const MEANS = new Set(['Mean M–X (Å)', 'Δd (10⁻⁴)', 'σ² (deg²)', 'M–X–M (°)', 'θ in (°)', 'θ out (°)', 'Axial tilt (°)', 'N penetration (Å)']);
   /* the table as rows of [heading, value], without the columns that are empty for every structure */
   function compareRows() {
     const rows = st.docs.map(summary);
@@ -2955,13 +2971,15 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
   function drawCompare() {
     if (!st.docs.length) { $('tblCmp').innerHTML = ''; return; }
     const rows = compareRows();
-    const head = rows[0].map((c) => '<th>' + esc(c[0]) + '</th>').join('');
+    const head = rows[0].map((c, k) => k === 0
+      ? '<th>' + esc(c[0]) + '<button type="button" class="mini" id="btnCopy" title="Copy the table as tab-separated text, to paste into a spreadsheet">Copy table</button></th>'
+      : '<th' + (MEANS.has(c[0]) ? ' title="Mean over the independent sites of the structure"' : '') + '>' + esc(c[0]) + '</th>').join('');
     $('tblCmp').innerHTML = '<thead><tr>' + head + '</tr></thead><tbody>' + rows.map((r, i) =>
       '<tr class="' + (i === st.cur ? 'on' : '') + '">' + r.map((c, k) => '<td>' + (k === 0 ? '<button type="button" class="xbtn" data-close="' + i + '" aria-label="Remove ' + esc(c[1]) + '" title="Remove this structure">×</button>' +
         '<button type="button" class="linkbtn" data-open="' + i + '">' + esc(c[1]) + '</button>' : esc(c[1])) + '</td>').join('') + '</tr>').join('') + '</tbody>';
     fitCompare();
     $('tsvBox').hidden = true;
-    $('copyMsg').textContent = st.docs.length > 1 ? 'Means over the independent sites of each structure.' : '';
+    $('copyMsg').hidden = true;
   }
   /* the table shows three structures; more are reached by scrolling inside it */
   function fitCompare() {
@@ -3020,10 +3038,14 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
     return best;
   }
   function closeMenu() { $('ctxMenu').hidden = true; }
+  /* The strip under the picture. On a wide window it is one row (alerts, a pick prompt, the atom under the
+     pointer, then the latest measurement at the right); text that does not fit keeps its full wording in a tooltip. */
   function drawReadout(hoverText) {
     const d = D();
     const lines = [];
-    if (st.notice) lines.push('<div class="alert" role="alert">' + esc(st.notice) + '</div>');
+    const cut = (cls, text, extra) => '<div class="' + cls + '"' + (extra || '') + ' title="' + esc(text) + '">' + esc(text) + '</div>';
+    const span = (text) => '<span title="' + esc(text) + '">' + esc(text) + '</span>';
+    if (st.notice) lines.push(cut('alert', st.notice, ' role="alert"'));
     if (!d) {
       if (!st.notice) lines.push('<div class="hint">No structure loaded yet.</div>');
       $('readout').innerHTML = lines.join('');
@@ -3031,37 +3053,42 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
     }
     if (st.polyPick) {
       const pk = st.polyPick;
-      lines.push('<div class="pickbar"><span>' + (pk.centre ? 'Centre: ' + esc(pk.centre.label) + '. Now click one atom at a corner of the polyhedron.' : 'Click the atom at the centre of the polyhedron.') + '</span>' +
+      lines.push('<div class="pickbar">' + span(pk.centre ? 'Centre: ' + pk.centre.label + '. Now click one atom at a corner of the polyhedron.' : 'Click the atom at the centre of the polyhedron.') +
         '<button type="button" id="polyPickCancel">Cancel</button></div>');
     }
     if (st.picking) {
       const pk = st.picking;
       if (pk.step === 1) {
-        lines.push('<div class="pickbar"><span>Step 1 of 2. Click three or more atoms of one molecule to set the chromophore plane.</span><span>' +
-          (pk.plane.length ? 'Picked: ' + pk.plane.map((a) => esc(a.label)).join(' ') : 'Nothing picked yet.') + '</span>' +
+        lines.push('<div class="pickbar">' + span('Step 1 of 2. Click three or more atoms of one molecule to set the chromophore plane.') +
+          span(pk.plane.length ? 'Picked: ' + pk.plane.map((a) => a.label).join(' ') : 'Nothing picked yet.') +
           '<button type="button" class="primary" id="pickNext"' + (pk.plane.length < 3 ? ' disabled' : '') + '>Next</button><button type="button" id="pickCancel">Cancel</button></div>');
       } else {
-        lines.push('<div class="pickbar"><span>Step 2 of 2. Click two atoms for the in-plane reference axis, or finish without one.</span><span>' +
-          (pk.axis.length ? 'Axis: ' + pk.axis.map((a) => esc(a.label)).join('···') : 'No axis yet.') + '</span>' +
+        lines.push('<div class="pickbar">' + span('Step 2 of 2. Click two atoms for the in-plane reference axis, or finish without one.') +
+          span(pk.axis.length ? 'Axis: ' + pk.axis.map((a) => a.label).join('···') : 'No axis yet.') +
           '<button type="button" class="primary" id="pickDone">Done</button><button type="button" id="pickCancel">Cancel</button></div>');
       }
     }
     const skipped = d.struct.meta.skipped;
     if (skipped.length) {
-      lines.push('<div class="alert" role="alert">' + skipped.length + (skipped.length === 1 ? ' atom site' : ' atom sites') + ' could not be read (' + skipped.slice(0, 8).map((x) => esc(x.label)).join(', ') + (skipped.length > 8 ? ', …' : '') +
-        ') and ' + (skipped.length === 1 ? 'is' : 'are') + ' missing from the picture, the formula and the density.</div>');
+      lines.push(cut('alert', skipped.length + (skipped.length === 1 ? ' atom site' : ' atom sites') + ' could not be read (' + skipped.slice(0, 8).map((x) => x.label).join(', ') + (skipped.length > 8 ? ', …' : '') +
+        ') and ' + (skipped.length === 1 ? 'is' : 'are') + ' missing from the picture, the formula and the density.', ' role="alert"'));
     }
-    if (hoverText) lines.push('<div>' + hoverText + '</div>');
     const need = MEASURE[st.measure].n;
     if (d.picks.length) {
-      lines.push('<div>' + MEASURE[st.measure].name + ': ' + d.picks.map((a) => esc(a.label)).join(' – ') + '. Click ' + (need - d.picks.length === 1 ? 'one more atom' : (need - d.picks.length) + ' more atoms') + '.</div>');
+      lines.push(cut('', MEASURE[st.measure].name + ': ' + d.picks.map((a) => a.label).join(' – ') + '. Click ' + (need - d.picks.length === 1 ? 'one more atom' : (need - d.picks.length) + ' more atoms') + '.'));
+    }
+    if (hoverText) lines.push('<div class="now">' + hoverText + '</div>');
+    if (!lines.length) {
+      // with measurements the hint only fills the row, so the stacked narrow layout leaves it out
+      lines.push('<div class="hint' + (d.measures.length ? ' spare' : '') + '">Drag to rotate, scroll or pinch to zoom, Ctrl-drag to pan. Hover an atom for its label; click atoms to measure a distance, an angle or a torsion.</div>');
     }
     if (d.measures.length) {
-      lines.push('<div class="meas">' + d.measures.map((m) => '<span>' + esc(measureText(m)) + '</span>').join('') +
+      // the row shows the latest one; the narrow layout and the Measure card list them all
+      const n = d.measures.length;
+      const all = d.measures.map(measureText);
+      lines.push('<div class="meas" title="' + esc(all.join('\n')) + '">' + all.map((t, i) => '<span' + (i < n - 1 ? ' class="old"' : '') + '>' + esc(t) + '</span>').join('') +
+        (n > 1 ? '<span class="more">+' + (n - 1) + ' more</span>' : '') +
         '<button type="button" class="mini" id="btnClear">Clear</button></div>');
-    }
-    if (!hoverText && !d.picks.length && !d.measures.length && !st.picking) {
-      lines.push('<div class="hint">Drag to rotate, scroll or pinch to zoom, Ctrl-drag to pan. Hover an atom for its label; click atoms to measure a distance, an angle or a torsion.</div>');
     }
     $('readout').innerHTML = lines.join('');
   }
@@ -3902,6 +3929,7 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
     $('tblCmp').onclick = (e) => {
       const b = e.target.closest('button');
       if (!b) return;
+      if (b.id === 'btnCopy') { copyTable(b); return; }
       if (b.dataset.open !== undefined) { st.notice = ''; activate(+b.dataset.open); }
       if (b.dataset.close !== undefined) {
         const i = +b.dataset.close;
@@ -3910,20 +3938,26 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
         activate(st.docs.length ? Math.min(st.cur > i ? st.cur - 1 : st.cur, st.docs.length - 1) : -1);
       }
     };
-    $('btnCopy').onclick = () => {
+    /* the button sits in the table header, which is drawn again with the table, so it is handled above */
+    function copyTable(btn) {
       const text = tsv();
       const fallback = () => {
         const box = $('tsvBox');
         box.hidden = false;
+        $('copyMsg').hidden = false;
         box.value = text;
         box.focus();
         box.select();
-        $('copyMsg').textContent = 'Copy the selected text.';
       };
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text).then(() => { $('copyMsg').textContent = 'Copied. Paste into a spreadsheet.'; }, fallback);
-      } else fallback();
-    };
+      const done = () => {
+        $('tsvBox').hidden = true;
+        $('copyMsg').hidden = true;
+        btn.textContent = 'Copied';
+        setTimeout(() => { btn.textContent = 'Copy table'; }, 1600);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, fallback);
+      else fallback();
+    }
 
     // feedback box: a note goes straight to the maintainer through Formspree, or opens as a pre-filled GitHub issue
     const FORMSPREE = 'https://formspree.io/f/mnnvojry';
