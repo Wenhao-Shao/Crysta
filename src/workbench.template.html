@@ -115,8 +115,11 @@ button.chip[aria-expanded="true"] { border-color: var(--accent); }
 .stage-msg p { margin: 0; max-width: 52ch; }
 
 .readout { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 8px 12px;
-  font-family: var(--font-data); font-size: 12.5px; font-variant-numeric: tabular-nums; min-height: 44px;
-  display: grid; gap: 4px; align-content: start; }
+  font-family: var(--font-data); font-size: 12.5px; font-variant-numeric: tabular-nums;
+  /* A fixed height: the picture above takes the rest of the column, so a strip that grew by a line
+     (hover, first click, a pick prompt) made the picture shrink and jump. Room for two rows; more scrolls. */
+  height: 72px; overflow-y: auto;
+  display: grid; gap: 4px; align-content: center; }
 .readout .hint { color: var(--muted); font-family: var(--font-ui); font-size: 13px; }
 .readout .meas, .readout .pickbar { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: center; }
 .readout .pickbar { font-family: var(--font-ui); font-size: 13px; }
@@ -218,6 +221,7 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
   .main { grid-template-columns: minmax(0, 1fr); }
   .stage-col { grid-template-rows: auto auto auto; }
   .stage { height: clamp(340px, 62vh, 560px); }
+  .readout { height: auto; min-height: 44px; overflow-y: visible; align-content: start; }
   .rail { overflow: visible; }
   h1 { font-size: 24px; }
 }
