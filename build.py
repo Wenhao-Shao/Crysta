@@ -5,6 +5,7 @@ docs/index.html          loads 3Dmol.js from a CDN (for GitHub Pages)
 dist/<Name>.html         embeds 3Dmol.js, works offline (dist/Crysta.html)
 
 The name shown in the page comes from "displayName" in package.json.
+The address in the canonical link and the link-preview tags comes from "homepage".
 """
 import json, pathlib
 
@@ -30,7 +31,8 @@ for part in (core, table, lib, samples):
 
 body = (template.replace("/*__CORE__*/", core).replace("__SAMPLES__", samples)
         .replace("__SGTABLE__", table).replace("__VERSION__", "v" + version)
-        .replace("__NAME__", name).replace("__TAGLINE__", tagline))
+        .replace("__NAME__", name).replace("__TAGLINE__", tagline)
+        .replace("__HOMEPAGE__", pkg["homepage"]))
 cdn = '<script src="https://cdn.jsdelivr.net/npm/3dmol@2.5.5/build/3Dmol-min.js"></script>'
 inline = "<script>/* 3Dmol.js 2.5.5, BSD-3-Clause, https://3dmol.org */\n" + lib + "\n</script>"
 cut = body.index('<div class="app">')
