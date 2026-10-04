@@ -1,4 +1,4 @@
-<title>2D Perovskite Workbench</title>
+<title>__NAME__</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <style>
 /* Layout: an instrument console. One large stage for the crystal, a comparison strip under it,
@@ -178,13 +178,13 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
 <div class="app">
   <header class="head">
     <div>
-      <div class="eyebrow" id="eyebrow">Layered metal-halide structures from CIF</div>
-      <h1 id="title">2D Perovskite Workbench</h1>
+      <div class="eyebrow" id="eyebrow">__TAGLINE__</div>
+      <h1 id="title">__NAME__</h1>
       <div class="sub" id="sub"></div>
     </div>
     <div class="tools">
       <a class="homelink" href="https://wenhao-shao.github.io/" title="Back to the W. Shao Laboratory website"><span aria-hidden="true">&larr;</span> W. Shao Lab</a>
-      <label class="filebtn">Open CIF files<input type="file" id="fileIn" multiple accept=".cif,.txt,chemical/x-cif,text/plain"></label>
+      <label class="filebtn">Open structure files<input type="file" id="fileIn" multiple></label>
       <button type="button" id="btnExample">Load the sample structures</button>
       <button type="button" id="btnFeedback">Send feedback</button>
     </div>
@@ -195,8 +195,8 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
       <div class="stage" id="stage">
         <div id="gl"></div>
         <div class="stage-msg" id="stageMsg">
-          <strong>Drop CIF files here</strong>
-          <p>Each file is expanded by its symmetry, split into the inorganic framework and whole organic molecules, and analysed as a layered perovskite. Load several to compare them in one table.</p>
+          <strong>Drop structure files here</strong>
+          <p>CIF, SHELX .res and .ins, POSCAR and XYZ. Each file is expanded by its symmetry and sorted into frameworks, networks and whole molecules. Layered metal halides also get the 2D perovskite descriptors. Load several to compare them in one table.</p>
         </div>
         <div class="overlay tl" id="ovlView" hidden>
           <span class="ovl-label">View down</span>
@@ -230,16 +230,56 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
           <button type="button" id="styleST" aria-pressed="false">Sticks</button>
         </div>
         <div class="checks">
-          <label><input type="checkbox" id="chkOrg" checked>Organic</label>
-          <label><input type="checkbox" id="chkInorg" checked>Inorganic</label>
-          <label><input type="checkbox" id="chkPoly" checked><span id="polyName">Octahedra</span></label>
-          <label><input type="checkbox" id="chkCell" checked>Unit cell</label>
+          <label><input type="checkbox" id="chkOrg" checked>Molecules</label>
+          <label><input type="checkbox" id="chkInorg" checked>Framework and ions</label>
+          <label><input type="checkbox" id="chkPoly" checked><span id="polyName">Polyhedra</span></label>
+          <label id="lblCell"><input type="checkbox" id="chkCell" checked>Unit cell</label>
           <label id="lblH"><input type="checkbox" id="chkH" checked>Hydrogens</label>
           <label id="lblHB"><input type="checkbox" id="chkHB" checked>Hydrogen bonds</label>
           <label><input type="checkbox" id="chkPersp">Perspective</label>
           <label><input type="checkbox" id="chkSpin">Spin</label>
           <label id="lblMinor" hidden><input type="checkbox" id="chkMinor">Minor disorder parts</label>
         </div>
+        <div class="row">
+          <label class="small" for="selLabels">Atom labels</label>
+          <select id="selLabels">
+            <option value="off">Off</option>
+            <option value="heavy">All but hydrogen</option>
+            <option value="all">Every atom</option>
+          </select>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Measure</h2>
+        <div class="seg" role="group" aria-label="What a click on atoms measures">
+          <button type="button" id="measDist" aria-pressed="true">Distance</button>
+          <button type="button" id="measAngle" aria-pressed="false">Angle</button>
+          <button type="button" id="measTors" aria-pressed="false">Torsion</button>
+        </div>
+        <div class="small" id="measHint">Click two atoms in the picture.</div>
+      </section>
+
+      <section class="card">
+        <h2>Export</h2>
+        <div class="row">
+          <button type="button" id="btnPng">Save PNG image</button>
+          <label class="small">size <select id="pngScale" aria-label="Image size">
+            <option value="1">1× (as shown)</option>
+            <option value="2" selected>2×</option>
+            <option value="4">4×</option>
+          </select></label>
+        </div>
+        <div class="row">
+          <button type="button" id="btnSvg">Save SVG drawing</button>
+          <label class="small">atoms <select id="svgShade" aria-label="How atoms are filled in the SVG drawing">
+            <option value="shaded" selected>Shaded</option>
+            <option value="flat">Flat colour</option>
+          </select></label>
+        </div>
+        <div class="checks"><label><input type="checkbox" id="pngClear">Transparent background</label></div>
+        <div class="row"><button type="button" id="btnMol2">Save mol2 file</button></div>
+        <div class="small">All three save what is shown: the packing block, with hidden atoms left out. The SVG is a vector drawing in which every atom, bond and face is a separate object to edit; it is drawn without perspective, and objects that pass through each other are approximated. The mol2 file carries the cell; its atom types are guessed from the number of neighbours and every bond is written as single.</div>
       </section>
 
       <section class="card">
@@ -283,7 +323,7 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
       </section>
 
       <section class="card" id="cardFw" hidden>
-        <h2>Inorganic framework</h2>
+        <h2 id="fwTitle">Framework</h2>
         <dl id="dlFw"></dl>
         <div class="tbl-wrap" id="brWrap" hidden><table id="tblBr"></table></div>
         <div class="small" id="fwNote"></div>
@@ -295,7 +335,7 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
         <div class="small" id="hbNote"></div>
       </section>
 
-      <div class="foot">2D Perovskite Workbench __VERSION__. Drawn with 3Dmol.js. Symmetry expansion, molecule assembly and every distance and angle are computed in this page from the CIF.</div>
+      <div class="foot">__NAME__ __VERSION__. Drawn with 3Dmol.js. Symmetry expansion, bonding, molecule assembly and every distance and angle are computed in this page from the file. Nothing is uploaded.</div>
     </aside>
   </div>
 </div>
@@ -312,7 +352,7 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
       </select>
     </label>
     <label class="fb-field">Summary
-      <input type="text" id="fbSummary" maxlength="120" required autocomplete="off" placeholder="One line, e.g. Layer spacing is wrong for n = 2">
+      <input type="text" id="fbSummary" maxlength="120" required autocomplete="off" placeholder="One line, e.g. A bond is missing in my structure">
     </label>
     <label class="fb-field">Details
       <textarea id="fbDetails" rows="6" maxlength="3000" placeholder="What you did, what you expected, and what happened instead."></textarea>
@@ -320,7 +360,7 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
     <label class="fb-field">Your email (optional)
       <input type="email" id="fbEmail" maxlength="120" autocomplete="email" placeholder="For a reply; never put on GitHub">
     </label>
-    <p>The workbench version and your browser are added automatically. No structure data is sent. Direct notes are delivered by Formspree, a form service.</p>
+    <p>The __NAME__ version and your browser are added automatically. No structure data is sent. Direct notes are delivered by Formspree, a form service.</p>
     <div class="alert" id="fbMsg" role="status" hidden></div>
     <div class="row between">
       <button type="button" id="fbCancel">Close</button>
@@ -332,8 +372,7 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
   </form>
 </dialog>
 
-<script type="text/plain" id="cif-sample-1">__SAMPLE1__</script>
-<script type="text/plain" id="cif-sample-2">__SAMPLE2__</script>
+<script type="application/json" id="samples">__SAMPLES__</script>
 <script type="application/json" id="sg-table">__SGTABLE__</script>
 <!--LIB-->
 <script>
@@ -346,10 +385,10 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
   const $ = (id) => document.getElementById(id);
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   try { C.setSgTable(JSON.parse($('sg-table').textContent)); } catch (err) { /* symbol-only files fall back to P1 */ }
-  const SAMPLES = [
-    { text: $('cif-sample-1').textContent, name: 'PEA2PbBr4.cif' },
-    { text: $('cif-sample-2').textContent, name: '(FCA3)2PbBr4_294K, CCDC 2485416.cif' }
-  ];
+  const NAME = '__NAME__';
+  const TAGLINE = '__TAGLINE__';
+  let SAMPLES = [];
+  try { SAMPLES = JSON.parse($('samples').textContent); } catch (err) { /* no built-in samples */ }
   const PAL = {
     H: '#e6e6ec', N: '#3d64d8', O: '#e2463d', F: '#86cf3a', Cl: '#2fae52', Br: '#a9582c', I: '#7b41ad',
     S: '#dfbe1d', P: '#e58a1f', Sn: '#6f8ea6', Cd: '#d9a93f', Mn: '#9a78c6', Cu: '#c7742f', Ca: '#3f9e8c',
@@ -357,13 +396,16 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
   };
   const MAX_ATOMS = 15000;
   const MAX_PLANES = 60;
+  const MAX_LABELS = 400;
+  const MAX_IMAGE_SIDE = 8000;   // pixels; larger canvases are cut or left black by many graphics cards
+  const MEASURE = { dist: { n: 2, name: 'Distance', hint: 'Click two atoms in the picture.' }, angle: { n: 3, name: 'Angle', hint: 'Click three atoms; the angle is at the second.' }, tors: { n: 4, name: 'Torsion', hint: 'Click four atoms in a chain; the torsion is about the middle two.' } };
   const PLANE_COLORS = ['#8a63ff', '#d1a800', '#00a3a3', '#d4577b'];
   const STATE_COLORS = ['#d95f00', '#0077b6', '#7a3fb5', '#1a9a5a', '#c2185b', '#8a6d00'];
   const MODES = [['normal', 'perpendicular to the plane'], ['along', 'in plane, along the axis'], ['perp', 'in plane, perpendicular to the axis'], ['angle', 'in plane, at an angle to the axis']];
   const st = {
     docs: [], cur: -1,
     style: 'bs', poly: true, cellBox: true, H: true, hb: true, org: true, inorg: true,
-    arrow: 1.9, notice: '', shown: 0, picking: null
+    arrow: 1.9, notice: '', shown: 0, picking: null, measure: 'dist', labels: 'off', px: 1
   };
   let viewer = null;
   let hoverLabel = null;
@@ -384,11 +426,12 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
 
   /* ---------- documents ---------- */
   function makeDoc(src) {
-    const struct = C.readStructure(src.text);
-    const d = { src, struct, minor: false, planes: [], chromos: [], measures: [], pick: null, name: src.name.replace(/\.[^.]+$/, '') };
+    const struct = C.readStructure(src.text, src.name);
+    const d = { src, struct, minor: false, planes: [], chromos: [], measures: [], picks: [], name: src.name.replace(/\.[^.]+$/, '') };
     rebuildCell(d);
     const L = [struct.cell.a, struct.cell.b, struct.cell.c];
-    const n = L.map((x) => Math.max(1, Math.min(3, Math.ceil(14 / x))));
+    // a molecule without a lattice sits in a box of its own: one copy is the whole picture
+    const n = struct.meta.molecular ? [1, 1, 1] : L.map((x) => Math.max(1, Math.min(3, Math.ceil(14 / x))));
     while (d.uc.atoms.length * n[0] * n[1] * n[2] > MAX_ATOMS && n.some((x) => x > 1)) n[n.indexOf(Math.max(...n))]--;
     d.def = n;
     d.lo = [0, 0, 0];
@@ -450,8 +493,8 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
     $('stageMsg').hidden = !!d && !!viewer;
     $('ovlView').hidden = !d;
     if (!d) {
-      $('eyebrow').textContent = 'Layered metal-halide structures from CIF';
-      $('title').textContent = '2D Perovskite Workbench';
+      $('eyebrow').textContent = TAGLINE;
+      $('title').textContent = NAME;
       $('sub').innerHTML = '';
       $('legend').innerHTML = '';
       if (viewer) { viewer.removeAllModels(); viewer.removeAllShapes(); viewer.removeAllLabels(); viewer.render(); }
@@ -485,23 +528,25 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
   const formulaText = (f) => f.map((e) => e.el + (e.n === 1 ? '' : e.n)).join(' ');
   function frameworkText(fw, layer) {
     if (!fw) return null;
-    if (fw.dim === 3) return '3D framework';
-    if (fw.dim === 2) return '2D layers ∥ (' + fw.hkl.join(' ') + ')' + (layer ? ', n = ' + layer.n : '');
-    if (fw.dim === 1) return '1D chains ∥ [' + fw.uvw.join(' ') + ']';
+    const cov = fw.kind === 'covalent' ? 'covalent ' : '';
+    if (fw.dim === 3) return '3D ' + cov + 'framework';
+    if (fw.dim === 2) return '2D ' + cov + 'layers ∥ (' + fw.hkl.join(' ') + ')' + (layer ? ', n = ' + layer.n : '');
+    if (fw.dim === 1) return '1D ' + cov + 'chains ∥ [' + fw.uvw.join(' ') + ']';
     return 'isolated units (0D)';
   }
 
   function drawHeader() {
     const d = D();
     const { struct, info } = d;
-    $('eyebrow').textContent = '2D Perovskite Workbench  ·  data_' + struct.meta.block;
+    $('eyebrow').textContent = NAME + '  ·  ' + (struct.meta.format === 'CIF' ? 'data_' : struct.meta.format + ': ') + struct.meta.block;
     $('title').textContent = d.name;
     const bits = ['<b>' + formulaHtml(info.formula) + '</b>'];
     const sg = sgHtml(struct.meta.spaceGroup);
     if (sg) bits.push(sg);
     const fw = info.framework;
     if (fw) bits.push(frameworkText(fw, info.layer) + (fw.dim === 2 ? ', ' + fmt(fw.spacing, 2) + ' Å apart' : ''));
-    else bits.push('no metal–halide framework found');
+    else if (struct.meta.molecular) bits.push('single molecule, no lattice');
+    else if (info.molecular) bits.push('molecular crystal');
     $('sub').innerHTML = bits.map((b) => '<span>' + b + '</span>').join('');
   }
 
@@ -515,23 +560,28 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
     if (info.formulaMass) add('Formula mass', fmt(info.formulaMass, 2) + ' g mol<sup>−1</sup>');
     if (m.spaceGroup) add('Space group', sgHtml(m.spaceGroup) + (m.sgNumber ? ' (no. ' + esc(m.sgNumber) + ')' : ''));
     else if (m.sgNumber) add('Space group', 'no. ' + esc(m.sgNumber));
-    ['a', 'b', 'c'].forEach((k, i) => add('<i>' + k + '</i>', esc(m.cellRaw[i]) + ' Å'));
-    ['α', 'β', 'γ'].forEach((k, i) => add('<i>' + k + '</i>', esc(m.cellRaw[3 + i]) + '°'));
-    add('<i>V</i>', fmt(struct.cell.V, 1) + ' Å<sup>3</sup>');
-    add('<i>Z</i>', String(info.Z));
-    if (info.density) add('<i>ρ</i><sub>calc</sub>', fmt(info.density, 3) + ' g cm<sup>−3</sup>');
+    if (!m.molecular) {
+      ['a', 'b', 'c'].forEach((k, i) => add('<i>' + k + '</i>', esc(m.cellRaw[i]) + ' Å'));
+      ['α', 'β', 'γ'].forEach((k, i) => add('<i>' + k + '</i>', esc(m.cellRaw[3 + i]) + '°'));
+      add('<i>V</i>', fmt(struct.cell.V, 1) + ' Å<sup>3</sup>');
+      add('<i>Z</i>', String(info.Z));
+      if (info.density) add('<i>ρ</i><sub>calc</sub>', fmt(info.density, 3) + ' g cm<sup>−3</sup>');
+    }
     if (m.temperature) add('<i>T</i>', esc(m.temperature) + ' K');
     if (m.R1) add('<i>R</i><sub>1</sub>', esc(m.R1));
     if (m.ccdc) add('Deposition', esc(m.ccdc), true);
-    add('Atoms per cell', String(info.nAtoms));
+    add(m.molecular ? 'Atoms' : 'Atoms per cell', String(info.nAtoms));
+    if (m.format !== 'CIF') add('File format', esc(m.format), true);
     const symText = {
       listed: struct.ops.length + ' operators listed in the file',
       hall: struct.ops.length + ' operators generated from the Hall symbol',
       hm: struct.ops.length + ' operators generated from the space-group symbol; standard setting assumed',
       number: struct.ops.length + ' operators generated from the space-group number; standard setting assumed',
-      none: 'none found; P1 assumed'
+      none: 'none found; P1 assumed',
+      p1: 'none in this format; the file lists every atom'
     }[m.symSource];
-    add('Symmetry', symText, true);
+    if (!m.molecular) add('Symmetry', symText, true);
+    if (m.skipped.length) add('Not read', m.skipped.map((x) => esc(x.label) + ' (' + esc(x.why) + ')').join(', '), true);
     if (uc.hasMinor) {
       const parts = [];
       if (struct.sites.some((s) => s.minor)) parts.push('flagged minor parts ' + (d.minor ? 'shown' : 'hidden'));
@@ -540,24 +590,24 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
     }
     $('dlCrystal').innerHTML = rows.join('');
 
-    // inorganic framework
+    // framework, coordination and (for layered metal halides) the 2D perovskite descriptors
     const fwRows = [];
     const addF = (k, v, txt) => fwRows.push('<dt>' + k + '</dt><dd' + (txt ? ' class="txt"' : '') + '>' + v + '</dd>');
     const L = info.layer;
     const notes = [];
-    if (info.metalSites.length) {
-      const fw = info.framework;
-      if (fw) {
-        addF('Connectivity', frameworkText(fw, null), true);
-        if (fw.dim === 2) {
-          if (L) addF('Layer thickness <i>n</i>', String(L.n) + (L.nUniform ? '' : ' (mixed)'));
-          addF('Layer spacing', fmt(fw.spacing, 3) + ' Å');
-          if (L && L.slabThickness !== undefined) {
-            addF('Slab, X<sub>ax</sub> to X<sub>ax</sub>', fmt(L.slabThickness, 3) + ' Å');
-            addF('Organic gallery', fmt(L.gallery, 3) + ' Å');
-          }
+    const fw0 = info.framework;
+    if (fw0) {
+      addF('Connectivity', frameworkText(fw0, null), true);
+      if (fw0.dim === 2) {
+        if (L) addF('Layer thickness <i>n</i>', String(L.n) + (L.nUniform ? '' : ' (mixed)'));
+        addF('Layer spacing', fmt(fw0.spacing, 3) + ' Å');
+        if (L && L.slabThickness !== undefined) {
+          addF('Slab, X<sub>ax</sub> to X<sub>ax</sub>', fmt(L.slabThickness, 3) + ' Å');
+          addF('Organic gallery', fmt(L.gallery, 3) + ' Å');
         }
       }
+    }
+    if (info.metalSites.length) {
       for (const s of info.metalSites) {
         const groups = new Map();
         for (const b of s.bonds) {
@@ -568,8 +618,8 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
           const [lab, dist] = key.split('|');
           addF(esc(s.label) + '–' + esc(lab), dist + ' Å' + (mult > 1 ? ' ×' + mult : ''));
         }
-        addF('Mean ' + esc(s.label) + '–X', fmt(s.mean, 3) + ' Å');
-        if (s.cn === 6) {
+        addF('Mean ' + esc(s.label) + '–X', fmt(s.mean, 3) + ' Å' + (s.cn > 1 ? ', CN ' + s.cn : ''));
+        if (s.octahedral) {
           addF(esc(s.label) + ' cis X–M–X', fmt(s.cisMin, 1) + '–' + fmt(s.cisMax, 1) + '°');
           addF(esc(s.label) + ' Δ<i>d</i>', fmt(s.deltaD * 1e4, 2) + ' × 10<sup>−4</sup>');
           addF(esc(s.label) + ' <i>σ</i><sup>2</sup>', fmt(s.sigma2, 1) + ' deg<sup>2</sup>');
@@ -588,17 +638,22 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
     }
     $('cardFw').hidden = !fwRows.length;
     $('dlFw').innerHTML = fwRows.join('');
-    const br = L ? L.bridges : info.bridges.map((b) => ({ x: b.x, m1: b.m1, m2: b.m2, theta: b.angle, equatorial: null, mm: b.mm }));
+    $('fwTitle').textContent = L ? 'Inorganic framework' : (fw0 && fw0.kind === 'covalent' ? 'Covalent network' : 'Framework and coordination');
+    const brAll = L ? L.bridges : info.bridges.map((b) => ({ x: b.x, m1: b.m1, m2: b.m2, theta: b.angle, equatorial: null, mm: b.mm }));
+    const br = brAll.slice(0, 16);
     $('brWrap').hidden = !br.length;
     if (br.length) {
-      $('tblBr').innerHTML = '<thead><tr><th>M–X–M</th><th><i>θ</i></th><th><i>θ</i><sub>in</sub></th><th><i>θ</i><sub>out</sub></th><th>M···M</th></tr></thead><tbody>' +
-        br.map((b) => '<tr><td>' + esc(b.m1) + '–' + esc(b.x) + '–' + esc(b.m2) + (b.equatorial === false ? ' (axial)' : '') + '</td><td>' + fmt(b.theta, 2) + '</td><td>' +
-          (b.thetaIn !== undefined ? fmt(b.thetaIn, 2) : '–') + '</td><td>' + (b.thetaOut !== undefined ? fmt(b.thetaOut, 2) : '–') + '</td><td>' + fmt(b.mm, 3) + '</td></tr>').join('') + '</tbody>';
+      // the in-plane and out-of-plane split only exists for a layered metal halide
+      $('tblBr').innerHTML = '<thead><tr><th>M–X–M</th><th><i>θ</i></th>' + (L ? '<th><i>θ</i><sub>in</sub></th><th><i>θ</i><sub>out</sub></th>' : '') + '<th>M···M</th></tr></thead><tbody>' +
+        br.map((b) => '<tr><td>' + esc(b.m1) + '–' + esc(b.x) + '–' + esc(b.m2) + (b.equatorial === false ? ' (axial)' : '') + '</td><td>' + fmt(b.theta, 2) + '</td>' +
+          (L ? '<td>' + (b.thetaIn !== undefined ? fmt(b.thetaIn, 2) : '–') + '</td><td>' + (b.thetaOut !== undefined ? fmt(b.thetaOut, 2) : '–') + '</td>' : '') + '<td>' + fmt(b.mm, 3) + '</td></tr>').join('') + '</tbody>';
       if (L) notes.unshift('Angles in degrees, distances in Å. θ<sub>in</sub> is the M–X–M angle projected onto the layer plane; θ<sub>out</sub> is the same angle projected onto the plane that holds M···M and the layer normal.');
+      else notes.unshift('Angles in degrees, distances in Å. X is the atom that bridges two metals.' + (brAll.length > br.length ? ' The first ' + br.length + ' of ' + brAll.length + ' distinct bridges are listed.' : ''));
     }
+    if (info.metalSites.some((s) => s.cn > C.MAX_POLY_CN)) notes.push('Sites with more than ' + C.MAX_POLY_CN + ' neighbours are drawn with bonds but without a polyhedron.');
     $('fwNote').innerHTML = notes.join(' ');
-    const allSix = info.metalSites.length && info.metalSites.every((s) => s.cn === 6);
-    $('polyName').textContent = allSix ? 'Octahedra' : 'Polyhedra';
+    const allOct = info.metalSites.length && info.metalSites.every((s) => s.octahedral);
+    $('polyName').textContent = allOct ? 'Octahedra' : 'Polyhedra';
 
     // hydrogen bonds
     const hb = d.hbRows;
@@ -607,11 +662,11 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
       if (d.hbFromH) {
         $('tblHB').innerHTML = '<thead><tr><th>D–H···A</th><th>H···A</th><th>D···A</th><th>∠DHA</th></tr></thead><tbody>' +
           hb.map((r) => '<tr><td>' + esc(r.D) + '–' + esc(r.H) + '···' + esc(r.A) + '</td><td>' + fmt(r.dHA, 2) + '</td><td>' + fmt(r.dDA, 3) + '</td><td>' + fmt(r.angle, 0) + '°</td></tr>').join('') + '</tbody>';
-        $('hbNote').textContent = 'Distances in Å. Criteria: H···A at least 0.15 Å inside the van der Waals sum and D–H···A above 120°. H positions are as given in the CIF.';
+        $('hbNote').textContent = 'Distances in Å. Criteria: H···A at least 0.15 Å inside the van der Waals sum and D–H···A above 120°. H positions are as given in the file.';
       } else {
         $('tblHB').innerHTML = '<thead><tr><th>D···A</th><th>distance</th></tr></thead><tbody>' +
           hb.map((r) => '<tr><td>' + esc(r.D) + '···' + esc(r.A) + '</td><td>' + fmt(r.dDA, 3) + '</td></tr>').join('') + '</tbody>';
-        $('hbNote').textContent = 'No H atoms in this CIF, so short N/O···halide contacts are listed instead (Å).';
+        $('hbNote').textContent = 'No H atoms in this file, so short N/O···halide contacts are listed instead (Å).';
       }
     }
     $('hbTitle').textContent = d.hbFromH ? 'Hydrogen bonds' : 'Short donor–halide contacts';
@@ -622,6 +677,8 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
     $('chkHB').disabled = !hb.length;
     $('lblHB').classList.toggle('off', !hb.length);
     $('viewLayer').hidden = !(info.framework && info.framework.dim === 2);
+    $('chkCell').disabled = !!m.molecular;
+    $('lblCell').classList.toggle('off', !!m.molecular);
     drawLegend();
   }
 
@@ -696,7 +753,7 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
   function startPicking() {
     st.picking = { step: 1, plane: [], axis: [] };
     const d = D();
-    d.pick = null;
+    d.picks = [];
     render(true);
   }
   function finishPicking() {
@@ -718,7 +775,7 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
     const pk = st.picking;
     const entry = { site: atom.xs, label: atom.xl, group: atom.xg, p: [atom.x, atom.y, atom.z] };
     const all = pk.plane.concat(pk.axis);
-    if (atom.xk !== 'organic') { st.notice = 'Pick atoms of an organic molecule.'; return; }
+    if (atom.xk !== 'molecule') { st.notice = 'Pick atoms that belong to a molecule.'; return; }
     if (all.length && all[0].group !== entry.group) { st.notice = 'Keep to one molecule: that atom belongs to a different one.'; return; }
     st.notice = '';
     const list = pk.step === 1 ? pk.plane : pk.axis;
@@ -735,7 +792,7 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
     const fw = info.framework, L = info.layer;
     const eq = L ? L.bridges.filter((b) => b.equatorial) : [];
     const ms = info.metalSites;
-    const six = ms.filter((s) => s.cn === 6);
+    const six = ms.filter((s) => s.octahedral);
     const num = (x, dd) => (x === null || x === undefined || !isFinite(x) ? '' : fmt(x, dd));
     return [
       ['Structure', d.name],
@@ -758,12 +815,18 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
       ['Axial tilt (°)', L && L.axialTilt ? num(L.axialTilt.mean, 1) : ''],
       ['N penetration (Å)', L && L.penetration.length ? num(mean(L.penetration.map((p) => p.depth)), 3) : ''],
       ['Stacking offset', L && L.offset ? '(' + fmt(L.offset.s1, 2) + ', ' + fmt(L.offset.s2, 2) + ')' : ''],
-      ['Workbench version', '__VERSION__']
+      ['__NAME__ version', '__VERSION__']
     ];
+  }
+  /* the table as rows of [heading, value], without the columns that are empty for every structure */
+  function compareRows() {
+    const rows = st.docs.map(summary);
+    const keep = rows[0].map((c, k) => rows.some((r) => r[k][1] !== ''));
+    return rows.map((r) => r.filter((c, k) => keep[k]));
   }
   function drawCompare() {
     if (!st.docs.length) { $('tblCmp').innerHTML = ''; return; }
-    const rows = st.docs.map(summary);
+    const rows = compareRows();
     const head = rows[0].map((c) => '<th>' + esc(c[0]) + '</th>').join('') + '<th></th>';
     $('tblCmp').innerHTML = '<thead><tr>' + head + '</tr></thead><tbody>' + rows.map((r, i) =>
       '<tr class="' + (i === st.cur ? 'on' : '') + '">' + r.map((c, k) => '<td>' + (k === 0 ? '<button type="button" class="linkbtn" data-open="' + i + '">' + esc(c[1]) + '</button>' : esc(c[1])) + '</td>').join('') +
@@ -772,10 +835,19 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
     $('copyMsg').textContent = st.docs.length > 1 ? 'Means over the independent sites of each structure.' : '';
   }
   function tsv() {
-    const rows = st.docs.map(summary);
+    const rows = compareRows();
     return [rows[0].map((c) => c[0]).join('\t')].concat(rows.map((r) => r.map((c) => c[1]).join('\t'))).join('\n');
   }
 
+  /* one measurement as text: A···B 3.012 Å, A–B–C 109.5°, A–B–C–D −60.2° */
+  function measureText(m) {
+    if (m.type === 'dist') return m.labels.join('···') + ' ' + fmt(m.value, 3) + ' Å';
+    return m.labels.join('–') + ' ' + (m.value < 0 ? '−' : '') + fmt(Math.abs(m.value), m.type === 'angle' ? 2 : 1) + '°';
+  }
+  function measureValueText(m) {
+    if (m.type === 'dist') return fmt(m.value, 3) + ' Å';
+    return (m.value < 0 ? '−' : '') + fmt(Math.abs(m.value), m.type === 'angle' ? 2 : 1) + '°';
+  }
   function drawReadout(hoverText) {
     const d = D();
     const lines = [];
@@ -797,19 +869,28 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
           '<button type="button" class="primary" id="pickDone">Done</button><button type="button" id="pickCancel">Cancel</button></div>');
       }
     }
+    const skipped = d.struct.meta.skipped;
+    if (skipped.length) {
+      lines.push('<div class="alert" role="alert">' + skipped.length + (skipped.length === 1 ? ' atom site' : ' atom sites') + ' could not be read (' + skipped.slice(0, 8).map((x) => esc(x.label)).join(', ') + (skipped.length > 8 ? ', …' : '') +
+        ') and ' + (skipped.length === 1 ? 'is' : 'are') + ' missing from the picture, the formula and the density.</div>');
+    }
     if (hoverText) lines.push('<div>' + hoverText + '</div>');
-    if (d.pick) lines.push('<div>From ' + esc(d.pick.label) + ': click a second atom for the distance.</div>');
+    const need = MEASURE[st.measure].n;
+    if (d.picks.length) {
+      lines.push('<div>' + MEASURE[st.measure].name + ': ' + d.picks.map((a) => esc(a.label)).join(' – ') + '. Click ' + (need - d.picks.length === 1 ? 'one more atom' : (need - d.picks.length) + ' more atoms') + '.</div>');
+    }
     if (d.measures.length) {
-      lines.push('<div class="meas">' + d.measures.map((m) => '<span>' + esc(m.l1) + '···' + esc(m.l2) + ' ' + fmt(m.d, 3) + ' Å</span>').join('') +
+      lines.push('<div class="meas">' + d.measures.map((m) => '<span>' + esc(measureText(m)) + '</span>').join('') +
         '<button type="button" class="mini" id="btnClear">Clear</button></div>');
     }
-    if (!hoverText && !d.pick && !d.measures.length && !st.picking) {
-      lines.push('<div class="hint">Drag to rotate, scroll or pinch to zoom, Ctrl-drag to pan. Hover an atom for its label; click two atoms to measure a distance.</div>');
+    if (!hoverText && !d.picks.length && !d.measures.length && !st.picking) {
+      lines.push('<div class="hint">Drag to rotate, scroll or pinch to zoom, Ctrl-drag to pan. Hover an atom for its label; click atoms to measure a distance, an angle or a torsion.</div>');
     }
     $('readout').innerHTML = lines.join('');
   }
 
   /* ---------- 3D scene ---------- */
+  const isVisible = (a) => (a.el !== 'H' || st.H) && (a.kind === 'molecule' ? st.org : st.inorg);
   function render(keepView) {
     const d = D();
     if (!viewer || !d) { drawReadout(); return; }
@@ -820,9 +901,12 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
     hoverLabel = null;
     const uc = d.uc;
     const blk = C.assemble(uc, d.lo, d.hi);
-    const visible = (a) => (a.el !== 'H' || st.H) && (a.kind === 'organic' ? st.org : st.inorg);
+    const visible = (a) => isVisible(a);
+    const px = st.px;
+    // a label added with the last argument set does not redraw the scene; it is drawn once at the end
+    const addText = (text, opts) => viewer.addLabel(text, opts, undefined, true);
     const ink = cssVar('--ink'), muted = cssVar('--muted'), accent = cssVar('--accent'), panel = cssVar('--panel');
-    viewer.setBackgroundColor(cssVar('--stage'), 1);
+    viewer.setBackgroundColor(cssVar('--stage'), st.clear ? 0 : 1);
 
     const map = new Map();
     const list = [];
@@ -876,7 +960,7 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
     }
 
     // unit cell outline with axis letters
-    if (st.cellBox) {
+    if (st.cellBox && !uc.meta.molecular) {
       const c = uc.cell;
       const P = (i, j, k) => V3([i * c.A[0] + j * c.B[0] + k * c.C[0], i * c.A[1] + j * c.B[1] + k * c.C[1], i * c.A[2] + j * c.B[2] + k * c.C[2]]);
       const edges = [];
@@ -884,11 +968,11 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
         edges.push([P(0, u, v), P(1, u, v)], [P(u, 0, v), P(u, 1, v)], [P(u, v, 0), P(u, v, 1)]);
       }
       for (const [s, e] of edges) viewer.addCylinder({ start: s, end: e, radius: 0.035, color: muted, fromCap: 1, toCap: 1 });
-      const lab = { font: 'IBM Plex Mono, monospace', fontSize: 14, fontColor: ink, backgroundColor: panel, backgroundOpacity: 0.85, borderThickness: 0, inFront: true, alignment: 'center' };
-      viewer.addLabel('a', Object.assign({ position: P(1, 0, 0) }, lab));
-      viewer.addLabel('b', Object.assign({ position: P(0, 1, 0) }, lab));
-      viewer.addLabel('c', Object.assign({ position: P(0, 0, 1) }, lab));
-      viewer.addLabel('0', Object.assign({ position: P(0, 0, 0) }, lab));
+      const lab = { font: 'IBM Plex Mono, monospace', fontSize: 14 * px, fontColor: ink, backgroundColor: panel, backgroundOpacity: 0.85, borderThickness: 0, inFront: true, alignment: 'center' };
+      addText('a', Object.assign({ position: P(1, 0, 0) }, lab));
+      addText('b', Object.assign({ position: P(0, 1, 0) }, lab));
+      addText('c', Object.assign({ position: P(0, 0, 1) }, lab));
+      addText('0', Object.assign({ position: P(0, 0, 0) }, lab));
     }
 
     // hydrogen bonds
@@ -946,15 +1030,31 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
       }
     }
 
+    // atom labels
+    if (st.labels !== 'off') {
+      const want = list.filter((a) => st.labels === 'all' || a.elem !== 'H');
+      for (const a of want.slice(0, MAX_LABELS)) {
+        addText(a.xl, { position: { x: a.x, y: a.y, z: a.z }, font: 'IBM Plex Mono, monospace', fontSize: 11 * px, fontColor: ink,
+          backgroundColor: panel, backgroundOpacity: 0.55, borderThickness: 0, inFront: true, alignment: 'center' });
+      }
+      if (want.length > MAX_LABELS) st.notice = 'Only the first ' + MAX_LABELS + ' of ' + want.length + ' atom labels are drawn. Narrow the packing limits to label every atom.';
+      else if (st.notice.startsWith('Only the first ' + MAX_LABELS)) st.notice = '';
+    } else if (st.notice.startsWith('Only the first ' + MAX_LABELS)) st.notice = '';
+
     // measurements and picks
+    const mid = (p, q) => [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2, (p[2] + q[2]) / 2];
     for (const m of d.measures) {
-      viewer.addCylinder({ start: V3(m.p1), end: V3(m.p2), radius: 0.04, color: ink, dashed: true, dashLength: 0.12, gapLength: 0.1, fromCap: 1, toCap: 1 });
-      viewer.addLabel(fmt(m.d, 3) + ' Å', {
-        position: V3([(m.p1[0] + m.p2[0]) / 2, (m.p1[1] + m.p2[1]) / 2, (m.p1[2] + m.p2[2]) / 2]),
-        font: 'IBM Plex Mono, monospace', fontSize: 13, fontColor: panel, backgroundColor: ink, backgroundOpacity: 0.9, borderThickness: 0, inFront: true, alignment: 'center'
+      for (let k = 0; k + 1 < m.pts.length; k++) {
+        viewer.addCylinder({ start: V3(m.pts[k]), end: V3(m.pts[k + 1]), radius: 0.04, color: ink, dashed: true, dashLength: 0.12, gapLength: 0.1, fromCap: 1, toCap: 1 });
+      }
+      // the value sits on the bond, at the angle's vertex, or on the central bond of the torsion
+      const at = m.type === 'dist' ? mid(m.pts[0], m.pts[1]) : m.type === 'angle' ? m.pts[1] : mid(m.pts[1], m.pts[2]);
+      addText(measureValueText(m), {
+        position: V3(at),
+        font: 'IBM Plex Mono, monospace', fontSize: 13 * px, fontColor: panel, backgroundColor: ink, backgroundOpacity: 0.9, borderThickness: 0, inFront: true, alignment: 'center'
       });
     }
-    if (d.pick) viewer.addSphere({ center: V3(d.pick.p), radius: 0.75, color: accent, opacity: 0.4 });
+    for (const a of d.picks) viewer.addSphere({ center: V3(a.p), radius: 0.75, color: accent, opacity: 0.4 });
     if (st.picking) {
       for (const a of st.picking.plane) viewer.addSphere({ center: V3(a.p), radius: 0.6, color: accent, opacity: 0.45 });
       for (const a of st.picking.axis) viewer.addSphere({ center: V3(a.p), radius: 0.6, color: ink, opacity: 0.45 });
@@ -985,16 +1085,18 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
         return;
       }
       const p = [atom.x, atom.y, atom.z];
-      if (!d.pick) {
-        d.pick = { p, label: atom.xl };
-      } else {
-        const q = d.pick.p;
-        const dist = Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]);
-        if (dist > 0.01) {
-          d.measures.push({ p1: q, p2: p, l1: d.pick.label, l2: atom.xl, d: dist });
-          if (d.measures.length > 6) d.measures.shift();
+      // clicking a picked atom again takes it back; otherwise it joins the chain
+      const again = d.picks.findIndex((a) => Math.hypot(a.p[0] - p[0], a.p[1] - p[1], a.p[2] - p[2]) < 0.01);
+      if (again >= 0) d.picks.splice(again, 1);
+      else d.picks.push({ p, label: atom.xl });
+      if (d.picks.length >= MEASURE[st.measure].n) {
+        const pts = d.picks.map((a) => a.p);
+        const value = st.measure === 'dist' ? C.distance(pts[0], pts[1]) : st.measure === 'angle' ? C.bondAngle(pts[0], pts[1], pts[2]) : C.torsion(pts[0], pts[1], pts[2], pts[3]);
+        if (isFinite(value)) {
+          d.measures.push({ type: st.measure, pts, labels: d.picks.map((a) => a.label), value });
+          if (d.measures.length > 8) d.measures.shift();
         }
-        d.pick = null;
+        d.picks = [];
       }
       render(true);
       drawReadout(describe(atom));
@@ -1093,6 +1195,177 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
     $('styleST').setAttribute('aria-pressed', String(s === 'st'));
     render(true);
   }
+  function setMeasure(kind) {
+    st.measure = kind;
+    $('measDist').setAttribute('aria-pressed', String(kind === 'dist'));
+    $('measAngle').setAttribute('aria-pressed', String(kind === 'angle'));
+    $('measTors').setAttribute('aria-pressed', String(kind === 'tors'));
+    $('measHint').textContent = MEASURE[kind].hint;
+    const d = D();
+    if (d) { d.picks = []; render(true); }
+  }
+  /* ---------- export ---------- */
+  function saveAs(href, filename) {
+    const a = document.createElement('a');
+    a.href = href;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+  const fileStem = (d) => d.name.replace(/[^A-Za-z0-9._()+-]+/g, '_') || 'structure';
+  /* the picture as shown, redrawn on a larger canvas for the 2x and 4x sizes */
+  function exportPng() {
+    const d = D();
+    if (!viewer || !d) return;
+    const gl = $('gl');
+    const w = gl.clientWidth, h = gl.clientHeight;
+    // keep the canvas inside what the graphics card can draw, or the picture comes out cut or stretched
+    let k = Math.max(1, parseInt($('pngScale').value, 10) || 1);
+    const asked = k;
+    try {
+      const cv = viewer.getCanvas();
+      k = Math.max(1, Math.min(k, Math.floor(10 * MAX_IMAGE_SIDE / (Math.max(w, h) * (cv.width / w))) / 10));
+    } catch (err) { /* canvas size unknown: try the size that was asked for */ }
+    const view = viewer.getView();
+    let uri = null;
+    try {
+      if (k > 1) { gl.style.inset = 'auto'; gl.style.left = '0'; gl.style.top = '0'; gl.style.width = (w * k) + 'px'; gl.style.height = (h * k) + 'px'; viewer.resize(); }
+      st.px = k;
+      st.clear = $('pngClear').checked;
+      render(true);
+      viewer.setView(view);
+      viewer.render();
+      uri = viewer.pngURI();
+    } catch (err) { uri = null; }
+    st.px = 1;
+    st.clear = false;
+    if (k > 1) { gl.style.inset = ''; gl.style.left = ''; gl.style.top = ''; gl.style.width = ''; gl.style.height = ''; viewer.resize(); }
+    render(true);
+    viewer.setView(view);
+    viewer.render();
+    if (uri) {
+      st.notice = k < asked ? 'Saved at ' + k + '×, the largest picture this browser can draw at this window size.' : '';
+      saveAs(uri, fileStem(d) + '.png');
+    } else { st.notice = 'The image could not be made in this browser. Try the 1× size.'; }
+    drawReadout();
+  }
+  /* the same scene as a vector drawing: 3D items for C.toSvg, projected with the current view */
+  function exportSvg() {
+    const d = D();
+    if (!viewer || !d) return;
+    const persp = $('chkPersp').checked;
+    if (persp) { viewer.setProjection('orthographic'); viewer.render(); }
+    const rect = $('gl').getBoundingClientRect();
+    const de = document.documentElement;
+    const ox = rect.left + window.pageXOffset - de.clientLeft, oy = rect.top + window.pageYOffset - de.clientTop;
+    const S = (p) => { const q = viewer.modelToScreen({ x: p[0], y: p[1], z: p[2] }); return [q.x - ox, q.y - oy]; };
+    // the orthographic view is a linear map: three unit steps from the origin give it exactly
+    const o = S([0, 0, 0]), ex = S([1, 0, 0]), ey = S([0, 1, 0]), ez = S([0, 0, 1]);
+    const M = [[ex[0] - o[0], ey[0] - o[0], ez[0] - o[0]], [ex[1] - o[1], ey[1] - o[1], ez[1] - o[1]]];
+    if (persp) { viewer.setProjection('perspective'); viewer.render(); }
+    const scale = Math.hypot(M[0][0], M[0][1], M[0][2]);
+    // direction to the viewer: screen right x screen up (the screen y axis points down)
+    const zdir = [M[0][1] * -M[1][2] - M[0][2] * -M[1][1], M[0][2] * -M[1][0] - M[0][0] * -M[1][2], M[0][0] * -M[1][1] - M[0][1] * -M[1][0]];
+    const tint = (hex) => '#' + [1, 3, 5].map((k) => { const v = parseInt(hex.slice(k, k + 2), 16); return Math.round(v + (255 - v) * 0.4).toString(16).padStart(2, '0'); }).join('');
+    if (!isFinite(scale) || scale <= 0) { st.notice = 'The drawing could not be made in this browser.'; drawReadout(); return; }
+
+    const uc = d.uc;
+    const blk = C.assemble(uc, d.lo, d.hi);
+    const ink = cssVar('--ink'), muted = cssVar('--muted'), accent = cssVar('--accent'), panel = cssVar('--panel');
+    const vdw = (el) => (window.$3Dmol && $3Dmol.GLModel && $3Dmol.GLModel.vdwRadii && $3Dmol.GLModel.vdwRadii[el]) || 1.7;
+    const sphere = (el) => {
+      if (st.style === 'sf') return vdw(el);
+      if (st.style === 'st') return C.isMetal(el) ? 0.3 : C.HALIDE.has(el) ? 0.2 : 0.13;
+      return C.isMetal(el) ? 0.55 : C.HALIDE.has(el) ? 0.42 : el === 'H' ? 0.16 : 0.3;
+    };
+    const stick = (el) => (st.style === 'st' ? 0.13 : el === 'H' ? 0.07 : 0.1);
+    const items = [];
+    const mid = (p, q) => [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2, (p[2] + q[2]) / 2];
+    blk.atoms.forEach((a) => {
+      if (!isVisible(a)) return;
+      const color = colorOf(a.el);
+      items.push({ t: 'atom', p: a.xyz, r: sphere(a.el), color, el: a.el });
+      if (st.style === 'sf') return;
+      for (const j of a.bonds) if (isVisible(blk.atoms[j])) items.push({ t: 'bond', p: a.xyz, q: mid(a.xyz, blk.atoms[j].xyz), r: stick(a.el), color });
+    });
+    if (st.poly && st.inorg && st.style !== 'sf') {
+      for (const pl of blk.polyhedra) {
+        const pts = pl.verts.map((i) => blk.atoms[i].xyz);
+        const color = colorOf(blk.atoms[pl.center].el);
+        // only the faces turned to the viewer, in a lighter tint: stacked translucent faces would add up to a dark block
+        const cen = pts.reduce((t, q) => [t[0] + q[0], t[1] + q[1], t[2] + q[2]], [0, 0, 0]).map((x) => x / pts.length);
+        for (const f of C.hullPolygons(pts)) {
+          const fp = f.map((k) => pts[k]);
+          const fc = fp.reduce((t, q) => [t[0] + q[0], t[1] + q[1], t[2] + q[2]], [0, 0, 0]).map((x) => x / fp.length);
+          if ((fc[0] - cen[0]) * zdir[0] + (fc[1] - cen[1]) * zdir[1] + (fc[2] - cen[2]) * zdir[2] < -1e-6) continue;
+          items.push({ t: 'face', pts: fp, color: tint(color), opacity: 0.34, cls: 'polyhedron' });
+        }
+      }
+    }
+    const text = (p, str, size, color, bg, bgOpacity, cls) => items.push({ t: 'text', p, text: str, size, color, bg, bgOpacity, cls });
+    if (st.cellBox && !uc.meta.molecular) {
+      const c = uc.cell;
+      const P = (i, j, k) => [i * c.A[0] + j * c.B[0] + k * c.C[0], i * c.A[1] + j * c.B[1] + k * c.C[1], i * c.A[2] + j * c.B[2] + k * c.C[2]];
+      const edges = [];
+      for (let u = 0; u < 2; u++) for (let v = 0; v < 2; v++) edges.push([P(0, u, v), P(1, u, v)], [P(u, 0, v), P(u, 1, v)], [P(u, v, 0), P(u, v, 1)]);
+      // each edge in six pieces, so a long edge is sorted in depth piece by piece
+      for (const [p, q] of edges) for (let k = 0; k < 6; k++) {
+        const at = (t) => [0, 1, 2].map((i) => p[i] + (q[i] - p[i]) * t);
+        items.push({ t: 'line', p: at(k / 6), q: at((k + 1) / 6), w: Math.max(0.6, 0.07 * scale), color: muted, cls: 'cell' });
+      }
+      // the origin first: an axis seen end-on then shows its letter, as on the screen
+      text(P(0, 0, 0), '0', 14, ink, panel, 0.85, 'axis');
+      text(P(1, 0, 0), 'a', 14, ink, panel, 0.85, 'axis');
+      text(P(0, 1, 0), 'b', 14, ink, panel, 0.85, 'axis');
+      text(P(0, 0, 1), 'c', 14, ink, panel, 0.85, 'axis');
+    }
+    if (st.hb && st.style !== 'sf') {
+      for (const h of blk.hbonds) {
+        if (!isVisible(blk.atoms[h.d]) || !isVisible(blk.atoms[h.a])) continue;
+        const from = st.H && h.h >= 0 ? blk.atoms[h.h] : blk.atoms[h.d];
+        items.push({ t: 'line', p: from.xyz, q: blk.atoms[h.a].xyz, w: 0.1 * scale, color: accent, dash: [0.16 * scale, 0.2 * scale], cls: 'hbond' });
+      }
+    }
+    for (const p of d.planes) {
+      const res = C.planePolys(uc.cell, p.hkl, p.off, d.lo, d.hi, MAX_PLANES);
+      for (const poly of res.polys) items.push({ t: 'face', pts: poly.pts, color: p.color, opacity: 0.3, cls: 'plane' });
+    }
+    for (const c of d.chromos) {
+      const active = c.states.filter((s) => s.on);
+      if (!active.length || !c.inst.length) continue;
+      for (const m of blk.mols) for (const inst of c.inst) {
+        if (inst.mi !== m.mi) continue;
+        const cen = uc.cell.toCart([inst.f[0] + m.t[0], inst.f[1] + m.t[1], inst.f[2] + m.t[2]]);
+        for (const s of active) {
+          const v = C.stateDir(inst, s);
+          for (const sgn of [1, -1]) items.push({ t: 'arrow', p: cen, q: [0, 1, 2].map((k) => cen[k] + sgn * st.arrow * v[k]), r: 0.13, color: s.color });
+        }
+      }
+    }
+    for (const m of d.measures) {
+      for (let k = 0; k + 1 < m.pts.length; k++) items.push({ t: 'line', p: m.pts[k], q: m.pts[k + 1], w: Math.max(0.6, 0.08 * scale), color: ink, dash: [0.12 * scale, 0.18 * scale], cls: 'measure' });
+      const at = m.type === 'dist' ? mid(m.pts[0], m.pts[1]) : m.type === 'angle' ? m.pts[1] : mid(m.pts[1], m.pts[2]);
+      text(at, measureValueText(m), 13, panel, ink, 0.9, 'measure');
+    }
+    if (st.labels !== 'off') {
+      for (const a of blk.atoms) if (isVisible(a) && (st.labels === 'all' || a.el !== 'H')) text(a.xyz, a.label, 11, ink, panel, 0.55, 'atom-label');
+    }
+    const svg = C.toSvg({ width: rect.width, height: rect.height, M, b: o, items, title: d.name, shaded: $('svgShade').value === 'shaded',
+      background: $('pngClear').checked ? null : cssVar('--stage') });
+    const url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
+    saveAs(url, fileStem(d) + '.svg');
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  }
+  function exportMol2() {
+    const d = D();
+    if (!d) return;
+    const blk = C.assemble(d.uc, d.lo, d.hi);
+    const text = C.toMol2(blk.atoms, d.uc.cell, d.name, isVisible);
+    const url = URL.createObjectURL(new Blob([text], { type: 'chemical/x-mol2' }));
+    saveAs(url, fileStem(d) + '.mol2');
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  }
   function readFiles(files) {
     const arr = Array.from(files || []);
     if (!arr.length) return;
@@ -1118,19 +1391,28 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
       } catch (err) { viewer = null; }
       if (!viewer) libMsg = 'This browser could not start WebGL, so structures cannot be drawn. The tables are still computed from each CIF.';
     }
-    if (libMsg) $('stageMsg').innerHTML = '<strong>Drop CIF files here</strong><p>' + libMsg + '</p>';
+    if (libMsg) $('stageMsg').innerHTML = '<strong>Drop structure files here</strong><p>' + libMsg.replace(/each CIF/, 'each file') + '</p>';
     activate(-1);
 
     $('styleBS').onclick = () => setStyle('bs');
     $('styleSF').onclick = () => setStyle('sf');
     $('styleST').onclick = () => setStyle('st');
+    $('measDist').onclick = () => setMeasure('dist');
+    $('measAngle').onclick = () => setMeasure('angle');
+    $('measTors').onclick = () => setMeasure('tors');
+    $('selLabels').onchange = (e) => { st.labels = e.target.value; render(true); };
+    $('btnPng').onclick = exportPng;
+    $('btnMol2').onclick = exportMol2;
+    $('btnSvg').onclick = exportSvg;
+    $('btnPng').disabled = !viewer;
+    $('btnSvg').disabled = !viewer;
     const bind = (id, key) => { $(id).onchange = (e) => { st[key] = e.target.checked; render(true); }; };
     bind('chkPoly', 'poly'); bind('chkCell', 'cellBox'); bind('chkH', 'H'); bind('chkHB', 'hb'); bind('chkOrg', 'org'); bind('chkInorg', 'inorg');
     $('chkPersp').onchange = (e) => { if (viewer) { viewer.setProjection(e.target.checked ? 'perspective' : 'orthographic'); viewer.render(); } };
     $('chkSpin').onchange = (e) => { if (viewer) viewer.spin(e.target.checked ? 'y' : false, 0.6); };
     $('chkMinor').onchange = (e) => {
       const d = D();
-      d.minor = e.target.checked; d.measures = []; d.pick = null;
+      d.minor = e.target.checked; d.measures = []; d.picks = [];
       rebuildCell(d);
       drawHeader(); drawSheet(); drawChromos(); drawCompare();
       render(true);
@@ -1262,7 +1544,7 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
     $('readout').onclick = (e) => {
       const id = e.target.id;
       const d = D();
-      if (id === 'btnClear') { d.measures = []; d.pick = null; render(true); }
+      if (id === 'btnClear') { d.measures = []; d.picks = []; render(true); }
       if (id === 'pickNext') { st.picking.step = 2; render(true); }
       if (id === 'pickDone') finishPicking();
       if (id === 'pickCancel') { st.picking = null; st.notice = ''; render(true); }
@@ -1305,10 +1587,10 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
 
     // feedback box: a note goes straight to the maintainer through Formspree, or opens as a pre-filled GitHub issue
     const FORMSPREE = 'https://formspree.io/f/mnnvojry';
-    const ISSUES = 'https://github.com/Wenhao-Shao/perovskite-workbench/issues/new';
+    const ISSUES = 'https://github.com/Wenhao-Shao/Crysta/issues/new';
     const fbUrl = () => {
       const title = '[' + $('fbKind').value + '] ' + $('fbSummary').value.trim();
-      const tail = '\n\n---\nSent from the workbench feedback box\nWorkbench __VERSION__\nBrowser: ' + navigator.userAgent;
+      const tail = '\n\n---\nSent from the __NAME__ feedback box\n__NAME__ __VERSION__\nBrowser: ' + navigator.userAgent;
       let details = $('fbDetails').value.trim() || '(no details given)';
       const make = (d) => ISSUES + '?title=' + encodeURIComponent(title) + '&body=' + encodeURIComponent(d + tail);
       let url = make(details);
@@ -1352,7 +1634,7 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
       const summary = $('fbSummary').value.trim();
       const email = $('fbEmail').value.trim();
       const data = new FormData();
-      data.append('_subject', 'Workbench feedback: [' + kind + '] ' + summary);
+      data.append('_subject', '__NAME__ feedback: [' + kind + '] ' + summary);
       data.append('type', kind);
       data.append('summary', summary);
       data.append('details', $('fbDetails').value.trim() || '(no details given)');
@@ -1384,6 +1666,6 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(retheme);
   }
   init();
-  window.perovskiteWorkbench = { state: st, viewer: () => viewer };
+  window.crysta = { state: st, viewer: () => viewer, addFiles };
 })();
 </script>

@@ -1,0 +1,18 @@
+data_prussian_blue_type
+_symmetry_space_group_name_H-M 'F m -3 m'
+_cell_length_a 10.20
+_cell_length_b 10.20
+_cell_length_c 10.20
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+loop_
+_atom_site_label
+_atom_site_type_symbol
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Fe1 Fe 0 0 0
+Fe2 Fe 0.5 0 0
+C1 C 0.188 0 0
+N1 N 0.301 0 0
