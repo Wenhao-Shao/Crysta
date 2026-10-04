@@ -1,0 +1,86 @@
+# Roadmap
+
+The goal: a free crystal-structure viewer and analysis page that runs in a browser with nothing to
+install, for crystals in general, with the 2D perovskite analysis kept as a built-in module.
+
+Status marks: **done** (released), **next** (agreed, not started), **later** (agreed to wait),
+**open** (needs a decision).
+
+## 1. Correctness for any crystal
+
+| Item | Status |
+|---|---|
+| Full periodic table for radii and masses, H to Cm | done, v0.2.0 |
+| A visible warning for every atom site that cannot be read | done, v0.2.0 |
+| Regression tests per crystal class (oxide, sulfide, alkali halide, element, covalent network, molecular crystal, complex, linker framework) | done, v0.2.0 |
+| Tests on real deposited CIFs of each class, beyond the constructed files | next |
+| Metal hydrides: H is never taken as a ligand | later |
+| Metal-metal bonds (elements, alloys, clusters) are not drawn | later |
+
+## 2. General bonding and frameworks
+
+| Item | Status |
+|---|---|
+| Metals bond to any non-metal donor (O, S, N, C, halides, ...) | done, v0.2.0 |
+| Polyhedra for any metal centre with 4 to 8 neighbours | done, v0.2.0 |
+| Covalent networks (diamond, quartz, graphite) drawn atom by atom, with SiO4/BO4/PO4 polyhedra | done, v0.2.0 |
+| Dimensionality from the whole bond graph, through molecular linkers (MOF-type frameworks) | done, v0.2.0 |
+| Molecular complexes and clusters drawn as whole units | done, v0.2.0 |
+| Alkali ions as polyhedron centres when they are the only metals (NaCl) | done, v0.2.0 |
+| Choose which elements get polyhedra and bonds (A-site ions in oxide perovskites, CN above 8) | next |
+| Editable bond cutoffs per element pair | next |
+| Polyhedra around P and S inside molecular oxyanions (PO4 in LiFePO4, SO4) | later |
+
+## 3. Perovskite analysis as a module
+
+| Item | Status |
+|---|---|
+| Layer descriptors run only when a 2D halide-bridged framework is found | done, v0.2.0 |
+| All 2D perovskite numbers unchanged from v0.1.5 (checked on six structures) | done, v0.2.0 |
+| Choose a disorder component other than the major one | next |
+| Quasi-2D (n > 1) checked on real structures | next |
+
+## 4. Viewer features
+
+| Item | Status |
+|---|---|
+| Angle and torsion measurement | done, v0.2.0 |
+| Atom labels | done, v0.2.0 |
+| PNG export, 1x to 4x, optional transparent background | done, v0.2.0 |
+| mol2 export of the shown block | done, v0.2.0 |
+| Input beyond CIF: SHELX .res/.ins, POSCAR/CONTCAR, XYZ | done, v0.2.0 |
+| SVG export | open, see below |
+| Structure export beyond mol2 (CIF, XYZ, POSCAR) | later |
+| Thermal ellipsoids from the anisotropic displacement parameters | later |
+| Simulated powder XRD pattern | later |
+| Symmetry elements, voids, contacts shorter than van der Waals | later |
+| Bond orders and aromatic rings in the mol2 file | later |
+
+### SVG export: options to decide
+
+1. **True vector drawing (recommended).** A second, small renderer that projects the current view:
+   atoms as circles, bonds as tapered strokes, polyhedra as translucent polygons, cell edges and
+   labels as lines and text, sorted back to front. Every object stays editable in Illustrator or
+   Inkscape and text stays text. Limit: objects that cross each other in depth are approximated,
+   because a vector file has no depth buffer. This is how Mercury and ChemDraw-style vector output works.
+2. **PNG wrapped in SVG.** The rendered picture inside an SVG file, with labels and the cell as real
+   vector objects on top. Quick, looks identical to the screen, but the atoms are not editable.
+3. **Both**, with a switch.
+
+Decisions needed for option 1: flat colour or a radial highlight on atoms; outline on or off;
+whether hydrogen bonds, lattice planes and dipole arrows are included in the first version.
+
+## 5. Name, release and promotion
+
+| Item | Status |
+|---|---|
+| General name in the page, set in one place (`displayName` in `package.json`) | done, v0.2.0 (working title "Crystal Workbench") |
+| Final name, and whether to rename the repository and the published address | open |
+| Update the tab on the lab website to the new name | next |
+| Citable release with a DOI (Zenodo) and a "how to cite" line in the page | next |
+| Short user guide with screenshots | next |
+| Comparison table against VESTA, Mercury and CrystalMaker, stating honestly what is and is not covered | next |
+
+Positioning: VESTA and the basic Mercury are already free, so the claim is not "free". It is
+"nothing to install, runs in the browser, the file never leaves the computer, with built-in analysis
+of hybrid and layered structures".

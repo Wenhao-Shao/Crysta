@@ -1,7 +1,9 @@
 {
   "name": "perovskite-workbench",
-  "version": "0.1.5",
-  "description": "Browser tool for layered metal-halide perovskite CIFs: 3D view, layer descriptors, transition-dipole axes, multi-structure comparison",
+  "displayName": "Crystal Workbench",
+  "tagline": "Crystal structures in the browser: view, measure, export",
+  "version": "0.2.0",
+  "description": "Browser tool for crystal structures: 3D view, bonding and frameworks, measurements, image and mol2 export, with 2D perovskite layer descriptors, transition-dipole axes and multi-structure comparison",
   "license": "MIT",
   "private": true,
   "scripts": {

@@ -3,36 +3,53 @@
 (function (root) {
   'use strict';
 
-  // Covalent radii (Cordero et al., Dalton Trans. 2008), in angstrom
+  // Covalent radii (Cordero et al., Dalton Trans. 2008), in angstrom, H to Cm
   const RC = {
-    H: 0.31, D: 0.31, He: 0.28, Li: 1.28, Be: 0.96, B: 0.84, C: 0.76, N: 0.71, O: 0.66, F: 0.57,
-    Na: 1.66, Mg: 1.41, Al: 1.21, Si: 1.11, P: 1.07, S: 1.05, Cl: 1.02, K: 2.03, Ca: 1.76,
+    H: 0.31, D: 0.31, He: 0.28, Li: 1.28, Be: 0.96, B: 0.84, C: 0.76, N: 0.71, O: 0.66, F: 0.57, Ne: 0.58,
+    Na: 1.66, Mg: 1.41, Al: 1.21, Si: 1.11, P: 1.07, S: 1.05, Cl: 1.02, Ar: 1.06, K: 2.03, Ca: 1.76,
     Sc: 1.70, Ti: 1.60, V: 1.53, Cr: 1.39, Mn: 1.39, Fe: 1.32, Co: 1.26, Ni: 1.24, Cu: 1.32,
-    Zn: 1.22, Ga: 1.22, Ge: 1.20, As: 1.19, Se: 1.20, Br: 1.20, Rb: 2.20, Sr: 1.95, Y: 1.90,
-    Zr: 1.75, Nb: 1.64, Mo: 1.54, Ru: 1.46, Rh: 1.42, Pd: 1.39, Ag: 1.45, Cd: 1.44, In: 1.42,
-    Sn: 1.39, Sb: 1.39, Te: 1.38, I: 1.39, Cs: 2.44, Ba: 2.15, La: 2.07, Ce: 2.04, Eu: 1.98,
-    Gd: 1.96, Tb: 1.94, Yb: 1.87, Hf: 1.75, Ta: 1.70, W: 1.62, Re: 1.51, Os: 1.44, Ir: 1.41,
-    Pt: 1.36, Au: 1.36, Hg: 1.32, Tl: 1.45, Pb: 1.46, Bi: 1.48
+    Zn: 1.22, Ga: 1.22, Ge: 1.20, As: 1.19, Se: 1.20, Br: 1.20, Kr: 1.16, Rb: 2.20, Sr: 1.95, Y: 1.90,
+    Zr: 1.75, Nb: 1.64, Mo: 1.54, Tc: 1.47, Ru: 1.46, Rh: 1.42, Pd: 1.39, Ag: 1.45, Cd: 1.44, In: 1.42,
+    Sn: 1.39, Sb: 1.39, Te: 1.38, I: 1.39, Xe: 1.40, Cs: 2.44, Ba: 2.15, La: 2.07, Ce: 2.04, Pr: 2.03,
+    Nd: 2.01, Pm: 1.99, Sm: 1.98, Eu: 1.98, Gd: 1.96, Tb: 1.94, Dy: 1.92, Ho: 1.92, Er: 1.89, Tm: 1.90,
+    Yb: 1.87, Lu: 1.87, Hf: 1.75, Ta: 1.70, W: 1.62, Re: 1.51, Os: 1.44, Ir: 1.41, Pt: 1.36, Au: 1.36,
+    Hg: 1.32, Tl: 1.45, Pb: 1.46, Bi: 1.48, Po: 1.40, At: 1.50, Rn: 1.50, Fr: 2.60, Ra: 2.21, Ac: 2.15,
+    Th: 2.06, Pa: 2.00, U: 1.96, Np: 1.90, Pu: 1.87, Am: 1.80, Cm: 1.69
   };
+  // Standard atomic weights (IUPAC abridged); mass number of the longest-lived isotope where there is none
   const MASS = {
     H: 1.008, D: 2.014, He: 4.0026, Li: 6.94, Be: 9.0122, B: 10.81, C: 12.011, N: 14.007, O: 15.999,
-    F: 18.998, Na: 22.990, Mg: 24.305, Al: 26.982, Si: 28.085, P: 30.974, S: 32.06, Cl: 35.45,
-    K: 39.098, Ca: 40.078, Sc: 44.956, Ti: 47.867, V: 50.942, Cr: 51.996, Mn: 54.938, Fe: 55.845,
+    F: 18.998, Ne: 20.180, Na: 22.990, Mg: 24.305, Al: 26.982, Si: 28.085, P: 30.974, S: 32.06, Cl: 35.45,
+    Ar: 39.95, K: 39.098, Ca: 40.078, Sc: 44.956, Ti: 47.867, V: 50.942, Cr: 51.996, Mn: 54.938, Fe: 55.845,
     Co: 58.933, Ni: 58.693, Cu: 63.546, Zn: 65.38, Ga: 69.723, Ge: 72.630, As: 74.922, Se: 78.971,
-    Br: 79.904, Rb: 85.468, Sr: 87.62, Y: 88.906, Zr: 91.224, Nb: 92.906, Mo: 95.95, Ru: 101.07,
-    Rh: 102.91, Pd: 106.42, Ag: 107.87, Cd: 112.41, In: 114.82, Sn: 118.71, Sb: 121.76, Te: 127.60,
-    I: 126.90, Cs: 132.91, Ba: 137.33, La: 138.91, Ce: 140.12, Eu: 151.96, Gd: 157.25, Tb: 158.93,
-    Yb: 173.05, Hf: 178.49, Ta: 180.95, W: 183.84, Re: 186.21, Os: 190.23, Ir: 192.22, Pt: 195.08,
-    Au: 196.97, Hg: 200.59, Tl: 204.38, Pb: 207.2, Bi: 208.98
+    Br: 79.904, Kr: 83.798, Rb: 85.468, Sr: 87.62, Y: 88.906, Zr: 91.224, Nb: 92.906, Mo: 95.95, Tc: 97,
+    Ru: 101.07, Rh: 102.91, Pd: 106.42, Ag: 107.87, Cd: 112.41, In: 114.82, Sn: 118.71, Sb: 121.76,
+    Te: 127.60, I: 126.90, Xe: 131.29, Cs: 132.91, Ba: 137.33, La: 138.91, Ce: 140.12, Pr: 140.91,
+    Nd: 144.24, Pm: 145, Sm: 150.36, Eu: 151.96, Gd: 157.25, Tb: 158.93, Dy: 162.50, Ho: 164.93,
+    Er: 167.26, Tm: 168.93, Yb: 173.05, Lu: 174.97, Hf: 178.49, Ta: 180.95, W: 183.84, Re: 186.21,
+    Os: 190.23, Ir: 192.22, Pt: 195.08, Au: 196.97, Hg: 200.59, Tl: 204.38, Pb: 207.2, Bi: 208.98,
+    Po: 209, At: 210, Rn: 222, Fr: 223, Ra: 226, Ac: 227, Th: 232.04, Pa: 231.04, U: 238.03, Np: 237,
+    Pu: 244, Am: 243, Cm: 247
   };
   // Bondi van der Waals radii, used for hydrogen-bond cutoffs
   const VDW = { H: 1.20, N: 1.55, O: 1.52, F: 1.47, S: 1.80, Cl: 1.75, Br: 1.85, I: 1.98 };
-  const NONMETAL = new Set(['H', 'D', 'He', 'B', 'C', 'N', 'O', 'F', 'Si', 'P', 'S', 'Cl', 'As', 'Se', 'Br', 'Te', 'I']);
+  const NONMETAL = new Set(['H', 'D', 'He', 'B', 'C', 'N', 'O', 'F', 'Ne', 'Si', 'P', 'S', 'Cl', 'Ar', 'As', 'Se', 'Br', 'Kr', 'Te', 'I', 'Xe', 'At', 'Rn']);
   const HALIDE = new Set(['F', 'Cl', 'Br', 'I']);
-  const ALKALI = new Set(['Li', 'Na', 'K', 'Rb', 'Cs']);
+  const ALKALI = new Set(['Li', 'Na', 'K', 'Rb', 'Cs', 'Fr']);
+  const NOBLE = new Set(['He', 'Ne', 'Ar', 'Kr', 'Xe', 'Rn']);
   const isMetal = (el) => !NONMETAL.has(el);
-  /* metals that sit at the centre of a halide polyhedron; alkali ions are treated as A-site ions */
+  /* metals that sit at the centre of a coordination polyhedron by default. Alkali ions are treated as
+     free (A-site) ions unless they are the only metals with anions around them (NaCl, KBr). */
   const isCenter = (el) => isMetal(el) && !ALKALI.has(el);
+  /* atoms a metal centre can bond to: any non-metal except H and the noble gases */
+  const isDonor = (el) => NONMETAL.has(el) && el !== 'H' && el !== 'D' && !NOBLE.has(el);
+  /* extra length allowed on top of the covalent radii */
+  const TOL_COVALENT = 0.45, TOL_HALIDE = 0.75, TOL_DONOR = 0.5;
+  /* network formers that get a polyhedron inside a covalent network (SiO4 in quartz), and what may surround them */
+  const NET_CENTER = new Set(['B', 'Si', 'P', 'As']);
+  const NET_VERTEX = new Set(['O', 'N', 'F', 'S', 'Se', 'Cl']);
+  /* largest coordination number drawn as a polyhedron; larger shells (A-site cuboctahedra) only clutter */
+  const MAX_POLY_CN = 8;
 
   /* ---------- space-group operators from a Hall symbol ---------- */
   let SG_TABLE = {};
@@ -288,7 +305,7 @@
   }
 
   /* ---------- blocks -> structure ---------- */
-  function readStructure(text) {
+  function readCif(text) {
     const blocks = parseBlocks(text);
     let chosen = null;
     let siteLoop = null;
@@ -329,12 +346,13 @@
     const cX = col('_atom_site_fract_x'), cY = col('_atom_site_fract_y'), cZ = col('_atom_site_fract_z');
     const cO = col('_atom_site_occupancy'), cD = col('_atom_site_disorder_group'), cA = col('_atom_site_disorder_assembly');
     const sites = [];
+    const skipped = [];
     for (const r of siteLoop.rows) {
       const f = [parseFloat(r[cX]), parseFloat(r[cY]), parseFloat(r[cZ])];
-      if (f.some((x) => !isFinite(x))) continue;
       const label = cL >= 0 ? r[cL] : (cT >= 0 ? r[cT] : '?');
+      if (f.some((x) => !isFinite(x))) { skipped.push({ label, why: 'no coordinates' }); continue; }
       const el = elementOf(cT >= 0 ? r[cT] : null, label);
-      if (!el) continue;
+      if (!el) { skipped.push({ label, why: 'element not recognised' }); continue; }
       const occ = cO >= 0 && isFinite(parseFloat(r[cO])) ? parseFloat(r[cO]) : 1;
       let dg = cD >= 0 ? r[cD] : '.';
       if (dg === '?' || dg === '0' || dg === '') dg = '.';
@@ -370,9 +388,229 @@
       Z: pick('_cell_formula_units_z'),
       ccdc: pick('_database_code_depnum_ccdc_archive'),
       symSource,
-      cellRaw
+      cellRaw,
+      skipped,
+      format: 'CIF'
     };
     return { cell, ops, sites, meta };
+  }
+
+  /* ---------- other formats: each returns the same structure record as readCif ---------- */
+  const cellFromVectors = (A, B, C) => {
+    const ang = (u, v) => angleDeg(u, v);
+    return [norm(A), norm(B), norm(C), ang(B, C), ang(A, C), ang(A, B)];
+  };
+  const inv3 = (m) => {
+    const [a, b, c] = m;
+    const det = dot(a, cross(b, c));
+    const r = [cross(b, c), cross(c, a), cross(a, b)].map((v) => v.map((x) => x / det));
+    return [[r[0][0], r[1][0], r[2][0]], [r[0][1], r[1][1], r[2][1]], [r[0][2], r[1][2], r[2][2]]];
+  };
+  const plainMeta = (block, cellNum, format, extra) => Object.assign({
+    block, spaceGroup: null, sgNumber: null, crystalSystem: null, temperature: null, R1: null, Z: null, ccdc: null,
+    symSource: 'p1', cellRaw: cellNum.map((x, i) => (i < 3 ? x.toFixed(4) : x.toFixed(3))), skipped: [], format
+  }, extra || {});
+  const plainSite = (label, el, f, occ) => ({ label, el, f, occ: occ === undefined ? 1 : occ, dg: '.', asm: '.', minor: false, symdis: false });
+
+  /* VASP POSCAR / CONTCAR (version 5: with a line of element symbols) */
+  function readPoscar(text) {
+    const L = text.split(/\r?\n/);
+    const nums = (line) => line.trim().split(/\s+/).map(parseFloat);
+    let scale = parseFloat(L[1]);
+    let vec = [nums(L[2]), nums(L[3]), nums(L[4])].map((v) => v.slice(0, 3));
+    if (!isFinite(scale) || vec.some((v) => v.length < 3 || v.some((x) => !isFinite(x)))) throw new Error('The lattice vectors of this POSCAR file are unreadable.');
+    if (scale < 0) scale = Math.cbrt(-scale / Math.abs(dot(vec[0], cross(vec[1], vec[2]))));
+    vec = vec.map((v) => v.map((x) => x * scale));
+    const names = L[5].trim().split(/\s+/);
+    if (names.every((t) => /^\d+$/.test(t))) throw new Error('This POSCAR file has no line of element symbols (VASP 4 format). Add the symbols above the atom counts.');
+    const counts = L[6].trim().split(/\s+/).map((t) => parseInt(t, 10));
+    let row = 7;
+    if (/^s/i.test(L[row].trim())) row++;
+    const cart = /^[ck]/i.test(L[row].trim());
+    row++;
+    const cellNum = cellFromVectors(vec[0], vec[1], vec[2]);
+    const cell = makeCell(...cellNum);
+    const iv = inv3(vec);
+    const sites = [];
+    const skipped = [];
+    names.forEach((nm, k) => {
+      const el = elementOf(nm.replace(/[_/].*$/, ''), null);
+      for (let n = 0; n < (counts[k] || 0); n++, row++) {
+        const v = nums(L[row] || '').slice(0, 3);
+        const label = nm + (n + 1);
+        if (v.length < 3 || v.some((x) => !isFinite(x))) { skipped.push({ label, why: 'no coordinates' }); continue; }
+        if (!el) { skipped.push({ label, why: 'element not recognised' }); continue; }
+        const c = cart ? v.map((x) => x * scale) : null;
+        const f = cart ? [0, 1, 2].map((j) => c[0] * iv[0][j] + c[1] * iv[1][j] + c[2] * iv[2][j]) : v;
+        sites.push(plainSite(label, el, f));
+      }
+    });
+    if (!sites.length) throw new Error('No atoms were found in this POSCAR file.');
+    const meta = plainMeta(L[0].trim() || 'POSCAR', cellNum, 'POSCAR');
+    meta.skipped = skipped;
+    return { cell, ops: [parseSymop('x,y,z')], sites, meta };
+  }
+
+  /* XYZ. With a Lattice="..." entry on the comment line (extended XYZ) the cell is used; without one the
+     molecule is put in a box of its own, 12 A larger than the molecule, and flagged as having no lattice. */
+  function readXyz(text) {
+    const L = text.split(/\r?\n/);
+    const n = parseInt(L[0], 10);
+    if (!(n > 0)) throw new Error('The first line of an XYZ file has to be the number of atoms.');
+    const raw = [];
+    const skipped = [];
+    for (let k = 0; k < n; k++) {
+      const t = (L[2 + k] || '').trim().split(/\s+/);
+      const xyz = t.slice(1, 4).map(parseFloat);
+      const el = elementOf(t[0], null);
+      if (xyz.length < 3 || xyz.some((x) => !isFinite(x))) { skipped.push({ label: t[0] || '?', why: 'no coordinates' }); continue; }
+      if (!el) { skipped.push({ label: t[0], why: 'element not recognised' }); continue; }
+      raw.push({ el, xyz });
+    }
+    if (!raw.length) throw new Error('No atoms were found in this XYZ file.');
+    const lm = (L[1] || '').match(/lattice\s*=\s*"([^"]+)"/i);
+    let vec = null;
+    if (lm) {
+      const v = lm[1].trim().split(/\s+/).map(parseFloat);
+      if (v.length === 9 && v.every(isFinite)) vec = [v.slice(0, 3), v.slice(3, 6), v.slice(6, 9)];
+    }
+    let origin = [0, 0, 0];
+    const molecular = !vec;
+    if (!vec) {
+      const lo = [0, 1, 2].map((k) => Math.min(...raw.map((a) => a.xyz[k])));
+      const hi = [0, 1, 2].map((k) => Math.max(...raw.map((a) => a.xyz[k])));
+      const side = hi.map((x, k) => x - lo[k] + 12);
+      vec = [[side[0], 0, 0], [0, side[1], 0], [0, 0, side[2]]];
+      origin = lo.map((x) => x - 6);
+    }
+    const cellNum = cellFromVectors(vec[0], vec[1], vec[2]);
+    const cell = makeCell(...cellNum);
+    const iv = inv3(vec);
+    const count = {};
+    const sites = raw.map((a) => {
+      const c = sub(a.xyz, origin);
+      count[a.el] = (count[a.el] || 0) + 1;
+      return plainSite(a.el + count[a.el], a.el, [0, 1, 2].map((j) => c[0] * iv[0][j] + c[1] * iv[1][j] + c[2] * iv[2][j]));
+    });
+    const meta = plainMeta('xyz', cellNum, 'XYZ', { molecular });
+    meta.skipped = skipped;
+    return { cell, ops: [parseSymop('x,y,z')], sites, meta };
+  }
+
+  /* SHELX .res / .ins: CELL, LATT, SYMM, SFAC, FVAR, PART and the atom lines */
+  const SHELX_WORDS = new Set(('ABIN ACTA AFIX ANIS ANSC ANSR BASF BIND BLOC BOND BUMP CELL CGLS CHIV CONF CONN DAMP DANG DEFS DELU DFIX DISP EADP END EQIV EXTI EXYZ FEND FLAT FMAP FRAG FREE FVAR GRID HFIX HKLF HTAB ISOR LATT LAUE LIST L.S. MERG MORE MOVE MPLA NCSY NEUT OMIT PART PLAN PRIG REM RESI RIGU RTAB SADI SAME SFAC SHEL SIMU SIZE SPEC STIR SUMP SWAT SYMM TEMP TITL TWIN TWST UNIT WGHT WIGL WPDB XNPD ZERR').split(' '));
+  function readShelx(text) {
+    // join continuation lines (a trailing "=")
+    const L = [];
+    let carry = '';
+    for (const ln of text.split(/\r?\n/)) {
+      const t = carry + ln;
+      if (/=\s*$/.test(t)) { carry = t.replace(/=\s*$/, ' '); continue; }
+      carry = '';
+      L.push(t);
+    }
+    let cellNum = null, latt = 1, title = 'shelx', part = 0, partOcc = null;
+    const symm = [];
+    let sfac = [];
+    let fvar = [];
+    const sites = [];
+    const skipped = [];
+    for (const ln of L) {
+      if (!ln.trim() || ln[0] === ' ' || ln[0] === '!') continue;
+      const t = ln.trim().split(/\s+/);
+      const key = t[0].toUpperCase();
+      const word = key.slice(0, 4);
+      if (word === 'TITL') { title = ln.trim().slice(4).trim() || title; continue; }
+      if (word === 'CELL') { cellNum = t.slice(2, 8).map(parseFloat); continue; }
+      if (word === 'LATT') { latt = parseInt(t[1], 10) || 1; continue; }
+      if (word === 'SYMM') { const o = parseSymop(ln.trim().slice(4)); if (o) symm.push(o); continue; }
+      if (word === 'SFAC') {
+        // short form lists the elements; long form is one element followed by its scattering factors
+        if (t.length > 2 && isFinite(parseFloat(t[2]))) sfac.push(t[1]); else sfac = sfac.concat(t.slice(1));
+        continue;
+      }
+      if (word === 'FVAR') { fvar = fvar.concat(t.slice(1).map(parseFloat)); continue; }
+      if (word === 'PART') { part = parseInt(t[1], 10) || 0; partOcc = t[2] !== undefined ? parseFloat(t[2]) : null; continue; }
+      if (word === 'HKLF' || key === 'END') break;
+      if (SHELX_WORDS.has(word) || SHELX_WORDS.has(key) || /^REM/.test(key)) continue;
+      // atom line: name sfac x y z sof ...
+      const k = parseInt(t[1], 10);
+      const f = t.slice(2, 5).map(parseFloat);
+      if (!(k >= 1) || f.length < 3) continue;
+      // SHELX fixes a parameter by adding 10: remove that from the coordinates
+      const xyz = f.map((x) => (Math.abs(x) > 5 ? x - 10 * Math.sign(x) : x));
+      const el = elementOf(sfac[k - 1] || null, t[0]);
+      if (xyz.some((x) => !isFinite(x))) { skipped.push({ label: t[0], why: 'no coordinates' }); continue; }
+      if (!el) { skipped.push({ label: t[0], why: 'element not recognised' }); continue; }
+      let sof = t[5] !== undefined ? parseFloat(t[5]) : 11;
+      if (partOcc !== null && isFinite(partOcc)) sof = partOcc;
+      let occ = 1;
+      if (isFinite(sof)) {
+        const m = Math.round(Math.abs(sof) / 10);
+        const rest = Math.abs(sof) - 10 * m;
+        if (m <= 1) occ = rest;                                  // fixed (10 + occ) or free (occ)
+        else if (fvar[m - 1] !== undefined) occ = sof > 0 ? rest * fvar[m - 1] : rest * (1 - fvar[m - 1]);
+        else occ = rest;
+      }
+      const st = plainSite(t[0], el, xyz, occ);
+      st.siteOcc = true;                                         // SHELX occupancies include the site multiplicity
+      if (part !== 0) { st.dg = String(part); st.symdis = part < 0; }
+      sites.push(st);
+    }
+    if (!cellNum || cellNum.length < 6 || cellNum.some((x) => !isFinite(x))) throw new Error('No CELL line was found in this SHELX file.');
+    if (!sites.length) throw new Error('No atoms were found in this SHELX file.');
+    const cell = makeCell(...cellNum);
+    // symmetry: the listed operators, the identity, an inversion centre when LATT > 0, and the lattice centring
+    let ops = [parseSymop('x,y,z')].concat(symm);
+    if (latt > 0) ops = ops.concat(ops.map((o) => ({ R: o.R.map((r) => r.map((x) => -x)), T: o.T.map((x) => -x) })));
+    const centring = { 1: 'P', 2: 'I', 3: 'R', 4: 'F', 5: 'A', 6: 'B', 7: 'C' }[Math.abs(latt)] || 'P';
+    const full = [];
+    for (const tr of HALL_LATT[centring]) for (const o of ops) full.push({ R: o.R, T: o.T.map((x, i) => x + tr[i]) });
+    // occupancy: SHELX stores occupancy x (site multiplicity / general multiplicity); undo that from the number of copies
+    const tmp = { cell, ops: full, sites };
+    for (const st of sites) {
+      let copies = 0;
+      const seen = [];
+      for (const op of full) {
+        const g = [0, 1, 2].map((r) => mod1(op.R[r][0] * st.f[0] + op.R[r][1] * st.f[1] + op.R[r][2] * st.f[2] + op.T[r]));
+        if (!seen.some((h) => norm(cell.toCart([0, 1, 2].map((i) => { const d = h[i] - g[i]; return d - Math.round(d); }))) < 0.15)) { seen.push(g); copies++; }
+      }
+      st.occ = Math.min(1, st.occ * full.length / copies);
+      delete st.siteOcc;
+    }
+    // major part of each disorder assembly, as for CIF
+    const groups = new Map();
+    for (const st of sites) {
+      if (st.dg === '.') continue;
+      const g = groups.get(st.dg) || { sum: 0, n: 0 };
+      g.sum += st.occ; g.n++;
+      groups.set(st.dg, g);
+    }
+    let best = null;
+    for (const [dg, g] of groups) if (!best || g.sum / g.n > best.mean + 1e-6) best = { dg, mean: g.sum / g.n };
+    for (const st of sites) if (st.dg !== '.' && best && st.dg !== best.dg && !st.symdis) st.minor = true;
+    const meta = plainMeta(title.split(/\s+/)[0] || 'shelx', cellNum, 'SHELX', { symSource: 'listed' });
+    meta.cellRaw = cellNum.map(String);
+    meta.skipped = skipped;
+    return { cell: tmp.cell, ops: full, sites, meta };
+  }
+
+  /* pick the reader from the file name, falling back on the content */
+  function readStructure(text, name) {
+    const ext = (String(name || '').match(/\.([A-Za-z0-9]+)$/) || [])[1];
+    const e = ext ? ext.toLowerCase() : '';
+    const base = String(name || '').replace(/^.*[\\/]/, '').toUpperCase();
+    if (e === 'res' || e === 'ins') return readShelx(text);
+    if (e === 'xyz' || e === 'extxyz') return readXyz(text);
+    if (e === 'vasp' || e === 'poscar' || /^(POSCAR|CONTCAR)/.test(base)) return readPoscar(text);
+    if (/^\s*(#|data_)/m.test(text) && /_atom_site_fract_x/.test(text)) return readCif(text);
+    if (/^\s*CELL\s+[\d.]+/m.test(text) && /^\s*SFAC\s/m.test(text)) return readShelx(text);
+    const first = text.split(/\r?\n/);
+    if (/^\s*\d+\s*$/.test(first[0] || '') && /^\s*[A-Za-z]{1,2}\s+-?[\d.]/.test(first[2] || '')) return readXyz(text);
+    if (isFinite(parseFloat(first[1])) && (first[2] || '').trim().split(/\s+/).length === 3 && (first[5] || '').trim().length) {
+      try { return readPoscar(text); } catch (err) { /* not a POSCAR after all */ }
+    }
+    return readCif(text);
   }
 
   /* ---------- structure -> unit cell contents, molecules, framework ---------- */
@@ -423,67 +661,138 @@
     if (!showMinor) atoms = atoms.filter((a, i) => !a.minor && !dropSites.has(a.site) && !dropAtoms.has(i));
     const N = atoms.length;
 
-    // 2. metal-halide coordination, over neighbouring cells
-    const ligs = atoms.map(() => []);      // metal index -> [{j, off}]
-    const metalsOf = atoms.map(() => []);  // halide index -> [{i, off}]  (off = halide - metal, fractional)
+    // 2. coordination: metal centre to donor atoms (any non-metal but H), over neighbouring cells
+    const ligs = atoms.map(() => []);      // centre index -> [{j, off, d, s}]
+    const metalsOf = atoms.map(() => []);  // donor index -> [{i, off}]  (off = donor - metal, fractional)
     const shifts = [];
     for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) for (let k = -1; k <= 1; k++) shifts.push([i, j, k]);
-    for (let i = 0; i < N; i++) {
-      if (!isCenter(atoms[i].el)) continue;
-      for (let j = 0; j < N; j++) {
-        if (!HALIDE.has(atoms[j].el) || !compatible(atoms[i], atoms[j])) continue;
-        const cut = RC[atoms[i].el] + RC[atoms[j].el] + 0.75;
-        const base = sub(atoms[j].f, atoms[i].f);
-        for (const s of shifts) {
-          const off = add(base, s);
-          const d = norm(cell.toCart(off));
-          if (d < cut && d > 0.5) {
-            ligs[i].push({ j, off, d, s });
-            metalsOf[j].push({ i, off });
+    const coordinate = (pick) => {
+      let found = 0;
+      for (let i = 0; i < N; i++) {
+        if (!pick(atoms[i].el)) continue;
+        for (let j = 0; j < N; j++) {
+          const ej = atoms[j].el;
+          if (!isDonor(ej) || !compatible(atoms[i], atoms[j])) continue;
+          const cut = RC[atoms[i].el] + RC[ej] + (HALIDE.has(ej) ? TOL_HALIDE : TOL_DONOR);
+          const base = sub(atoms[j].f, atoms[i].f);
+          for (const s of shifts) {
+            const off = add(base, s);
+            const d = norm(cell.toCart(off));
+            if (d < cut && d > 0.5) {
+              ligs[i].push({ j, off, d, s });
+              metalsOf[j].push({ i, off });
+              found++;
+            }
           }
         }
       }
-    }
+      return found;
+    };
+    const center = atoms.map((a) => isCenter(a.el));
+    // no ordinary metal has anions around it: the alkali ions take that role (NaCl, KBr)
+    if (!coordinate(isCenter) && coordinate((el) => ALKALI.has(el))) atoms.forEach((a, i) => { if (ALKALI.has(a.el)) center[i] = true; });
 
-    // 3. covalent bonds between non-metals (minimum image)
+    // 3. covalent bonds between non-metals. The minimum image is enough unless the cell is so thin
+    //    that an atom can bond to two images of the same neighbour (graphite, diamond).
     const adj = atoms.map(() => []);
+    const thin = Math.min(...cell.recip.map((r) => 1 / norm(r))) < 7.0;
+    const covShifts = thin ? shifts : [[0, 0, 0]];
+    const noCovalent = (i) => isMetal(atoms[i].el) || (HALIDE.has(atoms[i].el) && metalsOf[i].length > 0);
     for (let i = 0; i < N; i++) {
       const a = atoms[i];
-      if (isMetal(a.el) || metalsOf[i].length) continue;
-      for (let j = i + 1; j < N; j++) {
+      if (noCovalent(i)) continue;
+      for (let j = thin ? i : i + 1; j < N; j++) {
         const b = atoms[j];
-        if (isMetal(b.el) || metalsOf[j].length) continue;
+        if (noCovalent(j)) continue;
         if (a.el === 'H' && b.el === 'H') continue;
         if (HALIDE.has(a.el) && (HALIDE.has(b.el) || b.el === 'H')) continue;
         if (HALIDE.has(b.el) && a.el === 'H') continue;
         if (!compatible(a, b)) continue;
         if (a.symdis && b.symdis && a.op !== b.op) continue;
-        const d = mi(sub(b.f, a.f));
-        const dist = norm(cell.toCart(d));
-        if (dist > 0.4 && dist < RC[a.el] + RC[b.el] + 0.45) {
-          adj[i].push({ j, d });
-          adj[j].push({ j: i, d: [-d[0], -d[1], -d[2]] });
+        const cut = RC[a.el] + RC[b.el] + TOL_COVALENT;
+        const base = thin ? sub(b.f, a.f) : mi(sub(b.f, a.f));
+        for (const s of covShifts) {
+          if (i === j && !s[0] && !s[1] && !s[2]) continue;
+          const d = add(base, s);
+          const dist = norm(cell.toCart(d));
+          if (dist > 0.4 && dist < cut) {
+            adj[i].push({ j, d });
+            if (i !== j) adj[j].push({ j: i, d: [-d[0], -d[1], -d[2]] });
+          }
         }
       }
     }
 
-    // 4. whole molecules: walk the bond graph, unwrapping across cell faces
+    // 4. connected components of the whole bond graph (coordination and covalent), each with the
+    //    lattice translations that join it to itself: none for a molecule, 1 to 3 for a chain, layer or framework
+    const edges = atoms.map(() => []);
+    for (let i = 0; i < N; i++) {
+      for (const l of ligs[i]) {
+        edges[i].push({ to: l.j, s: l.s });
+        edges[l.j].push({ to: i, s: [-l.s[0], -l.s[1], -l.s[2]] });
+      }
+      for (const nb of adj[i]) edges[i].push({ to: nb.j, s: [0, 1, 2].map((k) => Math.round(nb.d[k] - (atoms[nb.j].f[k] - atoms[i].f[k]))) });
+    }
+    const comp = new Array(N).fill(-1);
+    const offs = new Array(N);
+    const comps = [];
+    const grow = (vecs, c) => {
+      if (vecs.length >= 3 || c.every((x) => x === 0)) return;
+      const trial = vecs.map((v) => v.slice()).concat([c.slice()]);
+      if (rankOf(trial) > vecs.length) vecs.push(c.slice());
+    };
+    for (let s0 = 0; s0 < N; s0++) {
+      if (comp[s0] >= 0) continue;
+      const id = comps.length;
+      const rec = { atoms: [s0], vecs: [], dim: 0, complex: false };
+      comp[s0] = id;
+      offs[s0] = [0, 0, 0];
+      for (let q = 0; q < rec.atoms.length; q++) {
+        const n = rec.atoms[q];
+        for (const e of edges[n]) {
+          const target = add(offs[n], e.s);
+          if (comp[e.to] < 0) { comp[e.to] = id; offs[e.to] = target; rec.atoms.push(e.to); } else grow(rec.vecs, sub(target, offs[e.to]));
+        }
+      }
+      rec.dim = rec.vecs.length;
+      // a finite unit that holds a metal with its ligands is a molecular complex or cluster, drawn whole
+      rec.complex = rec.dim === 0 && rec.atoms.some((i) => center[i] && ligs[i].length > 0);
+      comps.push(rec);
+    }
+    const inComplex = (i) => comps[comp[i]].complex;
+    const same = (u, v) => u[0] === v[0] && u[1] === v[1] && u[2] === v[2];
+
+    // 5. covalent units: whole molecules (walk the bond graph, unwrapping across cell faces) and
+    //    covalent networks that never close (diamond, quartz, graphite), which are drawn atom by atom
     const molecules = [];
+    const networks = [];
+    const polyAt = new Set();
     const seen = new Array(N).fill(false);
     for (let s = 0; s < N; s++) {
-      if (seen[s] || isCenter(atoms[s].el) || metalsOf[s].length) continue;
+      if (seen[s] || center[s] || inComplex(s) || (metalsOf[s].length && !adj[s].length)) continue;
       const pos = new Map();
       pos.set(s, atoms[s].f.slice());
       seen[s] = true;
       const order = [s];
+      const loops = [];
       for (let q = 0; q < order.length; q++) {
         const i = order[q];
         for (const nb of adj[i]) {
-          if (seen[nb.j]) continue;
+          if (seen[nb.j]) {
+            if (pos.has(nb.j)) grow(loops, sub(add(pos.get(i), nb.d), pos.get(nb.j)).map(Math.round));
+            continue;
+          }
           seen[nb.j] = true;
           pos.set(nb.j, add(pos.get(i), nb.d));
           order.push(nb.j);
         }
+      }
+      if (loops.length) {
+        networks.push({ atoms: order, dim: loops.length, vecs: loops });
+        for (const i of order) {
+          if (NET_CENTER.has(atoms[i].el) && adj[i].length >= 4 && adj[i].length <= MAX_POLY_CN && adj[i].every((nb) => NET_VERTEX.has(atoms[nb.j].el))) polyAt.add(i);
+        }
+        continue;
       }
       let cen = [0, 0, 0];
       for (const i of order) cen = add(cen, pos.get(i));
@@ -507,10 +816,47 @@
       molecules.push(mol);
     }
 
-    const metals = [];
-    for (let i = 0; i < N; i++) if (isCenter(atoms[i].el)) metals.push(i);
+    // 6. molecular complexes and clusters: metal, ligands and coordinated molecules as one unit
+    for (const rec of comps) {
+      if (!rec.complex) continue;
+      const order = rec.atoms;
+      const local = new Map(order.map((i, k) => [i, k]));
+      const pos = (i) => add(atoms[i].f, offs[i]);
+      let cen = [0, 0, 0];
+      for (const i of order) cen = add(cen, pos(i));
+      const shift = cen.map((x) => -Math.floor(x / order.length + 1e-9));
+      const bonds = [];
+      const polys = [];
+      for (const i of order) {
+        for (const nb of adj[i]) {
+          if (nb.j <= i) continue;
+          const sft = [0, 1, 2].map((k) => Math.round(nb.d[k] - (atoms[nb.j].f[k] - atoms[i].f[k])));
+          if (same(add(offs[i], sft), offs[nb.j])) bonds.push([local.get(i), local.get(nb.j)]);
+        }
+        if (!center[i]) continue;
+        const verts = [];
+        for (const l of ligs[i]) {
+          if (!same(add(offs[i], l.s), offs[l.j])) continue;
+          bonds.push([local.get(i), local.get(l.j)]);
+          verts.push(local.get(l.j));
+        }
+        if (verts.length >= 4 && verts.length <= MAX_POLY_CN) polys.push({ center: local.get(i), verts });
+      }
+      molecules.push({
+        atoms: order.map((i) => ({ idx: i, f: add(pos(i), shift) })),
+        bonds, polys, ion: false, complex: true, symdis: false,
+        cen: cen.map((x, k) => x / order.length + shift[k])
+      });
+    }
 
-    return { cell, atoms, ligs, metalsOf, molecules, metals, hasMinor, autoSplit, counts, hiddenMinor, meta: struct.meta, ops: struct.ops };
+    const metals = [];
+    const fwMetals = [];
+    for (let i = 0; i < N; i++) if (center[i]) { metals.push(i); if (!inComplex(i)) fwMetals.push(i); }
+
+    return {
+      cell, atoms, ligs, metalsOf, adj, molecules, networks, polyAt, metals, fwMetals, center, comp, offs, comps,
+      hasMinor, autoSplit, counts, hiddenMinor, meta: struct.meta, ops: struct.ops
+    };
   }
 
   /* ---------- geometry report ---------- */
@@ -761,7 +1107,7 @@
       const ph = planes.map((p) => p.sum / p.n);
       const top = [], bot = [];
       for (const o of ms) for (const l of ligs[o.m]) {
-        if (metalsOf[l.j].length !== 1) continue;
+        if (metalsOf[l.j].length !== 1 || !HALIDE.has(atoms[l.j].el)) continue;
         const hx = height(add(o.f, l.off));
         if (hx > ph[ph.length - 1] + 1.0) top.push(hx); else if (hx < ph[0] - 1.0) bot.push(hx);
       }
@@ -810,6 +1156,7 @@
       if (seenSite.has(atoms[m].site)) continue;
       seenSite.add(atoms[m].site);
       for (const l of ligs[m]) {
+        if (!HALIDE.has(atoms[l.j].el)) continue;
         const v = cell.toCart(l.off);
         const c = Math.abs(dot(v, nh)) / norm(v);
         if (c > 0.7) ax.push(Math.acos(Math.min(1, c)) * 180 / Math.PI);
@@ -948,6 +1295,8 @@
         entry.cisMin = cis[0];
         entry.cisMax = cis[11];
         entry.transMin = angs[12];
+        // an octahedron has three trans angles near 180; in a trigonal prism (MoS2) the widest are near 136
+        entry.octahedral = angs[12] > 150;
       }
       out.metalSites.push(entry);
     }
@@ -970,39 +1319,16 @@
       }
     }
 
-    // periodicity of the metal-halide network
-    if (metals.some((i) => ligs[i].length)) {
-      const off = new Map();
-      const compOf = new Map();
-      const cycles = [];
-      let comps = 0;
-      for (const m0 of metals) {
-        if (off.has(m0) || !ligs[m0].length) continue;
-        comps++;
-        off.set(m0, [0, 0, 0]);
-        compOf.set(m0, comps - 1);
-        const queue = [m0];
-        for (let q = 0; q < queue.length; q++) {
-          const n = queue[q];
-          const edges = isMetal(atoms[n].el)
-            ? ligs[n].map((l) => ({ to: l.j, s: l.s }))
-            : metalsOf[n].map((mm) => {
-              const s = sub(mm.off, sub(atoms[n].f, atoms[mm.i].f)).map(Math.round);
-              return { to: mm.i, s: s.map((x) => -x) };
-            });
-          for (const e of edges) {
-            const target = add(off.get(n), e.s);
-            if (!off.has(e.to)) { off.set(e.to, target); compOf.set(e.to, comps - 1); queue.push(e.to); } else {
-              const c = sub(target, off.get(e.to));
-              if (c.some((x) => x !== 0)) cycles.push(c);
-            }
-          }
-        }
-      }
-      const vecs = cycles.map((c) => c.slice());
-      const dim = rankOf(vecs);
-      const fw = { dim, components: comps };
-      if (dim === 2) {
+    // the bonded network: its dimensionality is the number of independent lattice translations
+    // that join a connected unit to itself
+    const describe = (list, kind) => {
+      const top = Math.max(...list.map((c) => c.dim));
+      const main = list.filter((c) => c.dim === top);
+      const vecs = [];
+      for (const c of main) for (const v of c.vecs) vecs.push(v.slice());
+      rankOf(vecs);
+      const fw = { dim: top, components: main.length, kind, main };
+      if (top === 2) {
         let h = cross(vecs[0], vecs[1]).map(Math.round);
         const g = gcd(gcd(h[0], h[1]), h[2]) || 1;
         h = h.map((x) => x / g);
@@ -1012,9 +1338,8 @@
         const G = [0, 1, 2].map((k) => h[0] * cell.recip[0][k] + h[1] * cell.recip[1][k] + h[2] * cell.recip[2][k]);
         fw.hkl = h;
         fw.dhkl = 1 / norm(G);
-        fw.spacing = fw.dhkl / comps;
-        try { out.layer = layerAnalysis(uc, fw, off, compOf); } catch (err) { out.layer = null; }
-      } else if (dim === 1) {
+        fw.spacing = fw.dhkl / main.length;
+      } else if (top === 1) {
         let u = vecs[0].map(Math.round);
         const g = gcd(gcd(u[0], u[1]), u[2]) || 1;
         u = u.map((x) => x / g);
@@ -1022,14 +1347,47 @@
         if (first < 0) u = u.map((x) => -x);
         fw.uvw = u.map((x) => x + 0);
       }
+      return fw;
+    };
+    const coord = uc.comps.filter((c) => c.atoms.some((i) => uc.center[i] && ligs[i].length > 0));
+    if (coord.length) {
+      const fw = describe(coord, 'coordination');
+      const inMain = new Set();
+      for (const c of fw.main) for (const i of c.atoms) inMain.add(i);
+      // elements joined by the network, and whether every bridge between two metals is a halide
+      const bridging = [];
+      const ligEls = new Set();
+      for (const i of inMain) {
+        if (metalsOf[i].length) ligEls.add(atoms[i].el);
+        if (metalsOf[i].length >= 2) bridging.push(atoms[i].el);
+      }
+      fw.ligands = Array.from(ligEls).sort();
+      fw.halide = fw.ligands.length > 0 && fw.ligands.every((e) => HALIDE.has(e));
+      fw.halideBridged = bridging.length > 0 && bridging.every((e) => HALIDE.has(e));
+      if (fw.dim === 2 && fw.halideBridged) {
+        // layered metal halide: the 2D perovskite descriptors apply
+        const off = new Map();
+        const compOf = new Map();
+        fw.main.forEach((c, k) => { for (const i of c.atoms) if (uc.center[i]) { off.set(i, uc.offs[i]); compOf.set(i, k); } });
+        try { out.layer = layerAnalysis(uc, fw, off, compOf); } catch (err) { out.layer = null; }
+      }
+      delete fw.main;
+      out.framework = fw;
+    } else if (uc.networks.length) {
+      const fw = describe(uc.networks, 'covalent');
+      delete fw.main;
+      fw.halide = false;
+      fw.halideBridged = false;
+      fw.ligands = [];
       out.framework = fw;
     }
+    out.molecular = !out.framework && uc.molecules.some((m) => m.atoms.length > 1);
     return out;
   }
 
   /* ---------- unit cell -> displayed block of n1 x n2 x n3 cells ---------- */
   function assemble(uc, lo, hi) {
-    const { cell, atoms, ligs, molecules, metals } = uc;
+    const { cell, atoms, ligs, molecules, adj } = uc;
     const out = [];
     const polyhedra = [];
     const mols = [];
@@ -1037,51 +1395,98 @@
       out.push({ el: atoms[i].el, label: atoms[i].label, dg: atoms[i].dg, f, xyz: cell.toCart(f), kind, group, bonds: [], src: i, site: atoms[i].site });
       return out.length - 1;
     };
-    const link = (p, q) => { out[p].bonds.push(q); out[q].bonds.push(p); };
+    const link = (p, q) => {
+      if (p === q || out[p].bonds.includes(q)) return;
+      out[p].bonds.push(q); out[q].bonds.push(p);
+    };
     const eps = 1e-4;
     const t0 = lo.map((x) => Math.floor(x) - 1);
     const t1 = hi.map((x) => Math.ceil(x));
+    const inside = (f) => !f.some((x, d) => x < lo[d] - eps || x > hi[d] + eps);
+    // every drawn atom, by cell atom and lattice translation, so that shared atoms are drawn once
+    const placed = new Map();
+    const keyOf = (i, f) => i + ':' + Math.round(f[0] - atoms[i].f[0]) + ',' + Math.round(f[1] - atoms[i].f[1]) + ',' + Math.round(f[2] - atoms[i].f[2]);
 
-    // metals inside the block (faces included), each with its full coordination shell
-    const ligKey = new Map();
-    for (const m of metals) {
-      const f0 = atoms[m].f;
-      for (let i = t0[0]; i <= t1[0]; i++) for (let j = t0[1]; j <= t1[1]; j++) for (let k = t0[2]; k <= t1[2]; k++) {
-        const fm = add(f0, [i, j, k]);
-        if (fm.some((x, d) => x < lo[d] - eps || x > hi[d] + eps)) continue;
-        const im = push(m, fm, 'metal', -1);
-        const verts = [];
-        for (const l of ligs[m]) {
-          const fx = add(fm, l.off);
-          const key = l.j + ':' + fx.map((x) => Math.round(x * 2000)).join(',');
-          let ix = ligKey.get(key);
-          if (ix === undefined) { ix = push(l.j, fx, 'ligand', -1); ligKey.set(key, ix); }
-          link(im, ix);
-          verts.push(ix);
-        }
-        if (verts.length >= 4) polyhedra.push({ center: im, verts });
-      }
-    }
-
-    // molecules and free ions whose centroid lies inside the block
+    // molecules, complexes and free ions whose centroid lies inside the block
     let group = 0;
     for (let i = t0[0]; i <= t1[0]; i++) for (let j = t0[1]; j <= t1[1]; j++) for (let k = t0[2]; k <= t1[2]; k++) {
-      for (const mol of molecules) {
+      for (let mi = 0; mi < molecules.length; mi++) {
+        const mol = molecules[mi];
         const c = add(mol.cen, [i, j, k]);
         if (c.some((x, d) => x < lo[d] - eps || x >= hi[d] - eps)) continue;
-        const idx = mol.atoms.map((a) => push(a.idx, add(a.f, [i, j, k]), mol.ion ? 'ion' : 'organic', group));
+        const idx = mol.atoms.map((a) => {
+          const f = add(a.f, [i, j, k]);
+          const ix = push(a.idx, f, mol.ion ? 'ion' : (uc.center[a.idx] ? 'metal' : 'molecule'), group);
+          placed.set(keyOf(a.idx, f), ix);
+          return ix;
+        });
         for (const [p, q] of mol.bonds) link(idx[p], idx[q]);
-        mols.push({ mi: molecules.indexOf(mol), t: [i, j, k], group });
+        if (mol.polys) for (const pl of mol.polys) polyhedra.push({ center: idx[pl.center], verts: pl.verts.map((v) => idx[v]) });
+        mols.push({ mi, t: [i, j, k], group });
         group++;
       }
     }
 
-    // hydrogen bonds: N-H...X / O-H...X (X = halide, O, N of another molecule)
+    // covalent networks: every atom inside the block (faces included), bonded to its drawn neighbours
+    const netAtoms = [];
+    for (const net of uc.networks) for (const a of net.atoms) {
+      for (let i = t0[0]; i <= t1[0]; i++) for (let j = t0[1]; j <= t1[1]; j++) for (let k = t0[2]; k <= t1[2]; k++) {
+        const f = add(atoms[a].f, [i, j, k]);
+        if (!inside(f)) continue;
+        const ix = push(a, f, 'network', -1);
+        placed.set(keyOf(a, f), ix);
+        netAtoms.push(ix);
+      }
+    }
+    for (const ix of netAtoms) {
+      for (const nb of adj[out[ix].src]) {
+        const jx = placed.get(keyOf(nb.j, add(out[ix].f, nb.d)));
+        if (jx !== undefined) link(ix, jx);
+      }
+    }
+    // network formers (SiO4, BO4, PO4) get their whole first shell, so the polyhedron is complete at the faces
+    for (const ix of netAtoms) {
+      if (!uc.polyAt.has(out[ix].src)) continue;
+      const verts = [];
+      for (const nb of adj[out[ix].src]) {
+        const f = add(out[ix].f, nb.d);
+        const key = keyOf(nb.j, f);
+        let jx = placed.get(key);
+        if (jx === undefined) { jx = push(nb.j, f, 'network', -1); placed.set(key, jx); }
+        link(ix, jx);
+        verts.push(jx);
+      }
+      polyhedra.push({ center: ix, verts });
+    }
+
+    // framework metals inside the block (faces included), each with its full coordination shell
+    for (const m of uc.fwMetals) {
+      const f0 = atoms[m].f;
+      for (let i = t0[0]; i <= t1[0]; i++) for (let j = t0[1]; j <= t1[1]; j++) for (let k = t0[2]; k <= t1[2]; k++) {
+        const fm = add(f0, [i, j, k]);
+        if (!inside(fm)) continue;
+        const im = push(m, fm, 'metal', -1);
+        const verts = [];
+        for (const l of ligs[m]) {
+          const fx = add(fm, l.off);
+          const key = keyOf(l.j, fx);
+          let ix = placed.get(key);
+          if (ix === undefined) { ix = push(l.j, fx, 'ligand', -1); placed.set(key, ix); }
+          link(im, ix);
+          verts.push(ix);
+        }
+        if (verts.length >= 4 && verts.length <= MAX_POLY_CN) polyhedra.push({ center: im, verts });
+      }
+    }
+
+    // hydrogen bonds: N-H...A / O-H...A. Acceptors are O and N of another molecule, and the anions
+    // of a framework or free ions (halide, O, N, S)
     const hbonds = [];
     const hasH = out.some((a) => a.el === 'H');
     const acceptors = [];
     out.forEach((a, i) => {
-      if (((a.kind === 'ligand' || a.kind === 'ion') && HALIDE.has(a.el)) || (a.kind === 'organic' && (a.el === 'O' || a.el === 'N'))) acceptors.push(i);
+      const anion = a.kind === 'ligand' || a.kind === 'ion' || a.kind === 'network';
+      if ((anion && (HALIDE.has(a.el) || a.el === 'O' || a.el === 'N' || a.el === 'S')) || (a.kind === 'molecule' && (a.el === 'O' || a.el === 'N'))) acceptors.push(i);
     });
     const d3 = (p, q) => norm(sub(out[p].xyz, out[q].xyz));
     if (hasH) {
@@ -1092,7 +1497,7 @@
         if (D.el !== 'N' && D.el !== 'O') return;
         for (const ia of acceptors) {
           const A = out[ia];
-          if (A.group === h.group && A.group >= 0) continue;
+          if (ia === id || (A.group === h.group && A.group >= 0)) continue;
           if (A.el === 'N' && A.bonds.length >= 4) continue;
           const lim = VDW.H + VDW[A.el] - 0.15;
           const dHA = d3(ih, ia);
@@ -1104,7 +1509,7 @@
       });
     } else {
       out.forEach((D, id) => {
-        if (D.kind !== 'organic' || (D.el !== 'N' && D.el !== 'O')) return;
+        if (D.kind !== 'molecule' || (D.el !== 'N' && D.el !== 'O')) return;
         for (const ia of acceptors) {
           const A = out[ia];
           if (!HALIDE.has(A.el)) continue;
@@ -1114,6 +1519,59 @@
       });
     }
     return { atoms: out, polyhedra, hbonds, hasH, mols };
+  }
+
+  /* ---------- measurements ---------- */
+  const distance = (p, q) => norm(sub(p, q));
+  /* angle p-q-r at q, in degrees */
+  const bondAngle = (p, q, r) => angleDeg(sub(p, q), sub(r, q));
+  /* torsion p-q-r-s about q-r, in degrees, -180 to 180; positive is clockwise looking from q to r (IUPAC) */
+  function torsion(p, q, r, s) {
+    const b1 = sub(q, p), b2 = sub(r, q), b3 = sub(s, r);
+    const n1 = cross(b1, b2), n2 = cross(b2, b3);
+    const y = norm(b2) * dot(b1, n2);
+    const x = dot(n1, n2);
+    return Math.atan2(y, x) * 180 / Math.PI;
+  }
+
+  /* ---------- export: Tripos mol2 of a drawn block ----------
+     Atom types are SYBYL types guessed from the element and the number of bonded neighbours.
+     Bond orders are not assigned: every bond is written as a single bond. */
+  function sybylType(el, n) {
+    if (el === 'C') return n >= 4 ? 'C.3' : n === 3 ? 'C.2' : n === 2 ? 'C.1' : 'C.3';
+    if (el === 'N') return n >= 4 ? 'N.4' : n === 3 ? 'N.3' : n === 2 ? 'N.2' : n === 1 ? 'N.1' : 'N.3';
+    if (el === 'O') return n === 1 ? 'O.2' : 'O.3';
+    if (el === 'S') return n === 1 ? 'S.2' : 'S.3';
+    if (el === 'P') return 'P.3';
+    return el;
+  }
+  function toMol2(blockAtoms, cell, name, keep) {
+    const id = new Map();
+    const rows = [];
+    blockAtoms.forEach((a, i) => { if (!keep || keep(a)) { id.set(i, rows.length + 1); rows.push(i); } });
+    const bonds = [];
+    for (const i of rows) for (const j of blockAtoms[i].bonds) if (j > i && id.has(j)) bonds.push([id.get(i), id.get(j)]);
+    // one substructure per molecule; everything that is not a molecule goes into the first one
+    const sub1 = new Map();
+    let nsub = 1;
+    const subOf = (a) => {
+      if (a.group < 0) return 1;
+      if (!sub1.has(a.group)) sub1.set(a.group, ++nsub);
+      return sub1.get(a.group);
+    };
+    const pad = (v, w) => String(v).padStart(w);
+    const atomLines = rows.map((i) => {
+      const a = blockAtoms[i];
+      const k = subOf(a);
+      const nm = String(a.label).replace(/\s+/g, '_').slice(0, 8);
+      return pad(id.get(i), 7) + ' ' + nm.padEnd(8) + ' ' + a.xyz.map((x) => pad(x.toFixed(4), 10)).join(' ') + ' ' +
+        sybylType(a.el, a.bonds.length).padEnd(5) + ' ' + pad(k, 4) + ' ' + (k === 1 ? 'FRAME' : 'MOL' + (k - 1)).padEnd(8) + '  0.0000';
+    });
+    const clean = String(name || 'structure').replace(/[\r\n]+/g, ' ');
+    return ['@<TRIPOS>MOLECULE', clean, pad(rows.length, 5) + pad(bonds.length, 6) + pad(nsub, 6) + '     0     0', 'SMALL', 'NO_CHARGES', '',
+      '@<TRIPOS>ATOM'].concat(atomLines, ['@<TRIPOS>BOND'],
+      bonds.map((b, k) => pad(k + 1, 6) + pad(b[0], 6) + pad(b[1], 6) + ' 1'),
+      ['@<TRIPOS>CRYSIN', [cell.a, cell.b, cell.c].map((x) => pad(x.toFixed(4), 10)).join('') + [cell.al, cell.be, cell.ga].map((x) => pad(x.toFixed(3), 10)).join('') + '     1     1', '']).join('\n');
   }
 
   /* triangles of the convex hull of a small point set (coordination polyhedron) */
@@ -1141,6 +1599,6 @@
     return faces;
   }
 
-  root.XtalCore = { readStructure, buildCell, analyse, assemble, hullFaces, planePolys, tetrazineDefs, chromoInstances, stateDir, orientReport, hallOps, symbolOps, setSgTable, isMetal, isCenter, HALIDE, RC, parseSymop };
+  root.XtalCore = { readStructure, readCif, readPoscar, readXyz, readShelx, buildCell, analyse, assemble, hullFaces, planePolys, tetrazineDefs, chromoInstances, stateDir, orientReport, hallOps, symbolOps, setSgTable, isMetal, isCenter, isDonor, HALIDE, RC, MASS, parseSymop, MAX_POLY_CN, distance, bondAngle, torsion, toMol2 };
   if (typeof module !== 'undefined' && module.exports) module.exports = root.XtalCore;
 })(typeof window !== 'undefined' ? window : globalThis);
