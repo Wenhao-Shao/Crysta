@@ -371,7 +371,7 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
         </div>
         <div class="checks"><label><input type="checkbox" id="pngClear">Transparent background</label></div>
         <div class="row"><button type="button" id="btnMol2">Save mol2 file</button></div>
-        <div class="small">All three save what is shown: the packing block, with hidden atoms left out. The SVG is a vector drawing in which every atom, bond and face is a separate object to edit; it is drawn without perspective, and objects that pass through each other are approximated. The mol2 file carries the cell; its atom types are guessed from the number of neighbours and every bond is written as single.</div>
+        <div class="small">All three save what is shown: the packing block, with hidden atoms left out. Centre atoms hidden inside polyhedra are left out of the PNG and the SVG, and kept in the mol2 file. The SVG is a vector drawing in which every atom, bond and face is a separate object to edit; it is drawn without perspective, and objects that pass through each other are approximated. The mol2 file carries the cell; its atom types are guessed from the number of neighbours and every bond is written as single.</div>
       </section>
 
       <section class="card" id="cardPoly">
@@ -387,7 +387,7 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
           <div class="pprev" id="pfPreview" aria-live="polite"></div>
           <div class="row"><button type="button" class="primary" id="pfAdd">Add these polyhedra</button></div>
         </div>
-        <div class="small">Any element can be the centre and any elements the corners. Press a row to change its colour, opacity and edges; the cross removes it. Polyhedra you add are drawn next to the others, so one element can be the centre of several sets. They change the picture only, not the coordination numbers in the data cards.</div>
+        <div class="small">Any element can be the centre and any elements the corners. Polyhedra you add hide their centre atoms. Press a row to show them again or to change its colour, opacity and edges; the cross removes it. Polyhedra you add are drawn next to the others, so one element can be the centre of several sets. They change the picture only, not the coordination numbers in the data cards.</div>
       </section>
 
       <section class="card">
@@ -443,7 +443,7 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
         <div class="small" id="hbNote"></div>
       </section>
 
-      <div class="foot">Crysta v0.2.1. Drawn with 3Dmol.js. Symmetry expansion, bonding, molecule assembly and every distance and angle are computed in this page from the file. Nothing is uploaded.</div>
+      <div class="foot">Crysta v0.2.2. Drawn with 3Dmol.js. Symmetry expansion, bonding, molecule assembly and every distance and angle are computed in this page from the file. Nothing is uploaded.</div>
     </aside>
   </div>
 </div>
@@ -2760,12 +2760,26 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
   const ruleSummary = (d, rule) => ruleReport(d, rule).text;
   /* how the polyhedra around one element are drawn: the user's rule if there is one, else the automatic style */
   const POLY_DEFAULT = { opacity: 0.5, edges: false };
+  /* polyhedra the user adds hide their centre atoms unless told otherwise; the automatic ones keep them */
+  const centreShown = (key, o) => (o && o.centre !== undefined ? o.centre : key[0] !== 'r');
   /* one set of polyhedra is 'a:El' (automatic, around element El) or 'r:n' (the user's rule n) */
   const polyKey = (blk, pl) => (pl.custom ? 'r:' + pl.rule : 'a:' + blk.atoms[pl.center].el);
   const polyShown = (d, key) => (key[0] === 'r' ? true : !d.autoHide[key.slice(2)] && !d.autoGone[key.slice(2)]);
   function polyStyle(d, key, el) {
     const o = (key[0] === 'r' ? (d.polyRules[+key.slice(2)] || {}).style : d.autoStyle[key.slice(2)]) || {};
-    return { color: o.color || colorOf(el), own: !!o.color, opacity: o.opacity === undefined ? POLY_DEFAULT.opacity : o.opacity, edges: o.edges === undefined ? POLY_DEFAULT.edges : o.edges };
+    return { color: o.color || colorOf(el), own: !!o.color, opacity: o.opacity === undefined ? POLY_DEFAULT.opacity : o.opacity, edges: o.edges === undefined ? POLY_DEFAULT.edges : o.edges, centre: centreShown(key, o) };
+  }
+  /* The centre atoms that are left out of the picture: those inside a polyhedron that is drawn and whose set hides
+     its centres. An atom with no polyhedron around it (too few corners in the block) stays, and so does every centre
+     when the polyhedra are switched off. Indices are into blk.atoms. */
+  function hiddenCentres(d, blk) {
+    const hid = new Set();
+    if (!(st.poly && st.inorg && st.style !== 'sf')) return hid;
+    for (const pl of blk.polyhedra) {
+      const key = polyKey(blk, pl);
+      if (polyShown(d, key) && !polyStyle(d, key, blk.atoms[pl.center].el).centre) hid.add(pl.center);
+    }
+    return hid;
   }
   const styleStore = (d, key) => {
     if (key[0] === 'a') return d.autoStyle[key.slice(2)] || (d.autoStyle[key.slice(2)] = {});
@@ -2782,9 +2796,10 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
       const ed = o && o.edges !== undefined ? o.edges : POLY_DEFAULT.edges;
       return '<div class="look"><span>Colour</span><input type="color" data-pcol="' + key + '" value="' + esc(col) + '" aria-label="Colour of these polyhedra"><span></span>' +
         '<span>Opacity</span><input type="range" data-pop="' + key + '" min="0.05" max="1" step="0.05" value="' + op + '" aria-label="Opacity of these polyhedra"><span>' + Math.round(100 * op) + '%</span>' +
+        '<div class="full"><label><input type="checkbox" data-pcen="' + key + '"' + (centreShown(key, o) ? '' : ' checked') + '>Hide the centre atoms</label></div>' +
         '<div class="full"><label><input type="checkbox" data-pedge="' + key + '"' + (ed ? ' checked' : '') + '>Draw the edges</label><button type="button" class="mini" data-prst="' + key + '">Reset look</button></div></div>';
     };
-    const head = (key, el, o, html) => '<button type="button" class="what" data-ptog="' + key + '" aria-expanded="' + (d.polyOpen === key) + '" title="Colour, opacity and edges">' +
+    const head = (key, el, o, html) => '<button type="button" class="what" data-ptog="' + key + '" aria-expanded="' + (d.polyOpen === key) + '" title="Colour, opacity, edges and centre atoms">' +
       '<span class="car" aria-hidden="true">' + (d.polyOpen === key ? '▾' : '▸') + '</span><i class="sw" style="background:' + ((o && o.color) || colorOf(el)) + '"></i><span>' + html + '</span></button>';
     // automatic polyhedra, one row per centre element
     const rows = d.autoPoly.filter((x) => !d.autoGone[x.el]).map((x) => {
@@ -2960,7 +2975,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
       ['Axial tilt (°)', L && L.axialTilt ? num(L.axialTilt.mean, 1) : ''],
       ['N penetration (Å)', L && L.penetration.length ? num(mean(L.penetration.map((p) => p.depth)), 3) : ''],
       ['Stacking offset', L && L.offset ? '(' + fmt(L.offset.s1, 2) + ', ' + fmt(L.offset.s2, 2) + ')' : ''],
-      ['Crysta version', 'v0.2.1']
+      ['Crysta version', 'v0.2.2']
     ];
   }
   /* columns of the table that hold a mean over the independent sites of a structure */
@@ -3108,7 +3123,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     hoverLabel = null;
     const uc = d.uc;
     const blk = C.assemble(uc, d.lo, d.hi, d.polyRules);
-    const visible = (a) => isVisible(a);
+    const hid = hiddenCentres(d, blk);
     const px = st.px;
     // a label added with the last argument set does not redraw the scene; it is drawn once at the end
     const addText = (text, opts) => viewer.addLabel(text, opts, undefined, true);
@@ -3118,7 +3133,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     const map = new Map();
     const list = [];
     blk.atoms.forEach((a, i) => {
-      if (!visible(a)) return;
+      if (!isVisible(a) || hid.has(i)) return;
       map.set(i, list.length);
       list.push({ elem: a.el, x: a.xyz[0], y: a.xyz[1], z: a.xyz[2], bonds: [], bondOrder: [], xl: a.label, xf: a.f, xk: a.kind, xs: a.site, xg: a.group });
     });
@@ -3538,14 +3553,15 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     const ink = cssVar('--ink'), muted = cssVar('--muted'), accent = cssVar('--accent'), panel = cssVar('--panel');
     const items = [];
     const mid = (p, q) => [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2, (p[2] + q[2]) / 2];
-    blk.atoms.forEach((a) => {
-      if (!isVisible(a)) return;
+    const hid = hiddenCentres(d, blk);
+    blk.atoms.forEach((a, i) => {
+      if (!isVisible(a) || hid.has(i)) return;
       const color = colorOf(a.el);
       items.push({ t: 'atom', p: a.xyz, r: sphereR(a.el), color, el: a.el, opacity: opacityOf(a.el) });
       if (st.style === 'sf') return;
       for (const j of a.bonds) {
         const o = blk.atoms[j];
-        if (!isVisible(o)) continue;
+        if (!isVisible(o) || hid.has(j)) continue;
         // each atom draws its half of the bond; with gradient bonds the half fades to the midpoint colour
         items.push({ t: 'bond', p: a.xyz, q: mid(a.xyz, o.xyz), r: stickR(a.el), color, color2: st.bondGrad ? mixHex(color, colorOf(o.el)) : undefined });
       }
@@ -3585,7 +3601,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     }
     if (st.hb && st.style !== 'sf') {
       for (const h of blk.hbonds) {
-        if (!isVisible(blk.atoms[h.d]) || !isVisible(blk.atoms[h.a])) continue;
+        if (!isVisible(blk.atoms[h.d]) || !isVisible(blk.atoms[h.a]) || hid.has(h.d) || hid.has(h.a)) continue;
         const from = st.H && h.h >= 0 ? blk.atoms[h.h] : blk.atoms[h.d];
         items.push({ t: 'line', p: from.xyz, q: blk.atoms[h.a].xyz, w: 0.1 * scale, color: accent, dash: [0.16 * scale, 0.2 * scale], cls: 'hbond' });
       }
@@ -3612,7 +3628,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
       text(at, measureValueText(m), 13, panel, ink, 0.9, 'measure');
     }
     if (st.labels !== 'off') {
-      for (const a of blk.atoms) if (isVisible(a) && (st.labels === 'all' || a.el !== 'H')) text(a.xyz, a.label, 11, ink, panel, 0.55, 'atom-label');
+      blk.atoms.forEach((a, i) => { if (isVisible(a) && !hid.has(i) && (st.labels === 'all' || a.el !== 'H')) text(a.xyz, a.label, 11, ink, panel, 0.55, 'atom-label'); });
     }
     const svg = C.toSvg({ width: rect.width, height: rect.height, M, b: o, items, title: d.name, shaded: $('svgShade').value === 'shaded',
       background: $('pngClear').checked ? null : cssVar('--stage') });
@@ -3710,6 +3726,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
       if (t.dataset.pcol !== undefined) styleStore(d, t.dataset.pcol).color = t.value;
       if (t.dataset.pop !== undefined) styleStore(d, t.dataset.pop).opacity = +t.value;
       if (t.dataset.pedge !== undefined) styleStore(d, t.dataset.pedge).edges = t.checked;
+      if (t.dataset.pcen !== undefined) styleStore(d, t.dataset.pcen).centre = !t.checked;
       if (t.dataset.pmax !== undefined) { const v = parseFloat(t.value); if (v > 0) d.polyRules[+t.dataset.pmax].max = v; }
       setTimeout(polyChanged, 0);
     };
@@ -3967,7 +3984,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     const ISSUES = 'https://github.com/Wenhao-Shao/Crysta/issues/new';
     const fbUrl = () => {
       const title = '[' + $('fbKind').value + '] ' + $('fbSummary').value.trim();
-      const tail = '\n\n---\nSent from the Crysta feedback box\nCrysta v0.2.1\nBrowser: ' + navigator.userAgent;
+      const tail = '\n\n---\nSent from the Crysta feedback box\nCrysta v0.2.2\nBrowser: ' + navigator.userAgent;
       let details = $('fbDetails').value.trim() || '(no details given)';
       const make = (d) => ISSUES + '?title=' + encodeURIComponent(title) + '&body=' + encodeURIComponent(d + tail);
       let url = make(details);
@@ -4016,7 +4033,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
       data.append('summary', summary);
       data.append('details', $('fbDetails').value.trim() || '(no details given)');
       if (email) data.append('email', email);
-      data.append('workbench', 'v0.2.1');
+      data.append('workbench', 'v0.2.2');
       data.append('browser', navigator.userAgent);
       const buttons = [$('fbDirect'), $('fbGithub')];
       buttons.forEach((b) => { b.disabled = true; });

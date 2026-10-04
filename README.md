@@ -73,7 +73,7 @@ These choices decide the numbers, so they are stated here. Changing any of them 
 | Metal-donor bond | metal to any other non-metal except H and the noble gases, below the sum of covalent radii plus 0.5 Å; an atom with four or more covalent bonds is not a donor |
 | Polyhedron centre | any metal except Li, Na, K, Rb, Cs, Fr, which are free ions unless they are the only metals with anions around them |
 | Polyhedron | drawn for 4 to 8 bonded neighbours |
-| Polyhedron you define | centre element, corner elements and a largest centre-to-corner distance; drawn for 3 or more corners (3 is a triangle); drawn next to the automatic polyhedra and to other sets, also with the same centre element; changes the picture only |
+| Polyhedron you define | centre element, corner elements and a largest centre-to-corner distance; drawn for 3 or more corners (3 is a triangle); drawn next to the automatic polyhedra and to other sets, also with the same centre element; its centre atoms are hidden unless you choose to show them (the automatic polyhedra keep theirs, and can hide them too); changes the picture only |
 | Suggested distance | for each centre the nearest shell ends at the widest relative gap (at least 12 %) among its first 12 sorted distances; the suggestion is the widest shell times 1.08, but at most halfway to the nearest next shell |
 | Covalent network | a set of covalently bonded atoms that a lattice translation joins to itself (diamond, quartz, graphite) |
 | Non-metal polyhedron | B, Si, P, As, S, Se or Te with 4 to 8 bonded neighbours, all of them O, N, F, S, Se, Cl, Br or I; in networks, molecules and molecular ions |

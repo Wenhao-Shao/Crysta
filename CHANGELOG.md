@@ -2,6 +2,14 @@
 
 Any change to how a number is defined gets a new version and a line here.
 
+## v0.2.2
+
+- Polyhedra can hide their centre atoms. Each row of the Polyhedra card has a "Hide the centre atoms" box. It is on for polyhedra you add and off for the automatic ones. A hidden centre is left out of the picture, the PNG and the SVG together with its bonds; it stays in the mol2 file and in every number. An atom with no polyhedron drawn around it is never hidden.
+- The strip under the picture is one row of fixed height, so the picture no longer jumps when the pointer passes over an atom. It shows the latest measurement; the Measure card lists them all.
+- The Structures table starts at its header row, with a "Copy table" button next to "Structure".
+
+No definition changed: every number is identical to v0.2.1.
+
 ## v0.2.1
 
 - Measurements can be removed one at a time: each is listed in the Measure card with a Remove button, a Clear button removes them all, and a right-click on a measurement in the picture opens a menu to remove it. Up to 20 are kept.
