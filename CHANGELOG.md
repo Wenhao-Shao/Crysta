@@ -2,6 +2,12 @@
 
 Any change to how a number is defined gets a new version and a line here.
 
+## v0.2.3
+
+- Two sliders in the Display card: **Atom size** and **Bond width**, each from 0.25× to 2×. They scale every sphere and every stick in the picture, the PNG and the SVG, on top of the size set per element in the legend. They hold for the session, across structures.
+
+No definition changed: every number is identical to v0.2.2.
+
 ## v0.2.2
 
 - Inside a polyhedron the centre atom and its bonds are drawn faded, so the polyhedron reads first. Each row of the Polyhedra card has a "Centre atoms" slider: 100 % draws them solid as before, 0 % leaves them out. The default is 25 %, for the automatic polyhedra and for the ones you add, so the picture of a structure with polyhedra looks different from v0.2.1 when it opens. The fading is used by the PNG and the SVG too. A centre set to 0 % stays in the mol2 file. An atom with no polyhedron drawn around it is never faded, and switching the polyhedra off draws everything solid.

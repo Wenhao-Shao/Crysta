@@ -168,6 +168,9 @@ button.mini { padding: 1px 8px; font-size: 12px; }
 .homelink { display: inline-block; text-decoration: none; white-space: nowrap; }
 .filebtn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
 
+.sizes { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 6px 8px; align-items: center; font-size: 12.5px; color: var(--muted); }
+.sizes input[type="range"] { width: 100%; accent-color: var(--accent); }
+.sizes output { font-family: var(--font-data); font-variant-numeric: tabular-nums; min-width: 5ch; text-align: right; }
 .checks { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; }
 .checks label { display: flex; align-items: center; gap: 7px; font-size: 13px; cursor: pointer; }
 input[type="checkbox"] { accent-color: var(--accent); width: 15px; height: 15px; margin: 0; flex: none; }
@@ -319,6 +322,10 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
             <button type="button" id="bondGrad" aria-pressed="false">Gradient</button>
           </div>
         </div>
+        <div class="sizes">
+          <label for="rngAtom">Atom size</label><input type="range" id="rngAtom" min="0.25" max="2" step="0.05" value="1"><output id="outAtom" for="rngAtom">1.00×</output>
+          <label for="rngBond">Bond width</label><input type="range" id="rngBond" min="0.25" max="2" step="0.05" value="1"><output id="outBond" for="rngBond">1.00×</output>
+        </div>
         <div class="checks">
           <label><input type="checkbox" id="chkOrg" checked>Molecules</label>
           <label><input type="checkbox" id="chkInorg" checked>Framework and ions</label>
@@ -443,7 +450,7 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
         <div class="small" id="hbNote"></div>
       </section>
 
-      <div class="foot">Crysta v0.2.2. Drawn with 3Dmol.js. Symmetry expansion, bonding, molecule assembly and every distance and angle are computed in this page from the file. Nothing is uploaded.</div>
+      <div class="foot">Crysta v0.2.3. Drawn with 3Dmol.js. Symmetry expansion, bonding, molecule assembly and every distance and angle are computed in this page from the file. Nothing is uploaded.</div>
     </aside>
   </div>
 </div>
@@ -2397,7 +2404,8 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
   const st = {
     docs: [], cur: -1,
     style: 'bs', poly: true, cellBox: true, H: true, hb: true, org: true, inorg: true,
-    arrow: 1.9, notice: '', shown: 0, picking: null, measure: 'dist', labels: 'off', px: 1, bondGrad: false
+    arrow: 1.9, notice: '', shown: 0, picking: null, measure: 'dist', labels: 'off', px: 1, bondGrad: false,
+    atomScale: 1, bondScale: 1   // the Atom size and Bond width sliders: every sphere and every stick, times this
   };
   let viewer = null;
   let hoverLabel = null;
@@ -2417,12 +2425,12 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
   const vdwOf = (el) => (window.$3Dmol && $3Dmol.GLModel && $3Dmol.GLModel.vdwRadii && $3Dmol.GLModel.vdwRadii[el]) || 1.7;
   /* drawn sphere and stick radius of an element in the current style, in angstrom */
   const sphereR = (el) => {
-    const k = look(el).scale || 1;
+    const k = (look(el).scale || 1) * st.atomScale;
     if (st.style === 'sf') return k * vdwOf(el);
     if (st.style === 'st') return k * (C.isMetal(el) ? 0.3 : C.HALIDE.has(el) ? 0.2 : 0.13);
     return k * (C.isMetal(el) ? 0.55 : C.HALIDE.has(el) ? 0.42 : el === 'H' ? 0.16 : 0.3);
   };
-  const stickR = (el) => (st.style === 'st' ? 0.13 : el === 'H' ? 0.07 : 0.1);
+  const stickR = (el) => st.bondScale * (st.style === 'st' ? 0.13 : el === 'H' ? 0.07 : 0.1);
   const opacityOf = (el) => (look(el).opacity === undefined ? 1 : look(el).opacity);
   function colorOf(el) {
     return look(el).color || defaultColorOf(el);
@@ -2983,7 +2991,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
       ['Axial tilt (°)', L && L.axialTilt ? num(L.axialTilt.mean, 1) : ''],
       ['N penetration (Å)', L && L.penetration.length ? num(mean(L.penetration.map((p) => p.depth)), 3) : ''],
       ['Stacking offset', L && L.offset ? '(' + fmt(L.offset.s1, 2) + ', ' + fmt(L.offset.s2, 2) + ')' : ''],
-      ['Crysta version', 'v0.2.2']
+      ['Crysta version', 'v0.2.3']
     ];
   }
   /* columns of the table that hold a mean over the independent sites of a structure */
@@ -3822,6 +3830,11 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     $('elOpacity').onchange = (e) => setLook(st.editEl, 'opacity', +e.target.value);
     $('elReset').onclick = () => { const el = st.editEl; delete elemLook[el]; drawLegend(); drawPolyCard(); render(true); openElPop(el); };
     $('selLabels').onchange = (e) => { st.labels = e.target.value; render(true); };
+    // the two size sliders: the number follows the thumb, the picture is redrawn on release
+    for (const [id, out, key] of [['rngAtom', 'outAtom', 'atomScale'], ['rngBond', 'outBond', 'bondScale']]) {
+      $(id).oninput = (e) => { $(out).textContent = fmt(+e.target.value, 2) + '×'; };
+      $(id).onchange = (e) => { st[key] = +e.target.value; $(out).textContent = fmt(st[key], 2) + '×'; render(true); };
+    }
     $('btnPng').onclick = exportPng;
     $('btnMol2').onclick = exportMol2;
     $('btnSvg').onclick = exportSvg;
@@ -4019,7 +4032,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     const ISSUES = 'https://github.com/Wenhao-Shao/Crysta/issues/new';
     const fbUrl = () => {
       const title = '[' + $('fbKind').value + '] ' + $('fbSummary').value.trim();
-      const tail = '\n\n---\nSent from the Crysta feedback box\nCrysta v0.2.2\nBrowser: ' + navigator.userAgent;
+      const tail = '\n\n---\nSent from the Crysta feedback box\nCrysta v0.2.3\nBrowser: ' + navigator.userAgent;
       let details = $('fbDetails').value.trim() || '(no details given)';
       const make = (d) => ISSUES + '?title=' + encodeURIComponent(title) + '&body=' + encodeURIComponent(d + tail);
       let url = make(details);
@@ -4068,7 +4081,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
       data.append('summary', summary);
       data.append('details', $('fbDetails').value.trim() || '(no details given)');
       if (email) data.append('email', email);
-      data.append('workbench', 'v0.2.2');
+      data.append('workbench', 'v0.2.3');
       data.append('browser', navigator.userAgent);
       const buttons = [$('fbDirect'), $('fbGithub')];
       buttons.forEach((b) => { b.disabled = true; });
