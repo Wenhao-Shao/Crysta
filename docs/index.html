@@ -318,13 +318,13 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
         <div class="row">
           <span class="small" id="bondLbl">Bond colour</span>
           <div class="seg" role="group" aria-labelledby="bondLbl">
-            <button type="button" id="bondSplit" aria-pressed="true">Two-tone</button>
-            <button type="button" id="bondGrad" aria-pressed="false">Gradient</button>
+            <button type="button" id="bondSplit" aria-pressed="false">Two-tone</button>
+            <button type="button" id="bondGrad" aria-pressed="true">Gradient</button>
           </div>
         </div>
         <div class="sizes">
-          <label for="rngAtom">Atom size</label><input type="range" id="rngAtom" min="0.25" max="2" step="0.05" value="1"><output id="outAtom" for="rngAtom">1.00×</output>
-          <label for="rngBond">Bond width</label><input type="range" id="rngBond" min="0.25" max="2" step="0.05" value="1"><output id="outBond" for="rngBond">1.00×</output>
+          <label for="rngAtom">Atom size</label><input type="range" id="rngAtom" min="0.25" max="3" step="0.05" value="1"><output id="outAtom" for="rngAtom">1.00×</output>
+          <label for="rngBond">Bond width</label><input type="range" id="rngBond" min="0.25" max="3" step="0.05" value="1"><output id="outBond" for="rngBond">1.00×</output>
         </div>
         <div class="checks">
           <label><input type="checkbox" id="chkOrg" checked>Molecules</label>
@@ -2496,7 +2496,7 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
   const st = {
     docs: [], cur: -1,
     style: 'bs', poly: true, cellBox: true, H: true, hb: true, org: true, inorg: true,
-    arrow: 1.9, notice: '', shown: 0, picking: null, measure: 'dist', labels: 'off', px: 1, bondGrad: false,
+    arrow: 1.9, notice: '', shown: 0, picking: null, measure: 'dist', labels: 'off', px: 1, bondGrad: true,
     atomScale: 1, bondScale: 1   // the Atom size and Bond width sliders: every sphere and every stick, times this
   };
   let viewer = null;
@@ -2515,14 +2515,15 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
     return typeof j === 'number' ? '#' + j.toString(16).padStart(6, '0') : '#b477b4';
   };
   const vdwOf = (el) => (window.$3Dmol && $3Dmol.GLModel && $3Dmol.GLModel.vdwRadii && $3Dmol.GLModel.vdwRadii[el]) || 1.7;
-  /* drawn sphere and stick radius of an element in the current style, in angstrom */
+  /* drawn sphere and stick radius of an element in the current style, in angstrom.
+     Since v0.2.3 the ball-and-stick and sticks sizes are half of what they were; 2x on the sliders gives the old ones. */
   const sphereR = (el) => {
     const k = (look(el).scale || 1) * st.atomScale;
     if (st.style === 'sf') return k * vdwOf(el);
-    if (st.style === 'st') return k * (C.isMetal(el) ? 0.3 : C.HALIDE.has(el) ? 0.2 : 0.13);
-    return k * (C.isMetal(el) ? 0.55 : C.HALIDE.has(el) ? 0.42 : el === 'H' ? 0.16 : 0.3);
+    if (st.style === 'st') return k * (C.isMetal(el) ? 0.15 : C.HALIDE.has(el) ? 0.1 : 0.065);
+    return k * (C.isMetal(el) ? 0.275 : C.HALIDE.has(el) ? 0.21 : el === 'H' ? 0.08 : 0.15);
   };
-  const stickR = (el) => st.bondScale * (st.style === 'st' ? 0.13 : el === 'H' ? 0.07 : 0.1);
+  const stickR = (el) => st.bondScale * (st.style === 'st' ? 0.065 : el === 'H' ? 0.035 : 0.05);
   const opacityOf = (el) => (look(el).opacity === undefined ? 1 : look(el).opacity);
   function colorOf(el) {
     return look(el).color || defaultColorOf(el);
@@ -3365,7 +3366,7 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
       for (const h of blk.hbonds) {
         if (!map.has(h.d) || !map.has(h.a)) continue;
         const from = st.H && h.h >= 0 ? blk.atoms[h.h] : blk.atoms[h.d];
-        viewer.addCylinder({ start: V3(from.xyz), end: V3(blk.atoms[h.a].xyz), radius: 0.05, color: accent, dashed: true, dashLength: 0.16, gapLength: 0.12, fromCap: 1, toCap: 1 });
+        viewer.addCylinder({ start: V3(from.xyz), end: V3(blk.atoms[h.a].xyz), radius: 0.03, color: accent, dashed: true, dashLength: 0.16, gapLength: 0.12, fromCap: 1, toCap: 1 });
       }
     }
 
@@ -3430,7 +3431,7 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
     const mid = (p, q) => [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2, (p[2] + q[2]) / 2];
     for (const m of d.measures) {
       for (let k = 0; k + 1 < m.pts.length; k++) {
-        viewer.addCylinder({ start: V3(m.pts[k]), end: V3(m.pts[k + 1]), radius: 0.04, color: ink, dashed: true, dashLength: 0.12, gapLength: 0.1, fromCap: 1, toCap: 1 });
+        viewer.addCylinder({ start: V3(m.pts[k]), end: V3(m.pts[k + 1]), radius: 0.028, color: ink, dashed: true, dashLength: 0.12, gapLength: 0.1, fromCap: 1, toCap: 1 });
       }
       // the value sits on the bond, at the angle's vertex, or on the central bond of the torsion
       const at = m.type === 'dist' ? mid(m.pts[0], m.pts[1]) : m.type === 'angle' ? m.pts[1] : mid(m.pts[1], m.pts[2]);
@@ -3756,7 +3757,7 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
       for (const h of blk.hbonds) {
         if (!isVisible(blk.atoms[h.d]) || !isVisible(blk.atoms[h.a]) || solid(h.d) <= 0 || solid(h.a) <= 0) continue;
         const from = st.H && h.h >= 0 ? blk.atoms[h.h] : blk.atoms[h.d];
-        items.push({ t: 'line', p: from.xyz, q: blk.atoms[h.a].xyz, w: 0.1 * scale, color: accent, dash: [0.16 * scale, 0.2 * scale], cls: 'hbond' });
+        items.push({ t: 'line', p: from.xyz, q: blk.atoms[h.a].xyz, w: 0.06 * scale, color: accent, dash: [0.16 * scale, 0.2 * scale], cls: 'hbond' });
       }
     }
     for (const p of d.planes) {
@@ -3776,7 +3777,7 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
       }
     }
     for (const m of d.measures) {
-      for (let k = 0; k + 1 < m.pts.length; k++) items.push({ t: 'line', p: m.pts[k], q: m.pts[k + 1], w: Math.max(0.6, 0.08 * scale), color: ink, dash: [0.12 * scale, 0.18 * scale], cls: 'measure' });
+      for (let k = 0; k + 1 < m.pts.length; k++) items.push({ t: 'line', p: m.pts[k], q: m.pts[k + 1], w: Math.max(0.6, 0.056 * scale), color: ink, dash: [0.12 * scale, 0.18 * scale], cls: 'measure' });
       const at = m.type === 'dist' ? mid(m.pts[0], m.pts[1]) : m.type === 'angle' ? m.pts[1] : mid(m.pts[1], m.pts[2]);
       text(at, measureValueText(m), 13, panel, ink, 0.9, 'measure');
     }

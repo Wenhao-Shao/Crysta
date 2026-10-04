@@ -4,7 +4,8 @@ Any change to how a number is defined gets a new version and a line here.
 
 ## v0.2.3
 
-- Two sliders in the Display card: **Atom size** and **Bond width**, each from 0.25× to 2×. They scale every sphere and every stick in the picture, the PNG and the SVG, on top of the size set per element in the legend. They hold for the session, across structures.
+- New default look: atoms and bonds are drawn at half their earlier radius in the ball-and-stick and sticks styles, and bonds are gradient-coloured. Space-filling is unchanged.
+- Two sliders in the Display card: **Atom size** and **Bond width**, each from 0.25× to 3×. They scale every sphere and every stick in the picture, the PNG and the SVG, on top of the size set per element in the legend. 2× gives the sizes of v0.2.2. They hold for the session, across structures.
 - The SVG drawing now looks like the picture. Polyhedron faces have no outline unless "Draw the edges" is on; each face is as bright as the viewer's light makes it and has the viewer's opacity; where see-through faces overlap, only the nearest is drawn, as on the screen. Faded centre atoms and their bonds use the colours of the screen. Before, the faces were outlined, paler and stacked, and faded centres were nearly invisible.
 
 No definition changed: every number is identical to v0.2.2.
