@@ -116,7 +116,9 @@ button.chip[aria-expanded="true"] { border-color: var(--accent); }
 
 .rail { display: flex; flex-direction: column; gap: 12px; min-width: 0; min-height: 0; overflow-y: auto; padding-right: 2px; }
 .card { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px 14px; display: grid; gap: 10px; min-width: 0; }
-.cmp { max-height: 30vh; overflow-y: auto; }
+.cmp .tbl-wrap { overflow: auto; }
+#tblCmp thead th { position: sticky; top: 0; background: var(--panel); z-index: 2; }
+#tblCmp thead th:first-child { left: 0; z-index: 3; }
 h2 { font-size: 11.5px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; color: var(--muted); margin: 0; }
 .row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
 .between { justify-content: space-between; }
@@ -209,7 +211,6 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
   .stage-col { grid-template-rows: auto auto auto; }
   .stage { height: clamp(340px, 62vh, 560px); }
   .rail { overflow: visible; }
-  .cmp { max-height: none; }
   h1 { font-size: 24px; }
 }
 </style>
@@ -277,6 +278,13 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
           <button type="button" id="styleBS" aria-pressed="true">Ball and stick</button>
           <button type="button" id="styleSF" aria-pressed="false">Space-filling</button>
           <button type="button" id="styleST" aria-pressed="false">Sticks</button>
+        </div>
+        <div class="row">
+          <span class="small" id="bondLbl">Bond colour</span>
+          <div class="seg" role="group" aria-labelledby="bondLbl">
+            <button type="button" id="bondSplit" aria-pressed="true">Two-tone</button>
+            <button type="button" id="bondGrad" aria-pressed="false">Gradient</button>
+          </div>
         </div>
         <div class="checks">
           <label><input type="checkbox" id="chkOrg" checked>Molecules</label>
@@ -474,7 +482,7 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
   const st = {
     docs: [], cur: -1,
     style: 'bs', poly: true, cellBox: true, H: true, hb: true, org: true, inorg: true,
-    arrow: 1.9, notice: '', shown: 0, picking: null, measure: 'dist', labels: 'off', px: 1
+    arrow: 1.9, notice: '', shown: 0, picking: null, measure: 'dist', labels: 'off', px: 1, bondGrad: false
   };
   let viewer = null;
   let hoverLabel = null;
@@ -506,6 +514,7 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
     return look(el).color || defaultColorOf(el);
   }
   const hexInt = (h) => parseInt(h.slice(1), 16);
+  const mixHex = (a, b) => '#' + [1, 3, 5].map((k) => Math.round((parseInt(a.slice(k, k + 2), 16) + parseInt(b.slice(k, k + 2), 16)) / 2).toString(16).padStart(2, '0')).join('');
   const darker = (hex) => '#' + [1, 3, 5].map((k) => Math.round(parseInt(hex.slice(k, k + 2), 16) * 0.5).toString(16).padStart(2, '0')).join('');
   const fmt = (x, d) => x.toFixed(d);
   const V3 = (p) => ({ x: p[0], y: p[1], z: p[2] });
@@ -1054,8 +1063,21 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
     $('tblCmp').innerHTML = '<thead><tr>' + head + '</tr></thead><tbody>' + rows.map((r, i) =>
       '<tr class="' + (i === st.cur ? 'on' : '') + '">' + r.map((c, k) => '<td>' + (k === 0 ? '<button type="button" class="xbtn" data-close="' + i + '" aria-label="Remove ' + esc(c[1]) + '" title="Remove this structure">×</button>' +
         '<button type="button" class="linkbtn" data-open="' + i + '">' + esc(c[1]) + '</button>' : esc(c[1])) + '</td>').join('') + '</tr>').join('') + '</tbody>';
+    fitCompare();
     $('tsvBox').hidden = true;
     $('copyMsg').textContent = st.docs.length > 1 ? 'Means over the independent sites of each structure.' : '';
+  }
+  /* the table shows three structures; more are reached by scrolling inside it */
+  function fitCompare() {
+    const tbl = $('tblCmp');
+    const wrap = tbl.parentElement;
+    const rows = tbl.tBodies[0] ? Array.from(tbl.tBodies[0].rows) : [];
+    if (rows.length <= 3 || !tbl.tHead) { wrap.style.maxHeight = ''; return; }
+    const h = tbl.tHead.getBoundingClientRect().height + rows.slice(0, 3).reduce((t, r) => t + r.getBoundingClientRect().height, 0);
+    // room for the horizontal scroll bar, so it does not cover the third row
+    wrap.style.maxHeight = Math.ceil(h + (wrap.offsetHeight - wrap.clientHeight) + 2) + 'px';
+    const on = tbl.querySelector('tr.on');
+    if (on && on.scrollIntoView) on.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   }
   function tsv() {
     const rows = compareRows();
@@ -1197,11 +1219,25 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
       const sty = {};
       const solid = opacityOf(el) >= 1;
       if (!solid) glassy.push(el);
-      if (st.style === 'sf') { if (solid) sty.sphere = { radius: sphereR(el), colorscheme: cs }; } else {
+      if (st.style === 'sf') { if (solid) sty.sphere = { radius: sphereR(el), colorscheme: cs }; } else if (st.bondGrad) {
+        // gradient bonds are drawn below as one mesh; every atom keeps a sphere, which also rounds the joints of sticks
+        if (solid) sty.sphere = { radius: sphereR(el), colorscheme: cs };
+      } else {
         sty.stick = { radius: stickR(el), colorscheme: cs };
         if (solid && (st.style === 'bs' || C.isMetal(el) || C.HALIDE.has(el))) sty.sphere = { radius: sphereR(el), colorscheme: cs };
       }
       model.setStyle({ elem: el }, sty);
+    }
+    if (st.bondGrad && st.style !== 'sf') {
+      const rgb = (el) => { const v = hexInt(colorOf(el)); return [((v >> 16) & 255) / 255, ((v >> 8) & 255) / 255, (v & 255) / 255]; };
+      const bonds = [];
+      list.forEach((a, i) => { for (const j of a.bonds) if (j > i) bonds.push({ p: [a.x, a.y, a.z], q: [list[j].x, list[j].y, list[j].z], rp: stickR(a.elem), rq: stickR(list[j].elem), cp: rgb(a.elem), cq: rgb(list[j].elem) }); });
+      for (const m of C.bondTubes(bonds, 10)) {
+        // 3Dmol repaints a shape with its own colour when it draws it; a list of colours, one per vertex, is kept as given
+        const colours = m.colorArr.map((c) => ({ r: c[0], g: c[1], b: c[2] }));
+        const shape = viewer.addCustom({ vertexArr: m.vertexArr.map(V3), normalArr: m.normalArr.map(V3), faceArr: m.faceArr, colorArr: colours });
+        shape.color = colours;
+      }
     }
 
     // coordination polyhedra, one mesh per centre element, in that element's polyhedron style
@@ -1581,7 +1617,12 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
       const color = colorOf(a.el);
       items.push({ t: 'atom', p: a.xyz, r: sphereR(a.el), color, el: a.el, opacity: opacityOf(a.el) });
       if (st.style === 'sf') return;
-      for (const j of a.bonds) if (isVisible(blk.atoms[j])) items.push({ t: 'bond', p: a.xyz, q: mid(a.xyz, blk.atoms[j].xyz), r: stickR(a.el), color });
+      for (const j of a.bonds) {
+        const o = blk.atoms[j];
+        if (!isVisible(o)) continue;
+        // each atom draws its half of the bond; with gradient bonds the half fades to the midpoint colour
+        items.push({ t: 'bond', p: a.xyz, q: mid(a.xyz, o.xyz), r: stickR(a.el), color, color2: st.bondGrad ? mixHex(color, colorOf(o.el)) : undefined });
+      }
     });
     if (st.poly && st.inorg && st.style !== 'sf') {
       for (const pl of blk.polyhedra) {
@@ -1693,6 +1734,14 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
     $('styleBS').onclick = () => setStyle('bs');
     $('styleSF').onclick = () => setStyle('sf');
     $('styleST').onclick = () => setStyle('st');
+    const setBonds = (grad) => {
+      st.bondGrad = grad;
+      $('bondSplit').setAttribute('aria-pressed', String(!grad));
+      $('bondGrad').setAttribute('aria-pressed', String(grad));
+      render(true);
+    };
+    $('bondSplit').onclick = () => setBonds(false);
+    $('bondGrad').onclick = () => setBonds(true);
     $('measDist').onclick = () => setMeasure('dist');
     $('measAngle').onclick = () => setMeasure('angle');
     $('measTors').onclick = () => setMeasure('tors');

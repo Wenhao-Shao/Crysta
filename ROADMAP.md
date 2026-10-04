@@ -51,6 +51,7 @@ Status marks: **done** (released), **next** (agreed, not started), **later** (ag
 | Angle and torsion measurement | done, v0.2.0 |
 | Remove single measurements (panel list, right-click menu, Clear) | done, v0.2.1 |
 | Colour, size and opacity per element, from the legend | done, v0.2.1 |
+| Two-tone or gradient bond colour | done, v0.2.1 |
 | Appearance per atom or per crystallographic site; remembered between visits | later |
 | Atom labels | done, v0.2.0 |
 | PNG export, 1x to 4x, optional transparent background | done, v0.2.0 |

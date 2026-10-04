@@ -122,7 +122,9 @@ button.chip[aria-expanded="true"] { border-color: var(--accent); }
 
 .rail { display: flex; flex-direction: column; gap: 12px; min-width: 0; min-height: 0; overflow-y: auto; padding-right: 2px; }
 .card { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px 14px; display: grid; gap: 10px; min-width: 0; }
-.cmp { max-height: 30vh; overflow-y: auto; }
+.cmp .tbl-wrap { overflow: auto; }
+#tblCmp thead th { position: sticky; top: 0; background: var(--panel); z-index: 2; }
+#tblCmp thead th:first-child { left: 0; z-index: 3; }
 h2 { font-size: 11.5px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; color: var(--muted); margin: 0; }
 .row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
 .between { justify-content: space-between; }
@@ -215,7 +217,6 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
   .stage-col { grid-template-rows: auto auto auto; }
   .stage { height: clamp(340px, 62vh, 560px); }
   .rail { overflow: visible; }
-  .cmp { max-height: none; }
   h1 { font-size: 24px; }
 }
 </style>
@@ -285,6 +286,13 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
           <button type="button" id="styleBS" aria-pressed="true">Ball and stick</button>
           <button type="button" id="styleSF" aria-pressed="false">Space-filling</button>
           <button type="button" id="styleST" aria-pressed="false">Sticks</button>
+        </div>
+        <div class="row">
+          <span class="small" id="bondLbl">Bond colour</span>
+          <div class="seg" role="group" aria-labelledby="bondLbl">
+            <button type="button" id="bondSplit" aria-pressed="true">Two-tone</button>
+            <button type="button" id="bondGrad" aria-pressed="false">Gradient</button>
+          </div>
         </div>
         <div class="checks">
           <label><input type="checkbox" id="chkOrg" checked>Molecules</label>
@@ -2147,7 +2155,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
        M, b: screen = M p + b, in pixels, y down. The scale (pixels per angstrom) is |M[0]|.
      items:
        { t: 'atom', p, r, color, el, opacity }           sphere of radius r (angstrom)
-       { t: 'bond', p, q, r, color }                     one half of a stick, radius r (angstrom)
+       { t: 'bond', p, q, r, color, color2 }             one half of a stick, radius r (angstrom); fades to color2 at q
        { t: 'face', pts, color, opacity, cls, edge, edgeColor }   flat polygon; edge = outline width in pixels
        { t: 'line', p, q, w, color, dash, cls }          line of width w (pixels)
        { t: 'arrow', p, q, r, color }                    arrow from p to q, shaft radius r (angstrom)
@@ -2192,6 +2200,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     const midp = (p, q, k) => [0, 1, 2].map((i) => p[i] + (q[i] - p[i]) * k);
     const font = scene.font || 'Helvetica, Arial, sans-serif';
     const grads = new Map();
+    const bondGrads = [];
     const body = [];
     const top = [];
     for (const it of scene.items) {
@@ -2210,9 +2219,17 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
         const s = P(it.p), e = P(it.q);
         const w = 2 * it.r * scale;
         const xy = 'x1="' + n2(s[0]) + '" y1="' + n2(s[1]) + '" x2="' + n2(e[0]) + '" y2="' + n2(e[1]) + '"';
+        // with a second colour the stick fades from one to the other along its length
+        let paint = it.color;
+        if (it.color2 && it.color2 !== it.color) {
+          const id = 'b' + (bondGrads.length + 1);
+          bondGrads.push('<linearGradient id="' + id + '" gradientUnits="userSpaceOnUse" x1="' + n2(s[0]) + '" y1="' + n2(s[1]) + '" x2="' + n2(e[0]) + '" y2="' + n2(e[1]) +
+            '"><stop offset="0" stop-color="' + it.color + '"/><stop offset="1" stop-color="' + it.color2 + '"/></linearGradient>');
+          paint = 'url(#' + id + ')';
+        }
         // a dark line under a slightly thinner coloured one gives the stick its outline
         body.push({ z: depth(midp(it.p, it.q, 0.5)), s: '<g class="bond"><line ' + xy + ' stroke="' + shade(it.color, -0.55) + '" stroke-width="' + n2(w + Math.max(0.6, 0.03 * scale)) + '"/>' +
-          '<line ' + xy + ' stroke="' + it.color + '" stroke-width="' + n2(w) + '"/></g>' });
+          '<line ' + xy + ' stroke="' + paint + '" stroke-width="' + n2(w) + '"/></g>' });
       } else if (it.t === 'face') {
         let z = 0;
         for (const p of it.pts) z += depth(p);
@@ -2250,9 +2267,40 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     return ['<?xml version="1.0" encoding="UTF-8"?>',
       '<svg xmlns="http://www.w3.org/2000/svg" width="' + n2(width) + '" height="' + n2(height) + '" viewBox="0 0 ' + n2(width) + ' ' + n2(height) + '" font-family="' + xml(font) + '">',
       scene.title ? '<title>' + xml(scene.title) + '</title>' : '',
-      defs.length ? '<defs>' + defs.join('') + '</defs>' : '',
+      defs.length || bondGrads.length ? '<defs>' + defs.join('') + bondGrads.join('') + '</defs>' : '',
       scene.background ? '<rect class="background" width="100%" height="100%" fill="' + scene.background + '"/>' : '',
       '<g class="structure" stroke-linecap="butt">'].concat(body.map((o) => o.s), ['</g>', '<g class="labels">'], top, ['</g>', '</svg>', '']).filter((l) => l !== '').join('\n') + '\n';
+  }
+
+  /* one tube per bond as a mesh with a colour at each end, so the graphics card blends them along the bond.
+     bonds: [{ p, q, rp, rq, cp: [r, g, b], cq: [r, g, b] }] with colours 0 to 1. Returns vertex, normal,
+     colour and face arrays in chunks that stay below the vertex limit of one mesh. */
+  function bondTubes(bonds, sides, maxVerts) {
+    const n = sides || 10;
+    const cap = maxVerts || 60000;
+    const out = [];
+    let cur = null;
+    for (const bd of bonds) {
+      let u = sub(bd.q, bd.p);
+      const len = norm(u);
+      if (len < 1e-6) continue;
+      u = u.map((x) => x / len);
+      let e1 = cross(u, Math.abs(u[0]) < 0.9 ? [1, 0, 0] : [0, 1, 0]);
+      e1 = e1.map((x) => x / norm(e1));
+      const e2 = cross(u, e1);
+      if (!cur || cur.vertexArr.length + 2 * n > cap) { cur = { vertexArr: [], normalArr: [], colorArr: [], faceArr: [] }; out.push(cur); }
+      const base = cur.vertexArr.length;
+      for (let k = 0; k < n; k++) {
+        const th = 2 * Math.PI * k / n;
+        const r = [0, 1, 2].map((i) => Math.cos(th) * e1[i] + Math.sin(th) * e2[i]);
+        cur.vertexArr.push([0, 1, 2].map((i) => bd.p[i] + bd.rp * r[i]), [0, 1, 2].map((i) => bd.q[i] + bd.rq * r[i]));
+        cur.normalArr.push(r, r);
+        cur.colorArr.push(bd.cp, bd.cq);
+        const a0 = base + 2 * k, b0 = a0 + 1, a1 = base + 2 * ((k + 1) % n), b1 = a1 + 1;
+        cur.faceArr.push(a0, a1, b0, a1, b1, b0);
+      }
+    }
+    return out;
   }
 
   /* triangles of the convex hull of a small point set (coordination polyhedron) */
@@ -2285,7 +2333,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     return faces;
   }
 
-  root.XtalCore = { readStructure, readCif, readPoscar, readXyz, readShelx, buildCell, analyse, assemble, hullFaces, planePolys, tetrazineDefs, chromoInstances, stateDir, orientReport, hallOps, symbolOps, setSgTable, isMetal, isCenter, isDonor, HALIDE, RC, MASS, parseSymop, MAX_POLY_CN, distance, bondAngle, torsion, toMol2, toSvg, hullPolygons, polyhedraFor, polyhedraStats, suggestPolyMax };
+  root.XtalCore = { readStructure, readCif, readPoscar, readXyz, readShelx, buildCell, analyse, assemble, hullFaces, planePolys, tetrazineDefs, chromoInstances, stateDir, orientReport, hallOps, symbolOps, setSgTable, isMetal, isCenter, isDonor, HALIDE, RC, MASS, parseSymop, MAX_POLY_CN, distance, bondAngle, torsion, toMol2, toSvg, hullPolygons, bondTubes, polyhedraFor, polyhedraStats, suggestPolyMax };
   if (typeof module !== 'undefined' && module.exports) module.exports = root.XtalCore;
 })(typeof window !== 'undefined' ? window : globalThis);
 
@@ -2318,7 +2366,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
   const st = {
     docs: [], cur: -1,
     style: 'bs', poly: true, cellBox: true, H: true, hb: true, org: true, inorg: true,
-    arrow: 1.9, notice: '', shown: 0, picking: null, measure: 'dist', labels: 'off', px: 1
+    arrow: 1.9, notice: '', shown: 0, picking: null, measure: 'dist', labels: 'off', px: 1, bondGrad: false
   };
   let viewer = null;
   let hoverLabel = null;
@@ -2350,6 +2398,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     return look(el).color || defaultColorOf(el);
   }
   const hexInt = (h) => parseInt(h.slice(1), 16);
+  const mixHex = (a, b) => '#' + [1, 3, 5].map((k) => Math.round((parseInt(a.slice(k, k + 2), 16) + parseInt(b.slice(k, k + 2), 16)) / 2).toString(16).padStart(2, '0')).join('');
   const darker = (hex) => '#' + [1, 3, 5].map((k) => Math.round(parseInt(hex.slice(k, k + 2), 16) * 0.5).toString(16).padStart(2, '0')).join('');
   const fmt = (x, d) => x.toFixed(d);
   const V3 = (p) => ({ x: p[0], y: p[1], z: p[2] });
@@ -2898,8 +2947,21 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     $('tblCmp').innerHTML = '<thead><tr>' + head + '</tr></thead><tbody>' + rows.map((r, i) =>
       '<tr class="' + (i === st.cur ? 'on' : '') + '">' + r.map((c, k) => '<td>' + (k === 0 ? '<button type="button" class="xbtn" data-close="' + i + '" aria-label="Remove ' + esc(c[1]) + '" title="Remove this structure">×</button>' +
         '<button type="button" class="linkbtn" data-open="' + i + '">' + esc(c[1]) + '</button>' : esc(c[1])) + '</td>').join('') + '</tr>').join('') + '</tbody>';
+    fitCompare();
     $('tsvBox').hidden = true;
     $('copyMsg').textContent = st.docs.length > 1 ? 'Means over the independent sites of each structure.' : '';
+  }
+  /* the table shows three structures; more are reached by scrolling inside it */
+  function fitCompare() {
+    const tbl = $('tblCmp');
+    const wrap = tbl.parentElement;
+    const rows = tbl.tBodies[0] ? Array.from(tbl.tBodies[0].rows) : [];
+    if (rows.length <= 3 || !tbl.tHead) { wrap.style.maxHeight = ''; return; }
+    const h = tbl.tHead.getBoundingClientRect().height + rows.slice(0, 3).reduce((t, r) => t + r.getBoundingClientRect().height, 0);
+    // room for the horizontal scroll bar, so it does not cover the third row
+    wrap.style.maxHeight = Math.ceil(h + (wrap.offsetHeight - wrap.clientHeight) + 2) + 'px';
+    const on = tbl.querySelector('tr.on');
+    if (on && on.scrollIntoView) on.scrollIntoView({ block: 'nearest', inline: 'nearest' });
   }
   function tsv() {
     const rows = compareRows();
@@ -3041,11 +3103,25 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
       const sty = {};
       const solid = opacityOf(el) >= 1;
       if (!solid) glassy.push(el);
-      if (st.style === 'sf') { if (solid) sty.sphere = { radius: sphereR(el), colorscheme: cs }; } else {
+      if (st.style === 'sf') { if (solid) sty.sphere = { radius: sphereR(el), colorscheme: cs }; } else if (st.bondGrad) {
+        // gradient bonds are drawn below as one mesh; every atom keeps a sphere, which also rounds the joints of sticks
+        if (solid) sty.sphere = { radius: sphereR(el), colorscheme: cs };
+      } else {
         sty.stick = { radius: stickR(el), colorscheme: cs };
         if (solid && (st.style === 'bs' || C.isMetal(el) || C.HALIDE.has(el))) sty.sphere = { radius: sphereR(el), colorscheme: cs };
       }
       model.setStyle({ elem: el }, sty);
+    }
+    if (st.bondGrad && st.style !== 'sf') {
+      const rgb = (el) => { const v = hexInt(colorOf(el)); return [((v >> 16) & 255) / 255, ((v >> 8) & 255) / 255, (v & 255) / 255]; };
+      const bonds = [];
+      list.forEach((a, i) => { for (const j of a.bonds) if (j > i) bonds.push({ p: [a.x, a.y, a.z], q: [list[j].x, list[j].y, list[j].z], rp: stickR(a.elem), rq: stickR(list[j].elem), cp: rgb(a.elem), cq: rgb(list[j].elem) }); });
+      for (const m of C.bondTubes(bonds, 10)) {
+        // 3Dmol repaints a shape with its own colour when it draws it; a list of colours, one per vertex, is kept as given
+        const colours = m.colorArr.map((c) => ({ r: c[0], g: c[1], b: c[2] }));
+        const shape = viewer.addCustom({ vertexArr: m.vertexArr.map(V3), normalArr: m.normalArr.map(V3), faceArr: m.faceArr, colorArr: colours });
+        shape.color = colours;
+      }
     }
 
     // coordination polyhedra, one mesh per centre element, in that element's polyhedron style
@@ -3425,7 +3501,12 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
       const color = colorOf(a.el);
       items.push({ t: 'atom', p: a.xyz, r: sphereR(a.el), color, el: a.el, opacity: opacityOf(a.el) });
       if (st.style === 'sf') return;
-      for (const j of a.bonds) if (isVisible(blk.atoms[j])) items.push({ t: 'bond', p: a.xyz, q: mid(a.xyz, blk.atoms[j].xyz), r: stickR(a.el), color });
+      for (const j of a.bonds) {
+        const o = blk.atoms[j];
+        if (!isVisible(o)) continue;
+        // each atom draws its half of the bond; with gradient bonds the half fades to the midpoint colour
+        items.push({ t: 'bond', p: a.xyz, q: mid(a.xyz, o.xyz), r: stickR(a.el), color, color2: st.bondGrad ? mixHex(color, colorOf(o.el)) : undefined });
+      }
     });
     if (st.poly && st.inorg && st.style !== 'sf') {
       for (const pl of blk.polyhedra) {
@@ -3537,6 +3618,14 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     $('styleBS').onclick = () => setStyle('bs');
     $('styleSF').onclick = () => setStyle('sf');
     $('styleST').onclick = () => setStyle('st');
+    const setBonds = (grad) => {
+      st.bondGrad = grad;
+      $('bondSplit').setAttribute('aria-pressed', String(!grad));
+      $('bondGrad').setAttribute('aria-pressed', String(grad));
+      render(true);
+    };
+    $('bondSplit').onclick = () => setBonds(false);
+    $('bondGrad').onclick = () => setBonds(true);
     $('measDist').onclick = () => setMeasure('dist');
     $('measAngle').onclick = () => setMeasure('angle');
     $('measTors').onclick = () => setMeasure('tors');

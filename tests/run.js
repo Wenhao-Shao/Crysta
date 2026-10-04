@@ -296,5 +296,27 @@ const formula = (info) => info.formula.map((e) => e.el + e.n).join(' ');
   check('Te with 8 Cs: centre inside a cube', far.cnMin === 8 && far.outside === 0, JSON.stringify(far));
 }
 
+// 11. gradient bonds
+{
+  const tubes = X.bondTubes([{ p: [0, 0, 0], q: [0, 0, 2], rp: 0.1, rq: 0.07, cp: [1, 0, 0], cq: [0, 0, 1] }], 8);
+  const m = tubes[0];
+  check('tube mesh size', tubes.length === 1 && m.vertexArr.length === 16 && m.faceArr.length === 48 && m.colorArr.length === 16);
+  check('tube tapers and keeps a colour at each end', near(Math.hypot(m.vertexArr[0][0], m.vertexArr[0][1]), 0.1, 1e-9) && near(Math.hypot(m.vertexArr[1][0], m.vertexArr[1][1]), 0.07, 1e-9) &&
+    m.colorArr[0][0] === 1 && m.colorArr[1][2] === 1);
+  // every triangle faces outward: its normal points away from the axis
+  let outward = true;
+  for (let f = 0; f < m.faceArr.length; f += 3) {
+    const [a, b, c] = [m.vertexArr[m.faceArr[f]], m.vertexArr[m.faceArr[f + 1]], m.vertexArr[m.faceArr[f + 2]]];
+    const u = [b[0] - a[0], b[1] - a[1], b[2] - a[2]], v = [c[0] - a[0], c[1] - a[1], c[2] - a[2]];
+    const nrm = [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]];
+    if (nrm[0] * a[0] + nrm[1] * a[1] <= 0) outward = false;
+  }
+  check('tube faces point outward', outward);
+  check('long bond lists are split below the mesh limit', X.bondTubes(new Array(50).fill({ p: [0, 0, 0], q: [1, 0, 0], rp: 0.1, rq: 0.1, cp: [0, 0, 0], cq: [1, 1, 1] }), 10, 200).length === 5);
+  const view = { width: 100, height: 100, M: [[10, 0, 0], [0, -10, 0]], b: [50, 50] };
+  const svg = X.toSvg(Object.assign({ items: [{ t: 'bond', p: [0, 0, 0], q: [1, 0, 0], r: 0.1, color: '#ff0000', color2: '#800080' }, { t: 'bond', p: [0, 0, 0], q: [0, 1, 0], r: 0.1, color: '#ff0000' }] }, view));
+  check('svg gradient bond', (svg.match(/<linearGradient/g) || []).length === 1 && svg.includes('stroke="url(#b1)"') && svg.includes('stop-color="#800080"') && svg.includes('x1="50" y1="50" x2="60" y2="50"'));
+}
+
 console.log(passed + ' passed, ' + failed + ' failed');
 process.exit(failed ? 1 : 0);

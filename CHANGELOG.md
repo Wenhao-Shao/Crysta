@@ -9,6 +9,8 @@ Any change to how a number is defined gets a new version and a line here.
 - Polyhedra you define yourself: a Polyhedra card where any element can be the centre and any elements the corners, within a distance you set. The card suggests the distance of the nearest shell, shows how many corners that gives before you add it, and can be filled by clicking a centre atom and one corner atom in the picture. Three corners are drawn as a triangle. The card warns when the centre lies outside its corners, which means the distance reaches into a neighbouring unit. The distance stays editable in the list. Your polyhedra replace the automatic ones around the same element, belong to one structure, and are used by the PNG and SVG exports. They change the picture only: coordination numbers, framework dimensionality and the layer descriptors are computed as before.
 - In the Structures table the control that removes a structure is a cross at the left of its name.
 - Each row of the Polyhedra card opens to set the colour, opacity and edges of those polyhedra, automatic or your own.
+- Bond colour: a Two-tone / Gradient switch in the Display card. Two-tone gives each half of a bond the colour of its atom; Gradient fades from one atom's colour to the other's. PNG and SVG exports follow it.
+- The Structures table is three rows high; with more structures it scrolls, with the header kept in view.
 
 Definitions that changed:
 

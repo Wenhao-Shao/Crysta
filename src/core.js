@@ -1690,7 +1690,7 @@
        M, b: screen = M p + b, in pixels, y down. The scale (pixels per angstrom) is |M[0]|.
      items:
        { t: 'atom', p, r, color, el, opacity }           sphere of radius r (angstrom)
-       { t: 'bond', p, q, r, color }                     one half of a stick, radius r (angstrom)
+       { t: 'bond', p, q, r, color, color2 }             one half of a stick, radius r (angstrom); fades to color2 at q
        { t: 'face', pts, color, opacity, cls, edge, edgeColor }   flat polygon; edge = outline width in pixels
        { t: 'line', p, q, w, color, dash, cls }          line of width w (pixels)
        { t: 'arrow', p, q, r, color }                    arrow from p to q, shaft radius r (angstrom)
@@ -1735,6 +1735,7 @@
     const midp = (p, q, k) => [0, 1, 2].map((i) => p[i] + (q[i] - p[i]) * k);
     const font = scene.font || 'Helvetica, Arial, sans-serif';
     const grads = new Map();
+    const bondGrads = [];
     const body = [];
     const top = [];
     for (const it of scene.items) {
@@ -1753,9 +1754,17 @@
         const s = P(it.p), e = P(it.q);
         const w = 2 * it.r * scale;
         const xy = 'x1="' + n2(s[0]) + '" y1="' + n2(s[1]) + '" x2="' + n2(e[0]) + '" y2="' + n2(e[1]) + '"';
+        // with a second colour the stick fades from one to the other along its length
+        let paint = it.color;
+        if (it.color2 && it.color2 !== it.color) {
+          const id = 'b' + (bondGrads.length + 1);
+          bondGrads.push('<linearGradient id="' + id + '" gradientUnits="userSpaceOnUse" x1="' + n2(s[0]) + '" y1="' + n2(s[1]) + '" x2="' + n2(e[0]) + '" y2="' + n2(e[1]) +
+            '"><stop offset="0" stop-color="' + it.color + '"/><stop offset="1" stop-color="' + it.color2 + '"/></linearGradient>');
+          paint = 'url(#' + id + ')';
+        }
         // a dark line under a slightly thinner coloured one gives the stick its outline
         body.push({ z: depth(midp(it.p, it.q, 0.5)), s: '<g class="bond"><line ' + xy + ' stroke="' + shade(it.color, -0.55) + '" stroke-width="' + n2(w + Math.max(0.6, 0.03 * scale)) + '"/>' +
-          '<line ' + xy + ' stroke="' + it.color + '" stroke-width="' + n2(w) + '"/></g>' });
+          '<line ' + xy + ' stroke="' + paint + '" stroke-width="' + n2(w) + '"/></g>' });
       } else if (it.t === 'face') {
         let z = 0;
         for (const p of it.pts) z += depth(p);
@@ -1793,9 +1802,40 @@
     return ['<?xml version="1.0" encoding="UTF-8"?>',
       '<svg xmlns="http://www.w3.org/2000/svg" width="' + n2(width) + '" height="' + n2(height) + '" viewBox="0 0 ' + n2(width) + ' ' + n2(height) + '" font-family="' + xml(font) + '">',
       scene.title ? '<title>' + xml(scene.title) + '</title>' : '',
-      defs.length ? '<defs>' + defs.join('') + '</defs>' : '',
+      defs.length || bondGrads.length ? '<defs>' + defs.join('') + bondGrads.join('') + '</defs>' : '',
       scene.background ? '<rect class="background" width="100%" height="100%" fill="' + scene.background + '"/>' : '',
       '<g class="structure" stroke-linecap="butt">'].concat(body.map((o) => o.s), ['</g>', '<g class="labels">'], top, ['</g>', '</svg>', '']).filter((l) => l !== '').join('\n') + '\n';
+  }
+
+  /* one tube per bond as a mesh with a colour at each end, so the graphics card blends them along the bond.
+     bonds: [{ p, q, rp, rq, cp: [r, g, b], cq: [r, g, b] }] with colours 0 to 1. Returns vertex, normal,
+     colour and face arrays in chunks that stay below the vertex limit of one mesh. */
+  function bondTubes(bonds, sides, maxVerts) {
+    const n = sides || 10;
+    const cap = maxVerts || 60000;
+    const out = [];
+    let cur = null;
+    for (const bd of bonds) {
+      let u = sub(bd.q, bd.p);
+      const len = norm(u);
+      if (len < 1e-6) continue;
+      u = u.map((x) => x / len);
+      let e1 = cross(u, Math.abs(u[0]) < 0.9 ? [1, 0, 0] : [0, 1, 0]);
+      e1 = e1.map((x) => x / norm(e1));
+      const e2 = cross(u, e1);
+      if (!cur || cur.vertexArr.length + 2 * n > cap) { cur = { vertexArr: [], normalArr: [], colorArr: [], faceArr: [] }; out.push(cur); }
+      const base = cur.vertexArr.length;
+      for (let k = 0; k < n; k++) {
+        const th = 2 * Math.PI * k / n;
+        const r = [0, 1, 2].map((i) => Math.cos(th) * e1[i] + Math.sin(th) * e2[i]);
+        cur.vertexArr.push([0, 1, 2].map((i) => bd.p[i] + bd.rp * r[i]), [0, 1, 2].map((i) => bd.q[i] + bd.rq * r[i]));
+        cur.normalArr.push(r, r);
+        cur.colorArr.push(bd.cp, bd.cq);
+        const a0 = base + 2 * k, b0 = a0 + 1, a1 = base + 2 * ((k + 1) % n), b1 = a1 + 1;
+        cur.faceArr.push(a0, a1, b0, a1, b1, b0);
+      }
+    }
+    return out;
   }
 
   /* triangles of the convex hull of a small point set (coordination polyhedron) */
@@ -1828,6 +1868,6 @@
     return faces;
   }
 
-  root.XtalCore = { readStructure, readCif, readPoscar, readXyz, readShelx, buildCell, analyse, assemble, hullFaces, planePolys, tetrazineDefs, chromoInstances, stateDir, orientReport, hallOps, symbolOps, setSgTable, isMetal, isCenter, isDonor, HALIDE, RC, MASS, parseSymop, MAX_POLY_CN, distance, bondAngle, torsion, toMol2, toSvg, hullPolygons, polyhedraFor, polyhedraStats, suggestPolyMax };
+  root.XtalCore = { readStructure, readCif, readPoscar, readXyz, readShelx, buildCell, analyse, assemble, hullFaces, planePolys, tetrazineDefs, chromoInstances, stateDir, orientReport, hallOps, symbolOps, setSgTable, isMetal, isCenter, isDonor, HALIDE, RC, MASS, parseSymop, MAX_POLY_CN, distance, bondAngle, torsion, toMol2, toSvg, hullPolygons, bondTubes, polyhedraFor, polyhedraStats, suggestPolyMax };
   if (typeof module !== 'undefined' && module.exports) module.exports = root.XtalCore;
 })(typeof window !== 'undefined' ? window : globalThis);
