@@ -323,6 +323,7 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
             <option value="soft">Soft</option>
             <option value="cb">Colour-blind safe</option>
             <option value="framework">Framework first</option>
+            <option value="shaolab">Shao Lab</option>
           </select>
         </div>
         <div class="row">
@@ -460,7 +461,7 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
         <div class="small" id="hbNote"></div>
       </section>
 
-      <div class="foot">Crysta v0.2.3. Drawn with 3Dmol.js. Symmetry expansion, bonding, molecule assembly and every distance and angle are computed in this page from the file. Nothing is uploaded.</div>
+      <div class="foot">Crysta v0.2.4. Drawn with 3Dmol.js. Symmetry expansion, bonding, molecule assembly and every distance and angle are computed in this page from the file. Nothing is uploaded.</div>
     </aside>
   </div>
 </div>
@@ -2531,12 +2532,15 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
   const CB_GROUPS = [[['H'], OI.light], [['C', 'B', 'Si'], OI.grey], [['N', 'P', 'As'], OI.blue], [['O'], OI.vermillion], [['S', 'Se', 'Te'], OI.yellow], [['F', 'Cl'], OI.green], [['Br'], OI.orange], [['I', 'At'], OI.purple],
     [['Li', 'Na', 'K', 'Rb', 'Cs', 'Fr'], OI.sky], [['Be', 'Mg', 'Ca', 'Sr', 'Ba', 'Ra'], OI.green], [['Al', 'Ga', 'In', 'Sn', 'Tl', 'Pb', 'Bi', 'Po', 'Ge', 'Sb'], OI.dark], [['He', 'Ne', 'Ar', 'Kr', 'Xe', 'Rn'], OI.light]];
   const FRAMEWORK = { H: '#ececf0', C: '#a6a9b0', N: '#8f97ab', O: '#c9695f', F: '#a9b8a4', Cl: '#1f9d55', Br: '#c2571e', I: '#6a2fa0', S: '#d9a400', Pb: '#27324a', Co: '#d6336c', Li: '#8b5cf6', Se: '#f59e0b' };
+  // the palette of the (FCA3)2PbBr4 figures in Shao et al., Nat. Synth. 2026 (slate Pb, white H, pink O, blue C)
+  const SHAO = { Pb: '#52535b', Br: '#7e3102', I: '#6a2fa0', Cl: '#2fae52', C: '#5b679b', N: '#b0b9e6', O: '#d36977', F: '#afbad3', H: '#ffffff', S: '#d9b43a', Sn: '#6f8ea6' };
   const SCHEMES = {
     crysta: { name: 'Crysta', of: crystaColor },
     jmol: { name: 'Jmol classic', of: jmolColor },
     soft: { name: 'Soft', of: (el) => SOFT[el] || mix(crystaColor(el), '#f1f1f4', 0.5) },
     cb: { name: 'Colour-blind safe', of: (el) => { const g = CB_GROUPS.find((x) => x[0].includes(el)); return g ? g[1] : OI.purple; } },   // the remaining metals share one hue
-    framework: { name: 'Framework first', of: (el) => FRAMEWORK[el] || crystaColor(el) }
+    framework: { name: 'Framework first', of: (el) => FRAMEWORK[el] || crystaColor(el) },
+    shaolab: { name: 'Shao Lab', of: (el) => SHAO[el] || crystaColor(el) }
   };
   /* on a dark stage a dark colour is lifted so the atom stays visible (the Crysta scheme has its own dark values) */
   const legible = (hex) => {
@@ -3119,7 +3123,7 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
       ['Axial tilt (°)', L && L.axialTilt ? num(L.axialTilt.mean, 1) : ''],
       ['N penetration (Å)', L && L.penetration.length ? num(mean(L.penetration.map((p) => p.depth)), 3) : ''],
       ['Stacking offset', L && L.offset ? '(' + fmt(L.offset.s1, 2) + ', ' + fmt(L.offset.s2, 2) + ')' : ''],
-      ['Crysta version', 'v0.2.3']
+      ['Crysta version', 'v0.2.4']
     ];
   }
   /* columns of the table that hold a mean over the independent sites of a structure */
@@ -4176,7 +4180,7 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
     const ISSUES = 'https://github.com/Wenhao-Shao/Crysta/issues/new';
     const fbUrl = () => {
       const title = '[' + $('fbKind').value + '] ' + $('fbSummary').value.trim();
-      const tail = '\n\n---\nSent from the Crysta feedback box\nCrysta v0.2.3\nBrowser: ' + navigator.userAgent;
+      const tail = '\n\n---\nSent from the Crysta feedback box\nCrysta v0.2.4\nBrowser: ' + navigator.userAgent;
       let details = $('fbDetails').value.trim() || '(no details given)';
       const make = (d) => ISSUES + '?title=' + encodeURIComponent(title) + '&body=' + encodeURIComponent(d + tail);
       let url = make(details);
@@ -4225,7 +4229,7 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
       data.append('summary', summary);
       data.append('details', $('fbDetails').value.trim() || '(no details given)');
       if (email) data.append('email', email);
-      data.append('workbench', 'v0.2.3');
+      data.append('workbench', 'v0.2.4');
       data.append('browser', navigator.userAgent);
       const buttons = [$('fbDirect'), $('fbGithub')];
       buttons.forEach((b) => { b.disabled = true; });

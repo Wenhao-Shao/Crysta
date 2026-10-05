@@ -2,6 +2,12 @@
 
 Any change to how a number is defined gets a new version and a line here.
 
+## v0.2.4
+
+- A sixth element colour scheme, **Shao Lab**: the palette of the (FCA3)2PbBr4 figures in Shao et al., Nat. Synth. 2026 (slate Pb, brown Br, blue C, light-blue N and F, pink O, white H). Other elements keep the Crysta colour.
+
+No definition changed: every number is identical to v0.2.3.
+
 ## v0.2.3
 
 - New default look: atoms and bonds are drawn at half their earlier radius in the ball-and-stick and sticks styles, and bonds are gradient-coloured. Space-filling is unchanged.

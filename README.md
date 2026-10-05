@@ -31,7 +31,7 @@ Press "Load the sample structures" to load the four built-in samples: (PEA)2PbBr
 
 ## What it does
 
-- **Viewer:** ball and stick, space-filling or sticks; atom size and bond width sliders; five element colour schemes; two-tone or gradient bonds; coordination polyhedra; hydrogen bonds; molecule
+- **Viewer:** ball and stick, space-filling or sticks; atom size and bond width sliders; six element colour schemes; two-tone or gradient bonds; coordination polyhedra; hydrogen bonds; molecule
   and framework toggles; atom labels; packing limits in cell fractions; views down a cell axis, a [uvw]
   direction or an (hkl) normal; lattice planes with an offset.
 - **Measure:** click atoms for a distance (two), an angle (three, at the second) or a torsion (four). Remove one from the list in the Measure card or by a right-click on it in the picture; Clear removes all.
