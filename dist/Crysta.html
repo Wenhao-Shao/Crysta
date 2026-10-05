@@ -168,6 +168,9 @@ button.mini { padding: 1px 8px; font-size: 12px; }
 .homelink { display: inline-block; text-decoration: none; white-space: nowrap; }
 .filebtn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
 
+.sizes { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 6px 8px; align-items: center; font-size: 12.5px; color: var(--muted); }
+.sizes input[type="range"] { width: 100%; accent-color: var(--accent); }
+.sizes output { font-family: var(--font-data); font-variant-numeric: tabular-nums; min-width: 5ch; text-align: right; }
 .checks { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; }
 .checks label { display: flex; align-items: center; gap: 7px; font-size: 13px; cursor: pointer; }
 input[type="checkbox"] { accent-color: var(--accent); width: 15px; height: 15px; margin: 0; flex: none; }
@@ -313,11 +316,25 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
           <button type="button" id="styleST" aria-pressed="false">Sticks</button>
         </div>
         <div class="row">
+          <label class="small" for="selScheme">Element colours</label>
+          <select id="selScheme">
+            <option value="crysta">Crysta</option>
+            <option value="jmol">Jmol classic</option>
+            <option value="soft">Soft</option>
+            <option value="cb">Colour-blind safe</option>
+            <option value="framework">Framework first</option>
+          </select>
+        </div>
+        <div class="row">
           <span class="small" id="bondLbl">Bond colour</span>
           <div class="seg" role="group" aria-labelledby="bondLbl">
-            <button type="button" id="bondSplit" aria-pressed="true">Two-tone</button>
-            <button type="button" id="bondGrad" aria-pressed="false">Gradient</button>
+            <button type="button" id="bondSplit" aria-pressed="false">Two-tone</button>
+            <button type="button" id="bondGrad" aria-pressed="true">Gradient</button>
           </div>
+        </div>
+        <div class="sizes">
+          <label for="rngAtom">Atom size</label><input type="range" id="rngAtom" min="0.25" max="3" step="0.05" value="1"><output id="outAtom" for="rngAtom">1.00×</output>
+          <label for="rngBond">Bond width</label><input type="range" id="rngBond" min="0.25" max="3" step="0.05" value="1"><output id="outBond" for="rngBond">1.00×</output>
         </div>
         <div class="checks">
           <label><input type="checkbox" id="chkOrg" checked>Molecules</label>
@@ -443,7 +460,7 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
         <div class="small" id="hbNote"></div>
       </section>
 
-      <div class="foot">Crysta v0.2.2. Drawn with 3Dmol.js. Symmetry expansion, bonding, molecule assembly and every distance and angle are computed in this page from the file. Nothing is uploaded.</div>
+      <div class="foot">Crysta v0.2.3. Drawn with 3Dmol.js. Symmetry expansion, bonding, molecule assembly and every distance and angle are computed in this page from the file. Nothing is uploaded.</div>
     </aside>
   </div>
 </div>
@@ -2218,6 +2235,85 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
       return idx;
     });
   }
+  /* ---- convex polygons in the plane of the drawing, used to cut see-through faces where a nearer one covers them ---- */
+  const area2d = (p) => { let s = 0; for (let i = 0; i < p.length; i++) { const a = p[i], b = p[(i + 1) % p.length]; s += a[0] * b[1] - b[0] * a[1]; } return s / 2; };
+  /* the part of a convex polygon on one side of the line a -> b: side +1 is the left, -1 the right */
+  function cutPolygon(poly, a, b, side) {
+    const out = [];
+    const dist = (p) => side * ((b[0] - a[0]) * (p[1] - a[1]) - (b[1] - a[1]) * (p[0] - a[0]));
+    for (let i = 0; i < poly.length; i++) {
+      const p = poly[i], q = poly[(i + 1) % poly.length];
+      const dp = dist(p), dq = dist(q);
+      if (dp >= 0) out.push(p);
+      if ((dp > 0 && dq < 0) || (dp < 0 && dq > 0)) { const t = dp / (dp - dq); out.push([p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t]); }
+    }
+    return out;
+  }
+  /* both polygons counter-clockwise (positive area2d) */
+  function intersectConvex(f, g) {
+    let r = f;
+    for (let i = 0; i < g.length && r.length >= 3; i++) r = cutPolygon(r, g[i], g[(i + 1) % g.length], 1);
+    return r.length >= 3 ? r : [];
+  }
+  /* f without g, as convex pieces */
+  function subtractConvex(f, g, minArea) {
+    const out = [];
+    let r = f;
+    for (let i = 0; i < g.length && r.length >= 3; i++) {
+      const a = g[i], b = g[(i + 1) % g.length];
+      const outside = cutPolygon(r, a, b, -1);
+      if (outside.length >= 3 && Math.abs(area2d(outside)) > minArea) out.push(outside);
+      r = cutPolygon(r, a, b, 1);
+    }
+    return out;
+  }
+  /* For see-through faces of which only the nearest is seen (as a 3D viewer with one see-through layer shows them):
+     the parts of each face that no nearer face covers. faces: [{ pts: [[x, y, depth], ...] }], convex, depth growing
+     towards the eye. Returns, per face, null when the whole face is seen, or its visible convex pieces (maybe none). */
+  function visibleParts(faces, minArea) {
+    const eps = minArea === undefined ? 0.05 : minArea;
+    const shapes = faces.map((f) => {
+      let q = f.pts.map((p) => [p[0], p[1]]);
+      const A = area2d(q);
+      if (A < 0) q = q.slice().reverse();
+      // depth as a plane over the drawing, from the three vertices that span the largest triangle with the first edge
+      const p0 = f.pts[0];
+      let best = null, bd = 0;
+      for (let i = 1; i + 1 < f.pts.length; i++) {
+        const u = f.pts[i], v = f.pts[i + 1];
+        const det = (u[0] - p0[0]) * (v[1] - p0[1]) - (v[0] - p0[0]) * (u[1] - p0[1]);
+        if (Math.abs(det) > Math.abs(bd)) { bd = det; best = [u, v]; }
+      }
+      let plane = null;
+      if (best && Math.abs(bd) > 1e-9) {
+        const [u, v] = best;
+        const ax = ((u[2] - p0[2]) * (v[1] - p0[1]) - (v[2] - p0[2]) * (u[1] - p0[1])) / bd;
+        const ay = ((u[0] - p0[0]) * (v[2] - p0[2]) - (v[0] - p0[0]) * (u[2] - p0[2])) / bd;
+        plane = (x, y) => p0[2] + ax * (x - p0[0]) + ay * (y - p0[1]);
+      }
+      const xs = q.map((p) => p[0]), ys = q.map((p) => p[1]);
+      return { q, area: Math.abs(A), plane, x0: Math.min(...xs), x1: Math.max(...xs), y0: Math.min(...ys), y1: Math.max(...ys) };
+    });
+    return shapes.map((F, i) => {
+      if (!F.plane || F.area <= eps) return null;
+      let pieces = null;
+      for (let j = 0; j < shapes.length; j++) {
+        const G = shapes[j];
+        if (j === i || !G.plane || G.area <= eps || G.x1 <= F.x0 || G.x0 >= F.x1 || G.y1 <= F.y0 || G.y0 >= F.y1) continue;
+        const I = intersectConvex(F.q, G.q);
+        if (I.length < 3 || Math.abs(area2d(I)) <= eps) continue;
+        let cx = 0, cy = 0;
+        for (const p of I) { cx += p[0] / I.length; cy += p[1] / I.length; }
+        const dz = G.plane(cx, cy) - F.plane(cx, cy);
+        // the nearer face covers; of two faces at the same depth the earlier one is kept
+        if (!(dz > 1e-7 || (Math.abs(dz) <= 1e-7 && j < i))) continue;
+        pieces = (pieces || [F.q]).flatMap((pc) => subtractConvex(pc, G.q, eps));
+        if (!pieces.length) break;
+      }
+      return pieces;
+    });
+  }
+
   function toSvg(scene) {
     const { M, b, width, height } = scene;
     const scale = norm(M[0]);
@@ -2234,6 +2330,10 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     const bondGrads = [];
     const body = [];
     const top = [];
+    // see-through faces of which only the nearest is seen: what is left of each after the nearer ones are cut away
+    const nearest = scene.items.filter((it) => it.t === 'face' && it.nearest);
+    const parts = new Map();
+    visibleParts(nearest.map((it) => ({ pts: it.pts.map((p) => { const s = P(p); return [s[0], s[1], depth(p)]; }) }))).forEach((v, i) => parts.set(nearest[i], v));
     for (const it of scene.items) {
       if (it.t === 'atom') {
         const s = P(it.p);
@@ -2264,8 +2364,20 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
       } else if (it.t === 'face') {
         let z = 0;
         for (const p of it.pts) z += depth(p);
-        body.push({ z: z / it.pts.length, s: '<polygon class="' + xml(it.cls || 'face') + '" points="' + it.pts.map(pt).join(' ') + '" fill="' + it.color + '" fill-opacity="' + (it.opacity === undefined ? 0.45 : it.opacity) +
-          '" stroke="' + (it.edgeColor || shade(it.color, -0.35)) + '" stroke-opacity="' + (it.edge ? 1 : 0.7) + '" stroke-width="' + n2(it.edge || Math.max(0.4, 0.015 * scale)) + '" stroke-linejoin="round"/>' });
+        z /= it.pts.length;
+        const cls = xml(it.cls || 'face');
+        const paint = 'fill="' + it.color + '" fill-opacity="' + (it.opacity === undefined ? 0.45 : it.opacity) + '"';
+        if (it.nearest) {
+          // no outline; cut where a nearer face covers it. The pieces go into one path, so no seams show between them.
+          const pieces = parts.get(it);
+          if (!pieces) body.push({ z, s: '<polygon class="' + cls + '" points="' + it.pts.map(pt).join(' ') + '" ' + paint + ' stroke="none"/>' });
+          else if (pieces.length) body.push({ z, s: '<path class="' + cls + '" d="' + pieces.map((pc) => 'M' + pc.map((q) => n2(q[0]) + ',' + n2(q[1])).join('L') + 'Z').join('') + '" ' + paint + ' stroke="none"/>' });
+          // edges are solid lines on the screen and are seen through nearer faces, so the whole outline is drawn
+          if (it.edge) body.push({ z, s: '<polygon class="' + cls + '-edge" points="' + it.pts.map(pt).join(' ') + '" fill="none" stroke="' + (it.edgeColor || shade(it.color, -0.35)) + '" stroke-width="' + n2(it.edge) + '" stroke-linejoin="round"/>' });
+        } else {
+          body.push({ z, s: '<polygon class="' + cls + '" points="' + it.pts.map(pt).join(' ') + '" ' + paint +
+            ' stroke="' + (it.edgeColor || shade(it.color, -0.35)) + '" stroke-opacity="' + (it.edge ? 1 : 0.7) + '" stroke-width="' + n2(it.edge || Math.max(0.4, 0.015 * scale)) + '" stroke-linejoin="round"/>' });
+        }
       } else if (it.t === 'line') {
         const s = P(it.p), e = P(it.q);
         body.push({ z: depth(midp(it.p, it.q, 0.5)), s: '<line class="' + xml(it.cls || 'line') + '" x1="' + n2(s[0]) + '" y1="' + n2(s[1]) + '" x2="' + n2(e[0]) + '" y2="' + n2(e[1]) + '" stroke="' + it.color +
@@ -2364,7 +2476,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     return faces;
   }
 
-  root.XtalCore = { readStructure, readCif, readPoscar, readXyz, readShelx, buildCell, analyse, assemble, hullFaces, planePolys, tetrazineDefs, chromoInstances, stateDir, orientReport, hallOps, symbolOps, setSgTable, isMetal, isCenter, isDonor, HALIDE, RC, MASS, parseSymop, MAX_POLY_CN, distance, bondAngle, torsion, toMol2, toSvg, hullPolygons, bondTubes, polyhedraFor, polyhedraStats, suggestPolyMax };
+  root.XtalCore = { readStructure, readCif, readPoscar, readXyz, readShelx, buildCell, analyse, assemble, hullFaces, planePolys, tetrazineDefs, chromoInstances, stateDir, orientReport, hallOps, symbolOps, setSgTable, isMetal, isCenter, isDonor, HALIDE, RC, MASS, parseSymop, MAX_POLY_CN, distance, bondAngle, torsion, toMol2, toSvg, visibleParts, hullPolygons, bondTubes, polyhedraFor, polyhedraStats, suggestPolyMax };
   if (typeof module !== 'undefined' && module.exports) module.exports = root.XtalCore;
 })(typeof window !== 'undefined' ? window : globalThis);
 
@@ -2397,7 +2509,9 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
   const st = {
     docs: [], cur: -1,
     style: 'bs', poly: true, cellBox: true, H: true, hb: true, org: true, inorg: true,
-    arrow: 1.9, notice: '', shown: 0, picking: null, measure: 'dist', labels: 'off', px: 1, bondGrad: false
+    arrow: 1.9, notice: '', shown: 0, picking: null, measure: 'dist', labels: 'off', px: 1, bondGrad: true,
+    atomScale: 1, bondScale: 1,  // the Atom size and Bond width sliders: every sphere and every stick, times this
+    scheme: 'crysta'             // the Element colours menu
   };
   let viewer = null;
   let hoverLabel = null;
@@ -2407,22 +2521,43 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
   /* what the user changed per element: { color, scale, opacity, poly }. Kept for the whole session. */
   const elemLook = {};
   const look = (el) => elemLook[el] || {};
-  const defaultColorOf = (el) => {
-    if (el === 'Pb') return cssVar('--atom-pb');
-    if (el === 'C') return cssVar('--atom-c');
-    if (PAL[el]) return PAL[el];
+  const jmolColor = (el) => {
     const j = window.$3Dmol && $3Dmol.elementColors && $3Dmol.elementColors.Jmol && $3Dmol.elementColors.Jmol[el];
     return typeof j === 'number' ? '#' + j.toString(16).padStart(6, '0') : '#b477b4';
   };
-  const vdwOf = (el) => (window.$3Dmol && $3Dmol.GLModel && $3Dmol.GLModel.vdwRadii && $3Dmol.GLModel.vdwRadii[el]) || 1.7;
-  /* drawn sphere and stick radius of an element in the current style, in angstrom */
-  const sphereR = (el) => {
-    const k = look(el).scale || 1;
-    if (st.style === 'sf') return k * vdwOf(el);
-    if (st.style === 'st') return k * (C.isMetal(el) ? 0.3 : C.HALIDE.has(el) ? 0.2 : 0.13);
-    return k * (C.isMetal(el) ? 0.55 : C.HALIDE.has(el) ? 0.42 : el === 'H' ? 0.16 : 0.3);
+  const crystaColor = (el) => (el === 'Pb' ? cssVar('--atom-pb') : el === 'C' ? cssVar('--atom-c') : PAL[el] || jmolColor(el));
+  /* Element colour schemes (the Element colours menu). Each has a short list of chosen colours and a rule for the rest. */
+  const mix = (a, b, f) => '#' + [1, 3, 5].map((k) => Math.round(parseInt(a.slice(k, k + 2), 16) * f + parseInt(b.slice(k, k + 2), 16) * (1 - f)).toString(16).padStart(2, '0')).join('');
+  const SOFT = { H: '#f1f1f4', C: '#8e929b', N: '#7f9fd9', O: '#e58b84', F: '#a9d6a0', Cl: '#8fcf9f', Br: '#c99a78', I: '#a98fc9', S: '#e6d27a', Pb: '#7b8598', Co: '#e3a1b5', Li: '#c9b3e6', Se: '#e8c27a' };
+  // the eight Okabe-Ito hues, told apart with the common forms of colour blindness; elements share them by group
+  const OI = { orange: '#e69f00', sky: '#56b4e9', green: '#009e73', yellow: '#f0e442', blue: '#0072b2', vermillion: '#d55e00', purple: '#cc79a7', dark: '#2b2f38', grey: '#5a5a5a', light: '#dcdcdc' };
+  const CB_GROUPS = [[['H'], OI.light], [['C', 'B', 'Si'], OI.grey], [['N', 'P', 'As'], OI.blue], [['O'], OI.vermillion], [['S', 'Se', 'Te'], OI.yellow], [['F', 'Cl'], OI.green], [['Br'], OI.orange], [['I', 'At'], OI.purple],
+    [['Li', 'Na', 'K', 'Rb', 'Cs', 'Fr'], OI.sky], [['Be', 'Mg', 'Ca', 'Sr', 'Ba', 'Ra'], OI.green], [['Al', 'Ga', 'In', 'Sn', 'Tl', 'Pb', 'Bi', 'Po', 'Ge', 'Sb'], OI.dark], [['He', 'Ne', 'Ar', 'Kr', 'Xe', 'Rn'], OI.light]];
+  const FRAMEWORK = { H: '#ececf0', C: '#a6a9b0', N: '#8f97ab', O: '#c9695f', F: '#a9b8a4', Cl: '#1f9d55', Br: '#c2571e', I: '#6a2fa0', S: '#d9a400', Pb: '#27324a', Co: '#d6336c', Li: '#8b5cf6', Se: '#f59e0b' };
+  const SCHEMES = {
+    crysta: { name: 'Crysta', of: crystaColor },
+    jmol: { name: 'Jmol classic', of: jmolColor },
+    soft: { name: 'Soft', of: (el) => SOFT[el] || mix(crystaColor(el), '#f1f1f4', 0.5) },
+    cb: { name: 'Colour-blind safe', of: (el) => { const g = CB_GROUPS.find((x) => x[0].includes(el)); return g ? g[1] : OI.purple; } },   // the remaining metals share one hue
+    framework: { name: 'Framework first', of: (el) => FRAMEWORK[el] || crystaColor(el) }
   };
-  const stickR = (el) => (st.style === 'st' ? 0.13 : el === 'H' ? 0.07 : 0.1);
+  /* on a dark stage a dark colour is lifted so the atom stays visible (the Crysta scheme has its own dark values) */
+  const legible = (hex) => {
+    const stage = cssVar('--stage');
+    const lum = (h) => (0.299 * parseInt(h.slice(1, 3), 16) + 0.587 * parseInt(h.slice(3, 5), 16) + 0.114 * parseInt(h.slice(5, 7), 16)) / 255;
+    return /^#[0-9a-f]{6}$/i.test(stage) && lum(stage) < 0.3 && lum(hex) < 0.3 ? mix(hex, '#ffffff', 0.55) : hex;
+  };
+  const defaultColorOf = (el) => (st.scheme === 'crysta' || !SCHEMES[st.scheme] ? crystaColor(el) : legible(SCHEMES[st.scheme].of(el)));
+  const vdwOf = (el) => (window.$3Dmol && $3Dmol.GLModel && $3Dmol.GLModel.vdwRadii && $3Dmol.GLModel.vdwRadii[el]) || 1.7;
+  /* drawn sphere and stick radius of an element in the current style, in angstrom.
+     Since v0.2.3 the ball-and-stick and sticks sizes are half of what they were; 2x on the sliders gives the old ones. */
+  const sphereR = (el) => {
+    const k = (look(el).scale || 1) * st.atomScale;
+    if (st.style === 'sf') return k * vdwOf(el);
+    if (st.style === 'st') return k * (C.isMetal(el) ? 0.15 : C.HALIDE.has(el) ? 0.1 : 0.065);
+    return k * (C.isMetal(el) ? 0.275 : C.HALIDE.has(el) ? 0.21 : el === 'H' ? 0.08 : 0.15);
+  };
+  const stickR = (el) => st.bondScale * (st.style === 'st' ? 0.065 : el === 'H' ? 0.035 : 0.05);
   const opacityOf = (el) => (look(el).opacity === undefined ? 1 : look(el).opacity);
   function colorOf(el) {
     return look(el).color || defaultColorOf(el);
@@ -2789,6 +2924,10 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     }
     return fade;
   }
+  /* The colour of a faded centre atom or of its bonds. The viewer shows only the nearest see-through surface, so a
+     see-through atom inside a see-through polyhedron would vanish. A faded atom is therefore drawn solid, in its
+     colour mixed with what lies behind it: the polyhedron over the stage. The SVG uses the same colour. */
+  const ghostColour = (el, g, stage) => blendHex(colorOf(el), /^#[0-9a-f]{6}$/i.test(stage) ? blendHex(g.poly.color, stage, g.poly.opacity) : g.poly.color, g.f);
   const styleStore = (d, key) => {
     if (key[0] === 'a') return d.autoStyle[key.slice(2)] || (d.autoStyle[key.slice(2)] = {});
     const rule = d.polyRules[+key.slice(2)];
@@ -2983,7 +3122,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
       ['Axial tilt (°)', L && L.axialTilt ? num(L.axialTilt.mean, 1) : ''],
       ['N penetration (Å)', L && L.penetration.length ? num(mean(L.penetration.map((p) => p.depth)), 3) : ''],
       ['Stacking offset', L && L.offset ? '(' + fmt(L.offset.s1, 2) + ', ' + fmt(L.offset.s2, 2) + ')' : ''],
-      ['Crysta version', 'v0.2.2']
+      ['Crysta version', 'v0.2.3']
     ];
   }
   /* columns of the table that hold a mean over the independent sites of a structure */
@@ -3138,11 +3277,9 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     const ink = cssVar('--ink'), muted = cssVar('--muted'), accent = cssVar('--accent'), panel = cssVar('--panel');
     viewer.setBackgroundColor(cssVar('--stage'), st.clear ? 0 : 1);
 
-    // Atoms of the model. A polyhedron centre below 100 % is a 'ghost'. 3Dmol shows only the nearest see-through
-    // surface, so a see-through atom inside a see-through polyhedron would vanish. A ghost and its bonds are
-    // therefore drawn solid, in their colours mixed with what lies behind them: the polyhedron over the stage.
+    // Atoms of the model. A polyhedron centre below 100 % is a 'ghost', drawn solid in a faded colour (see ghostColour).
     const stageHex = cssVar('--stage');
-    const ghostHex = (el, g) => blendHex(colorOf(el), /^#[0-9a-f]{6}$/i.test(stageHex) ? blendHex(g.poly.color, stageHex, g.poly.opacity) : g.poly.color, g.f);
+    const ghostHex = (el, g) => ghostColour(el, g, stageHex);
     const map = new Map();
     const list = [];
     blk.atoms.forEach((a, i) => {
@@ -3263,7 +3400,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
       for (const h of blk.hbonds) {
         if (!map.has(h.d) || !map.has(h.a)) continue;
         const from = st.H && h.h >= 0 ? blk.atoms[h.h] : blk.atoms[h.d];
-        viewer.addCylinder({ start: V3(from.xyz), end: V3(blk.atoms[h.a].xyz), radius: 0.05, color: accent, dashed: true, dashLength: 0.16, gapLength: 0.12, fromCap: 1, toCap: 1 });
+        viewer.addCylinder({ start: V3(from.xyz), end: V3(blk.atoms[h.a].xyz), radius: 0.03, color: accent, dashed: true, dashLength: 0.16, gapLength: 0.12, fromCap: 1, toCap: 1 });
       }
     }
 
@@ -3328,7 +3465,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     const mid = (p, q) => [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2, (p[2] + q[2]) / 2];
     for (const m of d.measures) {
       for (let k = 0; k + 1 < m.pts.length; k++) {
-        viewer.addCylinder({ start: V3(m.pts[k]), end: V3(m.pts[k + 1]), radius: 0.04, color: ink, dashed: true, dashLength: 0.12, gapLength: 0.1, fromCap: 1, toCap: 1 });
+        viewer.addCylinder({ start: V3(m.pts[k]), end: V3(m.pts[k + 1]), radius: 0.028, color: ink, dashed: true, dashLength: 0.12, gapLength: 0.1, fromCap: 1, toCap: 1 });
       }
       // the value sits on the bond, at the angle's vertex, or on the central bond of the torsion
       const at = m.type === 'dist' ? mid(m.pts[0], m.pts[1]) : m.type === 'angle' ? m.pts[1] : mid(m.pts[1], m.pts[2]);
@@ -3578,7 +3715,9 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     const scale = Math.hypot(M[0][0], M[0][1], M[0][2]);
     // direction to the viewer: screen right x screen up (the screen y axis points down)
     const zdir = [M[0][1] * -M[1][2] - M[0][2] * -M[1][1], M[0][2] * -M[1][0] - M[0][0] * -M[1][2], M[0][0] * -M[1][1] - M[0][1] * -M[1][0]];
-    const tint = (hex) => '#' + [1, 3, 5].map((k) => { const v = parseInt(hex.slice(k, k + 2), 16); return Math.round(v + (255 - v) * 0.4).toString(16).padStart(2, '0'); }).join('');
+    const zl = Math.hypot(zdir[0], zdir[1], zdir[2]) || 1;
+    // the viewer's one light, in screen axes (right, up, towards the eye)
+    const LIGHT = [0.2, 0.2, 1].map((x) => x / Math.hypot(0.2, 0.2, 1));
     if (!isFinite(scale) || scale <= 0) { st.notice = 'The drawing could not be made in this browser.'; drawReadout(); return; }
 
     const uc = d.uc;
@@ -3589,16 +3728,21 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     // a faded polyhedron centre and its bonds carry that opacity; one set to 0 is left out
     const fade = centreFade(d, blk);
     const solid = (i) => (fade.has(i) ? fade.get(i).f : 1);
+    const stageHex = cssVar('--stage');
+    // the colour of an atom, or of its end of a bond, as on the screen: g is the fading that applies, if any
+    const hue = (el, g) => (g ? ghostColour(el, g, stageHex) : colorOf(el));
     blk.atoms.forEach((a, i) => {
       if (!isVisible(a) || solid(i) <= 0) return;
-      const color = colorOf(a.el);
-      items.push({ t: 'atom', p: a.xyz, r: sphereR(a.el), color, el: a.el, opacity: opacityOf(a.el) * solid(i) });
+      items.push({ t: 'atom', p: a.xyz, r: sphereR(a.el), color: hue(a.el, fade.get(i)), el: a.el, opacity: opacityOf(a.el) });
       if (st.style === 'sf') return;
       for (const j of a.bonds) {
         const o = blk.atoms[j];
         if (!isVisible(o) || solid(j) <= 0) continue;
+        // a bond to a faded centre is faded over its whole length, with the lower value if both ends are centres
+        const g = fade.has(i) && fade.has(j) ? (solid(i) <= solid(j) ? fade.get(i) : fade.get(j)) : (fade.get(i) || fade.get(j));
+        const color = hue(a.el, g);
         // each atom draws its half of the bond; with gradient bonds the half fades to the midpoint colour
-        items.push({ t: 'bond', p: a.xyz, q: mid(a.xyz, o.xyz), r: stickR(a.el), color, color2: st.bondGrad ? mixHex(color, colorOf(o.el)) : undefined, opacity: Math.min(solid(i), solid(j)) });
+        items.push({ t: 'bond', p: a.xyz, q: mid(a.xyz, o.xyz), r: stickR(a.el), color, color2: st.bondGrad ? mixHex(color, hue(o.el, g)) : undefined });
       }
     });
     if (st.poly && st.inorg && st.style !== 'sf') {
@@ -3606,13 +3750,22 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
         if (!polyShown(d, polyKey(blk, pl))) continue;
         const pts = pl.verts.map((i) => blk.atoms[i].xyz);
         const sty = polyStyle(d, polyKey(blk, pl), blk.atoms[pl.center].el);
-        // only the faces turned to the viewer, in a lighter tint: stacked translucent faces would add up to a dark block
+        // As on the screen: only the faces turned to the viewer (the viewer shows the nearest see-through surface),
+        // each as bright as the viewer's one light makes it, with the viewer's opacity (the set value, squared),
+        // and no outline unless the edges are switched on.
         const cen = pts.reduce((t, q) => [t[0] + q[0], t[1] + q[1], t[2] + q[2]], [0, 0, 0]).map((x) => x / pts.length);
         for (const f of C.hullPolygons(pts)) {
           const fp = f.map((k) => pts[k]);
           const fc = fp.reduce((t, q) => [t[0] + q[0], t[1] + q[1], t[2] + q[2]], [0, 0, 0]).map((x) => x / fp.length);
           if ((fc[0] - cen[0]) * zdir[0] + (fc[1] - cen[1]) * zdir[1] + (fc[2] - cen[2]) * zdir[2] < -1e-6) continue;
-          items.push({ t: 'face', pts: fp, color: sty.own ? sty.color : tint(sty.color), opacity: Math.min(1, sty.opacity * 0.68), cls: 'polyhedron',
+          const u = [0, 1, 2].map((k) => fp[1][k] - fp[0][k]), v = [0, 1, 2].map((k) => fp[2][k] - fp[0][k]);
+          let n = [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]];
+          const nl = Math.hypot(n[0], n[1], n[2]) || 1;
+          const out = (fc[0] - cen[0]) * n[0] + (fc[1] - cen[1]) * n[1] + (fc[2] - cen[2]) * n[2] < 0 ? -1 : 1;
+          n = n.map((x) => out * x / nl);
+          const lit = Math.max(0, LIGHT[0] * (M[0][0] * n[0] + M[0][1] * n[1] + M[0][2] * n[2]) / scale - LIGHT[1] * (M[1][0] * n[0] + M[1][1] * n[1] + M[1][2] * n[2]) / scale +
+            LIGHT[2] * (zdir[0] * n[0] + zdir[1] * n[1] + zdir[2] * n[2]) / zl);
+          items.push({ t: 'face', pts: fp, color: blendHex(sty.color, '#000000', lit), opacity: sty.opacity * sty.opacity, cls: 'polyhedron', nearest: true,
             edge: sty.edges ? Math.max(1, 0.07 * scale) : undefined, edgeColor: sty.edges ? darker(sty.color) : undefined });
         }
       }
@@ -3638,7 +3791,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
       for (const h of blk.hbonds) {
         if (!isVisible(blk.atoms[h.d]) || !isVisible(blk.atoms[h.a]) || solid(h.d) <= 0 || solid(h.a) <= 0) continue;
         const from = st.H && h.h >= 0 ? blk.atoms[h.h] : blk.atoms[h.d];
-        items.push({ t: 'line', p: from.xyz, q: blk.atoms[h.a].xyz, w: 0.1 * scale, color: accent, dash: [0.16 * scale, 0.2 * scale], cls: 'hbond' });
+        items.push({ t: 'line', p: from.xyz, q: blk.atoms[h.a].xyz, w: 0.06 * scale, color: accent, dash: [0.16 * scale, 0.2 * scale], cls: 'hbond' });
       }
     }
     for (const p of d.planes) {
@@ -3658,7 +3811,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
       }
     }
     for (const m of d.measures) {
-      for (let k = 0; k + 1 < m.pts.length; k++) items.push({ t: 'line', p: m.pts[k], q: m.pts[k + 1], w: Math.max(0.6, 0.08 * scale), color: ink, dash: [0.12 * scale, 0.18 * scale], cls: 'measure' });
+      for (let k = 0; k + 1 < m.pts.length; k++) items.push({ t: 'line', p: m.pts[k], q: m.pts[k + 1], w: Math.max(0.6, 0.056 * scale), color: ink, dash: [0.12 * scale, 0.18 * scale], cls: 'measure' });
       const at = m.type === 'dist' ? mid(m.pts[0], m.pts[1]) : m.type === 'angle' ? m.pts[1] : mid(m.pts[1], m.pts[2]);
       text(at, measureValueText(m), 13, panel, ink, 0.9, 'measure');
     }
@@ -3822,6 +3975,13 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     $('elOpacity').onchange = (e) => setLook(st.editEl, 'opacity', +e.target.value);
     $('elReset').onclick = () => { const el = st.editEl; delete elemLook[el]; drawLegend(); drawPolyCard(); render(true); openElPop(el); };
     $('selLabels').onchange = (e) => { st.labels = e.target.value; render(true); };
+    // a colour the user set for one element (legend) stays; every other element takes the scheme's colour
+    $('selScheme').onchange = (e) => { st.scheme = e.target.value; drawLegend(); drawPolyCard(); render(true); if (st.editEl) openElPop(st.editEl); };
+    // the two size sliders: the number follows the thumb, the picture is redrawn on release
+    for (const [id, out, key] of [['rngAtom', 'outAtom', 'atomScale'], ['rngBond', 'outBond', 'bondScale']]) {
+      $(id).oninput = (e) => { $(out).textContent = fmt(+e.target.value, 2) + '×'; };
+      $(id).onchange = (e) => { st[key] = +e.target.value; $(out).textContent = fmt(st[key], 2) + '×'; render(true); };
+    }
     $('btnPng').onclick = exportPng;
     $('btnMol2').onclick = exportMol2;
     $('btnSvg').onclick = exportSvg;
@@ -4019,7 +4179,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     const ISSUES = 'https://github.com/Wenhao-Shao/Crysta/issues/new';
     const fbUrl = () => {
       const title = '[' + $('fbKind').value + '] ' + $('fbSummary').value.trim();
-      const tail = '\n\n---\nSent from the Crysta feedback box\nCrysta v0.2.2\nBrowser: ' + navigator.userAgent;
+      const tail = '\n\n---\nSent from the Crysta feedback box\nCrysta v0.2.3\nBrowser: ' + navigator.userAgent;
       let details = $('fbDetails').value.trim() || '(no details given)';
       const make = (d) => ISSUES + '?title=' + encodeURIComponent(title) + '&body=' + encodeURIComponent(d + tail);
       let url = make(details);
@@ -4068,7 +4228,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
       data.append('summary', summary);
       data.append('details', $('fbDetails').value.trim() || '(no details given)');
       if (email) data.append('email', email);
-      data.append('workbench', 'v0.2.2');
+      data.append('workbench', 'v0.2.3');
       data.append('browser', navigator.userAgent);
       const buttons = [$('fbDirect'), $('fbGithub')];
       buttons.forEach((b) => { b.disabled = true; });
