@@ -2,6 +2,12 @@
 
 Any change to how a number is defined gets a new version and a line here.
 
+## v0.3.2
+
+- The online page counts visits with Google Analytics. The tag loads only on the published address; the offline file (`dist/Crysta.html`), a copy opened from disk and a fork send nothing. Structure files stay on your computer as before: only the page visit is counted. The page footer says so.
+
+No definition changed: every number is identical to v0.3.1.
+
 ## v0.3.1
 
 - **PXRD plot: *d* axis.** A second axis on top of the plot gives the *d* spacing in Å for the first wavelength. Its ticks are round *d* values.

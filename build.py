@@ -4,10 +4,13 @@
 docs/index.html          loads 3Dmol.js from a CDN (for GitHub Pages)
 dist/<Name>.html         embeds 3Dmol.js, works offline (dist/Crysta.html)
 
+The online page counts visits with Google Analytics ("analytics" in package.json, only when it is
+served from the host of "homepage"). The offline file carries no such code.
+
 The name shown in the page comes from "displayName" in package.json.
 The address in the canonical link and the link-preview tags comes from "homepage".
 """
-import json, pathlib
+import json, pathlib, urllib.parse
 
 root = pathlib.Path(__file__).parent
 pkg = json.loads((root / "package.json").read_text())
@@ -36,19 +39,33 @@ body = (template.replace("/*__CORE__*/", core).replace("/*__PXRD__*/", pxrd).rep
         .replace("__HOMEPAGE__", pkg["homepage"]))
 cdn = '<script src="https://cdn.jsdelivr.net/npm/3dmol@2.5.5/build/3Dmol-min.js"></script>'
 inline = "<script>/* 3Dmol.js 2.5.5, BSD-3-Clause, https://3dmol.org */\n" + lib + "\n</script>"
+# Visit counting, online page only. The tag loads only on the published host, so a copy opened from disk,
+# a fork or a local test server sends nothing. Structure files are never part of what is sent.
+ga = (pkg.get("analytics") or {}).get("id", "")
+host = urllib.parse.urlparse(pkg["homepage"]).hostname
+assert not ga or (ga.startswith("G-") and ga.replace("-", "").isalnum())
+analytics = ("<script>\n/* Counts visits to the online page (Google Analytics). Not present in the offline file. */\n"
+             "if (location.hostname === " + json.dumps(host) + ") {\n"
+             "  var s = document.createElement('script'); s.async = true;\n"
+             "  s.src = 'https://www.googletagmanager.com/gtag/js?id=" + ga + "'; document.head.appendChild(s);\n"
+             "  window.dataLayer = window.dataLayer || [];\n"
+             "  window.gtag = function () { dataLayer.push(arguments); };\n"
+             "  gtag('js', new Date()); gtag('config', '" + ga + "');\n"
+             "}\n</script>") if ga else ""
+visits = " The online page counts visits with Google Analytics; the offline file does not." if ga else ""
 cut = body.index('<div class="app">')
 head, rest = body[:cut], body[cut:]
 
-def page(lib_tag):
+def page(lib_tag, online):
     return ('<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n'
             '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
-            '<style>body{margin:0}img{max-width:100%}</style>\n' + head + '</head>\n<body>\n'
-            + rest.replace("<!--LIB-->", lib_tag) + '\n</body>\n</html>\n')
+            '<style>body{margin:0}img{max-width:100%}</style>\n' + head.replace("<!--ANALYTICS-->\n", analytics + "\n" if online and analytics else "") + '</head>\n<body>\n'
+            + rest.replace("<!--LIB-->", lib_tag).replace("__VISITS__", visits if online else "") + '\n</body>\n</html>\n')
 
 (root / "docs").mkdir(exist_ok=True)
 (root / "dist").mkdir(exist_ok=True)
 for old in (root / "dist").glob("*.html"):
     old.unlink()
-(root / "docs/index.html").write_text(page(cdn))
-(root / "dist" / (name.replace(" ", "-") + ".html")).write_text(page(inline))
+(root / "docs/index.html").write_text(page(cdn, True))
+(root / "dist" / (name.replace(" ", "-") + ".html")).write_text(page(inline, False))
 print("built v" + version + " as " + name)

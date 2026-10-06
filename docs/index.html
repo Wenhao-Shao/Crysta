@@ -13,6 +13,16 @@
 <meta property="og:description" content="Open CIF and SHELX files in the browser and on your phone. Measure, export figures, and analyze the lattice quantitatively.">
 <meta property="og:url" content="https://wenhao-shao.github.io/Crysta/">
 <meta name="twitter:card" content="summary">
+<script>
+/* Counts visits to the online page (Google Analytics). Not present in the offline file. */
+if (location.hostname === "wenhao-shao.github.io") {
+  var s = document.createElement('script'); s.async = true;
+  s.src = 'https://www.googletagmanager.com/gtag/js?id=G-ST73B21KTC'; document.head.appendChild(s);
+  window.dataLayer = window.dataLayer || [];
+  window.gtag = function () { dataLayer.push(arguments); };
+  gtag('js', new Date()); gtag('config', 'G-ST73B21KTC');
+}
+</script>
 <link rel="stylesheet" id="fontCss" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <style id="appCss">
 /* Layout: an instrument console. One large stage for the crystal, a comparison strip under it,
@@ -546,7 +556,7 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
         <div class="small" id="hbNote"></div>
       </section>
 
-      <div class="foot">Crysta v0.3.1. Drawn with 3Dmol.js. Symmetry expansion, bonding, molecule assembly and every distance and angle are computed in this page from the file. Nothing is uploaded.</div>
+      <div class="foot">Crysta v0.3.2. Drawn with 3Dmol.js. Symmetry expansion, bonding, molecule assembly and every distance and angle are computed in this page from the file. Nothing is uploaded. The online page counts visits with Google Analytics; the offline file does not.</div>
     </aside>
   </div>
 </div>
@@ -3857,7 +3867,7 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
   let hoverLabel = null;
   const D = () => st.docs[st.cur] || null;
   /* the PXRD window: simulated powder patterns of the open structures, and measured data (src/pxrd.js) */
-  const pxrd = window.CrystaPxrd ? window.CrystaPxrd.create({ docs: () => st.docs, current: () => D(), addFiles: (list) => addFiles(list), name: NAME, version: 'v0.3.1' }) : null;
+  const pxrd = window.CrystaPxrd ? window.CrystaPxrd.create({ docs: () => st.docs, current: () => D(), addFiles: (list) => addFiles(list), name: NAME, version: 'v0.3.2' }) : null;
   /* a file that is not a structure but holds two columns of numbers is taken as measured powder data */
   const isPowderData = (text) => { try { return C.readXY(text).x.length >= 20; } catch (err) { return false; } };
 
@@ -4473,7 +4483,7 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
       ['Axial tilt (°)', L && L.axialTilt ? num(L.axialTilt.mean, 1) : ''],
       ['N penetration (Å)', L && L.penetration.length ? num(mean(L.penetration.map((p) => p.depth)), 3) : ''],
       ['Stacking offset', L && L.offset ? '(' + fmt(L.offset.s1, 2) + ', ' + fmt(L.offset.s2, 2) + ')' : ''],
-      ['Crysta version', 'v0.3.1']
+      ['Crysta version', 'v0.3.2']
     ];
   }
   /* columns of the table that hold a mean over the independent sites of a structure */
@@ -5575,7 +5585,7 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
     const ISSUES = 'https://github.com/Wenhao-Shao/Crysta/issues/new';
     const fbUrl = () => {
       const title = '[' + $('fbKind').value + '] ' + $('fbSummary').value.trim();
-      const tail = '\n\n---\nSent from the Crysta feedback box\nCrysta v0.3.1\nBrowser: ' + navigator.userAgent;
+      const tail = '\n\n---\nSent from the Crysta feedback box\nCrysta v0.3.2\nBrowser: ' + navigator.userAgent;
       let details = $('fbDetails').value.trim() || '(no details given)';
       const make = (d) => ISSUES + '?title=' + encodeURIComponent(title) + '&body=' + encodeURIComponent(d + tail);
       let url = make(details);
@@ -5624,7 +5634,7 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
       data.append('summary', summary);
       data.append('details', $('fbDetails').value.trim() || '(no details given)');
       if (email) data.append('email', email);
-      data.append('workbench', 'v0.3.1');
+      data.append('workbench', 'v0.3.2');
       data.append('browser', navigator.userAgent);
       const buttons = [$('fbDirect'), $('fbGithub')];
       buttons.forEach((b) => { b.disabled = true; });
