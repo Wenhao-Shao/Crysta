@@ -6,33 +6,21 @@
   materials 600 of 642
   materials 642 of 642
 materials written: 642
-  list: 50 of 786 | 16 s
-  list: 100 of 786 | 73 s
-  list: 150 of 786 | 109 s
-  list: 200 of 786 | 127 s
-  list: 250 of 786 | 153 s
-  list: 300 of 786 | 186 s
-  list: 350 of 786 | 196 s
-  list: 400 of 786 | 207 s
-  list: 450 of 786 | 213 s
-  list: 500 of 786 | 220 s
-  list: 550 of 786 | 235 s
-  list: 600 of 786 | 249 s
-  list: 650 of 786 | 281 s
-  list: 700 of 786 | 294 s
-  list: 750 of 786 | 343 s
+  list: 50 of 786 | 19 s
+  try 1 RemoteDisconnected Remote end closed connection without response https://materials.hybrid3.duke.edu/materials/datasets/?primary_property__name=atomic+structure&page=15&page_size=5
+  list: 100 of 786 | 148 s
+  list: 150 of 786 | 185 s
+  list: 200 of 786 | 204 s
+  list: 250 of 786 | 233 s
+  list: 300 of 786 | 268 s
+  list: 350 of 786 | 280 s
+  list: 400 of 786 | 292 s
+  list: 450 of 786 | 300 s
+  list: 500 of 786 | 308 s
+  list: 550 of 786 | 324 s
+  list: 600 of 786 | 339 s
+  list: 650 of 786 | 374 s
+  list: 700 of 786 | 389 s
+  list: 750 of 786 | 440 s
 structure data sets in the list: 786 of 786
-  try 1 RemoteDisconnected Remote end closed connection without response https://materials.hybrid3.duke.edu/materials/datasets/663/files/
-  downloads: 50 read, 0 without structure file, 0 not read, 208 kept | 446 s
-  downloads: 100 read, 0 without structure file, 0 not read, 211 kept | 479 s
-  try 1 TimeoutError The read operation timed out https://materials.hybrid3.duke.edu/materials/datasets/1169/files/
-  try 1 RemoteDisconnected Remote end closed connection without response https://materials.hybrid3.duke.edu/materials/datasets/1246/files/
-  downloads: 150 read, 0 without structure file, 0 not read, 211 kept | 651 s
-  data set 1381 file too large: files/ja9b01327_si_003.cif 1760221
-  no structure file for data set 1381 ['files/info.txt', 'files/ja9b01327_si_003.cif']
-  downloads: 199 read, 1 without structure file, 0 not read, 211 kept | 681 s
-  downloads: 249 read, 1 without structure file, 0 not read, 229 kept | 711 s
-  try 1 RemoteDisconnected Remote end closed connection without response https://materials.hybrid3.duke.edu/materials/datasets/1916/files/
-  downloads: 299 read, 1 without structure file, 0 not read, 286 kept | 814 s
-  downloads: 349 read, 1 without structure file, 0 not read, 297 kept | 850 s
-structures: {"structures": 786, "structures_with_file": 615, "structure_files": 656, "cif_files": 434, "geometry_files": 222, "structures_whole": true, "read_now": 395, "kept": 390, "without_file": 1, "not_read": 0}
+structures: {"structures": 786, "structures_with_file": 616, "structure_files": 657, "cif_files": 435, "geometry_files": 222, "structures_whole": true, "read_now": 1, "kept": 785, "without_file": 0, "not_read": 0}

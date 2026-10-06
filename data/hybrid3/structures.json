@@ -16664,9 +16664,15 @@
 "doi_isbn": "10.1021/jacs.9b01327"
 },
 "linked_to": [],
-"read": false,
-"has_file": false,
-"parts": [],
+"read": true,
+"has_file": true,
+"parts": [
+{
+"file": "1381_1.cif",
+"name": "ja9b01327_si_003.cif",
+"kind": "cif"
+}
+],
 "citation": "I. Spanopoulos, I. Hadar, W. Ke, Q. Tu, M. Chen, H. Tsai, Y. He, G. Shekhawat, V. Dravid, M. Wasielewski, A. Mohite, C. Stoumpos, M. Kanatzidis, \"Uniaxial Expansion of the 2D Ruddlesden−Popper Perovskite Family for Improved Environmental Stability\", Journal of the American Chemical Society 141, 5518  (2019)",
 "temperature": "293.0",
 "files": [
