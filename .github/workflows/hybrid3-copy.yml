@@ -1,0 +1,25 @@
+# Reads the entry list of the HybriD3 materials database (CC BY 4.0) from its public API and commits the copy.
+# A browser page cannot read that API, so the Databases window of Crysta uses this copy.
+name: HybriD3 copy
+on:
+  workflow_dispatch:
+  push:
+    branches: [database-browser-demo]
+    paths: ['tools/hybrid3_copy.py', '.github/workflows/hybrid3-copy.yml']
+permissions:
+  contents: write
+jobs:
+  copy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read the HybriD3 API
+        run: python3 tools/hybrid3_copy.py data/hybrid3
+      - name: Commit the copy
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/hybrid3
+          git commit -m "HybriD3 copy: entry list read from the API" || echo "The copy did not change."
+          git push
