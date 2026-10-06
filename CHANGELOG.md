@@ -4,7 +4,9 @@ Any change to how a number is defined gets a new version and a line here.
 
 ## v0.5.1
 
-- **The picture keeps its height.** In v0.5.0 the strip under the picture became higher when it showed the definition of a row, and the picture became smaller. Now the strip keeps its one row. The definition is a panel that starts at the strip and goes down over the Structures table. Close the definition to see the table again.
+- **The picture keeps its height.** In v0.5.0 the strip under the picture became higher when it showed the definition of a row, and the picture became smaller. The strip now keeps its one row and its own text.
+- **The definition is a small note inside the picture.** It starts at the top right. Drag it to a place where it does not cover what you look at: it stays there for the next rows. Its × closes it. The note is not in a saved picture.
+- **The polyhedra keep their faces while a row glows.** In v0.5.0 a polyhedron became its edges only, because its faces hid the glow of the metal and of the bonds inside it. Now the glow is drawn over the picture, as a highlight that shows through the atoms and the faces before it. The polyhedra are drawn as always.
 
 No definition changed: every number is identical to v0.5.0.
 
