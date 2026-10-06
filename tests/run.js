@@ -359,5 +359,101 @@ const formula = (info) => info.formula.map((e) => e.el + e.n).join(' ');
   check('svg other faces keep their thin outline', /<polygon class="plane" [^>]*stroke-opacity="0.7"/.test(svg));
 }
 
+// Powder X-ray diffraction. The structure factors were checked against the structure-factor calculator of
+// gemmi 0.7.5 (IT92 scattering factors, no dispersion), and the ring intensities against a sum over every
+// h k l in the sphere, for eight structures; both agree to better than 0.05 %.
+{
+  const read = (file) => X.readStructure(fs.readFileSync(path.join(__dirname, '..', file), 'utf8'), file);
+  const find = (p, h, k, l) => p.reflections.find((r) => r.h === h && r.k === k && r.l === l);
+
+  // NaCl: face-centred, so mixed-parity reflections are absent
+  let p = X.powderPattern(read('tests/cifs/NaCl.cif'), { tthMin: 5, tthMax: 90 });
+  check('pxrd default wavelength is Cu K-alpha 1', X.powderPattern(read('tests/cifs/NaCl.cif')).lambda === 1.54059 && p.anode === 'Cu');
+  check('pxrd NaCl atoms per cell, special positions counted once', p.nAtoms === 8 && X.powderAtoms(read('tests/cifs/NaCl.cif')).atoms.every((a) => a.occ === 1));
+  check('pxrd NaCl reflections to 90 degrees', p.reflections.map((r) => '' + r.h + r.k + r.l).join(' ') === '111 200 220 311 222 400 331 420 422 333 511');
+  check('pxrd NaCl absences', !find(p, 1, 0, 0) && !find(p, 1, 1, 0) && !find(p, 2, 1, 0));
+  check('pxrd NaCl multiplicities', find(p, 1, 1, 1).m === 8 && find(p, 2, 0, 0).m === 6 && find(p, 2, 2, 0).m === 12 && find(p, 3, 1, 1).m === 24 && find(p, 4, 2, 0).m === 24);
+  check('pxrd NaCl (200): d, 2-theta, |F|', near(find(p, 2, 0, 0).d, 2.8201, 1e-4) && near(find(p, 2, 0, 0).tth, 31.7029, 2e-4) && near(find(p, 2, 0, 0).f, 84.744, 0.01));
+  check('pxrd NaCl intensities', find(p, 2, 0, 0).rel === 100 && near(find(p, 1, 1, 1).rel, 8.83, 0.02) && near(find(p, 2, 2, 0).rel, 62.35, 0.05) && near(find(p, 2, 2, 2).rel, 19.01, 0.03));
+  check('pxrd overlapping sets with one d are listed apart', near(find(p, 3, 3, 3).tth, find(p, 5, 1, 1).tth, 1e-9) && find(p, 3, 3, 3).m === 8 && find(p, 5, 1, 1).m === 24);
+  check('pxrd no displacement parameter in the file: counted, B = 1 used', p.noU === 2);
+  const b0 = X.powderPattern(read('tests/cifs/NaCl.cif'), { tthMin: 5, tthMax: 90, bDefault: 0 });
+  check('pxrd B lowers the high-angle reflections', find(b0, 4, 2, 2).f > find(p, 4, 2, 2).f * 1.2 && near(find(b0, 4, 2, 2).f / find(p, 4, 2, 2).f, Math.exp(1 / (4 * 1.1513 * 1.1513)), 1e-3));
+
+  // quartz: point group 32, so (101) and (011) are two sets with one d and different |F|
+  p = X.powderPattern(read('examples/quartz_SiO2.cif'), { tthMin: 5, tthMax: 60 });
+  check('pxrd quartz (101) and (011)', near(find(p, 1, 0, 1).tth, 26.6402, 2e-4) && find(p, 0, 1, 1).rel === 100 && near(find(p, 1, 0, 1).rel, 43.1, 0.1) && find(p, 1, 0, 1).m === 6);
+  check('pxrd quartz (100) and (112)', near(find(p, 1, 0, 0).rel, 28.56, 0.05) && near(find(p, 1, 1, 2).rel, 17.76, 0.05) && find(p, 1, 1, 2).m === 12);
+  const nd = X.powderPattern(read('examples/quartz_SiO2.cif'), { tthMin: 5, tthMax: 60, dispersion: false });
+  check('pxrd without f\' and f": the value of gemmi', nd.anode === null && near(find(nd, 0, 1, 1).f, 38.625, 0.005) && near(find(nd, 1, 0, 0).f, 15.985, 0.005));
+  check('pxrd wavelength outside the table: no dispersion', X.powderPattern(read('examples/quartz_SiO2.cif'), { lambda: 1.0, tthMax: 40 }).anode === null && X.anodeOf(1.5418).key === 'Cu' && X.anodeOf(0.71073).key === 'Mo');
+  const mo = X.powderPattern(read('examples/quartz_SiO2.cif'), { lambda: 0.70932, tthMin: 2, tthMax: 30 });
+  check('pxrd Mo radiation moves the reflections', mo.anode === 'Mo' && near(find(mo, 1, 0, 1).tth, 2 * Math.asin(0.70932 / (2 * 3.34342)) * 180 / Math.PI, 1e-3));
+
+  // (PEA)2PbBr4: displacement parameters from the file, layer reflections strongest
+  const pea = read('examples/PEA2PbBr4.cif');
+  check('pxrd U read from the CIF', near(pea.sites.find((x) => x.label === 'Pb1').u, 0.0327, 1e-6) && pea.sites.every((x) => x.u > 0));
+  p = X.powderPattern(pea, { tthMin: 3, tthMax: 30 });
+  check('pxrd PEA (001)', p.nAtoms === 188 && p.noU === 0 && find(p, 0, 0, 1).rel === 100 && near(find(p, 0, 0, 1).tth, 5.2987, 2e-4) && near(find(p, 0, 0, 1).d, 16.6647, 1e-4) && find(p, 0, 0, 1).m === 2);
+  check('pxrd PEA |F|', near(find(p, 0, 0, 1).f, 526.555, 0.01) && near(find(p, 0, 0, 2).f, 298.034, 0.01) && near(find(p, 0, 0, 2).rel, 7.93, 0.02));
+  check('pxrd PEA list is sorted and inside the range plus its margin', p.reflections.every((r, i) => i === 0 || r.tth >= p.reflections[i - 1].tth) && p.reflections.every((r) => r.tth > 1.4 && r.tth < 31.6));
+  // every disorder part is in the pattern, weighted by occupancy: the same contents as the formula
+  const fca = read('examples/FCA3_2PbBr4_294K.cif');
+  const sum = {};
+  for (const a of X.powderAtoms(fca).atoms) sum[a.el] = (sum[a.el] || 0) + a.occ;
+  const counts = X.buildCell(fca, {}).counts;
+  check('pxrd uses every disorder part', Object.keys(counts).every((el) => near(sum[el], counts[el], 1e-6)) && near(sum.O, 24.58, 0.01));
+  const small = X.powderPattern(pea, { tthMin: 3, tthMax: 60, maxWork: 2e5 });
+  check('pxrd range is cut when the structure is too large for it', small.cut && small.tthMax < 60 && small.tthMax >= 5);
+
+  // displacement parameters: B column, anisotropic values, SHELX
+  const cif = (rows, extra) => X.readCif('data_t\n_cell_length_a 4\n_cell_length_b 5\n_cell_length_c 6\n_cell_angle_alpha 90\n_cell_angle_beta 90\n_cell_angle_gamma 90\nloop_\n_atom_site_label\n_atom_site_fract_x\n_atom_site_fract_y\n_atom_site_fract_z\n' + rows + (extra || ''));
+  check('pxrd B column gives U = B / 8 pi^2', near(X.readCif('data_t\n_cell_length_a 4\n_cell_length_b 4\n_cell_length_c 4\n_cell_angle_alpha 90\n_cell_angle_beta 90\n_cell_angle_gamma 90\nloop_\n_atom_site_label\n_atom_site_fract_x\n_atom_site_fract_y\n_atom_site_fract_z\n_atom_site_B_iso_or_equiv\nNa1 0 0 0 1.5\n').sites[0].u, 1.5 / (8 * Math.PI * Math.PI), 1e-9));
+  const an = cif('Na1 0 0 0\nCl1 0.5 0.5 0.5\n', 'loop_\n_atom_site_aniso_label\n_atom_site_aniso_U_11\n_atom_site_aniso_U_22\n_atom_site_aniso_U_33\n_atom_site_aniso_U_23\n_atom_site_aniso_U_13\n_atom_site_aniso_U_12\nNa1 0.01 0.02 0.03 0 0 0\n');
+  check('pxrd anisotropic U gives U equivalent', near(an.sites[0].u, 0.02, 1e-9) && an.sites[1].u === null);
+  const mono = X.readCif('data_t\n_cell_length_a 5\n_cell_length_b 6\n_cell_length_c 7\n_cell_angle_alpha 90\n_cell_angle_beta 110\n_cell_angle_gamma 90\nloop_\n_atom_site_label\n_atom_site_fract_x\n_atom_site_fract_y\n_atom_site_fract_z\nC1 0 0 0\n').cell;
+  // an isotropic displacement U written as a tensor: Uij = U cos(angle between a*i and a*j); here cos(beta*) = -cos(beta)
+  const cb = Math.cos(110 * Math.PI / 180);
+  check('pxrd U equivalent in a monoclinic cell', near(X.uEquiv(mono, [0.03, 0.03, 0.03, 0, -0.03 * cb, 0]), 0.03, 1e-9));
+  check('pxrd U read from SHELX', X.readStructure(fs.readFileSync(path.join(__dirname, 'files/NaCl.res'), 'utf8'), 'NaCl.res').sites.every((x) => near(x.u, 0.02, 1e-9)));
+  const riding = X.readShelx('TITL t\nCELL 0.71073 10 10 10 90 90 90\nLATT -1\nSFAC C H\nC1 1 0.1 0.1 0.1 11.0 0.03 0.03 0.03 0 0 0\nH1 2 0.2 0.1 0.1 11.0 -1.2\nHKLF 4\nEND\n');
+  check('pxrd SHELX riding H takes 1.2 U of its atom', near(riding.sites[0].u, 0.03, 1e-9) && near(riding.sites[1].u, 0.036, 1e-9));
+
+  // profile: peak position, width, area scale, a second wavelength
+  const one = [{ d: 3.0, tth: 2 * Math.asin(1.54059 / 6) * 180 / Math.PI, I: 1, lp: 1 }];
+  one[0].lp = (1 + Math.cos(one[0].tth * Math.PI / 180) ** 2) / (Math.sin(one[0].tth * Math.PI / 360) ** 2 * Math.cos(one[0].tth * Math.PI / 360));
+  for (const eta of [0, 0.5, 1]) {
+    const pr = X.powderProfile(one, { tthMin: 25, tthMax: 35, step: 0.002, fwhm: 0.2, eta });
+    let top = 0, half = 0;
+    pr.y.forEach((v, i) => { if (v > pr.y[top]) top = i; if (v >= 50) half++; });
+    check('pxrd profile peak and width, eta ' + eta, near(pr.x0 + top * pr.step, one[0].tth, 0.002) && near(pr.y[top], 100, 1e-9) && near(half * pr.step, 0.2, 0.006));
+    // the highest point of a peak of area 1: eta 2/(pi H) + (1 - eta) (2/H) root(ln 2 / pi)
+    check('pxrd profile height of unit area, eta ' + eta, near(pr.max, eta * 2 / (Math.PI * 0.2) + (1 - eta) * (2 / 0.2) * Math.sqrt(Math.LN2 / Math.PI), 2e-3));
+  }
+  const two = X.powderProfile(one, { tthMin: 25, tthMax: 35, step: 0.002, fwhm: 0.05, eta: 0, waves: [{ lambda: 1.54443, weight: 0.5 }] });
+  const t2 = 2 * Math.asin(1.54443 / 6) * 180 / Math.PI;
+  const at2 = two.y[Math.round((t2 - 25) / 0.002)];
+  check('pxrd second wavelength: a peak at its own angle, about half as high', t2 - one[0].tth > 0.07 && at2 > 48 && at2 < 51);
+  const prof = X.powderProfile(p.reflections, { tthMin: 3, tthMax: 30, step: 0.01, fwhm: 0.1, eta: 0.5 });
+  check('pxrd PEA profile', prof.y.length === 2701 && near(Math.max(...prof.y), 100, 1e-9) && near(3 + prof.y.indexOf(Math.max(...prof.y)) * 0.01, 5.30, 0.011));
+
+  // measured data: a Bruker text export, other separators, three columns, rows out of order
+  const bruker = "'Id: \"\" Comment: \"\" Operator: \"Lab Manager\" Anode: \"Cu\" Scantype: \"Coupled TwoTheta/Theta\" TimePerStep: \"48\" X: \"9999\" Y: \"9999\" Z: \"9999\" \n5.0000 5.875\n5.0203 5.229\n5.0406 5.313\n5.0608 5.479\n";
+  let xy = X.readXY(bruker);
+  check('xy Bruker header skipped, anode read', xy.x.length === 4 && xy.x[0] === 5 && xy.y[3] === 5.479 && xy.anode === 'Cu' && /Lab Manager/.test(xy.header));
+  xy = X.readXY('2theta,counts\r\n10.00,120,3.2\r\n10.02,1.5e2,3.3\r\n10.04,133,3.1\r\n');
+  check('xy comma separated, three columns, exponent', xy.x.length === 3 && xy.y[1] === 150 && xy.anode === null);
+  xy = X.readXY('# scan\n12 3\n10 1\n11 2\n');
+  check('xy rows sorted by 2-theta', xy.x.join(',') === '10,11,12' && xy.y.join(',') === '1,2,3');
+  xy = X.readXY('*RAS_INT_START\n20.00 15.0 1.0\n20.02 18.0 1.0\n20.04 16.0 1.0\n*RAS_INT_END\n');
+  check('xy Rigaku rows', xy.x.length === 3 && xy.y[1] === 18);
+  let threw = false;
+  try { X.readXY('data_x\n_cell_length_a 5.2\nno numbers here\n'); } catch (err) { threw = /two numbers/.test(err.message); }
+  check('xy file without data rows is refused', threw);
+  const text = X.toXY(5, 0.01, Float64Array.from([0, 50, 100]), 'test');
+  xy = X.readXY(text);
+  check('xy written pattern reads back', text.startsWith('# test\n5.000 0.0000\n') && xy.x.length === 3 && near(xy.x[2], 5.02, 1e-9) && xy.y[2] === 100);
+}
+
 console.log(passed + ' passed, ' + failed + ' failed');
 process.exit(failed ? 1 : 0);

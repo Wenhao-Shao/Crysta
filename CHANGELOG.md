@@ -2,6 +2,21 @@
 
 Any change to how a number is defined gets a new version and a line here.
 
+## v0.3.0
+
+- **Powder XRD window.** The "Powder XRD" button in the page header opens a new browser window. The window shows the simulated powder pattern of each open structure. If the browser blocks the new window, the same content opens as a floating window in the page.
+- The default radiation is Cu Kα1 at 1.54059 Å, as one wavelength. You can select Mo, Co, Fe, Cr or Ag, or type a different wavelength. You can add Kα2 with an intensity ratio.
+- A reflection table lists *h*, *k*, *l*, *d*, *F* (real), *F* (imaginary), |*F*|, 2θ, *I* and the multiplicity *M* of one structure. Press a row to mark that reflection in the plot. You can copy the table or save it as tab-separated text.
+- **Measured data.** "Add PXRD data" reads a text file with two columns: 2θ in degrees, then intensity (.xy, .xye, .csv, .txt, .dat). Crysta ignores header lines. You can also drop the file on the PXRD window or on the main page. Each data set has a 2θ shift for a zero-point error. The data stay in the browser.
+- The plot shows the patterns as an overlay or as a stack. The intensity scale is linear or square root. Each reflection has a mark. Drag across the plot to zoom. The pointer shows 2θ, *d*, the value of each pattern and the nearest reflection.
+- The plot saves as PNG or SVG. The simulated pattern saves as an .xy file.
+- Structure files now give the displacement parameters: *U*iso, *B*iso or *U*eq from a CIF, and *U* from a SHELX file.
+- **Side panels fold.** Each card in the rail on the right has an arrow at its top right. The arrow minimizes or maximizes the card. A press on the card title does the same. When the page opens, Display is open and the other cards are minimized.
+
+No definition changed: every number is identical to v0.2.3. The definitions of the powder pattern are new. They are in the README: scattering factors, dispersion, displacement, multiplicity, intensity and peak shape.
+
+Checked on eight structures: |*F*| agrees with the structure-factor calculator of gemmi 0.7.5 to better than 0.05 %. The ring intensities agree with a sum over every *h k l* in the sphere to better than 0.01 % of the strongest ring.
+
 ## v0.2.3
 
 - New default look: atoms and bonds are drawn at half their earlier radius in the ball-and-stick and sticks styles, and bonds are gradient-coloured. Space-filling is unchanged.

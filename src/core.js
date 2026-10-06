@@ -305,6 +305,19 @@
     return { a, b, c, al, be, ga, A, B, C, V, recip, toCart };
   }
 
+  /* B = 8 pi^2 U: the two ways to write an isotropic displacement parameter */
+  const B_PER_U = 8 * Math.PI * Math.PI;
+  /* equivalent isotropic U of an anisotropic tensor [U11, U22, U33, U23, U13, U12]:
+     one third of the sum of Uij a*i a*j (ai . aj) */
+  function uEquiv(cell, U) {
+    const dir = [cell.A, cell.B, cell.C];
+    const rl = cell.recip.map(norm);
+    const M = [[U[0], U[5], U[4]], [U[5], U[1], U[3]], [U[4], U[3], U[2]]];
+    let s = 0;
+    for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) s += M[i][j] * rl[i] * rl[j] * dot(dir[i], dir[j]);
+    return s / 3;
+  }
+
   /* ---------- blocks -> structure ---------- */
   function readCif(text) {
     const blocks = parseBlocks(text);
@@ -346,6 +359,21 @@
     const cL = col('_atom_site_label'), cT = col('_atom_site_type_symbol');
     const cX = col('_atom_site_fract_x'), cY = col('_atom_site_fract_y'), cZ = col('_atom_site_fract_z');
     const cO = col('_atom_site_occupancy'), cD = col('_atom_site_disorder_group'), cA = col('_atom_site_disorder_assembly');
+    const cU = col('_atom_site_u_iso_or_equiv'), cB = col('_atom_site_b_iso_or_equiv');
+    // anisotropic displacement parameters, for sites that list no isotropic or equivalent value
+    const aniso = new Map();
+    for (const l of chosen.loops) {
+      const cl = l.tags.indexOf('_atom_site_aniso_label');
+      if (cl < 0) continue;
+      for (const kind of ['u', 'b']) {
+        const idx = ['11', '22', '33', '23', '13', '12'].map((t) => l.tags.indexOf('_atom_site_aniso_' + kind + '_' + t));
+        if (idx.some((k) => k < 0)) continue;
+        for (const r of l.rows) {
+          const v = idx.map((k) => parseFloat(r[k]));
+          if (v.every(isFinite)) aniso.set(r[cl], uEquiv(cell, v) / (kind === 'b' ? B_PER_U : 1));
+        }
+      }
+    }
     const sites = [];
     const skipped = [];
     for (const r of siteLoop.rows) {
@@ -359,7 +387,11 @@
       if (dg === '?' || dg === '0' || dg === '') dg = '.';
       let asm = cA >= 0 ? r[cA] : '.';
       if (asm === '?' || asm === '') asm = '.';
-      sites.push({ label, el, f, occ, dg, asm, minor: false, symdis: dg !== '.' && /^-/.test(dg) });
+      // mean-square displacement U in square angstrom, or null when the file gives none
+      let u = cU >= 0 ? parseFloat(r[cU]) : NaN;
+      if (!isFinite(u) && cB >= 0) u = parseFloat(r[cB]) / B_PER_U;
+      if (!isFinite(u) && aniso.has(label)) u = aniso.get(label);
+      sites.push({ label, el, f, occ, dg, asm, u: isFinite(u) ? u : null, minor: false, symdis: dg !== '.' && /^-/.test(dg) });
     }
     // within each disorder assembly, the group with the highest mean occupancy is the major part
     const groups = new Map();
@@ -411,7 +443,7 @@
     block, spaceGroup: null, sgNumber: null, crystalSystem: null, temperature: null, R1: null, Z: null, ccdc: null,
     symSource: 'p1', cellRaw: cellNum.map((x, i) => (i < 3 ? x.toFixed(4) : x.toFixed(3))), skipped: [], format
   }, extra || {});
-  const plainSite = (label, el, f, occ) => ({ label, el, f, occ: occ === undefined ? 1 : occ, dg: '.', asm: '.', minor: false, symdis: false });
+  const plainSite = (label, el, f, occ) => ({ label, el, f, occ: occ === undefined ? 1 : occ, dg: '.', asm: '.', u: null, minor: false, symdis: false });
 
   /* VASP POSCAR / CONTCAR (version 5: with a line of element symbols) */
   function readPoscar(text) {
@@ -555,12 +587,24 @@
       }
       const st = plainSite(t[0], el, xyz, occ);
       st.siteOcc = true;                                         // SHELX occupancies include the site multiplicity
+      // displacement: one value is Uiso (negative: that many times the U of the atom it rides on), six are Uij
+      const uv = t.slice(6, 12).map(parseFloat).filter(isFinite).map((x) => (Math.abs(x) > 5 ? x - 10 * Math.sign(x) : x));
+      if (uv.length >= 6) st.uij = uv.slice(0, 6);
+      else if (uv.length >= 1) st.uRaw = uv[0];
       if (part !== 0) { st.dg = String(part); st.symdis = part < 0; }
       sites.push(st);
     }
     if (!cellNum || cellNum.length < 6 || cellNum.some((x) => !isFinite(x))) throw new Error('No CELL line was found in this SHELX file.');
     if (!sites.length) throw new Error('No atoms were found in this SHELX file.');
     const cell = makeCell(...cellNum);
+    let lastU = null;
+    for (const st of sites) {
+      if (st.uij) st.u = uEquiv(cell, st.uij);
+      else if (st.uRaw !== undefined) st.u = st.uRaw >= 0 ? st.uRaw : (lastU === null ? null : -st.uRaw * lastU);
+      if (st.el !== 'H' && st.u !== null) lastU = st.u;
+      delete st.uij;
+      delete st.uRaw;
+    }
     // symmetry: the listed operators, the identity, an inversion centre when LATT > 0, and the lattice centring
     let ops = [parseSymop('x,y,z')].concat(symm);
     if (latt > 0) ops = ops.concat(ops.map((o) => ({ R: o.R.map((r) => r.map((x) => -x)), T: o.T.map((x) => -x) })));
@@ -1968,6 +2012,263 @@
     return faces;
   }
 
-  root.XtalCore = { readStructure, readCif, readPoscar, readXyz, readShelx, buildCell, analyse, assemble, hullFaces, planePolys, tetrazineDefs, chromoInstances, stateDir, orientReport, hallOps, symbolOps, setSgTable, isMetal, isCenter, isDonor, HALIDE, RC, MASS, parseSymop, MAX_POLY_CN, distance, bondAngle, torsion, toMol2, toSvg, visibleParts, hullPolygons, bondTubes, polyhedraFor, polyhedraStats, suggestPolyMax };
+  /* ---------- powder X-ray diffraction ----------
+     A simulated pattern from a structure: every reflection in a 2-theta range with its d spacing, structure
+     factor, multiplicity and intensity, and a profile on a 2-theta grid. The definitions are in the README. */
+
+  /* X-ray scattering factors of the neutral atoms: f0(s) = sum of a_i exp(-b_i s^2) + c with s = sin(theta)/lambda,
+     listed as [a1, b1, a2, b2, a3, b3, a4, b4, c]. International Tables for Crystallography vol. C (1992),
+     table 6.1.1.4; H is the bonded atom of Stewart, Davidson and Simpson. Values as tabulated in gemmi 0.7. */
+  const XRAY_F0 = { H: [0.493, 10.5109, 0.3229, 26.1257, 0.1402, 3.1424, 0.0408, 57.7997, 0.003], He: [0.8734, 9.1037, 0.6309, 3.3568, 0.3112, 22.9276, 0.178, 0.9821, 0.0064], Li: [1.1282, 3.9546, 0.7508, 1.0524, 0.6175, 85.3905, 0.4653, 168.261, 0.0377], Be: [1.5919, 43.6427, 1.1278, 1.8623, 0.5391, 103.483, 0.7029, 0.542, 0.0385], B: [2.0545, 23.2185, 1.3326, 1.021, 1.0979, 60.3498, 0.7068, 0.1403, -0.1932], C: [2.31, 20.8439, 1.02, 10.2075, 1.5886, 0.5687, 0.865, 51.6512, 0.2156], N: [12.2126, 0.0057, 3.1322, 9.8933, 2.0125, 28.9975, 1.1663, 0.5826, -11.529], O: [3.0485, 13.2771, 2.2868, 5.7011, 1.5463, 0.3239, 0.867, 32.9089, 0.2508], F: [3.5392, 10.2825, 2.6412, 4.2944, 1.517, 0.2615, 1.0243, 26.1476, 0.2776], Ne: [3.9553, 8.4042, 3.1125, 3.4262, 1.4546, 0.2306, 1.1251, 21.7184, 0.3515], Na: [4.7626, 3.285, 3.1736, 8.8422, 1.2674, 0.3136, 1.1128, 129.424, 0.676], Mg: [5.4204, 2.8275, 2.1735, 79.2611, 1.2269, 0.3808, 2.3073, 7.1937, 0.8584], Al: [6.4202, 3.0387, 1.9002, 0.7426, 1.5936, 31.5472, 1.9646, 85.0886, 1.1151], Si: [6.2915, 2.4386, 3.0353, 32.3337, 1.9891, 0.6785, 1.541, 81.6937, 1.1407], P: [6.4345, 1.9067, 4.1791, 27.157, 1.78, 0.526, 1.4908, 68.1645, 1.1149], S: [6.9053, 1.4679, 5.2034, 22.2151, 1.4379, 0.2536, 1.5863, 56.172, 0.8669], Cl: [11.4604, 0.0104, 7.1964, 1.1662, 6.2556, 18.5194, 1.6455, 47.7784, -9.5574], Ar: [7.4845, 0.9072, 6.7723, 14.8407, 0.6539, 43.8983, 1.6442, 33.3929, 1.4445], K: [8.2186, 12.7949, 7.4398, 0.7748, 1.0519, 213.187, 0.8659, 41.6841, 1.4228], Ca: [8.6266, 10.4421, 7.3873, 0.6599, 1.5899, 85.7484, 1.0211, 178.437, 1.3751], Sc: [9.189, 9.0213, 7.3679, 0.5729, 1.6409, 136.108, 1.468, 51.3531, 1.3329], Ti: [9.7595, 7.8508, 7.3558, 0.5, 1.6991, 35.6338, 1.9021, 116.105, 1.2807], V: [10.2971, 6.8657, 7.3511, 0.4385, 2.0703, 26.8938, 2.0571, 102.478, 1.2199], Cr: [10.6406, 6.1038, 7.3537, 0.392, 3.324, 20.2626, 1.4922, 98.7399, 1.1832], Mn: [11.2819, 5.3409, 7.3573, 0.3432, 3.0193, 17.8674, 2.2441, 83.7543, 1.0896], Fe: [11.7695, 4.7611, 7.3573, 0.3072, 3.5222, 15.3535, 2.3045, 76.8805, 1.0369], Co: [12.2841, 4.2791, 7.3409, 0.2784, 4.0034, 13.5359, 2.3488, 71.1692, 1.0118], Ni: [12.8376, 3.8785, 7.292, 0.2565, 4.4438, 12.1763, 2.38, 66.3421, 1.0341], Cu: [13.338, 3.5828, 7.1676, 0.247, 5.6158, 11.3966, 1.6735, 64.8126, 1.191], Zn: [14.0743, 3.2655, 7.0318, 0.2333, 5.1652, 10.3163, 2.41, 58.7097, 1.3041], Ga: [15.2354, 3.0669, 6.7006, 0.2412, 4.3591, 10.7805, 2.9623, 61.4135, 1.7189], Ge: [16.0816, 2.8509, 6.3747, 0.2516, 3.7068, 11.4468, 3.683, 54.7625, 2.1313], As: [16.6723, 2.6345, 6.0701, 0.2647, 3.4313, 12.9479, 4.2779, 47.7972, 2.531], Se: [17.0006, 2.4098, 5.8196, 0.2726, 3.9731, 15.2372, 4.3543, 43.8163, 2.8409], Br: [17.1789, 2.1723, 5.2358, 16.5796, 5.6377, 0.2609, 3.9851, 41.4328, 2.9557], Kr: [17.3555, 1.9384, 6.7286, 16.5623, 5.5493, 0.2261, 3.5375, 39.3972, 2.825], Rb: [17.1784, 1.7888, 9.6435, 17.3151, 5.1399, 0.2748, 1.5292, 164.934, 3.4873], Sr: [17.5663, 1.5564, 9.8184, 14.0988, 5.422, 0.1664, 2.6694, 132.376, 2.5064], Y: [17.776, 1.4029, 10.2946, 12.8006, 5.7263, 0.1256, 3.2659, 104.354, 1.9121], Zr: [17.8765, 1.2762, 10.948, 11.916, 5.4173, 0.1176, 3.6572, 87.6627, 2.0693], Nb: [17.6142, 1.1887, 12.0144, 11.766, 4.0418, 0.2048, 3.5335, 69.7957, 3.7559], Mo: [3.7025, 0.2772, 17.2356, 1.0958, 12.8876, 11.004, 3.7429, 61.6584, 4.3875], Tc: [19.1301, 0.8641, 11.0948, 8.1449, 4.649, 21.5707, 2.7126, 86.8472, 5.4043], Ru: [19.2674, 0.8085, 12.9182, 8.4347, 4.8634, 24.7997, 1.5676, 94.2928, 5.3787], Rh: [19.2957, 0.7515, 14.3501, 8.2176, 4.7343, 25.8749, 1.2892, 98.6062, 5.328], Pd: [19.3319, 0.6987, 15.5017, 7.9893, 5.2954, 25.2052, 0.6058, 76.8986, 5.2659], Ag: [19.2808, 0.6446, 16.6885, 7.4726, 4.8045, 24.6605, 1.0463, 99.8156, 5.179], Cd: [19.2214, 0.5946, 17.6444, 6.9089, 4.461, 24.7008, 1.6029, 87.4825, 5.0694], In: [19.1624, 0.5476, 18.5596, 6.3776, 4.2948, 25.8499, 2.0396, 92.8029, 4.9391], Sn: [19.1889, 5.8303, 19.1005, 0.5031, 4.4585, 26.8909, 2.4663, 83.9571, 4.7821], Sb: [19.6418, 5.3034, 19.0455, 0.4607, 5.0371, 27.9074, 2.6827, 75.2825, 4.5909], Te: [19.9644, 4.8174, 19.0138, 0.4209, 6.1449, 28.5284, 2.5239, 70.8403, 4.352], I: [20.1472, 4.347, 18.9949, 0.3814, 7.5138, 27.766, 2.2735, 66.8776, 4.0712], Xe: [20.2933, 3.9282, 19.0298, 0.344, 8.9767, 26.4659, 1.99, 64.2658, 3.7118], Cs: [20.3892, 3.569, 19.1062, 0.3107, 10.662, 24.3879, 1.4953, 213.904, 3.3352], Ba: [20.3361, 3.216, 19.297, 0.2756, 10.888, 20.2073, 2.6959, 167.202, 2.7731], La: [20.578, 2.9482, 19.599, 0.2445, 11.3727, 18.7726, 3.2872, 133.124, 2.1468], Ce: [21.1671, 2.8122, 19.7695, 0.2268, 11.8513, 17.6083, 3.3305, 127.113, 1.8626], Pr: [22.044, 2.7739, 19.6697, 0.2221, 12.3856, 16.7669, 2.8243, 143.644, 2.0583], Nd: [22.6845, 2.6625, 19.6847, 0.2106, 12.774, 15.885, 2.8514, 137.903, 1.9849], Pm: [23.3405, 2.5627, 19.6095, 0.2021, 13.1235, 15.1009, 2.8752, 132.721, 2.0288], Sm: [24.0042, 2.4727, 19.4258, 0.1965, 13.4396, 14.3996, 2.896, 128.007, 2.2096], Eu: [24.6274, 2.3879, 19.0886, 0.1942, 13.7603, 13.7546, 2.9227, 123.174, 2.5745], Gd: [25.0709, 2.2534, 19.0798, 0.182, 13.8518, 12.9331, 3.5454, 101.398, 2.4196], Tb: [25.8976, 2.2426, 18.2185, 0.1961, 14.3167, 12.6648, 2.9535, 115.362, 3.5832], Dy: [26.507, 2.1802, 17.6383, 0.2022, 14.5596, 12.1899, 2.9658, 111.874, 4.2973], Ho: [26.9049, 2.0705, 17.294, 0.1979, 14.5583, 11.4407, 3.6384, 92.6566, 4.568], Er: [27.6563, 2.0736, 16.4285, 0.2235, 14.9779, 11.3604, 2.9823, 105.703, 5.9205], Tm: [28.1819, 2.0286, 15.8851, 0.2388, 15.1542, 10.9975, 2.9871, 102.961, 6.7562], Yb: [28.6641, 1.9889, 15.4345, 0.2571, 15.3087, 10.6647, 2.9896, 100.417, 7.5667], Lu: [28.9476, 1.9018, 15.2208, 9.9852, 15.1, 0.261, 3.716, 84.3298, 7.9763], Hf: [29.144, 1.8326, 15.1726, 9.5999, 14.7586, 0.2751, 4.3001, 72.029, 8.5815], Ta: [29.2024, 1.7733, 15.2293, 9.3705, 14.5135, 0.296, 4.7649, 63.3644, 9.2435], W: [29.0818, 1.7203, 15.43, 9.2259, 14.4327, 0.3217, 5.1198, 57.056, 9.8875], Re: [28.7621, 1.6719, 15.7189, 9.0923, 14.5564, 0.3505, 5.4417, 52.0861, 10.472], Os: [28.1894, 1.629, 16.155, 8.9795, 14.9305, 0.3827, 5.6759, 48.1647, 11.0005], Ir: [27.3049, 1.5928, 16.7296, 8.8655, 15.6115, 0.4179, 5.8338, 45.0011, 11.4722], Pt: [27.0059, 1.5129, 17.7639, 8.8117, 15.7131, 0.4246, 5.7837, 38.6103, 11.6883], Au: [16.8819, 0.4611, 18.5913, 8.6216, 25.5582, 1.4826, 5.86, 36.3956, 12.0658], Hg: [20.6809, 0.545, 19.0417, 8.4484, 21.6575, 1.5729, 5.9676, 38.3246, 12.6089], Tl: [27.5446, 0.6551, 19.1584, 8.7075, 15.538, 1.9635, 5.5259, 45.8149, 13.1746], Pb: [31.0617, 0.6902, 13.0637, 2.3576, 18.442, 8.618, 5.9696, 47.2579, 13.4118], Bi: [33.3689, 0.704, 12.951, 2.9238, 16.5877, 8.7937, 6.4692, 48.0093, 13.5782], Po: [34.6726, 0.701, 15.4733, 3.5508, 13.1138, 9.5564, 7.0259, 47.0045, 13.677], At: [35.3163, 0.6859, 19.0211, 3.9746, 9.4989, 11.3824, 7.4252, 45.4715, 13.7108], Rn: [35.5631, 0.6631, 21.2816, 4.0691, 8.0037, 14.0422, 7.4433, 44.2473, 13.6905], Fr: [35.9299, 0.6465, 23.0547, 4.1762, 12.1439, 23.1052, 2.1125, 150.645, 13.7247], Ra: [35.763, 0.6163, 22.9064, 3.8714, 12.4739, 19.9887, 3.211, 142.325, 13.6211], Ac: [35.6597, 0.5891, 23.1032, 3.6516, 12.5977, 18.599, 4.0866, 117.02, 13.5266], Th: [35.5645, 0.5634, 23.4219, 3.462, 12.7473, 17.8309, 4.807, 99.1722, 13.4314], Pa: [35.8847, 0.5478, 23.2948, 3.4152, 14.1891, 16.9235, 4.1729, 105.251, 13.4287], U: [36.0228, 0.5293, 23.4128, 3.3253, 14.9491, 16.0927, 4.188, 100.613, 13.3966], Np: [36.1874, 0.5119, 23.5964, 3.254, 15.6402, 15.3622, 4.1855, 97.4908, 13.3573], Pu: [36.5254, 0.4994, 23.8083, 3.2637, 16.7707, 14.9455, 3.4795, 105.98, 13.3812], Am: [36.6706, 0.4836, 24.0992, 3.2065, 17.3415, 14.3136, 3.4933, 102.273, 13.3592], Cm: [36.6488, 0.4652, 24.4096, 3.09, 17.399, 13.4346, 4.2167, 88.4834, 13.2887] };
+  const XRAY_DISP = {
+    Cu: { H: [0.0, 0.0], He: [0.0, 0.0], Li: [0.001, 0.0], Be: [0.003, 0.001], B: [0.009, 0.004], C: [0.018, 0.009], N: [0.031, 0.018], O: [0.049, 0.032], F: [0.073, 0.053], Ne: [0.101, 0.083], Na: [0.136, 0.124], Mg: [0.173, 0.177], Al: [0.213, 0.246], Si: [0.255, 0.33], P: [0.296, 0.433], S: [0.333, 0.557], Cl: [0.364, 0.702], Ar: [0.379, 0.872], K: [0.388, 1.066], Ca: [0.365, 1.285], Sc: [0.313, 1.533], Ti: [0.22, 1.807], V: [0.07, 2.11], Cr: [-0.162, 2.444], Mn: [-0.529, 2.805], Fe: [-1.131, 3.197], Co: [-2.362, 3.614], Ni: [-3.0, 0.509], Cu: [-1.962, 0.589], Zn: [-1.546, 0.678], Ga: [-1.28, 0.776], Ge: [-1.084, 0.886], As: [-0.925, 1.005], Se: [-0.788, 1.137], Br: [-0.67, 1.28], Kr: [-0.559, 1.438], Rb: [-0.46, 1.608], Sr: [-0.344, 1.82], Y: [-0.257, 2.024], Zr: [-0.176, 2.244], Nb: [-0.101, 2.482], Mo: [-0.036, 2.734], Tc: [0.02, 3.004], Ru: [0.07, 3.295], Rh: [0.109, 3.603], Pd: [0.139, 3.932], Ag: [0.15, 4.281], Cd: [0.14, 4.652], In: [0.103, 5.044], Sn: [0.048, 5.458], Sb: [-0.034, 5.893], Te: [-0.152, 6.351], I: [-0.298, 6.834], Xe: [-0.489, 7.347], Cs: [-0.713, 7.902], Ba: [-1.011, 8.459], La: [-1.377, 9.034], Ce: [-2.085, 9.653], Pr: [-2.363, 10.281], Nd: [-3.05, 10.931], Pm: [-3.958, 11.611], Sm: [-5.256, 12.309], Eu: [-8.931, 11.271], Gd: [-8.809, 11.987], Tb: [-9.174, 9.232], Dy: [-9.727, 9.853], Ho: [-14.922, 3.703], Er: [-9.37, 3.936], Tm: [-7.97, 4.18], Yb: [-7.138, 4.431], Lu: [-6.541, 4.691], Hf: [-6.099, 4.975], Ta: [-5.711, 5.269], W: [-5.386, 5.575], Re: [-5.117, 5.889], Os: [-4.885, 6.218], Ir: [-4.671, 6.562], Pt: [-4.487, 6.922], Au: [-4.308, 7.293], Hg: [-4.175, 7.682], Tl: [-4.039, 8.085], Pb: [-3.948, 8.501], Bi: [-3.125, 8.926], Po: [-3.834, 9.378], At: [-3.815, 9.839], Rn: [-3.802, 10.313], Fr: [-3.816, 10.798], Ra: [-3.848, 11.291], Ac: [-3.911, 11.793], Th: [-3.976, 12.323], Pa: [-4.067, 12.862], U: [-4.175, 13.402], Np: [0.0, 0.0], Pu: [0.0, 0.0], Am: [0.0, 0.0], Cm: [0.0, 0.0] },
+    Mo: { H: [0.0, 0.0], He: [0.0, 0.0], Li: [0.0, 0.0], Be: [0.0, 0.0], B: [0.002, 0.001], C: [0.003, 0.002], N: [0.006, 0.003], O: [0.011, 0.006], F: [0.018, 0.01], Ne: [0.026, 0.016], Na: [0.037, 0.025], Mg: [0.049, 0.036], Al: [0.064, 0.051], Si: [0.082, 0.07], P: [0.102, 0.094], S: [0.125, 0.123], Cl: [0.149, 0.158], Ar: [0.175, 0.2], K: [0.202, 0.249], Ca: [0.227, 0.306], Sc: [0.253, 0.372], Ti: [0.279, 0.446], V: [0.302, 0.529], Cr: [0.323, 0.624], Mn: [0.338, 0.728], Fe: [0.349, 0.844], Co: [0.352, 0.972], Ni: [0.342, 1.112], Cu: [0.323, 1.265], Zn: [0.287, 1.43], Ga: [0.235, 1.608], Ge: [0.159, 1.8], As: [0.055, 2.006], Se: [-0.087, 2.226], Br: [-0.284, 2.46], Kr: [-0.55, 2.708], Rb: [-0.931, 2.968], Sr: [-1.522, 3.25], Y: [-2.787, 3.567], Zr: [-2.956, 0.558], Nb: [-2.06, 0.619], Mo: [-1.671, 0.686], Tc: [-1.424, 0.757], Ru: [-1.242, 0.834], Rh: [-1.099, 0.917], Pd: [-0.979, 1.005], Ag: [-0.875, 1.1], Cd: [-0.783, 1.201], In: [-0.704, 1.309], Sn: [-0.63, 1.424], Sb: [-0.563, 1.545], Te: [-0.506, 1.674], I: [-0.446, 1.81], Xe: [-0.393, 1.956], Cs: [-0.338, 2.117], Ba: [-0.289, 2.279], La: [-0.252, 2.449], Ce: [-0.13, 2.628], Pr: [-0.178, 2.817], Nd: [-0.151, 3.013], Pm: [-0.13, 3.22], Sm: [-0.115, 3.437], Eu: [-0.105, 3.663], Gd: [-0.108, 3.899], Tb: [-0.111, 4.149], Dy: [-0.126, 4.405], Ho: [-0.155, 4.674], Er: [-0.192, 4.953], Tm: [-0.243, 5.243], Yb: [-0.313, 5.543], Lu: [-0.395, 5.851], Hf: [-0.502, 6.178], Ta: [-0.619, 6.515], W: [-0.758, 6.865], Re: [-0.922, 7.224], Os: [-1.115, 7.596], Ir: [-1.337, 7.983], Pt: [-1.601, 8.382], Au: [-1.896, 8.792], Hg: [-2.268, 9.217], Tl: [-2.708, 9.656], Pb: [-3.257, 10.105], Bi: [-3.966, 10.566], Po: [-4.983, 11.042], At: [-7.761, 9.967], Rn: [-7.927, 10.439], Fr: [-7.072, 7.759], Ra: [-6.606, 8.119], Ac: [-6.668, 8.493], Th: [-7.048, 8.88], Pa: [-7.86, 9.275], U: [-9.496, 9.658], Np: [0.0, 0.0], Pu: [0.0, 0.0], Am: [0.0, 0.0], Cm: [0.0, 0.0] },
+    Co: { H: [0.0, 0.0], He: [0.0, 0.0], Li: [0.002, 0.0], Be: [0.005, 0.002], B: [0.012, 0.005], C: [0.024, 0.013], N: [0.04, 0.025], O: [0.063, 0.044], F: [0.092, 0.072], Ne: [0.127, 0.113], Na: [0.167, 0.167], Mg: [0.21, 0.237], Al: [0.255, 0.328], Si: [0.298, 0.438], P: [0.339, 0.573], S: [0.371, 0.733], Cl: [0.39, 0.92], Ar: [0.374, 1.139], K: [0.354, 1.386], Ca: [0.279, 1.665], Sc: [0.148, 1.977], Ti: [-0.061, 2.321], V: [-0.396, 2.699], Cr: [-0.95, 3.113], Mn: [-2.077, 3.554], Fe: [-3.33, 0.49], Co: [-2.021, 0.573], Ni: [-1.564, 0.666], Cu: [-1.276, 0.77], Zn: [-1.081, 0.886], Ga: [-0.916, 1.014], Ge: [-0.774, 1.156], As: [-0.647, 1.311], Se: [-0.533, 1.482], Br: [-0.43, 1.667], Kr: [-0.332, 1.871], Rb: [-0.245, 2.089], Sr: [-0.136, 2.361], Y: [-0.062, 2.624], Zr: [0.004, 2.906], Nb: [0.062, 3.21], Mo: [0.103, 3.532], Tc: [0.131, 3.876], Ru: [0.149, 4.248], Rh: [0.149, 4.64], Pd: [0.13, 5.058], Ag: [0.08, 5.5], Cd: [-0.006, 5.969], In: [-0.131, 6.462], Sn: [-0.29, 6.983], Sb: [-0.496, 7.529], Te: [-0.765, 8.103], I: [-1.097, 8.708], Xe: [-1.52, 9.351], Cs: [-2.034, 10.042], Ba: [-2.703, 10.734], La: [-3.574, 11.447], Ce: [-5.162, 12.216], Pr: [-6.734, 12.977], Nd: [-8.136, 12.002], Pm: [-10.104, 9.272], Sm: [-10.19, 9.945], Eu: [-13.502, 3.652], Gd: [-9.332, 3.898], Tb: [-7.96, 4.164], Dy: [-7.093, 4.427], Ho: [-6.472, 4.708], Er: [-6.002, 5.001], Tm: [-5.628, 5.309], Yb: [-5.32, 5.624], Lu: [-5.061, 5.95], Hf: [-4.872, 6.306], Ta: [-4.659, 6.675], W: [-4.468, 7.058], Re: [-4.311, 7.451], Os: [-4.174, 7.862], Ir: [-4.043, 8.294], Pt: [-3.935, 8.745], Au: [-3.828, 9.21], Hg: [-3.775, 9.695], Tl: [-3.714, 10.199], Pb: [-3.704, 10.716], Bi: [-3.65, 11.243], Po: [-3.754, 11.804], At: [-3.826, 12.376], Rn: [-3.91, 12.965], Fr: [-4.03, 13.565], Ra: [-4.168, 14.173], Ac: [-4.352, 14.793], Th: [-4.559, 15.448], Pa: [-4.784, 16.114], U: [-5.052, 16.779], Np: [0.0, 0.0], Pu: [0.0, 0.0], Am: [0.0, 0.0], Cm: [0.0, 0.0] },
+    Fe: { H: [0.0, 0.0], He: [0.0, 0.0], Li: [0.002, 0.001], Be: [0.006, 0.002], B: [0.014, 0.007], C: [0.027, 0.015], N: [0.046, 0.029], O: [0.072, 0.052], F: [0.104, 0.085], Ne: [0.142, 0.132], Na: [0.186, 0.195], Mg: [0.232, 0.277], Al: [0.277, 0.381], Si: [0.321, 0.508], P: [0.359, 0.663], S: [0.385, 0.846], Cl: [0.393, 1.06], Ar: [0.339, 1.309], K: [0.308, 1.589], Ca: [0.188, 1.903], Sc: [-0.011, 2.256], Ti: [-0.331, 2.642], V: [-0.863, 3.064], Cr: [-1.919, 3.525], Mn: [-3.572, 0.48], Fe: [-2.053, 0.565], Co: [-1.572, 0.66], Ni: [-1.286, 0.767], Cu: [-1.067, 0.886], Zn: [-0.91, 1.019], Ga: [-0.766, 1.166], Ge: [-0.637, 1.329], As: [-0.521, 1.507], Se: [-0.412, 1.703], Br: [-0.318, 1.914], Kr: [-0.223, 2.147], Rb: [-0.143, 2.396], Sr: [-0.04, 2.706], Y: [0.024, 3.006], Zr: [0.077, 3.326], Nb: [0.119, 3.673], Mo: [0.143, 4.039], Tc: [0.147, 4.429], Ru: [0.137, 4.851], Rh: [0.103, 5.295], Pd: [0.044, 5.768], Ag: [-0.058, 6.265], Cd: [-0.2, 6.794], In: [-0.398, 7.351], Sn: [-0.647, 7.938], Sb: [-0.96, 8.552], Te: [-1.367, 9.198], I: [-1.87, 9.877], Xe: [-2.526, 10.597], Cs: [-3.353, 11.369], Ba: [-4.502, 12.143], La: [-6.317, 12.931], Ce: [-8.602, 11.978], Pr: [-10.993, 9.296], Nd: [-10.463, 9.982], Pm: [-13.161, 3.624], Sm: [-9.3, 3.88], Eu: [-7.938, 4.145], Gd: [-7.117, 4.423], Tb: [-6.503, 4.723], Dy: [-6.0, 5.02], Ho: [-5.6, 5.337], Er: [-5.278, 5.669], Tm: [-5.015, 6.015], Yb: [-4.793, 6.37], Lu: [-4.599, 6.736], Hf: [-4.473, 7.138], Ta: [-4.309, 7.554], W: [-4.16, 7.985], Re: [-4.044, 8.427], Os: [-3.946, 8.889], Ir: [-3.851, 9.375], Pt: [-3.784, 9.883], Au: [-3.719, 10.404], Hg: [-3.714, 10.948], Tl: [-3.694, 11.512], Pb: [-3.729, 12.091], Bi: [-3.746, 12.682], Po: [-3.898, 13.31], At: [-4.035, 13.95], Rn: [-4.182, 14.609], Fr: [-4.378, 15.28], Ra: [-4.607, 15.958], Ac: [-4.897, 16.649], Th: [-5.21, 17.378], Pa: [-5.55, 18.12], U: [-5.945, 18.858], Np: [0.0, 0.0], Pu: [0.0, 0.0], Am: [0.0, 0.0], Cm: [0.0, 0.0] },
+    Cr: { H: [0.0, 0.0], He: [0.0, 0.0], Li: [0.003, 0.001], Be: [0.008, 0.003], B: [0.019, 0.009], C: [0.036, 0.021], N: [0.061, 0.042], O: [0.093, 0.073], F: [0.133, 0.119], Ne: [0.179, 0.184], Na: [0.23, 0.27], Mg: [0.279, 0.381], Al: [0.326, 0.521], Si: [0.365, 0.692], P: [0.39, 0.898], S: [0.39, 1.141], Cl: [0.351, 1.422], Ar: [0.296, 1.746], K: [0.092, 2.109], Ca: [-0.198, 2.514], Sc: [-0.693, 2.965], Ti: [-1.638, 3.454], V: [-4.482, 0.458], Cr: [-2.129, 0.547], Mn: [-1.597, 0.648], Fe: [-1.291, 0.762], Co: [-1.071, 0.89], Ni: [-0.898, 1.033], Cu: [-0.731, 1.193], Zn: [-0.613, 1.371], Ga: [-0.495, 1.567], Ge: [-0.381, 1.784], As: [-0.282, 2.019], Se: [-0.186, 2.278], Br: [-0.103, 2.558], Kr: [-0.024, 2.867], Rb: [0.033, 3.196], Sr: [0.113, 3.603], Y: [0.136, 3.997], Zr: [0.147, 4.417], Nb: [0.138, 4.871], Mo: [0.092, 5.348], Tc: [0.012, 5.855], Ru: [-0.1, 6.401], Rh: [-0.252, 6.974], Pd: [-0.45, 7.583], Ag: [-0.721, 8.224], Cd: [-1.084, 8.905], In: [-1.565, 9.618], Sn: [-2.167, 10.368], Sb: [-2.949, 11.148], Te: [-4.008, 11.963], I: [-5.541, 12.82], Xe: [-8.244, 11.899], Cs: [-10.404, 12.935], Ba: [-10.993, 10.088], La: [-12.775, 3.558], Ce: [-10.186, 3.837], Pr: [-7.937, 4.124], Nd: [-7.104, 4.42], Pm: [-6.49, 4.734], Sm: [-6.009, 5.065], Eu: [-5.61, 5.407], Gd: [-5.322, 5.764], Tb: [-5.04, 6.154], Dy: [-4.762, 6.538], Ho: [-4.531, 6.945], Er: [-4.348, 7.372], Tm: [-4.202, 7.817], Yb: [-4.078, 8.274], Lu: [-3.982, 8.741], Hf: [-3.969, 9.259], Ta: [-3.894, 9.793], W: [-3.827, 10.346], Re: [-3.796, 10.911], Os: [-3.805, 11.5], Ir: [-3.808, 12.118], Pt: [-3.837, 12.764], Au: [-3.885, 13.427], Hg: [-3.99, 14.116], Tl: [-4.103, 14.833], Pb: [-4.284, 15.568], Bi: [-4.483, 16.315], Po: [-4.816, 17.109], At: [-5.181, 17.916], Rn: [-5.561, 18.746], Fr: [-6.037, 19.584], Ra: [-6.567, 20.431], Ac: [-7.244, 21.294], Th: [-8.038, 22.207], Pa: [-9.224, 23.136], U: [-9.774, 23.094], Np: [0.0, 0.0], Pu: [0.0, 0.0], Am: [0.0, 0.0], Cm: [0.0, 0.0] },
+    Ag: { H: [0.0, 0.0], He: [0.0, 0.0], Li: [0.0, 0.0], Be: [-0.0, 0.0], B: [0.001, 0.0], C: [0.001, 0.001], N: [0.003, 0.002], O: [0.006, 0.004], F: [0.01, 0.006], Ne: [0.015, 0.01], Na: [0.022, 0.015], Mg: [0.031, 0.022], Al: [0.04, 0.031], Si: [0.053, 0.043], P: [0.067, 0.058], S: [0.083, 0.076], Cl: [0.1, 0.098], Ar: [0.12, 0.125], K: [0.141, 0.156], Ca: [0.162, 0.193], Sc: [0.184, 0.235], Ti: [0.207, 0.283], V: [0.229, 0.338], Cr: [0.251, 0.399], Mn: [0.272, 0.468], Fe: [0.291, 0.545], Co: [0.308, 0.63], Ni: [0.318, 0.723], Cu: [0.327, 0.826], Zn: [0.328, 0.938], Ga: [0.322, 1.059], Ge: [0.306, 1.19], As: [0.281, 1.332], Se: [0.243, 1.483], Br: [0.188, 1.645], Kr: [0.114, 1.819], Rb: [0.015, 2.003], Sr: [-0.108, 2.203], Y: [-0.278, 2.41], Zr: [-0.505, 2.628], Nb: [-0.811, 2.858], Mo: [-1.258, 3.098], Tc: [-2.016, 3.35], Ru: [-5.37, 3.65], Rh: [-2.511, 0.596], Pd: [-1.938, 0.654], Ag: [-1.628, 0.716], Cd: [-1.418, 0.782], In: [-1.262, 0.853], Sn: [-1.134, 0.929], Sb: [-1.028, 1.01], Te: [-0.943, 1.096], I: [-0.863, 1.187], Xe: [-0.789, 1.284], Cs: [-0.721, 1.391], Ba: [-0.66, 1.5], La: [-0.606, 1.614], Ce: [-0.656, 1.734], Pr: [-0.502, 1.861], Nd: [-0.458, 1.994], Pm: [-0.418, 2.133], Sm: [-0.381, 2.28], Eu: [-0.347, 2.433], Gd: [-0.32, 2.594], Tb: [-0.292, 2.763], Dy: [-0.269, 2.938], Ho: [-0.253, 3.122], Er: [-0.241, 3.314], Tm: [-0.237, 3.513], Yb: [-0.24, 3.721], Lu: [-0.25, 3.936], Hf: [-0.272, 4.162], Ta: [-0.298, 4.397], W: [-0.331, 4.641], Re: [-0.375, 4.892], Os: [-0.43, 5.154], Ir: [-0.495, 5.425], Pt: [-0.573, 5.706], Au: [-0.651, 5.996], Hg: [-0.763, 6.297], Tl: [-0.888, 6.607], Pb: [-1.039, 6.927], Bi: [-1.218, 7.255], Po: [-1.421, 7.597], At: [-1.667, 7.948], Rn: [-1.937, 8.306], Fr: [-2.265, 8.674], Ra: [-2.652, 9.048], Ac: [-3.11, 9.433], Th: [-3.673, 9.828], Pa: [-4.414, 10.234], U: [-5.545, 10.638], Np: [0.0, 0.0], Pu: [0.0, 0.0], Am: [0.0, 0.0], Cm: [0.0, 0.0] }
+  };
+  /* K-alpha lines of the common tube anodes, in angstrom (Hoelzer et al., Phys. Rev. A 56, 4554, 1997) */
+  const ANODES = [
+    { key: 'Cu', l1: 1.54059, l2: 1.54443 }, { key: 'Mo', l1: 0.70932, l2: 0.71361 }, { key: 'Co', l1: 1.78900, l2: 1.79284 },
+    { key: 'Fe', l1: 1.93604, l2: 1.93997 }, { key: 'Cr', l1: 2.28973, l2: 2.29365 }, { key: 'Ag', l1: 0.55942, l2: 0.56381 }
+  ];
+  /* the anode whose K-alpha lines hold this wavelength (K-alpha 1, K-alpha 2 or their mean), or null */
+  const anodeOf = (lambda) => ANODES.find((a) => Math.abs(lambda - a.l1) / a.l1 < 0.004) || null;
+  const scatF0 = (el, s2) => {
+    const c = XRAY_F0[el];
+    if (!c) return 0;
+    return c[0] * Math.exp(-c[1] * s2) + c[2] * Math.exp(-c[3] * s2) + c[4] * Math.exp(-c[5] * s2) + c[6] * Math.exp(-c[7] * s2) + c[8];
+  };
+  const DEG = Math.PI / 180;
+  /* Lorentz and polarisation factor of a flat powder sample in reflection, beam not polarised, no monochromator */
+  const lorentzPol = (theta) => (1 + Math.cos(2 * theta) ** 2) / (Math.sin(theta) ** 2 * Math.cos(theta));
+
+  /* Every atom of the cell for diffraction: all sites and all disorder parts with their occupancy, expanded by
+     every operator; copies of one site that coincide (a special position) count once. B in square angstrom. */
+  function powderAtoms(struct, bDefault) {
+    const { cell, ops } = struct;
+    const bd = isFinite(bDefault) ? bDefault : 1;
+    const out = [];
+    let noU = 0;
+    for (const s of struct.sites) {
+      if (!(s.occ > 0)) continue;
+      const hasU = s.u !== null && s.u !== undefined && isFinite(s.u);
+      if (!hasU) noU++;
+      const B = hasU ? Math.max(0, s.u) * B_PER_U : bd;
+      const mine = [];
+      for (const op of ops) {
+        const f = [0, 1, 2].map((r) => mod1(op.R[r][0] * s.f[0] + op.R[r][1] * s.f[1] + op.R[r][2] * s.f[2] + op.T[r]));
+        if (mine.some((g) => norm(cell.toCart([0, 1, 2].map((i) => { const d = g[i] - f[i]; return d - Math.round(d); }))) < 0.15)) continue;
+        mine.push(f);
+        out.push({ el: s.el, f, occ: s.occ, B });
+      }
+    }
+    return { atoms: out, noU };
+  }
+
+  /* reflections h k l that are the same by the symmetry of the structure: h' = h R for the rotation part R of
+     every operator, and -h (Friedel). Returns the distinct rotation parts and their negatives as flat arrays. */
+  function laueRotations(ops) {
+    const seen = new Map();
+    for (const op of ops) {
+      const R = op.R.map((r) => r.map((x) => Math.round(x)));
+      for (const sgn of [1, -1]) {
+        const flat = [].concat(...R).map((x) => sgn * x);
+        seen.set(flat.join(','), flat);
+      }
+    }
+    return Array.from(seen.values());
+  }
+
+  /* opts: lambda (angstrom), tthMin and tthMax (degrees 2-theta), bDefault (B for atoms with none in the file),
+     dispersion (false leaves out f' and f''), maxWork (limit on reflections times atoms).
+     Returns { reflections, lambda, anode, nAtoms, noU, f000, tthMax, cut }. Each reflection is
+     { h, k, l, d, tth, fre, fim, f, m, lp, I, rel }: one member of each set of equivalent reflections, with the
+     multiplicity m of the set, the structure factor of that member, f = root of the mean |F|^2 of the set,
+     I = m f^2 lp, and rel = I on a scale where the strongest reflection in the range is 100. */
+  function powderPattern(struct, opts) {
+    const o = opts || {};
+    const lambda = o.lambda > 0 ? o.lambda : 1.54059;
+    const tthMin = Math.max(0, isFinite(o.tthMin) ? o.tthMin : 3);
+    let tthMax = Math.min(179, isFinite(o.tthMax) ? o.tthMax : 60);
+    if (tthMax <= tthMin) tthMax = Math.min(179, tthMin + 1);
+    const { cell } = struct;
+    const pa = powderAtoms(struct, o.bDefault);
+    const atoms = pa.atoms;
+    const anode = o.dispersion === false ? null : anodeOf(lambda);
+    const disp = anode ? XRAY_DISP[anode.key] : null;
+    const missing = [];
+    // atoms that share an element and a B value share one scattering factor per reflection
+    const kinds = [];
+    const kindOf = new Map();
+    const N = atoms.length;
+    const ax = new Float64Array(N), ay = new Float64Array(N), az = new Float64Array(N), aocc = new Float64Array(N);
+    const akind = new Int32Array(N);
+    let f000 = 0;
+    atoms.forEach((a, i) => {
+      const key = a.el + '|' + a.B.toFixed(4);
+      if (!kindOf.has(key)) {
+        if (!XRAY_F0[a.el] && !missing.includes(a.el)) missing.push(a.el);
+        const dp = (disp && disp[a.el]) || [0, 0];
+        kindOf.set(key, kinds.length);
+        kinds.push({ el: a.el, B: a.B, fp: dp[0], fpp: dp[1] });
+      }
+      ax[i] = a.f[0]; ay[i] = a.f[1]; az[i] = a.f[2]; aocc[i] = a.occ; akind[i] = kindOf.get(key);
+      f000 += a.occ * scatF0(a.el, 0);
+    });
+    // the range is cut when the work (reflections times atoms) would freeze the page
+    const maxWork = o.maxWork > 0 ? o.maxWork : 6e8;
+    const rot = laueRotations(struct.ops);
+    const margin = 1.5;                                   // degrees past each end, so that peak tails enter the profile
+    let cut = false;
+    let gMax = 2 * Math.sin(Math.min(179.5, tthMax + margin) / 2 * DEG) / lambda;
+    const cost = (g) => (4 / 3) * Math.PI * g * g * g * cell.V / Math.max(2, rot.length) * 2 * Math.max(1, N);
+    while (cost(gMax) > maxWork && tthMax > tthMin + 2) {
+      tthMax = Math.max(tthMin + 2, tthMax - 2);
+      gMax = 2 * Math.sin(Math.min(179.5, tthMax + margin) / 2 * DEG) / lambda;
+      cut = true;
+    }
+    const gMin = 2 * Math.sin(Math.max(0, tthMin - margin) / 2 * DEG) / lambda;
+    const [ra, rb, rc] = cell.recip;
+    const H = Math.floor(gMax * cell.a + 1e-9), K = Math.floor(gMax * cell.b + 1e-9), L = Math.floor(gMax * cell.c + 1e-9);
+    const nk = 2 * K + 1, nl = 2 * L + 1;
+    const seen = new Uint8Array((2 * H + 1) * nk * nl);
+    const at = (h, k, l) => ((h + H) * nk + (k + K)) * nl + (l + L);
+    const kf = new Float64Array(kinds.length), kpp = new Float64Array(kinds.length);
+    const TWO_PI = 2 * Math.PI;
+    const refl = [];
+    for (let h = H; h >= -H; h--) for (let k = K; k >= -K; k--) for (let l = L; l >= -L; l--) {
+      if (seen[at(h, k, l)] || (!h && !k && !l)) continue;
+      const gx = h * ra[0] + k * rb[0] + l * rc[0], gy = h * ra[1] + k * rb[1] + l * rc[1], gz = h * ra[2] + k * rb[2] + l * rc[2];
+      const g = Math.sqrt(gx * gx + gy * gy + gz * gz);
+      if (g > gMax) continue;
+      // the set of equivalent reflections; the member with the fewest negative indices, then the largest h, k, l, names it
+      let m = 0;
+      let best = null;
+      for (const R of rot) {
+        const p = h * R[0] + k * R[3] + l * R[6], q = h * R[1] + k * R[4] + l * R[7], r = h * R[2] + k * R[5] + l * R[8];
+        if (Math.abs(p) > H || Math.abs(q) > K || Math.abs(r) > L) continue;
+        const idx = at(p, q, r);
+        if (seen[idx]) continue;
+        seen[idx] = 1;
+        m++;
+        const neg = (p < 0) + (q < 0) + (r < 0);
+        if (!best || neg < best[3] || (neg === best[3] && (p > best[0] || (p === best[0] && (q > best[1] || (q === best[1] && r > best[2])))))) best = [p, q, r, neg];
+      }
+      if (g < gMin || g * lambda / 2 >= 1) continue;
+      const s2 = g * g / 4;
+      for (let t = 0; t < kinds.length; t++) {
+        const dw = Math.exp(-kinds[t].B * s2);
+        kf[t] = (scatF0(kinds[t].el, s2) + kinds[t].fp) * dw;
+        kpp[t] = kinds[t].fpp * dw;
+      }
+      // F(h) = sum of (a + i b) exp(i phi); with A, B the sums over a and C, D the sums over b,
+      // F(h) = (A - D) + i (B + C) and F(-h) = (A + D) + i (C - B)
+      const [bh, bk, bl] = best;
+      let A = 0, B = 0, C = 0, D = 0;
+      for (let i = 0; i < N; i++) {
+        const ph = TWO_PI * (bh * ax[i] + bk * ay[i] + bl * az[i]);
+        const c = Math.cos(ph), s = Math.sin(ph), t = akind[i], w = aocc[i];
+        A += w * kf[t] * c; B += w * kf[t] * s; C += w * kpp[t] * c; D += w * kpp[t] * s;
+      }
+      const fre = A - D, fim = B + C;
+      const f2 = (fre * fre + fim * fim + (A + D) * (A + D) + (C - B) * (C - B)) / 2;
+      if (f2 < 1e-8 * Math.max(1, f000 * f000)) continue;     // absent by symmetry
+      const theta = Math.asin(g * lambda / 2);
+      const lp = lorentzPol(theta);
+      refl.push({ h: bh, k: bk, l: bl, d: 1 / g, tth: 2 * theta / DEG, fre, fim, f: Math.sqrt(f2), m, lp, I: m * f2 * lp, rel: 0 });
+    }
+    refl.sort((p, q) => p.tth - q.tth || q.h - p.h || q.k - p.k || q.l - p.l);
+    let top = 0;
+    for (const r of refl) if (r.tth >= tthMin && r.tth <= tthMax && r.I > top) top = r.I;
+    for (const r of refl) r.rel = top > 0 ? 100 * r.I / top : 0;
+    return { reflections: refl, lambda, anode: anode ? anode.key : null, nAtoms: N, noU: pa.noU, missing, f000, tthMin, tthMax, cut };
+  }
+
+  /* The pattern on a 2-theta grid. Every reflection is a pseudo-Voigt peak of one width with the area of its
+     intensity: eta of a Lorentzian plus (1 - eta) of a Gaussian of the same full width at half maximum.
+     opts: tthMin, tthMax, step, fwhm (degrees), eta (0 to 1), lambda (of the reflection list), and waves: more
+     lines [{ lambda, weight }] that repeat every reflection at their own angle (K-alpha 2).
+     Returns { x0, step, y } with y a Float64Array on the scale where its highest point is 100, and max the
+     highest point before that scaling. */
+  function powderProfile(reflections, opts) {
+    const o = opts || {};
+    const x0 = isFinite(o.tthMin) ? o.tthMin : 3;
+    const x1 = isFinite(o.tthMax) && o.tthMax > x0 ? o.tthMax : x0 + 57;
+    const step = o.step > 0 ? o.step : 0.01;
+    const fwhm = o.fwhm > 0 ? o.fwhm : 0.1;
+    const eta = Math.max(0, Math.min(1, isFinite(o.eta) ? o.eta : 0.5));
+    const n = Math.max(2, Math.round((x1 - x0) / step) + 1);
+    const y = new Float64Array(n);
+    const gN = (2 / fwhm) * Math.sqrt(Math.LN2 / Math.PI), lN = 2 / (Math.PI * fwhm);
+    const g4 = 4 * Math.LN2 / (fwhm * fwhm), l4 = 4 / (fwhm * fwhm);
+    // A Lorentzian tail is long. Each peak is drawn out to where its tail is a millionth of the strongest peak,
+    // so that no step shows where a tail stops, also on the square-root scale.
+    let strongest = 0;
+    for (const r of reflections) if (r.I > strongest) strongest = r.I;
+    const put = (pos, area) => {
+      const reach = fwhm * (eta > 0 ? Math.max(10, Math.sqrt(area / (4e-6 * (strongest || 1)))) : 4);
+      const i0 = Math.max(0, Math.ceil((pos - reach - x0) / step)), i1 = Math.min(n - 1, Math.floor((pos + reach - x0) / step));
+      for (let i = i0; i <= i1; i++) {
+        const dx = x0 + i * step - pos, d2 = dx * dx;
+        y[i] += area * (eta * lN / (1 + l4 * d2) + (1 - eta) * gN * Math.exp(-g4 * d2));
+      }
+    };
+    const waves = (o.waves || []).filter((w) => w && w.lambda > 0 && w.weight > 0);
+    for (const r of reflections) {
+      put(r.tth, r.I);
+      for (const w of waves) {
+        const sn = w.lambda / (2 * r.d);
+        if (sn >= 1) continue;
+        const th = Math.asin(sn);
+        put(2 * th / DEG, r.I * w.weight * lorentzPol(th) / r.lp);
+      }
+    }
+    let max = 0;
+    for (let i = 0; i < n; i++) if (y[i] > max) max = y[i];
+    if (max > 0) for (let i = 0; i < n; i++) y[i] *= 100 / max;
+    return { x0, step, y, max };
+  }
+
+  /* Measured powder data from a text file with two columns, 2-theta and intensity (.xy, .xye, .csv, .txt, .dat,
+     .asc, Rigaku .ras). Columns are split by spaces, tabs, commas or semicolons; a third column is ignored.
+     Lines that do not start with two numbers are taken as header or comment lines.
+     Returns { x, y, header, anode }: points sorted by 2-theta, the header text, and the anode named in it. */
+  function readXY(text) {
+    const x = [], y = [];
+    const head = [];
+    for (const raw of String(text).replace(/^﻿/, '').split(/\r\n?|\n/)) {
+      const line = raw.trim();
+      if (!line) continue;
+      const t = line.split(/[\s,;]+/);
+      const a = t.length >= 2 && /^[-+]?(\d+\.?\d*|\.\d+)([eE][-+]?\d+)?$/.test(t[0]) ? Number(t[0]) : NaN;
+      const b = t.length >= 2 && /^[-+]?(\d+\.?\d*|\.\d+)([eE][-+]?\d+)?$/.test(t[1]) ? Number(t[1]) : NaN;
+      if (isFinite(a) && isFinite(b)) { x.push(a); y.push(b); } else if (head.length < 40) head.push(line);
+    }
+    if (x.length < 3) throw new Error('No rows with two numbers (2-theta and intensity) were found in this file.');
+    let sorted = true;
+    for (let i = 1; i < x.length; i++) if (x[i] < x[i - 1]) { sorted = false; break; }
+    let X = x, Y = y;
+    if (!sorted) {
+      const order = x.map((v, i) => i).sort((p, q) => x[p] - x[q]);
+      X = order.map((i) => x[i]);
+      Y = order.map((i) => y[i]);
+    }
+    const header = head.join('\n');
+    const am = header.match(/\banode\b\W{0,4}\b(Cu|Mo|Co|Fe|Cr|Ag)\b/i) || header.match(/\b(Cu|Mo|Co|Fe|Cr|Ag)[\s_-]?K[\s_-]?(?:a|alpha|α)/i);
+    return { x: X, y: Y, header, anode: am ? am[1].charAt(0).toUpperCase() + am[1].slice(1).toLowerCase() : null };
+  }
+
+  /* a pattern as the text of an .xy file: one "2-theta intensity" row for each point */
+  function toXY(x0, step, y, comment) {
+    const rows = comment ? ['# ' + comment] : [];
+    const dec = Math.max(2, Math.min(5, Math.ceil(-Math.log10(step) - 1e-9) + 1));
+    for (let i = 0; i < y.length; i++) rows.push((x0 + i * step).toFixed(dec) + ' ' + y[i].toFixed(4));
+    return rows.join('\n') + '\n';
+  }
+
+  root.XtalCore = { readStructure, readCif, readPoscar, readXyz, readShelx, buildCell, analyse, assemble, hullFaces, planePolys, tetrazineDefs, chromoInstances, stateDir, orientReport, hallOps, symbolOps, setSgTable, isMetal, isCenter, isDonor, HALIDE, RC, MASS, parseSymop, MAX_POLY_CN, distance, bondAngle, torsion, toMol2, toSvg, visibleParts, hullPolygons, bondTubes, polyhedraFor, polyhedraStats, suggestPolyMax,
+    powderAtoms, powderPattern, powderProfile, readXY, toXY, ANODES, anodeOf, XRAY_F0, uEquiv };
   if (typeof module !== 'undefined' && module.exports) module.exports = root.XtalCore;
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -1,5 +1,5 @@
 <title>__NAME__: free online crystal structure viewer</title>
-<meta name="description" content="__NAME__ is a free crystal structure viewer that runs in the browser and on your phone. Open CIF, SHELX .res, POSCAR or XYZ files, measure distances, angles and torsions, visualize polyhedra, make publication-quality vector figures, and separately analyze molecular components and extended frameworks.">
+<meta name="description" content="__NAME__ is a free crystal structure viewer that runs in the browser and on your phone. Open CIF, SHELX .res, POSCAR or XYZ files, measure distances, angles and torsions, visualize polyhedra, simulate powder XRD patterns and compare them with measured data, make publication-quality vector figures, and separately analyze molecular components and extended frameworks.">
 <link rel="canonical" href="__HOMEPAGE__">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="__NAME__">
@@ -7,8 +7,8 @@
 <meta property="og:description" content="Open CIF and SHELX files in the browser and on your phone. Measure, export figures, and analyze the lattice quantitatively.">
 <meta property="og:url" content="__HOMEPAGE__">
 <meta name="twitter:card" content="summary">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
-<style>
+<link rel="stylesheet" id="fontCss" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style id="appCss">
 /* Layout: an instrument console. One large stage for the crystal, a comparison strip under it,
    and a narrow rail of controls and data sheets that read like the tables of a structure paper. */
 :root {
@@ -230,6 +230,77 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
 .fb .alert.good { color: var(--ink); }
 .fb .actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
 
+/* Rail cards fold: an arrow at the top right of each card minimizes or maximizes it. */
+.rail .card { position: relative; }
+.rail .card > h2 { padding-right: 30px; cursor: pointer; }
+.fold { position: absolute; top: 5px; right: 6px; width: 28px; height: 28px; padding: 0; border: 0; background: none; display: grid; place-items: center; border-radius: 4px; }
+.fold::before { content: ""; width: 7px; height: 7px; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: translateY(2px) rotate(-135deg); }
+.card.shut .fold::before { transform: translateY(-2px) rotate(45deg); }
+.fold:hover::before { border-color: var(--accent); }
+.rail .card.shut { padding-bottom: 12px; }
+.rail .card.shut > :not(h2):not(.fold) { display: none !important; }
+
+/* PXRD window. The same rules style it in its own browser window and as a floating window in this page. */
+body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
+.px { display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 12px; height: 100%; padding: 14px 16px; background: var(--bg); color: var(--ink);
+  font-family: var(--font-ui); font-size: 14px; line-height: 1.45; min-width: 0; }
+.px.drag { outline: 2px dashed var(--accent); outline-offset: -6px; }
+.px-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 8px 20px; }
+.px-head h1 { font-size: 22px; }
+.px-main { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 12px; min-height: 0; }
+.px-side { display: flex; flex-direction: column; gap: 10px; min-height: 0; overflow-y: auto; padding-right: 2px; }
+.px-work { display: grid; grid-template-rows: minmax(220px, 3fr) minmax(140px, 2fr); gap: 10px; min-width: 0; min-height: 0; }
+.px .card { gap: 8px; padding: 10px 12px 12px; }
+.px-plotcard { grid-template-rows: auto minmax(0, 1fr) auto; min-height: 0; }
+.px-plot { position: relative; min-height: 0; min-width: 0; overflow: hidden; touch-action: none; }
+.px-plot svg { display: block; position: absolute; inset: 0; width: 100%; height: 100%; cursor: crosshair; user-select: none; -webkit-user-select: none; }
+.px-tip { position: absolute; z-index: 2; pointer-events: none; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 6px 9px;
+  font-size: 12.5px; box-shadow: 0 6px 18px rgba(20, 16, 24, 0.18); max-width: 300px; display: grid; gap: 2px; }
+.px-tip .at { font-family: var(--font-data); font-variant-numeric: tabular-nums; color: var(--muted); }
+.px-tip .ln { display: grid; grid-template-columns: 14px minmax(0, 1fr) auto; gap: 7px; align-items: center; }
+.px-tip .ln i { height: 2px; border-radius: 1px; }
+.px-tip .ln span { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.px-tip .ln b { font-family: var(--font-data); font-weight: 500; font-variant-numeric: tabular-nums; }
+.px-tip .hk { font-family: var(--font-data); font-size: 12px; font-variant-numeric: tabular-nums; padding-left: 21px; }
+.px-tablecard { grid-template-rows: auto minmax(0, 1fr) auto; min-height: 0; }
+.px-tablecard .tbl-wrap { overflow: auto; min-height: 0; padding-right: 6px; }
+.px-tablecard thead th { position: sticky; top: 0; background: var(--panel); z-index: 1; }
+.px-tablecard th:first-child, .px-tablecard td:first-child { text-align: right; }
+.px-tablecard tbody tr { cursor: pointer; }
+.px-tablecard tbody tr:hover td { background: var(--bg); }
+.px-tablecard tbody tr.on td { background: var(--accent-soft); }
+.px-list { display: grid; gap: 6px; }
+.px-item { display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto; gap: 4px 8px; align-items: center; font-size: 13px; }
+.px-item .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
+.px-item .more { grid-column: 3 / 5; display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; color: var(--muted); font-size: 12.5px; }
+.px-item .more input { width: 66px; }
+.px input[type="color"] { width: 26px; height: 20px; padding: 0; border: 1px solid var(--line); border-radius: 4px; background: var(--bg); cursor: pointer; }
+.px-form { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px 10px; align-items: center; font-size: 13px; }
+.px-form > label, .px-form > span.lab { color: var(--muted); }
+.px-form .unit { display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; min-width: 0; }
+.px-form input[type="number"] { width: 78px; }
+.px-form input.wl { width: 98px; }
+.px-form input.rg { width: 58px; }
+.px-form select { min-width: 0; }
+.px-form .wide { grid-column: 1 / 3; }
+.px label.chk { display: inline-flex; align-items: center; gap: 7px; cursor: pointer; color: var(--ink); }
+.px .alert { color: var(--warn); }
+.pxfloat { position: fixed; z-index: 30; left: 50%; top: 50%; width: min(1180px, calc(100vw - 24px)); height: min(780px, calc(100vh - 24px));
+  transform: translate(-50%, -50%); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; overflow: hidden;
+  box-shadow: 0 18px 48px rgba(20, 16, 24, 0.35); resize: both; min-width: 320px; min-height: 360px; }
+.pxfloat .px-head { cursor: move; }
+@media (max-width: 760px) {
+  body.pxbody { height: auto; overflow: auto; }
+  .px { height: auto; }
+  .px-main { grid-template-columns: minmax(0, 1fr); }
+  .px-side { overflow: visible; }
+  .px-work { order: -1; }
+  .px-work { grid-template-rows: auto auto; }
+  .px-plot { height: 300px; }
+  .px-tablecard .tbl-wrap { max-height: 320px; }
+  .pxfloat { inset: 0; left: 0; top: 0; width: auto; height: auto; transform: none; border-radius: 0; resize: none; overflow-y: auto; }
+}
+
 @media (max-width: 900px) {
   html, body { height: auto; }
   .app { height: auto; min-height: 0; padding-inline: 16px; }
@@ -258,6 +329,7 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
       <a class="homelink" href="https://wenhao-shao.github.io/" title="Back to the W. Shao Laboratory website"><span aria-hidden="true">&larr;</span> W. Shao Lab</a>
       <label class="filebtn">Open structure files<input type="file" id="fileIn" multiple></label>
       <button type="button" id="btnExample">Load the sample structures</button>
+      <button type="button" id="btnPxrd" title="Open the powder X-ray diffraction window: simulated patterns of the loaded structures, and your measured data">Powder XRD</button>
       <button type="button" id="btnFeedback">Send feedback</button>
     </div>
   </header>
@@ -268,7 +340,7 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
         <div id="gl"></div>
         <div class="stage-msg" id="stageMsg">
           <strong>Drop structure files here</strong>
-          <p>CIF, SHELX .res and .ins, POSCAR and XYZ. Each file is expanded by its symmetry and sorted into frameworks, networks and whole molecules. Layered metal halides also get the 2D perovskite descriptors. Load several to compare them in one table.</p>
+          <p>CIF, SHELX .res and .ins, POSCAR and XYZ. Each file is expanded by its symmetry and sorted into frameworks, networks and whole molecules. Layered metal halides also get the 2D perovskite descriptors. Load several to compare them in one table. Powder XRD shows the simulated pattern of each structure. Drop a measured pattern (.xy) to compare it.</p>
         </div>
         <div class="overlay tl" id="ovlView" hidden>
           <span class="ovl-label">View down</span>
@@ -300,7 +372,7 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
     </div>
 
     <aside class="rail" id="rail" hidden>
-      <section class="card">
+      <section class="card" data-start-open>
         <h2>Display</h2>
         <div class="seg" role="group" aria-label="Atom style">
           <button type="button" id="styleBS" aria-pressed="true">Ball and stick</button>
@@ -498,6 +570,9 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
 /*__CORE__*/
 </script>
 <script>
+/*__PXRD__*/
+</script>
+<script>
 (function () {
   'use strict';
   const C = window.XtalCore;
@@ -532,6 +607,10 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
   let viewer = null;
   let hoverLabel = null;
   const D = () => st.docs[st.cur] || null;
+  /* the PXRD window: simulated powder patterns of the open structures, and measured data (src/pxrd.js) */
+  const pxrd = window.CrystaPxrd ? window.CrystaPxrd.create({ docs: () => st.docs, current: () => D(), addFiles: (list) => addFiles(list), name: NAME, version: '__VERSION__' }) : null;
+  /* a file that is not a structure but holds two columns of numbers is taken as measured powder data */
+  const isPowderData = (text) => { try { return C.readXY(text).x.length >= 20; } catch (err) { return false; } };
 
   const cssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
   /* what the user changed per element: { color, scale, opacity, poly }. Kept for the whole session. */
@@ -642,17 +721,22 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
 
   function addFiles(list) {
     const errors = [];
+    const powder = [];
     let first = -1;
     for (const src of list) {
+      if (pxrd && /\.(xy|xye)$/i.test(src.name)) { powder.push(src); continue; }
       try {
         st.docs.push(makeDoc(src));
         if (first < 0) first = st.docs.length - 1;
       } catch (err) {
-        errors.push('Could not read ' + src.name + '. ' + err.message);
+        if (pxrd && !pxrd.STRUCTURE_FILE.test(src.name) && isPowderData(src.text)) powder.push(src);
+        else errors.push('Could not read ' + src.name + '. ' + err.message);
       }
     }
     st.notice = errors.join(' ');
     if (first >= 0) activate(first); else drawReadout();
+    // measured powder data go to the PXRD window
+    if (powder.length) pxrd.addData(powder);
   }
   function activate(i) {
     st.cur = i;
@@ -673,6 +757,7 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
       $('stageMsg').hidden = false;
       drawCompare();
       drawReadout();
+      if (pxrd) pxrd.sync();
       return;
     }
     $('chkMinor').checked = d.minor;
@@ -685,6 +770,7 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
     drawCompare();
     if (viewer) viewer.resize();
     render(false);
+    if (pxrd) pxrd.sync();
   }
 
   /* ---------- text panels ---------- */
@@ -2148,6 +2234,30 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
       if (id === 'polyPickCancel') { st.polyPick = null; render(true); }
     };
 
+    // rail cards: an arrow at the top right minimizes or maximizes each card. Display is open at the start.
+    document.querySelectorAll('#rail > .card').forEach((card, i) => {
+      const h = card.querySelector('h2');
+      if (!h) return;
+      if (!h.id) h.id = 'cardTitle' + i;
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'fold';
+      b.setAttribute('aria-labelledby', h.id);
+      const set = (open) => {
+        card.classList.toggle('shut', !open);
+        b.setAttribute('aria-expanded', String(open));
+        b.title = open ? 'Minimize this panel' : 'Maximize this panel';
+      };
+      const flip = () => set(card.classList.contains('shut'));
+      b.onclick = flip;
+      h.onclick = flip;
+      card.appendChild(b);
+      set(card.hasAttribute('data-start-open'));
+    });
+
+    $('btnPxrd').onclick = () => { if (pxrd) pxrd.open(); };
+    $('btnPxrd').hidden = !pxrd;
+
     // files and the structures table
     $('fileIn').onchange = (e) => { readFiles(e.target.files); e.target.value = ''; };
     $('btnExample').onclick = () => {
@@ -2265,12 +2375,12 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
     };
 
     if (viewer && window.ResizeObserver) new ResizeObserver(() => { viewer.resize(); viewer.render(); }).observe(stage);
-    const retheme = () => { drawLegend(); if (viewer && D()) render(true); };
+    const retheme = () => { drawLegend(); if (viewer && D()) render(true); if (pxrd) pxrd.retheme(); };
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', retheme);
     new MutationObserver(retheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(retheme);
   }
   init();
-  window.crysta = { state: st, viewer: () => viewer, addFiles, elemLook };
+  window.crysta = { state: st, viewer: () => viewer, addFiles, elemLook, pxrd };
 })();
 </script>

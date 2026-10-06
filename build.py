@@ -16,6 +16,7 @@ name = pkg["displayName"]
 tagline = pkg["tagline"]
 template = (root / "src/workbench.template.html").read_text()
 core = (root / "src/core.js").read_text()
+pxrd = (root / "src/pxrd.js").read_text()
 table = (root / "src/sg-table.json").read_text()
 # built-in samples: file in examples/, name shown in the page
 SAMPLES = [
@@ -26,10 +27,10 @@ SAMPLES = [
 ]
 samples = json.dumps([{"name": shown, "text": (root / "examples" / f).read_text()} for f, shown in SAMPLES])
 lib = (root / "vendor/3Dmol-min.js").read_text()
-for part in (core, table, lib, samples):
+for part in (core, pxrd, table, lib, samples):
     assert "</script" not in part.lower() and "<!--" not in part
 
-body = (template.replace("/*__CORE__*/", core).replace("__SAMPLES__", samples)
+body = (template.replace("/*__CORE__*/", core).replace("/*__PXRD__*/", pxrd).replace("__SAMPLES__", samples)
         .replace("__SGTABLE__", table).replace("__VERSION__", "v" + version)
         .replace("__NAME__", name).replace("__TAGLINE__", tagline)
         .replace("__HOMEPAGE__", pkg["homepage"]))
