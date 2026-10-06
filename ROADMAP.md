@@ -65,7 +65,13 @@ Status marks: **done** (released), **next** (agreed, not started), **later** (ag
 | SVG: PNG-in-SVG variant that looks identical to the screen | later, if wanted |
 | Structure export beyond mol2 (CIF, XYZ, POSCAR) | later |
 | Thermal ellipsoids from the anisotropic displacement parameters | later |
-| Simulated powder XRD pattern | later |
+| Simulated powder XRD pattern with a reflection table, in its own window | done, v0.3.0 |
+| Measured PXRD data (two-column text) compared with the simulated patterns | done, v0.3.0 |
+| PXRD: preferred orientation (March-Dollase), a peak width that changes with angle, background | later |
+| PXRD: fit of the scale, the 2θ zero and the cell to measured data | later |
+| PXRD: more data formats (.xrdml, .raw, .brml), f′ and f″ at any wavelength, ions, neutrons | later |
+| Rail cards that minimize and maximize | done, v0.3.0 |
+| Minimized cards remembered between visits | later |
 | Symmetry elements, voids, contacts shorter than van der Waals | later |
 | Bond orders and aromatic rings in the mol2 file | later |
 
