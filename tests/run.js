@@ -470,5 +470,27 @@ const formula = (info) => info.formula.map((e) => e.el + e.n).join(' ');
   check('csv of a simulated pattern: every point, no empty cell', table.length === sim.y.length + 1 && table.every((r) => !/,$/.test(r)) && table.some((r) => /,100\.0000$/.test(r)) && table[table.length - 1].startsWith('60.000,'));
 }
 
+// a CIF with several data blocks: every block that holds atoms is a structure of its own
+{
+  const cifOf = (f) => fs.readFileSync(path.join(__dirname, 'cifs', f), 'utf8');
+  const two = cifOf('NaCl.cif') + '\ndata_notes\n_publ_section_title "a block with no atoms"\n\n' + cifOf('diamond.cif');
+  const all = X.readStructures(two, 'two.cif');
+  check('multi-block CIF: each block with atoms is a structure, a block with no atoms is left out', all.structures.length === 2 && all.errors.length === 0);
+  const names = all.structures.map((s) => s.meta.block);
+  const f = all.structures.map((s) => X.analyse(X.buildCell(s, {})).formula.map((e) => e.el + e.n).join(' '));
+  check('multi-block CIF: each structure keeps its own block name, cell and atoms', new Set(names).size === 2 && f[0] === 'Cl1 Na1' && f[1] === 'C1' && all.structures[0].cell.a !== all.structures[1].cell.a);
+  check('multi-block CIF: readStructure and readCif still give the first block', X.readStructure(two, 'two.cif').meta.block === names[0] && X.readCif(two).meta.block === names[0]);
+  check('multi-block CIF: found by content when the name says nothing', X.readStructures(two, 'download').structures.length === 2);
+  const broken = cifOf('NaCl.cif') + '\ndata_bad\nloop_\n_atom_site_label\n_atom_site_fract_x\n_atom_site_fract_y\n_atom_site_fract_z\nC1 0 0 0\n';
+  const part = X.readStructures(broken, 'broken.cif');
+  check('multi-block CIF: a block that cannot be read does not stop the others', part.structures.length === 1 && part.errors.length === 1 && part.errors[0].block === 'bad' && /unit cell/.test(part.errors[0].message));
+  check('one-block CIF and other formats give one structure', X.readStructures(cifOf('NaCl.cif'), 'NaCl.cif').structures.length === 1 &&
+    X.readStructures(fs.readFileSync(path.join(__dirname, 'files/rutile.POSCAR'), 'utf8'), 'rutile.POSCAR').structures[0].meta.format === 'POSCAR' &&
+    X.readStructures(fs.readFileSync(path.join(__dirname, 'files/NaCl.res'), 'utf8'), 'NaCl.res').structures[0].meta.format === 'SHELX');
+  let threw = false;
+  try { X.readStructures('data_x\n_cell_length_a 5\n', 'empty.cif'); } catch (err) { threw = /No atom sites/.test(err.message); }
+  check('CIF with no atoms in any block is refused', threw);
+}
+
 console.log(passed + ' passed, ' + failed + ' failed');
 process.exit(failed ? 1 : 0);
