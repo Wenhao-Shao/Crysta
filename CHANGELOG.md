@@ -13,6 +13,11 @@ Any change to how a number is defined gets a new version and a line here.
 - `tools/hybrid3_copy.py` makes the copy. It reads each structure from the download that HybriD3 gives for the data set (a zip with an FHI-aims geometry file). A GitHub job runs it, because a browser page cannot read HybriD3: the server sends no `Access-Control-Allow-Origin` header for the API and for the downloads.
 - The plan for the full version is in `design/2026-10-05-database-browser.md`.
 
+## v0.3.3
+
+- **A CIF with several structures.** Crysta now reads every data block of a CIF that holds atoms. Each block opens as a structure of its own, named after the file and the block, and is a row in the Structures table. Before, Crysta read only the first block and did not say that the file held more.
+- A block that cannot be read does not stop the others. The strip under the picture names it.
+
 No definition changed: every number is identical to v0.3.2.
 
 ## v0.3.2

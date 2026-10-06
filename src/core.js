@@ -319,15 +319,33 @@
   }
 
   /* ---------- blocks -> structure ---------- */
+  /* the atom-site loop of a data block, or null when the block holds no atoms */
+  const siteLoopOf = (b) => {
+    const lp = b.loops.find((l) => l.tags.includes('_atom_site_fract_x'));
+    return lp && lp.rows.length ? lp : null;
+  };
+  const NO_SITES = 'No atom sites with fractional coordinates were found in this file.';
+  /* the first data block that holds atoms */
   function readCif(text) {
-    const blocks = parseBlocks(text);
-    let chosen = null;
-    let siteLoop = null;
+    const chosen = parseBlocks(text).find(siteLoopOf);
+    if (!chosen) throw new Error(NO_SITES);
+    return cifStructure(chosen);
+  }
+  /* Every data block that holds atoms, each as a structure of its own. A CIF from a paper or a deposition often
+     holds several. Returns { structures, errors }: a block that cannot be read is in errors as { block, message },
+     and does not stop the others. */
+  function readCifAll(text) {
+    const blocks = parseBlocks(text).filter(siteLoopOf);
+    if (!blocks.length) throw new Error(NO_SITES);
+    const structures = [], errors = [];
     for (const b of blocks) {
-      const lp = b.loops.find((l) => l.tags.includes('_atom_site_fract_x'));
-      if (lp && lp.rows.length) { chosen = b; siteLoop = lp; break; }
+      try { structures.push(cifStructure(b)); } catch (err) { errors.push({ block: b.name, message: err.message }); }
     }
-    if (!chosen) throw new Error('No atom sites with fractional coordinates were found in this file.');
+    if (!structures.length) throw new Error(errors[0].message);
+    return { structures, errors };
+  }
+  function cifStructure(chosen) {
+    const siteLoop = siteLoopOf(chosen);
     const it = chosen.items;
     const pick = (...tags) => { for (const t of tags) if (it[t] !== undefined && it[t] !== '?' && it[t] !== '.') return it[t]; return null; };
     const cellRaw = ['_cell_length_a', '_cell_length_b', '_cell_length_c', '_cell_angle_alpha', '_cell_angle_beta', '_cell_angle_gamma'].map((t) => it[t]);
@@ -705,6 +723,15 @@
       try { return readPoscar(text); } catch (err) { /* not a POSCAR after all */ }
     }
     return readCif(text);
+  }
+
+  /* Every structure of a file: { structures, errors }. Only a CIF can hold more than one. */
+  function readStructures(text, name) {
+    const isCif = /\.cif$/i.test(String(name || '')) || (/^\s*data_/m.test(text) && /_atom_site_fract_x/.test(text));
+    if (isCif && /_atom_site_fract_x/.test(text)) return readCifAll(text);
+    const one = readStructure(text, name);
+    // a file with no known ending that the CIF reader took after all
+    return one.meta.format === 'CIF' ? readCifAll(text) : { structures: [one], errors: [] };
   }
 
   /* ---------- structure -> unit cell contents, molecules, framework ---------- */
@@ -2349,7 +2376,7 @@
     return rows.join('\n') + '\n';
   }
 
-  root.XtalCore = { readStructure, readCif, readPoscar, readXyz, readShelx, readAims, buildCell, analyse, assemble, hullFaces, planePolys, tetrazineDefs, chromoInstances, stateDir, orientReport, hallOps, symbolOps, setSgTable, isMetal, isCenter, isDonor, HALIDE, RC, MASS, parseSymop, MAX_POLY_CN, distance, bondAngle, torsion, toMol2, toSvg, visibleParts, hullPolygons, bondTubes, polyhedraFor, polyhedraStats, suggestPolyMax,
+  root.XtalCore = { readStructure, readStructures, readCif, readCifAll, readPoscar, readXyz, readShelx, readAims, buildCell, analyse, assemble, hullFaces, planePolys, tetrazineDefs, chromoInstances, stateDir, orientReport, hallOps, symbolOps, setSgTable, isMetal, isCenter, isDonor, HALIDE, RC, MASS, parseSymop, MAX_POLY_CN, distance, bondAngle, torsion, toMol2, toSvg, visibleParts, hullPolygons, bondTubes, polyhedraFor, polyhedraStats, suggestPolyMax,
     powderAtoms, powderPattern, powderProfile, readXY, toXY, patternsCsv, ANODES, anodeOf, XRAY_F0, uEquiv };
   if (typeof module !== 'undefined' && module.exports) module.exports = root.XtalCore;
 })(typeof window !== 'undefined' ? window : globalThis);

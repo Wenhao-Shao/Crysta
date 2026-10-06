@@ -729,15 +729,17 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
   const mean = (a) => a.reduce((t, x) => t + x, 0) / a.length;
 
   /* ---------- documents ---------- */
-  function makeDoc(src) {
-    const struct = C.readStructure(src.text, src.name);
+  /* one structure of a file as a document. A file with several structures (a CIF with several data blocks)
+     gives one document for each, named after the file and the block. */
+  function makeDoc(src, struct, many) {
     // a structure that comes from a database carries its origin; the database gives what the file does not hold
     if (src.origin) {
       struct.meta.origin = src.origin;
       if (!struct.meta.spaceGroup && src.origin.spaceGroup) { struct.meta.spaceGroup = src.origin.spaceGroup; struct.meta.sgFrom = src.origin.database; }
       if (!struct.meta.temperature && src.origin.temperature) struct.meta.temperature = src.origin.temperature;
     }
-    const d = { src, struct, minor: false, planes: [], chromos: [], measures: [], picks: [], polyRules: [], autoStyle: {}, autoHide: {}, autoGone: {}, polyOpen: null, name: src.name.replace(/\.[^.]+$/, '') };
+    const d = { src, struct, minor: false, planes: [], chromos: [], measures: [], picks: [], polyRules: [], autoStyle: {}, autoHide: {}, autoGone: {}, polyOpen: null,
+      name: src.name.replace(/\.[^.]+$/, '') + (many ? ' · ' + struct.meta.block : '') };
     rebuildCell(d);
     const L = [struct.cell.a, struct.cell.b, struct.cell.c];
     // a molecule without a lattice sits in a box of its own: one copy is the whole picture
@@ -789,19 +791,30 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
 
   function addFiles(list) {
     const errors = [];
+    const notes = [];
     const powder = [];
     let first = -1;
     for (const src of list) {
       if (pxrd && /\.(xy|xye)$/i.test(src.name)) { powder.push(src); continue; }
       try {
-        st.docs.push(makeDoc(src));
-        if (first < 0) first = st.docs.length - 1;
+        const read = C.readStructures(src.text, src.name);
+        const many = read.structures.length > 1;
+        for (const struct of read.structures) {
+          try {
+            st.docs.push(makeDoc(src, struct, many));
+            if (first < 0) first = st.docs.length - 1;
+          } catch (err) {
+            errors.push('Could not read the structure ' + struct.meta.block + ' of ' + src.name + '. ' + err.message);
+          }
+        }
+        for (const e of read.errors) errors.push('Could not read the structure ' + e.block + ' of ' + src.name + '. ' + e.message);
+        if (many) notes.push(src.name + ' holds ' + read.structures.length + ' structures. Each structure is a row in the Structures table.');
       } catch (err) {
         if (pxrd && !pxrd.STRUCTURE_FILE.test(src.name) && isPowderData(src.text)) powder.push(src);
         else errors.push('Could not read ' + src.name + '. ' + err.message);
       }
     }
-    st.notice = errors.join(' ');
+    st.notice = errors.concat(notes).join(' ');
     if (first >= 0) activate(first); else drawReadout();
     // measured powder data go to the PXRD window
     if (powder.length) pxrd.addData(powder);
