@@ -1,0 +1,20 @@
+# This file is made by build.py from package.json. Change the "citation" part there, not this file.
+cff-version: 1.2.0
+message: "If you use Crysta, cite it as below. Give the version: the definition of a number can change between versions."
+type: software
+title: "Crysta: a crystal structure workbench in the browser"
+authors:
+  - family-names: "Shao"
+    given-names: "Wenhao"
+version: "0.5.0"
+date-released: 2026-10-06
+url: "https://wenhao-shao.github.io/Crysta/"
+repository-code: "https://github.com/Wenhao-Shao/Crysta"
+license: MIT
+abstract: "Browser tool for crystal structures: 3D view, bonding and frameworks, measurements, simulated powder XRD patterns compared with measured data, PNG, SVG and mol2 export, with 2D perovskite layer descriptors, transition-dipole axes and multi-structure comparison"
+keywords:
+  - crystallography
+  - crystal structure
+  - CIF
+  - powder X-ray diffraction
+  - 2D perovskite

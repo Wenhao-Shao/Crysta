@@ -585,5 +585,165 @@ const formula = (info) => info.formula.map((e) => e.el + e.n).join(' ');
   delete global.window;
 }
 
+// Planes for measurements: a plane through atoms, a lattice plane through an atom, and what is measured against them
+{
+  const sq = [[1, 0, 0.2], [0, 1, 0.2], [-1, 0, 0.2], [0, -1, 0.2]];
+  const flat = X.planeOfPoints(sq);
+  check('plane through four atoms of a square', near(Math.abs(flat.n[2]), 1, 1e-9) && near(flat.c[2], 0.2, 1e-12) && near(flat.rms, 0, 1e-9));
+  check('plane: distance of an atom, with its sign', near(Math.abs(X.planeDistance(flat, [0.3, 0.4, 0.75])), 0.55, 1e-9) &&
+    near(X.planeDistance(flat, [0, 0, 1]), -X.planeDistance(flat, [0, 0, -0.6]), 1e-9));
+  const foot = X.planeFoot(flat, [0.3, 0.4, 0.75]);
+  check('plane: the nearest point of the plane', near(foot[0], 0.3, 1e-9) && near(foot[1], 0.4, 1e-9) && near(foot[2], 0.2, 1e-9));
+  check('plane: angle of a bond to the plane, 0 to 90', near(X.linePlaneAngle(flat, [0, 0, 0], [1, 0, 1]), 45, 1e-9) && near(X.linePlaneAngle(flat, [0, 0, 0], [1, 0, -1]), 45, 1e-9) &&
+    near(X.linePlaneAngle(flat, [0, 0, 0], [2, 1, 0]), 0, 1e-9) && near(X.linePlaneAngle(flat, [0, 0, 5], [0, 0, 1]), 90, 1e-6) && isNaN(X.linePlaneAngle(flat, [1, 1, 1], [1, 1, 1])));
+  // a puckered ring: the plane is the least-squares plane, and the rms is the size of the pucker
+  const puck = X.planeOfPoints([[1, 0, 0.1], [0, 1, -0.1], [-1, 0, 0.1], [0, -1, -0.1]]);
+  check('plane through puckered atoms: least squares and rms', near(Math.abs(puck.n[2]), 1, 1e-9) && near(puck.rms, 0.1, 1e-9));
+  const tilted = X.planeOfPoints([[0, 0, 0], [1, 0, 0], [0, 1, 1]]);
+  check('angle between two planes, 0 to 90', near(X.planePlaneAngle(flat, tilted), 45, 1e-9) && near(X.planePlaneAngle(tilted, flat), 45, 1e-9) && near(X.planePlaneAngle(flat, flat), 0, 1e-6));
+  check('atoms on one line, or fewer than three, set no plane', X.planeOfPoints([[0, 0, 0], [1, 0, 0], [2, 0, 0]]) === null && X.planeOfPoints([[0, 0, 0], [1, 0, 0]]) === null);
+  // lattice planes: (001) of a monoclinic cell is normal to c*, not to c
+  const mono = X.readStructure('data_m\n_cell_length_a 5\n_cell_length_b 6\n_cell_length_c 7\n_cell_angle_alpha 90\n_cell_angle_beta 110\n_cell_angle_gamma 90\n_symmetry_space_group_name_H-M \'P 1\'\nloop_\n_atom_site_label\n_atom_site_fract_x\n_atom_site_fract_y\n_atom_site_fract_z\nC1 0 0 0\n', 'm.cif');
+  const p001 = X.planeOfHkl(mono.cell, [0, 0, 1], [1, 2, 3]);
+  const aVec = mono.cell.toCart([1, 0, 0]), bVec = mono.cell.toCart([0, 1, 0]), cVec = mono.cell.toCart([0, 0, 1]);
+  const dotp = (u, v) => u[0] * v[0] + u[1] * v[1] + u[2] * v[2];
+  check('(hkl) plane through an atom: normal to a and b for (001)', near(dotp(p001.n, aVec), 0, 1e-9) && near(dotp(p001.n, bVec), 0, 1e-9) && near(X.planeDistance(p001, [1, 2, 3]), 0, 1e-12) && p001.rms === 0);
+  check('(hkl) plane: the c axis of a monoclinic cell is 20 degrees from the (001) normal', near(X.linePlaneAngle(p001, [0, 0, 0], cVec), 70, 1e-6) && near(Math.abs(X.planeDistance(p001, [1 + cVec[0], 2 + cVec[1], 3 + cVec[2]])), 7 * Math.sin(110 * Math.PI / 180), 1e-6));
+  check('(0 0 0) sets no plane', X.planeOfHkl(mono.cell, [0, 0, 0], [0, 0, 0]) === null);
+  // the lattice plane nearest to a plane
+  const back = (hkl) => X.nearestHkl(mono.cell, X.planeOfHkl(mono.cell, hkl, [0, 0, 0]).n);
+  check('nearest (hkl): a lattice plane gives its own indexes', [[1, 0, 0], [0, 0, 1], [1, -2, 3], [5, -6, 1], [-1, 1, 0]].every((h) => { const r = back(h); return r.hkl.join() === h.join() && r.angle < 1e-4; }));
+  // a plane 0.5 degrees from (001): the simple indexes win over a nearer plane with large indexes
+  const n001 = X.planeOfHkl(mono.cell, [0, 0, 1], [0, 0, 0]).n;
+  const e = (() => { const a1 = mono.cell.toCart([1, 0, 0]); const L1 = Math.hypot(...a1); return a1.map((x) => x / L1); })();
+  const tilt = (deg) => { const t = deg * Math.PI / 180; const v = n001.map((x, k) => Math.cos(t) * x + Math.sin(t) * e[k]); const L1 = Math.hypot(...v); return v.map((x) => x / L1); };
+  const nearly = X.nearestHkl(mono.cell, tilt(0.5));
+  check('nearest (hkl): small indexes first, within 1 degree', nearly.hkl.join() === '0,0,1' && near(nearly.angle, 0.5, 1e-6));
+  // 10 degrees from (001), towards a: no plane with indexes up to 6 is within 1 degree, so the nearest of them is the result
+  const far = X.nearestHkl(mono.cell, tilt(10));
+  let least = 90;
+  for (let h = -6; h <= 6; h++) for (let k = -6; k <= 6; k++) for (let l = -6; l <= 6; l++) {
+    if (h || k || l) least = Math.min(least, X.planePlaneAngle({ n: tilt(10) }, X.planeOfHkl(mono.cell, [h, k, l], [0, 0, 0])));
+  }
+  check('nearest (hkl): the nearest plane with indexes up to 6 when no plane is within 1 degree', far.hkl.join() === '1,0,6' && far.angle > 1 && near(far.angle, least, 1e-9));
+  const flip = X.nearestHkl(mono.cell, n001.map((x) => -x));
+  check('nearest (hkl): the indexes point as the normal does', flip.hkl.join() === '0,0,-1' && flip.angle < 1e-4);
+  // what the picture draws: a disc of the plane, and spheres around chosen atoms
+  const disc = X.planeDisc(flat, sq, 1.2, 12);
+  check('plane disc: covers the atoms, lies in the plane', near(disc.r, 2.2, 1e-9) && disc.pts.length === 12 && disc.pts.every((q) => near(X.planeDistance(flat, q), 0, 1e-9) && near(X.distance(q, flat.c), 2.2, 1e-9)));
+  // the mark of an angle: an arc around the vertex, from one bond to the other, the short way
+  const arcQ = X.arcPoints([1, 1, 1], [3, 1, 1], [1, 5, 1], 0.8, 9);
+  check('angle mark: on the circle, from the first bond to the second, in equal steps', arcQ.length === 10 && arcQ.every((q) => near(X.distance(q, [1, 1, 1]), 0.8, 1e-12) && near(q[2], 1, 1e-12)) &&
+    near(arcQ[0][0], 1.8, 1e-12) && near(arcQ[9][1], 1.8, 1e-12) && arcQ.slice(1).every((q, k) => near(X.bondAngle(arcQ[k], [1, 1, 1], q), 10, 1e-9)));
+  const arcW = X.arcPoints([0, 0, 0], [1, 0, 0], [Math.cos(2.6), Math.sin(2.6), 0], 1, 13);
+  check('angle mark: a wide angle goes the short way', near(X.bondAngle(arcW[0], [0, 0, 0], arcW[13]), 2.6 * 180 / Math.PI, 1e-9) && arcW.every((q) => q[1] > -1e-12));
+  check('angle mark: no arc for a straight angle or a zero angle', X.arcPoints([0, 0, 0], [1, 0, 0], [-2, 0, 0], 1, 8).length === 0 && X.arcPoints([0, 0, 0], [1, 0, 0], [3, 0, 0], 1, 8).length === 0 && X.arcPoints([0, 0, 0], [0, 0, 0], [3, 0, 0], 1, 8).length === 0);
+  const balls = X.ballMesh([{ c: [1, 2, 3], r: 0.5 }, { c: [4, 4, 4], r: 1 }], 8);
+  const outward = (mesh) => { for (let k = 0; k < mesh.faceArr.length; k += 3) {
+    const [a, b, c] = [0, 1, 2].map((t) => mesh.vertexArr[mesh.faceArr[k + t]]);
+    const u = [b[0] - a[0], b[1] - a[1], b[2] - a[2]], v = [c[0] - a[0], c[1] - a[1], c[2] - a[2]];
+    const nrm = [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]];
+    const na = mesh.normalArr[mesh.faceArr[k]], nb = mesh.normalArr[mesh.faceArr[k + 1]], nc = mesh.normalArr[mesh.faceArr[k + 2]];
+    if (dotp(nrm, [na[0] + nb[0] + nc[0], na[1] + nb[1] + nc[1], na[2] + nb[2] + nc[2]]) < -1e-12) return false;
+  } return true; };
+  check('sphere mesh: points on the spheres, faces to the outside', balls.length === 1 && balls[0].vertexArr.length === 2 * 5 * 8 && balls[0].faceArr.length === 2 * 4 * 8 * 6 &&
+    balls[0].vertexArr.slice(0, 40).every((q) => near(X.distance(q, [1, 2, 3]), 0.5, 1e-9)) && balls[0].vertexArr.slice(40).every((q) => near(X.distance(q, [4, 4, 4]), 1, 1e-9)) && outward(balls[0]));
+  check('sphere mesh: a new mesh when one is full', X.ballMesh([{ c: [0, 0, 0], r: 1 }, { c: [3, 0, 0], r: 1 }, { c: [6, 0, 0], r: 1 }], 8, 80).length === 2);
+}
+
+// The atoms that a row of the framework card is about (the part of the structure that glows)
+{
+  const s = X.readStructure(fs.readFileSync(path.join(__dirname, '../examples/PEA2PbBr4.cif'), 'utf8'), 'PEA2PbBr4.cif');
+  const uc = X.buildCell(s, {});
+  const info = X.analyse(uc);
+  const blk = X.assemble(uc, [0, 0, 0], [2, 2, 1], []);
+  const A = blk.atoms;
+  const set = (item) => X.highlightSet(blk, uc, info, item);
+  const labels = (r) => Array.from(new Set(r.atoms.map((i) => A[i].label))).sort().join(' ');
+  const m = info.metalSites[0];
+  const nM = A.filter((a) => a.label === m.label).length;
+  const shortest = set({ type: 'bond', m: m.label, x: m.bonds[0].label, d: +m.bonds[0].d.toFixed(3) });
+  check('glow: one bond row gives that bond on each copy of the metal', shortest.bonds.length === nM && labels(shortest) === [m.bonds[0].label, m.label].sort().join(' ') &&
+    shortest.bonds.every(([i, j]) => near(X.distance(A[i].xyz, A[j].xyz), m.bonds[0].d, 0.0015)));
+  const site = set({ type: 'site', m: m.label });
+  check('glow: a site row gives the metal and its six bonds', site.bonds.length === 6 * nM && site.atoms.length === 7 * nM);
+  const b = info.layer.bridges.find((x) => set({ type: 'bridge', m1: x.m1, x: x.x, m2: x.m2, theta: x.theta }).atoms.length > 0 && x.equatorial);
+  const bridge = set({ type: 'bridge', m1: b.m1, x: b.x, m2: b.m2, theta: b.theta });
+  check('glow: a bridge row gives M-X-M with the angle of the row', bridge.bonds.length >= 2 && bridge.bonds.length % 2 === 0 && labels(bridge) === Array.from(new Set([b.m1, b.x, b.m2])).sort().join(' '));
+  const axial = set({ type: 'axial' });
+  check('glow: the axial bonds are near the layer normal', axial.bonds.length === 2 * A.filter((a) => uc.center[a.src]).length &&
+    axial.bonds.every(([i, j]) => 90 - X.linePlaneAngle({ n: info.layer.normal, c: [0, 0, 0] }, A[i].xyz, A[j].xyz) < info.layer.axialTilt.max + 0.01));
+  const term = set({ type: 'terminal' });
+  check('glow: terminal halides, metals, framework and organic part', term.atoms.every((i) => A[i].el === 'Br') && term.atoms.length === axial.bonds.length && term.bonds.length === 0 &&
+    set({ type: 'metals' }).atoms.every((i) => A[i].el === 'Pb') && set({ type: 'framework' }).atoms.every((i) => A[i].el === 'Pb' || A[i].el === 'Br') &&
+    set({ type: 'organic' }).atoms.every((i) => A[i].kind === 'molecule') && set({ type: 'organic' }).atoms.length + set({ type: 'framework' }).atoms.length === A.length);
+  // the planes and lines that the definitions use
+  const Ly = info.layer, nh = Ly.normal;
+  const hOf = (q) => q[0] * nh[0] + q[1] * nh[1] + q[2] * nh[2];
+  const along = (ln) => Math.abs(hOf(ln[1]) - hOf(ln[0]));
+  const isNormal = (ln) => near(along(ln), X.distance(ln[0], ln[1]), 1e-9);
+  check('glow: the axial row has the layer normal and the layer plane at each metal', axial.lines.length === axial.planes.length && axial.planes.length === A.filter((a) => uc.center[a.src]).length &&
+    axial.lines.every(isNormal) && axial.planes.every((P) => P.n.join() === nh.join()));
+  const cis = set({ type: 'cis', m: m.label });
+  const cisAngles = [];
+  for (const i of A.map((a, k) => k).filter((k) => A[k].label === m.label)) {
+    const mine = cis.bonds.filter((bd) => bd[0] === i || bd[1] === i).map((bd) => (bd[0] === i ? bd[1] : bd[0]));
+    for (let p = 0; p < mine.length; p++) for (let q = p + 1; q < mine.length; q++) cisAngles.push(X.bondAngle(A[mine[p]].xyz, A[i].xyz, A[mine[q]].xyz));
+  }
+  check('glow: the cis row has the bonds of the smallest and of the largest cis angle', cis.bonds.length >= 3 * nM && cis.bonds.length <= 4 * nM &&
+    cisAngles.some((t) => near(t, m.cisMin, 1e-6)) && cisAngles.some((t) => near(t, m.cisMax, 1e-6)));
+  // the marks of the angles: their own angle is the angle of the row
+  const arcAngle = (R) => X.bondAngle(R.p, R.c, R.q);
+  check('glow: the cis row has a mark for the smallest and for the largest angle on each metal', cis.arcs.length === 2 * nM && cis.arcs.some((R) => near(arcAngle(R), m.cisMin, 1e-6)) && cis.arcs.some((R) => near(arcAngle(R), m.cisMax, 1e-6)) &&
+    cis.arcs.every((R) => near(arcAngle(R), m.cisMin, 1e-6) || near(arcAngle(R), m.cisMax, 1e-6)));
+  check('glow: the bridge row has a mark at X with the angle of the row', bridge.arcs.length === bridge.bonds.length / 2 && bridge.arcs.every((R) => near(arcAngle(R), b.theta, 0.02)));
+  check('glow: the axial row has a mark between each axial bond and the normal', axial.arcs.length === axial.bonds.length && axial.arcs.every((R) => arcAngle(R) > Ly.axialTilt.min - 1e-6 && arcAngle(R) < Ly.axialTilt.max + 1e-6));
+  check('glow: rows without an angle have no mark', shortest.arcs.length === 0 && site.arcs.length === 0 && set({ type: 'slab' }).arcs.length === 0);
+  const slab = set({ type: 'slab' });
+  check('glow: the slab row has the two halide planes of a layer and the distance between them', slab.planes.length >= 2 && slab.lines.length >= 1 && slab.lines.every((ln) => isNormal(ln) && near(along(ln), Ly.slabThickness, 1e-6)) &&
+    slab.atoms.every((i) => A[i].el === 'Br' && uc.metalsOf[A[i].src].length === 1));
+  const gal = set({ type: 'gallery' });
+  check('glow: the gallery row has the planes that face each other and the distance between them', gal.planes.length >= 2 && gal.lines.length >= 1 && gal.lines.every((ln) => isNormal(ln) && near(along(ln), Ly.gallery, 1e-6)) &&
+    near(Ly.gallery + Ly.slabThickness, Ly.spacing, 1e-9));
+  const pen = set({ type: 'penetration', label: Ly.penetration[0].label });
+  check('glow: the N penetration row has the N, the halide plane and the line between them', pen.lines.length > 0 && pen.lines.length === pen.planes.length && pen.lines.every(isNormal) &&
+    near(pen.lines.reduce((t, ln) => t + along(ln), 0) / pen.lines.length, Math.abs(Ly.penetration[0].depth), 1e-6) && pen.atoms.some((i) => A[i].label === Ly.penetration[0].label) && pen.atoms.some((i) => A[i].el === 'Br'));
+  // the stacking offset: the shift in the picture, in units of the two M...M vectors, is the offset of the row
+  const big = X.assemble(uc, [0, 0, 0], [2, 2, 2], []);
+  const off = X.highlightSet(big, uc, info, { type: 'offset' });
+  const shift = off.lines[1][1].map((x, k) => x - off.lines[1][0][k]);
+  const v1 = Ly.offset.v1, v2 = Ly.offset.v2, dp = (u, v) => u[0] * v[0] + u[1] * v[1] + u[2] * v[2];
+  const det = dp(v1, v1) * dp(v2, v2) - dp(v1, v2) * dp(v1, v2);
+  const fold = (x) => Math.abs(x - Math.round(x));
+  const s1 = fold((dp(shift, v1) * dp(v2, v2) - dp(v1, v2) * dp(shift, v2)) / det), s2 = fold((dp(v1, v1) * dp(shift, v2) - dp(v1, v2) * dp(shift, v1)) / det);
+  check('glow: the stacking offset row has two metals, the normal, the shift and the two M...M vectors', off.atoms.length === 2 && off.atoms.every((i) => big.atoms[i].el === 'Pb') && off.lines.length === 4 && isNormal(off.lines[0]) &&
+    near(along(off.lines[1]), 0, 1e-9) && near(Math.max(s1, s2), Ly.offset.s1, 1e-6) && near(Math.min(s1, s2), Ly.offset.s2, 1e-6));
+  const nLab = info.layer.penetration[0].label;
+  check('glow: a label row gives the atoms with that label, and an unknown row gives nothing', labels(set({ type: 'label', label: nLab })) === nLab && set({ type: 'label', label: 'Zz9' }).atoms.length === 0 && set({ type: 'other' }).atoms.length === 0);
+  // a hydrogen bond row: D, H and A, the D-H bond, the H...A line and the mark of the angle at H
+  const hb0 = blk.hbonds[0];
+  const hbItem = { type: 'hbond', D: A[hb0.d].label, H: A[hb0.h].label, A: A[hb0.a].label, dDA: hb0.dDA };
+  const hbSet = set(hbItem);
+  const same = blk.hbonds.filter((h) => A[h.d].label === hbItem.D && A[h.h].label === hbItem.H && A[h.a].label === hbItem.A && Math.abs(h.dDA - hb0.dDA) < 0.006);
+  check('glow: a hydrogen bond row has D, H and A, the D-H bond, the H...A line and the angle at H', same.length >= 1 && hbSet.lines.length === same.length && hbSet.bonds.length === same.length && hbSet.arcs.length === same.length &&
+    hbSet.atoms.length === 3 * same.length && hbSet.lines.every((ln) => near(X.distance(ln[0], ln[1]), hb0.dHA, 0.006)) && hbSet.arcs.every((R) => near(X.bondAngle(R.p, R.c, R.q), hb0.angle, 0.5)) &&
+    set({ type: 'hbond', D: hbItem.D, H: hbItem.H, A: hbItem.A, dDA: hb0.dDA + 0.5 }).atoms.length === 0);
+  // a bridge that the packing box cuts (the layer of this structure is at z = 0): no X atom of it has two metals in the box
+  const cutB = info.layer.bridges.find((x) => A.every((a) => a.label !== x.x || a.bonds.filter((j) => uc.center[A[j].src]).length < 2));
+  const part = set({ type: 'bridge', m1: cutB.m1, x: cutB.x, m2: cutB.m2, theta: cutB.theta });
+  check('glow: a bridge with one metal outside the box shows the part that is there', part.bonds.length > 0 && part.bonds.every(([i, j]) => A[i].label === cutB.x || A[j].label === cutB.x));
+}
+
+// How to cite: CITATION.cff and the built page have the version of package.json
+{
+  const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, '../package.json'), 'utf8'));
+  const cff = fs.readFileSync(path.join(__dirname, '../CITATION.cff'), 'utf8');
+  const built = fs.readFileSync(path.join(__dirname, '../docs/index.html'), 'utf8');
+  check('citation: CITATION.cff has the version, the title, the author and the date', cff.includes('version: "' + pkg.version + '"') && cff.includes('title: "' + pkg.citation.title + '"') &&
+    cff.includes('family-names: "' + pkg.citation.authors[0].family + '"') && cff.includes('date-released: ' + pkg.citation.released) && /^cff-version: 1\.2\.0$/m.test(cff));
+  check('citation: the page gives the same citation, as text and as BibTeX', built.includes(pkg.citation.title + ', version ' + pkg.version + ' (' + pkg.citation.released.slice(0, 4) + '). ' + pkg.homepage) &&
+    built.includes('version = {' + pkg.version + '}') && !built.includes('__CITE_'));
+}
+
 console.log(passed + ' passed, ' + failed + ' failed');
 process.exit(failed ? 1 : 0);

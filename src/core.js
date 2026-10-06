@@ -1311,6 +1311,10 @@
     const ns = slabs.map((sl) => sl.planes.length);
     res.n = Math.max(...ns);
     res.nUniform = ns.every((x) => x === ns[0]);
+    // for the picture: the heights of the planes of each layer along the normal. A copy of a layer is k * dhkl higher.
+    res.slabs = slabs.map((sl) => ({ top: sl.top, bot: sl.bot, centre: sl.centre, planes: sl.planes }));
+    res.dhkl = fw.dhkl;
+    res.spacing = fw.spacing;
     const s0 = slabs[0];
     if (s0.top !== null && s0.bot !== null) {
       res.slabThickness = s0.top - s0.bot;
@@ -1429,7 +1433,7 @@
           if (z(s1) && z(s2)) kind = 'near (0, 0), eclipsed';
           else if (hf(s1) && hf(s2)) kind = 'near (½, ½), staggered';
           else if ((hf(s1) && z(s2)) || (z(s1) && hf(s2))) kind = 'near (½, 0)';
-          res.offset = { s1: Math.max(s1, s2), s2: Math.min(s1, s2), kind, p1: norm(p1), p2: norm(p2) };
+          res.offset = { s1: Math.max(s1, s2), s2: Math.min(s1, s2), kind, p1: norm(p1), p2: norm(p2), v1: p1, v2: p2, m0: M0.m, m1: M1.m };
         }
       }
     }
@@ -1823,6 +1827,323 @@
     const y = norm(b2) * dot(b1, n2);
     const x = dot(n1, n2);
     return Math.atan2(y, x) * 180 / Math.PI;
+  }
+
+  /* ---------- planes for measurements ---------- */
+  /* A plane is { n, c, rms }: unit normal, a point of the plane, and the root-mean-square distance of the atoms
+     that set it (0 for a lattice plane). */
+  /* The least-squares plane through three or more points. null when the points do not set a plane
+     (fewer than three, or all on one line). */
+  function planeOfPoints(P) {
+    if (!P || P.length < 3) return null;
+    const r = planeNormal(P);
+    // the points must spread in two directions: the largest distance from the line through the first point
+    // and the farthest point must be clear of zero
+    let far = 0, fk = 0;
+    for (let k = 1; k < P.length; k++) { const dd = norm(sub(P[k], P[0])); if (dd > far) { far = dd; fk = k; } }
+    if (far < 1e-6) return null;
+    const u = sub(P[fk], P[0]).map((x) => x / far);
+    const off = Math.max(...P.map((q) => { const w = sub(q, P[0]); return norm(sub(w, u.map((x) => x * dot(w, u)))); }));
+    if (off < 1e-3 || !r.n.every(isFinite)) return null;
+    return { n: r.n, c: r.cen, rms: r.rms };
+  }
+  /* The lattice plane (hkl) through the point p (Cartesian). null for (0 0 0). */
+  function planeOfHkl(cell, hkl, p) {
+    const G = [0, 1, 2].map((k) => hkl[0] * cell.recip[0][k] + hkl[1] * cell.recip[1][k] + hkl[2] * cell.recip[2][k]);
+    const gl = norm(G);
+    if (!(gl > 1e-12)) return null;
+    return { n: G.map((x) => x / gl), c: p.slice(), rms: 0 };
+  }
+  /* The lattice plane (hkl) that is nearest to a plane with the unit normal n: { hkl, angle }. angle is the angle
+     between the two planes, in degrees. Small indexes come first: the result is the plane with the smallest
+     largest index that is within tol degrees (default 1). If no plane is that near, the result is the nearest
+     plane with indexes up to maxIndex (default 6). The sign of hkl is such that its normal points as n does. */
+  function nearestHkl(cell, n, maxIndex, tol) {
+    const M = maxIndex || 6, T = tol === undefined ? 1 : tol;
+    const byIndex = [];
+    let best = null;
+    for (let h = -M; h <= M; h++) for (let k = -M; k <= M; k++) for (let l = -M; l <= M; l++) {
+      if (!h && !k && !l) continue;
+      if (gcd(gcd(h, k), l) !== 1) continue;
+      const G = [0, 1, 2].map((i) => h * cell.recip[0][i] + k * cell.recip[1][i] + l * cell.recip[2][i]);
+      const c = dot(G, n) / norm(G);
+      if (c <= 0) continue;                                 // (-h -k -l) is the same plane: keep the one that points as n
+      const entry = { hkl: [h, k, l], angle: Math.acos(Math.min(1, c)) * 180 / Math.PI };
+      const m = Math.max(Math.abs(h), Math.abs(k), Math.abs(l));
+      if (!byIndex[m] || entry.angle < byIndex[m].angle - 1e-9) byIndex[m] = entry;
+      if (!best || entry.angle < best.angle - 1e-9) best = entry;
+    }
+    for (let m = 1; m <= M; m++) if (byIndex[m] && byIndex[m].angle <= T) return byIndex[m];
+    return best;
+  }
+  /* the distance of a point from a plane, in Å: positive on the side that the normal points to */
+  const planeDistance = (plane, p) => dot(sub(p, plane.c), plane.n);
+  /* the point of the plane that is nearest to p */
+  const planeFoot = (plane, p) => { const k = planeDistance(plane, p); return sub(p, plane.n.map((x) => x * k)); };
+  /* the angle between the line p-q and a plane, 0 to 90 degrees: 0 = the line lies in the plane */
+  function linePlaneAngle(plane, p, q) {
+    const v = sub(q, p);
+    const L = norm(v);
+    if (!(L > 1e-9)) return NaN;
+    return Math.asin(Math.min(1, Math.abs(dot(v, plane.n)) / L)) * 180 / Math.PI;
+  }
+  /* the angle between two planes, 0 to 90 degrees */
+  const planePlaneAngle = (a, b) => Math.acos(Math.min(1, Math.abs(dot(a.n, b.n)))) * 180 / Math.PI;
+
+  /* A disc of a plane for the picture: { c, r, pts }. The centre is the plane point, the disc covers the points
+     that set the plane with `pad` Å to spare, and pts are `sides` points on its edge. */
+  function planeDisc(plane, pts, pad, sides) {
+    const n = plane.n;
+    let e1 = cross(n, Math.abs(n[0]) < 0.9 ? [1, 0, 0] : [0, 1, 0]);
+    e1 = e1.map((x) => x / norm(e1));
+    const e2 = cross(n, e1);
+    const r = Math.max(0, ...(pts || []).map((q) => norm(sub(planeFoot(plane, q), plane.c)))) + pad;
+    const m = sides || 36;
+    const edge = [];
+    for (let k = 0; k < m; k++) {
+      const th = 2 * Math.PI * k / m;
+      edge.push([0, 1, 2].map((i) => plane.c[i] + r * (Math.cos(th) * e1[i] + Math.sin(th) * e2[i])));
+    }
+    return { c: plane.c.slice(), r, pts: edge };
+  }
+  /* The mark of an angle: points on the arc with the radius r around the vertex c, from the direction of p to the
+     direction of q, the short way. steps + 1 points. [] when the two directions are the same or opposite. */
+  function arcPoints(c, p, q, r, steps) {
+    const u0 = sub(p, c), v0 = sub(q, c);
+    const lu = norm(u0), lv = norm(v0);
+    if (!(lu > 1e-9) || !(lv > 1e-9)) return [];
+    const u = u0.map((x) => x / lu), v = v0.map((x) => x / lv);
+    const om = Math.acos(Math.max(-1, Math.min(1, dot(u, v))));
+    const so = Math.sin(om);
+    if (so < 1e-6) return [];
+    const n = Math.max(1, steps || 12);
+    const out = [];
+    for (let k = 0; k <= n; k++) {
+      const t = k / n;
+      const a = Math.sin((1 - t) * om) / so, b = Math.sin(t * om) / so;
+      out.push([0, 1, 2].map((i) => c[i] + r * (a * u[i] + b * v[i])));
+    }
+    return out;
+  }
+  /* Triangle meshes of spheres, for the glow around chosen atoms: balls = [{ c, r }]. Each mesh is
+     { vertexArr, normalArr, faceArr } and holds at most maxVerts points. */
+  function ballMesh(balls, seg, maxVerts) {
+    const n = seg || 12, m = Math.max(3, Math.round(n / 2)), cap = maxVerts || 60000;
+    const out = [];
+    let cur = null;
+    for (const b of balls) {
+      if (!cur || cur.vertexArr.length + (m + 1) * n > cap) { cur = { vertexArr: [], normalArr: [], faceArr: [] }; out.push(cur); }
+      const base = cur.vertexArr.length;
+      for (let i = 0; i <= m; i++) {
+        const th = Math.PI * i / m;
+        for (let j = 0; j < n; j++) {
+          const ph = 2 * Math.PI * j / n;
+          const u = [Math.sin(th) * Math.cos(ph), Math.sin(th) * Math.sin(ph), Math.cos(th)];
+          cur.vertexArr.push([b.c[0] + b.r * u[0], b.c[1] + b.r * u[1], b.c[2] + b.r * u[2]]);
+          cur.normalArr.push(u);
+        }
+      }
+      for (let i = 0; i < m; i++) for (let j = 0; j < n; j++) {
+        const a = base + i * n + j, b2 = base + i * n + (j + 1) % n, c = a + n, d = b2 + n;
+        cur.faceArr.push(a, c, b2, b2, c, d);
+      }
+    }
+    return out;
+  }
+
+  /* ---------- what the picture shows for a row of the framework card ---------- */
+  /* blk = assemble(...), uc = buildCell(...), info = analyse(uc). item is one of:
+       { type: 'bond', m, x, d }            the M-X bonds between the sites m and x with the length d (Å)
+       { type: 'site', m }                  the metal site m with all its bonds
+       { type: 'cis', m }                   the two bonds of the smallest and of the largest cis X-M-X angle of the site m
+       { type: 'bridge', m1, x, m2, theta } the M-X-M bridges with this angle (degrees)
+       { type: 'axial' }                    the M-X bonds along the layer normal, with the normal and the layer plane at each metal
+       { type: 'slab' }                     the planes of terminal halides on the two faces of each layer, and the distance between them
+       { type: 'gallery' }                  the terminal-halide planes that face each other across the organic part
+       { type: 'penetration', label }       the N atoms with this label, each with the terminal-halide plane it is measured from
+       { type: 'offset' }                   a metal, the nearest metal of the next layer, the normal, the shift and the M...M vectors
+       { type: 'hbond', D, H, A, dDA }      the hydrogen bonds D-H...A between these sites with this D...A distance (Å):
+                                            D, H and A, the D-H bond, the H...A line and the angle at H. H is null for a
+                                            file without H atoms: then D, A and the D...A line.
+       { type: 'terminal' } { type: 'label', label } { type: 'metals' } { type: 'framework' } { type: 'organic' }
+     Returns { atoms: [i], bonds: [[i, j]], planes: [{ c, n, r }], lines: [[p, q]], arcs: [{ c, p, q, r }] }.
+     atoms and bonds are indexes into blk.atoms. planes are discs (centre, unit normal, radius), lines are
+     point pairs, and arcs are the marks of angles (vertex c, from the direction of p to the direction of q,
+     radius r), in Å: the page draws them with the atoms. */
+  function highlightSet(blk, uc, info, item) {
+    const A = blk.atoms;
+    const atoms = new Set(), bonds = [], seen = new Set(), planes = [], lines = [], arcs = [];
+    const arc = (c, p, q, r) => arcs.push({ c: c.slice(), p: p.slice(), q: q.slice(), r });
+    const bond = (i, j) => {
+      const key = i < j ? i + ':' + j : j + ':' + i;
+      atoms.add(i); atoms.add(j);
+      if (!seen.has(key)) { seen.add(key); bonds.push([i, j]); }
+    };
+    const isM = (a) => !!uc.center[a.src];
+    const L = info && info.layer ? info.layer : null;
+    const nh = L ? L.normal : null;
+    const hOf = (p) => dot(p, nh);
+    const lift = (p, H) => { const k = H - hOf(p); return [p[0] + k * nh[0], p[1] + k * nh[1], p[2] + k * nh[2]]; };   // p moved along the normal to the height H
+    const isTerminal = (a) => HALIDE.has(a.el) && uc.metalsOf[a.src].length === 1;
+    /* the height of the nearest copy of a face plane (top or bottom of a layer) to the height h */
+    const faceNear = (h) => {
+      let best = null;
+      (L && L.slabs ? L.slabs : []).forEach((sl, si) => {
+        for (const face of ['top', 'bot']) {
+          if (sl[face] === null) continue;
+          const k = Math.round((h - sl[face]) / L.dhkl);
+          const H = sl[face] + k * L.dhkl;
+          if (!best || Math.abs(h - H) < Math.abs(h - best.H)) best = { key: si + ':' + face + ':' + k, si, face, k, H };
+        }
+      });
+      return best;
+    };
+    /* the planes of terminal halides that have atoms in the picture: [{ si, face, k, H, atoms, c, r }] */
+    const facePlanes = () => {
+      const found = new Map();
+      if (!L) return [];
+      A.forEach((a, i) => {
+        if (!isTerminal(a)) return;
+        const f = faceNear(hOf(a.xyz));
+        if (!f || Math.abs(hOf(a.xyz) - f.H) > 1.5) return;
+        if (!found.has(f.key)) found.set(f.key, Object.assign({ atoms: [] }, f));
+        found.get(f.key).atoms.push(i);
+      });
+      return Array.from(found.values()).map((pl) => {
+        let c = [0, 0, 0];
+        for (const i of pl.atoms) c = add(c, A[i].xyz);
+        c = lift(c.map((x) => x / pl.atoms.length), pl.H);
+        const r = Math.max(...pl.atoms.map((i) => norm(sub(lift(A[i].xyz, pl.H), c)))) + 1.5;
+        return Object.assign(pl, { c, r });
+      });
+    };
+    const disc = (c, r) => planes.push({ c, n: nh.slice(), r });
+
+    A.forEach((a, i) => {
+      if (item.type === 'bond') {
+        if (!isM(a) || a.label !== item.m) return;
+        for (const j of a.bonds) if (A[j].label === item.x && Math.abs(distance(a.xyz, A[j].xyz) - item.d) < 0.0015) bond(i, j);
+      } else if (item.type === 'site') {
+        if (!isM(a) || a.label !== item.m) return;
+        atoms.add(i);
+        for (const j of a.bonds) bond(i, j);
+      } else if (item.type === 'cis') {
+        if (!isM(a) || a.label !== item.m || a.bonds.length !== 6) return;
+        const pairs = [];
+        for (let p = 0; p < 6; p++) for (let q = p + 1; q < 6; q++) pairs.push({ p: a.bonds[p], q: a.bonds[q], t: bondAngle(A[a.bonds[p]].xyz, a.xyz, A[a.bonds[q]].xyz) });
+        pairs.sort((u, v) => u.t - v.t);
+        // the 12 smallest of the 15 angles are the cis angles: the first and the last of them
+        for (const pr of [pairs[0], pairs[11]]) { bond(i, pr.p); bond(i, pr.q); arc(a.xyz, A[pr.p].xyz, A[pr.q].xyz, 1.45); }
+      } else if (item.type === 'bridge') {
+        if (a.label !== item.x) return;
+        const ms = a.bonds.filter((j) => isM(A[j]));
+        for (let p = 0; p < ms.length; p++) for (let q = p + 1; q < ms.length; q++) {
+          const la = A[ms[p]].label, lb = A[ms[q]].label;
+          if (!((la === item.m1 && lb === item.m2) || (la === item.m2 && lb === item.m1))) continue;
+          if (Math.abs(bondAngle(A[ms[p]].xyz, a.xyz, A[ms[q]].xyz) - item.theta) < 0.02) { bond(ms[p], i); bond(i, ms[q]); arc(a.xyz, A[ms[p]].xyz, A[ms[q]].xyz, 1.35); }
+        }
+      } else if (item.type === 'axial') {
+        if (!isM(a) || !nh) return;
+        let any = false;
+        for (const j of a.bonds) {
+          if (!HALIDE.has(A[j].el)) continue;
+          const v = sub(A[j].xyz, a.xyz);
+          if (Math.abs(dot(v, nh)) / norm(v) > 0.7) {
+            bond(i, j); any = true;
+            // the angle between the bond and the normal, on the side of the bond
+            const side = dot(v, nh) > 0 ? 1 : -1;
+            arc(a.xyz, a.xyz.map((x, k) => x + side * nh[k]), A[j].xyz, 2.2);
+          }
+        }
+        // the layer normal through the metal, and the layer plane there
+        if (any) { lines.push([a.xyz.map((x, k) => x - 3.4 * nh[k]), a.xyz.map((x, k) => x + 3.4 * nh[k])]); disc(a.xyz.slice(), 2.4); }
+      } else if (item.type === 'terminal') {
+        if (isTerminal(a)) atoms.add(i);
+      } else if (item.type === 'label') {
+        if (a.label === item.label) atoms.add(i);
+      } else if (item.type === 'penetration') {
+        if (a.label !== item.label || !nh) return;
+        const f = faceNear(hOf(a.xyz));
+        if (!f || Math.abs(hOf(a.xyz) - f.H) > 3) return;
+        const foot = lift(a.xyz, f.H);
+        atoms.add(i);
+        lines.push([a.xyz.slice(), foot]);
+        disc(foot, 3.2);
+        // the terminal halides of that plane around the N
+        A.forEach((x, j) => { if (isTerminal(x) && Math.abs(hOf(x.xyz) - f.H) < 1.5 && distance(lift(x.xyz, f.H), foot) < 4.8) atoms.add(j); });
+      } else if (item.type === 'metals') {
+        if (isM(a)) atoms.add(i);
+      } else if (item.type === 'framework') {
+        if (a.kind !== 'molecule') atoms.add(i);
+      } else if (item.type === 'organic') {
+        if (a.kind === 'molecule') atoms.add(i);
+      }
+    });
+    if (item.type === 'framework') {
+      for (const i of atoms) for (const j of A[i].bonds) if (atoms.has(j) && j > i) bond(i, j);
+    }
+    if (item.type === 'hbond') {
+      for (const h of blk.hbonds || []) {
+        if (A[h.d].label !== item.D || A[h.a].label !== item.A || Math.abs(h.dDA - item.dDA) > 0.006) continue;
+        if ((h.h >= 0 ? A[h.h].label : null) !== (item.H || null)) continue;
+        atoms.add(h.d); atoms.add(h.a);
+        if (h.h >= 0) {
+          bond(h.d, h.h);
+          lines.push([A[h.h].xyz.slice(), A[h.a].xyz.slice()]);
+          arc(A[h.h].xyz, A[h.d].xyz, A[h.a].xyz, 0.5);
+        } else lines.push([A[h.d].xyz.slice(), A[h.a].xyz.slice()]);
+      }
+    }
+    // A layer that the packing box cuts has bridges with one metal outside the box. Then the X atoms of the
+    // bridge are shown with the metal that is there.
+    if (item.type === 'bridge' && !atoms.size) {
+      A.forEach((a, i) => {
+        if (a.label !== item.x) return;
+        for (const j of a.bonds) if (isM(A[j]) && (A[j].label === item.m1 || A[j].label === item.m2)) bond(i, j);
+      });
+    }
+    if ((item.type === 'slab' || item.type === 'gallery') && L) {
+      const faces = facePlanes();
+      const use = new Set();
+      for (const T of faces) {
+        if (T.face !== 'top') continue;
+        // slab: the bottom face of the same layer. gallery: the bottom face of the next layer.
+        const B = item.type === 'slab' ? faces.find((f) => f.face === 'bot' && f.si === T.si && f.k === T.k)
+          : faces.find((f) => f.face === 'bot' && Math.abs(f.H - T.H - L.gallery) < 0.3);
+        if (!B) continue;
+        use.add(T); use.add(B);
+        lines.push([T.c, lift(T.c, B.H)]);
+      }
+      for (const f of use) { disc(f.c, f.r); for (const i of f.atoms) atoms.add(i); }
+    }
+    if (item.type === 'offset' && L && L.slabs && L.slabs.length) {
+      // a metal near the middle of the picture, and the nearest metal (seen along the normal) of the next layer
+      const ms = A.map((a, i) => i).filter((i) => isM(A[i]));
+      const ph = L.slabs[0].planes;
+      const step = L.spacing - (ph[ph.length - 1] - ph[0]);
+      let mid = [0, 0, 0];
+      for (const i of ms) mid = add(mid, A[i].xyz);
+      mid = mid.map((x) => x / Math.max(1, ms.length));
+      const order = ms.slice().sort((u, v) => distance(A[u].xyz, mid) - distance(A[v].xyz, mid));
+      // the two metal sites that the analysis used give the offset of the row exactly: use them if they are in the picture
+      const o = L.offset || {};
+      const pairs = [[(i) => A[i].src === o.m0, (j) => A[j].src === o.m1], [() => true, () => true]];
+      for (const [isFrom, isTo] of pairs) {
+        if (atoms.size) break;
+        for (const i of order.filter(isFrom)) {
+        const up = ms.filter((j) => isTo(j) && Math.abs(hOf(A[j].xyz) - hOf(A[i].xyz) - step) < 1.5);
+        if (!up.length) continue;
+        const foot = (j) => lift(A[i].xyz, hOf(A[j].xyz));
+        up.sort((u, v) => distance(foot(u), A[u].xyz) - distance(foot(v), A[v].xyz));
+        const j = up[0], F = foot(j);
+        atoms.add(i); atoms.add(j);
+        lines.push([A[i].xyz.slice(), F], [F, A[j].xyz.slice()]);
+        if (L.offset && L.offset.v1) lines.push([F, add(F, L.offset.v1)], [F, add(F, L.offset.v2)]);
+        break;
+        }
+      }
+    }
+    return { atoms: Array.from(atoms).sort((x, y) => x - y), bonds, planes, lines: lines.filter((ln) => distance(ln[0], ln[1]) > 1e-3), arcs };
   }
 
   /* ---------- export: Tripos mol2 of a drawn block ----------
@@ -2435,7 +2756,7 @@
     return rows.join('\n') + '\n';
   }
 
-  root.XtalCore = { readStructure, readStructures, readCif, readCifAll, readPoscar, readXyz, readShelx, readAims, zipEntries, zipStructureNames, hybridInfo, STRUCTURE_NAME, buildCell, analyse, assemble, hullFaces, planePolys, tetrazineDefs, chromoInstances, stateDir, orientReport, hallOps, symbolOps, setSgTable, isMetal, isCenter, isDonor, HALIDE, RC, MASS, parseSymop, MAX_POLY_CN, distance, bondAngle, torsion, toMol2, toSvg, visibleParts, hullPolygons, bondTubes, polyhedraFor, polyhedraStats, suggestPolyMax,
+  root.XtalCore = { readStructure, readStructures, readCif, readCifAll, readPoscar, readXyz, readShelx, readAims, zipEntries, zipStructureNames, hybridInfo, STRUCTURE_NAME, buildCell, analyse, assemble, hullFaces, planePolys, tetrazineDefs, chromoInstances, stateDir, orientReport, hallOps, symbolOps, setSgTable, isMetal, isCenter, isDonor, HALIDE, RC, MASS, parseSymop, MAX_POLY_CN, planeOfPoints, planeOfHkl, planeDistance, planeFoot, linePlaneAngle, planePlaneAngle, nearestHkl, planeDisc, arcPoints, ballMesh, highlightSet, distance, bondAngle, torsion, toMol2, toSvg, visibleParts, hullPolygons, bondTubes, polyhedraFor, polyhedraStats, suggestPolyMax,
     powderAtoms, powderPattern, powderProfile, readXY, toXY, patternsCsv, ANODES, anodeOf, XRAY_F0, uEquiv };
   if (typeof module !== 'undefined' && module.exports) module.exports = root.XtalCore;
 })(typeof window !== 'undefined' ? window : globalThis);

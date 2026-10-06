@@ -2,6 +2,41 @@
 
 Any change to how a number is defined gets a new version and a line here.
 
+## v0.5.0
+
+- **Planes in the Measure card.** Make a plane, then measure against it.
+  - A plane goes through three or more atoms that you click (the least-squares plane). Or it is a lattice plane (*hkl*) through one atom that you click. For a layered structure, the *h*, *k*, *l* boxes start at the plane of the layers.
+  - **Atom to plane:** click one atom for its distance from the plane. The sign is + on the side of the short line that the plane shows in the picture.
+  - **Bond to plane:** click two atoms for the angle between their line and the plane, 0° to 90°.
+  - Crysta gives the angle between each two planes, 0° to 90°.
+  - A structure can have 6 planes. The picture and the SVG drawing show the planes and the measurements.
+- **Each row of the framework card has its definition and its picture.** Press a row of the Inorganic framework card. The strip under the picture gives the definition of that number. Press the row again, press Close, or press Escape to close it.
+  - For most rows, the picture shows what the definition uses, and it glows in and out:
+    - a bond length: the two atoms and the bond
+    - a mean bond length, Δ*d* or *σ*²: the metal and its bonds
+    - cis X–M–X: the two bonds of the smallest angle and the two bonds of the largest angle, each with the mark of its angle (an arc)
+    - an M–X–M bridge: the two bonds, the three atoms and the mark of the angle
+    - the axial M–X angle: the axial bonds, the layer normal and the layer plane at each metal, and the mark of each angle
+    - the slab: the two planes of terminal halides of a layer, and the distance between them
+    - the organic gallery: the two halide planes that face each other, and the distance between them
+    - the N penetration: the N, the halide plane that it is measured from, and the line between them
+    - the stacking offset: the two metals, the normal, the shift and the two in-plane M···M vectors
+  - Connectivity, layer thickness and layer spacing have the definition only.
+  - While a row glows, each polyhedron is drawn as its edges only: its faces hide the bonds inside.
+  - A saved PNG shows the glow at one fixed strength. If the system asks for less motion, the glow does not move.
+  - If the packing box cuts a bridge, the part inside the box glows.
+- **The lattice plane nearest to a plane through atoms.** For each plane through atoms, the Planes list gives the nearest (*hkl*) and the angle between the two planes.
+- **Measured atoms keep a highlight.** After a distance, an angle, a torsion or a plane measurement, the picture marks the atoms and the lines between them. The highlight does not move.
+- **Measure card:** each measurement and each plane has a × to remove it. The Clear button is gone from the card: the strip under the picture and the right-click menu still remove all measurements. The lists use the main font of the page.
+- **Hydrogen bonds card.**
+  - Each row has a box. Clear the box to hide that hydrogen bond in the picture and in the SVG drawing. The box in the table head shows or hides all of them. The Hydrogen bonds box of the Display card still switches all of them.
+  - Press a row for its definition under the picture. The donor, the H and the acceptor glow, with the D–H bond, the H···A line and the mark of the angle at H.
+- **How to cite.** The "How to cite" button in the page header gives the citation of this version, as text and as BibTeX, and what to cite with it: the source of each structure, 3Dmol.js, and the sources of the scattering factors. The repository has a `CITATION.cff` file. `build.py` makes it from the "citation" part of `package.json`.
+- The numbers in the side cards (framework, M–X–M, hydrogen bonds, crystal data) use the main font of the page.
+- **Powder XRD:** an arrow at the top right of the reflection table minimizes or maximizes it, as on the side panels. With the table minimized, the plot has the height.
+
+New definitions (see the README): plane through atoms, lattice plane through an atom, nearest lattice plane, atom to plane, bond to plane, plane to plane. No other definition changed: every other number is identical to v0.4.0.
+
 ## v0.4.0
 
 - **Databases window.** The "Databases" button in the page header opens a window with three tabs.
