@@ -2,6 +2,22 @@
 
 Any change to how a number is defined gets a new version and a line here.
 
+## v0.4.0
+
+- **Databases window.** The "Databases" button in the page header opens a window with three tabs.
+  - **HybriD3 (Duke):** the entry list of HybriD3, all 642 materials, read on 2026-10-06. Search by words and filter by dimensionality. Each entry shows its compound name, its common names (short forms such as pF1PEA2PbI4 first) and its IUPAC name. The Formula column gives the formula unit from the stoichiometry of HybriD3, with C and H first.
+  - Each structure data set of an entry has a Download link, with its space group, its temperature and the kind of its files. 410 materials have structure files at HybriD3: 435 CIFs and 222 FHI-aims geometry files. The link gets the files from HybriD3 as a zip file.
+  - **2D perovskite database (NMSE)** and **COD:** a link, the steps and the citation. Download the CIF there and drop it on Crysta.
+- **Crysta holds no structure file of a database.** The page has the entry list only (HybriD3 gives it under CC BY 4.0). The structure files come from HybriD3 to your computer when you press Download.
+- **Zip files.** Drop a zip file on Crysta and each structure file in it opens. The download of a HybriD3 data set is such a file:
+  - Crysta opens its CIFs, or its geometry file if it has no CIF. A data set with several CIFs (a temperature series) opens as one structure for each file.
+  - The structure shows its source, licence and reference under the title and in the Crystal data card. Crysta reads the data set number from the `info.txt` of the download.
+- Crysta reads FHI-aims `geometry.in` files. Some HybriD3 data sets have their structure only in this format. It has no symmetry: Crysta then shows the space group "as given by HybriD3".
+- `tools/hybrid3_copy.py` makes the entry list. A browser page cannot read HybriD3: the server sends no `Access-Control-Allow-Origin` header for the API and for the downloads. So a GitHub job runs the script. Start the job by hand. The job opens each download to find the kind of its files, but it keeps no file.
+- The design notes are in `design/2026-10-05-database-browser.md`. A demo that holds a copy of the structure files is on the branch `database-browser-demo`. It is not released: the licence of the CIFs is an open point.
+
+No definition changed: every number is identical to v0.3.3.
+
 ## v0.3.3
 
 - **A CIF with several structures.** Crysta now reads every data block of a CIF that holds atoms. Each block opens as a structure of its own, named after the file and the block, and is a row in the Structures table. Before, Crysta read only the first block and did not say that the file held more.

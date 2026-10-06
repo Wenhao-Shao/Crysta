@@ -1,0 +1,20 @@
+{
+ "source": "https://materials.hybrid3.duke.edu/materials/",
+ "licence": "CC BY 4.0",
+ "read": "2026-10-06",
+ "systems": 642,
+ "structures_stated": 786,
+ "structures": 786,
+ "structures_with_file": 616,
+ "structure_files": 657,
+ "cif_files": 435,
+ "geometry_files": 222,
+ "structures_whole": true,
+ "read_now": 1,
+ "kept": 785,
+ "without_file": 0,
+ "not_read": 0,
+ "complete": true,
+ "seconds": 448,
+ "files_kept": false
+}

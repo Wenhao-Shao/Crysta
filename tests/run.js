@@ -470,6 +470,50 @@ const formula = (info) => info.formula.map((e) => e.el + e.n).join(' ');
   check('csv of a simulated pattern: every point, no empty cell', table.length === sim.y.length + 1 && table.every((r) => !/,$/.test(r)) && table.some((r) => /,100\.0000$/.test(r)) && table[table.length - 1].startsWith('60.000,'));
 }
 
+// FHI-aims geometry.in, the structure format of the HybriD3 database. The file is data set 2008 of HybriD3
+// (4-fluorophenethylammonium lead iodide, Hu et al., Nat. Commun. 10, 1276, 2019; CC BY 4.0).
+{
+  const file = path.join(__dirname, 'files/hybrid3_2008_geometry.in');
+  const text = fs.readFileSync(file, 'utf8');
+  const s = X.readStructure(text, 'geometry.in');
+  const uc = X.buildCell(s, {});
+  const info = X.analyse(uc);
+  check('aims format and cell', s.meta.format === 'FHI-aims' && s.meta.symSource === 'p1' && near(s.cell.a, 16.723, 1e-4) && near(s.cell.b, 8.6332, 1e-4) && near(s.cell.c, 8.8, 1e-4) && near(s.cell.be, 98.781, 1e-3));
+  check('aims atoms and formula', s.sites.length === 94 && uc.atoms.length === 94 && info.formula.map((e) => e.el + e.n).join(' ') === 'C16 H22 F2 I4 N2 Pb1' && info.Z === 2);
+  check('aims layers', info.framework.dim === 2 && info.framework.hkl.join('') === '100' && info.layer.n === 1 && near(info.framework.spacing, 16.527, 0.002));
+  check('aims Pb coordination', info.metalSites.length === 2 && info.metalSites.every((m) => m.cn === 6 && near(m.mean, 3.187, 0.002)));
+  check('aims read by content when the name says nothing', X.readStructure(text, 'download').sites.length === 94);
+  // the same atoms written as cell fractions, with a comment and a keyword that the reader does not need
+  const iv = s.sites.map((a) => 'atom_frac ' + a.f.map((x) => x.toFixed(8)).join(' ') + ' ' + a.el + '\n    initial_moment 0.0');
+  const frac = X.readAims('# written for the test\n' + text.split('\n').filter((l) => /^lattice_vector/.test(l)).join('\n') + '\n' + iv.join('\n') + '\n');
+  check('aims atom_frac gives the same structure', frac.sites.length === 94 && frac.sites.every((a, i) => a.el === s.sites[i].el && a.f.every((x, k) => near(x, s.sites[i].f[k], 1e-6))));
+  const mol = X.readAims('atom 0 0 0 O\natom 0.96 0 0 H\natom -0.24 0.93 0 H\n');
+  check('aims without lattice vectors is a molecule', mol.meta.molecular === true && mol.sites.length === 3);
+  let threw = false;
+  try { X.readAims('lattice_vector 5 0 0\natom 0 0 0 C\n'); } catch (err) { threw = /three readable lattice_vector/.test(err.message); }
+  check('aims with a broken lattice is refused', threw);
+  check('aims: a POSCAR and an XYZ file still go to their own readers', load('tests/files/rutile.POSCAR').s.meta.format === 'POSCAR' && load('tests/files/water.xyz').s.meta.format === 'XYZ');
+}
+
+// Databases window: the formula and the names that the entry list shows (src/dbs.js, with a stand-in for the browser window)
+{
+  global.window = {};
+  require('../src/dbs.js');
+  const D = global.window.CrystaDatabases;
+  check('db formula in Hill order: C, H, then by letter', D.hillFormula('C:16,H:22,N:2,F:2,Pb:1,I:4') === 'C16H22F2I4N2Pb' && D.hillFormula('C:1,H:6,N:1,Pb:1,Cl:3') === 'CH6Cl3NPb');
+  check('db formula without carbon: by letter', D.hillFormula('Cs:1,Pb:1,Cl:3') === 'Cl3CsPb' && D.hillFormula('Ca:1,Ti:1,O:3') === 'CaO3Ti');
+  check('db formula with part numbers, and an empty field', D.hillFormula('Br:0.5,I:0.5,Pb:1') === 'Br0.5I0.5Pb' && D.hillFormula('') === '' && D.hillFormula(null) === '');
+  check('db names split at a comma with a space, not inside a chemical name', D.splitNames('(TMEDA)SbI5, TMEDASbI5').length === 2 && D.splitNames('N,N,N′-trimethylethane-1,2-diaminium; TMEDA').join('|') === 'N,N,N′-trimethylethane-1,2-diaminium|TMEDA');
+  check('db names: marks for "none" are left out', D.splitNames('*, N/A, -, (PEA)2PbI4').join('|') === '(PEA)2PbI4');
+  let n = D.namesOf({ name: '4-fluorophenethylammonium lead iodide', formula: 'C16H22N2F2PbI4', aliases: '4-fluorophenethanaminium tetraiodoplumbate(II), pF1PEA2PbI4', iupac: '4-fluorophenethanaminium lead (II) iodide', stoich: 'C:16,H:22,N:2,F:2,Pb:1,I:4' });
+  check('db names: the short form comes first, a plain sum formula is not a name', n.common.join('|') === 'pF1PEA2PbI4|4-fluorophenethanaminium tetraiodoplumbate(II)' && n.iupac === '4-fluorophenethanaminium lead (II) iodide' && n.hill === 'C16H22F2I4N2Pb');
+  n = D.namesOf({ name: 'Benzylammonium antimony bromide', formula: '(C7H10N)2SbBr5', aliases: '(C6H5CH2NH3)2SbBr5; benzylammonium bromoantimonate(III)', iupac: '-', stoich: 'C:14,H:20,N:2,Sb:1,Br:5' });
+  check('db names: a formula with brackets is a common name, "-" is no IUPAC name', n.common[0] === '(C7H10N)2SbBr5' && n.common.length === 3 && n.iupac === '' && n.hill === 'C14H20Br5N2Sb');
+  const list = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data/hybrid3/systems.json'), 'utf8'));
+  check('db copy of HybriD3: every material has a number, a name and a stoichiometry that reads', list.length > 600 && new Set(list.map((x) => x.pk)).size === list.length && list.every((x) => x.compound_name && D.hillFormula(x.stoichiometry)));
+  delete global.window;
+}
+
 // a CIF with several data blocks: every block that holds atoms is a structure of its own
 {
   const cifOf = (f) => fs.readFileSync(path.join(__dirname, 'cifs', f), 'utf8');
@@ -490,6 +534,55 @@ const formula = (info) => info.formula.map((e) => e.el + e.n).join(' ');
   let threw = false;
   try { X.readStructures('data_x\n_cell_length_a 5\n', 'empty.cif'); } catch (err) { threw = /No atom sites/.test(err.message); }
   check('CIF with no atoms in any block is refused', threw);
+}
+
+// The entry list of HybriD3 (data/hybrid3): lists only. Crysta holds no structure file of the database.
+{
+  const dir = path.join(__dirname, '../data/hybrid3');
+  const list = JSON.parse(fs.readFileSync(path.join(dir, 'structures.json'), 'utf8'));
+  const parts = list.flatMap((e) => e.parts || []);
+  check('HybriD3 list: the data sets name their structure files', list.length > 700 && parts.length > 600 && parts.every((p) => p.name && /^(cif|in)$/.test(p.kind)));
+  check('HybriD3 list: no structure file is in data/hybrid3', !fs.existsSync(path.join(dir, 'structures')) && parts.every((p) => !('file' in p) && !('text' in p)));
+}
+
+// A zip archive, and the download of a HybriD3 data set (info.txt and the structure files). The test file holds the
+// info.txt and the geometry.in of data set 2008, and one file that is stored without compression.
+{
+  const zlib = require('zlib');
+  const bytes = new Uint8Array(fs.readFileSync(path.join(__dirname, 'files/hybrid3_2008_download.zip')));
+  const entries = X.zipEntries(bytes);
+  const data = (e) => { const part = Buffer.from(bytes.subarray(e.start, e.start + e.packed)); return (e.method === 8 ? zlib.inflateRawSync(part) : part).toString('utf8'); };
+  check('zip: the list of files', entries.map((e) => e.name + ':' + e.method).join(' ') === 'files/info.txt:8 files/geometry.in:8 files/additional/note.txt:0' && entries.every((e) => !e.encrypted));
+  const geo = entries.find((e) => /geometry\.in$/.test(e.name));
+  check('zip: the data of a file are where the list says', data(geo) === fs.readFileSync(path.join(__dirname, 'files/hybrid3_2008_geometry.in'), 'utf8') && geo.size === Buffer.byteLength(data(geo)) &&
+    data(entries[2]) === 'A file that is stored without compression.\n');
+  let threw = false;
+  try { X.zipEntries(new Uint8Array(Buffer.from('data_x\n_cell_length_a 5\n'))); } catch (err) { threw = /not a zip archive/.test(err.message); }
+  check('zip: a file that is not an archive is refused', threw);
+  const info = X.hybridInfo(data(entries[0]));
+  check('HybriD3 info.txt: data set, reference, temperature, origin', info.dataset === 2008 && /^J\. Hu, .*Nature Communications 10, 1276 \(2019\)$/.test(info.reference) && info.temperature === '300' && info.experimental === true &&
+    X.hybridInfo('Reference: x') === null);
+  const names = (list, hybrid) => X.zipStructureNames(list, hybrid).join(' ');
+  check('HybriD3 download: the CIF is used, not the geometry file', names(['files/info.txt', 'files/geometry.in', 'files/additional/2174497.cif'], true) === 'files/additional/2174497.cif');
+  check('HybriD3 download: a file in "additional" is used only when the top folder has none', names(['files/info.txt', 'files/X.cif', 'files/additional/X.cif'], true) === 'files/X.cif' &&
+    names(['files/info.txt', 'files/geometry.in', 'files/additional/b.geometry.in'], true) === 'files/geometry.in' && names(['files/info.txt'], true) === '');
+  check('HybriD3 download: each CIF of a temperature series', names(['files/info.txt', 'files/Zn-120K.cif', 'files/Zn-150K.cif'], true) === 'files/Zn-120K.cif files/Zn-150K.cif');
+  check('zip of the user: each structure file, not the other files', names(['a/b/c.cif', 'POSCAR', 'x/CONTCAR_1', 'notes.txt', '__MACOSX/._c.cif', 'm.res', 'g.xyz'], false) === 'a/b/c.cif POSCAR x/CONTCAR_1 m.res g.xyz');
+  // the credit of a dropped download: from the entry list, or from info.txt for a data set that the list does not have
+  global.window = {};
+  delete require.cache[require.resolve('../src/dbs.js')];
+  require('../src/dbs.js');
+  const D = global.window.CrystaDatabases;
+  const db = { materials: [{ pk: 1, name: '4-fluorophenethylammonium lead iodide', formula: '(4-FPEA)2PbI4', aliases: '', stoich: 'C:16,H:22,N:2,F:2,Pb:1,I:4', iupac: '',
+    structures: [{ dataset: 2008, spaceGroup: 'P2(1)/c', temperature: '300', reference: 'J. Hu et al., Nature Communications 10, 1276 (2019)', doi: '10.1038/s41467-019-08980-x', files: [{ name: 'geometry.in', kind: 'in' }] }] }] };
+  const known = D.hybridOrigin(db, info, 1);
+  check('HybriD3 credit from the entry list', known.name('geometry.in') === '(4-FPEA)2PbI4, HybriD3 2008.in' && known.origin.url === 'https://materials.hybrid3.duke.edu/materials/dataset/2008' &&
+    known.origin.spaceGroup === 'P 21/c' && known.origin.temperature === '300' && known.origin.doi === '10.1038/s41467-019-08980-x' && known.origin.licence === 'CC BY 4.0');
+  const series = D.hybridOrigin(db, info, 2);
+  check('HybriD3 credit: a data set with several files keeps the file names and gives no one temperature', series.name('Zn-120K.cif') === '(4-FPEA)2PbI4, HybriD3 2008, Zn-120K.cif' && series.origin.temperature === '');
+  const unknown = D.hybridOrigin({ materials: [] }, info, 1);
+  check('HybriD3 credit from info.txt when the list does not have the data set', unknown.name('geometry.in') === 'HybriD3 2008, geometry.in' && /Nature Communications 10, 1276/.test(unknown.origin.reference) && unknown.origin.spaceGroup === '' && unknown.origin.temperature === '300');
+  delete global.window;
 }
 
 console.log(passed + ' passed, ' + failed + ' failed');

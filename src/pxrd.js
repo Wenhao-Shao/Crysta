@@ -15,7 +15,7 @@
   };
   const FONT_UI = "'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif";
   const FONT_DATA = "'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace";
-  const STRUCTURE_FILE = /\.(cif|res|ins|vasp|poscar|xyz|extxyz|mol2)$|^(POSCAR|CONTCAR)/i;
+  const STRUCTURE_FILE = /\.(cif|res|ins|vasp|poscar|xyz|extxyz|mol2|in)$|^(POSCAR|CONTCAR)/i;
   const MAX_ROWS = 1500;
   const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
   const cssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();

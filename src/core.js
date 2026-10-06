@@ -658,6 +658,53 @@
     return { cell: tmp.cell, ops: full, sites, meta };
   }
 
+  /* FHI-aims geometry.in, the format of the structure files of the HybriD3 database: three lattice_vector lines
+     and one line for each atom, "atom x y z El" in angstrom or "atom_frac u v w El" in cell fractions. The file
+     lists every atom of the cell, so it has no symmetry, no occupancy and no displacement parameters.
+     Without lattice vectors the file is a molecule, which gets a box of its own as an XYZ file does. */
+  function readAims(text) {
+    const vec = [];
+    const raw = [];
+    const skipped = [];
+    for (const ln of text.split(/\r?\n/)) {
+      const t = ln.replace(/#.*$/, '').trim().split(/\s+/);
+      const key = t[0];
+      if (key === 'lattice_vector') { vec.push(t.slice(1, 4).map(parseFloat)); continue; }
+      if (key !== 'atom' && key !== 'atom_frac') continue;       // initial_moment, constrain_relaxation and the like
+      const v = t.slice(1, 4).map(parseFloat);
+      const el = elementOf(t[4] || null, null);
+      if (v.length < 3 || v.some((x) => !isFinite(x))) { skipped.push({ label: t[4] || '?', why: 'no coordinates' }); continue; }
+      if (!el) { skipped.push({ label: t[4] || '?', why: 'element not recognised' }); continue; }
+      raw.push({ el, v, frac: key === 'atom_frac' });
+    }
+    if (!raw.length) throw new Error('No atoms were found in this geometry.in file.');
+    if (vec.length && (vec.length !== 3 || vec.some((u) => u.length < 3 || u.some((x) => !isFinite(x))))) throw new Error('This geometry.in file does not have three readable lattice_vector lines.');
+    const molecular = !vec.length;
+    let cellVec = vec;
+    let origin = [0, 0, 0];
+    if (molecular) {
+      if (raw.some((a) => a.frac)) throw new Error('This geometry.in file has atom_frac lines but no lattice_vector lines.');
+      const lo = [0, 1, 2].map((k) => Math.min(...raw.map((a) => a.v[k])));
+      const hi = [0, 1, 2].map((k) => Math.max(...raw.map((a) => a.v[k])));
+      const side = hi.map((x, k) => x - lo[k] + 12);
+      cellVec = [[side[0], 0, 0], [0, side[1], 0], [0, 0, side[2]]];
+      origin = lo.map((x) => x - 6);
+    }
+    const cellNum = cellFromVectors(cellVec[0], cellVec[1], cellVec[2]);
+    const cell = makeCell(...cellNum);
+    const iv = inv3(cellVec);
+    const count = {};
+    const sites = raw.map((a) => {
+      count[a.el] = (count[a.el] || 0) + 1;
+      const c = sub(a.v, origin);
+      const f = a.frac ? a.v : [0, 1, 2].map((j) => c[0] * iv[0][j] + c[1] * iv[1][j] + c[2] * iv[2][j]);
+      return plainSite(a.el + count[a.el], a.el, f);
+    });
+    const meta = plainMeta('geometry.in', cellNum, 'FHI-aims', { molecular });
+    meta.skipped = skipped;
+    return { cell, ops: [parseSymop('x,y,z')], sites, meta };
+  }
+
   /* pick the reader from the file name, falling back on the content */
   function readStructure(text, name) {
     const ext = (String(name || '').match(/\.([A-Za-z0-9]+)$/) || [])[1];
@@ -665,6 +712,8 @@
     const base = String(name || '').replace(/^.*[\\/]/, '').toUpperCase();
     if (e === 'res' || e === 'ins') return readShelx(text);
     if (e === 'xyz' || e === 'extxyz') return readXyz(text);
+    // a geometry.in file is known by its lines, not by its name: some databases give a CIF under that name
+    if (/^\s*(lattice_vector|atom(_frac)?)\s+-?[\d.]/m.test(text) && !/_atom_site_fract_x/.test(text)) return readAims(text);
     if (e === 'vasp' || e === 'poscar' || /^(POSCAR|CONTCAR)/.test(base)) return readPoscar(text);
     if (/^\s*(#|data_)/m.test(text) && /_atom_site_fract_x/.test(text)) return readCif(text);
     if (/^\s*CELL\s+[\d.]+/m.test(text) && /^\s*SFAC\s/m.test(text)) return readShelx(text);
@@ -683,6 +732,65 @@
     const one = readStructure(text, name);
     // a file with no known ending that the CIF reader took after all
     return one.meta.format === 'CIF' ? readCifAll(text) : { structures: [one], errors: [] };
+  }
+
+  /* ---------- zip archives, and the download of a HybriD3 data set ---------- */
+  /* The files of a zip archive, read from its list of files (the central directory). `bytes` is a Uint8Array.
+     Each entry: { name, method, start, packed, size, encrypted }. method 0 is "stored", 8 is "deflate".
+     The data of an entry are bytes.subarray(start, start + packed). This function does not unpack them. */
+  function zipEntries(bytes) {
+    const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    const n = bytes.length;
+    // the end record has the signature PK 05 06. It is in the last 22 bytes, or before a comment of up to 65535 bytes.
+    let end = -1;
+    for (let i = n - 22; i >= Math.max(0, n - 65557); i--) if (dv.getUint32(i, true) === 0x06054b50) { end = i; break; }
+    if (end < 0) throw new Error('This file is not a zip archive.');
+    const count = dv.getUint16(end + 10, true);
+    let p = dv.getUint32(end + 16, true);
+    const decode = (part) => { try { return new TextDecoder('utf-8', { fatal: true }).decode(part); } catch (err) { return Array.from(part, (ch) => String.fromCharCode(ch)).join(''); } };
+    const out = [];
+    for (let k = 0; k < count; k++) {
+      if (p + 46 > n || dv.getUint32(p, true) !== 0x02014b50) throw new Error('The list of files in this zip archive is damaged.');
+      const flags = dv.getUint16(p + 8, true), method = dv.getUint16(p + 10, true);
+      const packed = dv.getUint32(p + 20, true), size = dv.getUint32(p + 24, true);
+      const nName = dv.getUint16(p + 28, true), nExtra = dv.getUint16(p + 30, true), nComment = dv.getUint16(p + 32, true);
+      const local = dv.getUint32(p + 42, true);
+      const name = decode(bytes.subarray(p + 46, p + 46 + nName));
+      p += 46 + nName + nExtra + nComment;
+      if (/\/$/.test(name)) continue;                       // a folder
+      if (local + 30 > n || dv.getUint32(local, true) !== 0x04034b50) throw new Error('The file ' + name + ' in this zip archive is damaged.');
+      const start = local + 30 + dv.getUint16(local + 26, true) + dv.getUint16(local + 28, true);
+      if (start + packed > n) throw new Error('The file ' + name + ' in this zip archive is damaged.');
+      out.push({ name, method, start, packed, size, encrypted: (flags & 1) === 1 });
+    }
+    return out;
+  }
+  /* a file name that Crysta reads as a structure */
+  const STRUCTURE_NAME = /\.(cif|res|ins|vasp|poscar|xyz|extxyz|in)$|(^|\/)(POSCAR|CONTCAR)[^\/]*$/i;
+  /* The structure files to open from a list of file names of a zip archive.
+     hybrid = true for the download of a HybriD3 data set: the CIFs are used, and the geometry files (.in) only
+     if there is no CIF. A file in a folder such as "additional" is used only when the top folder has no file
+     of that kind. For other archives: each file with a known ending. */
+  function zipStructureNames(names, hybrid) {
+    const all = names.filter((x) => STRUCTURE_NAME.test(x) && !/(^|\/)(\.|__MACOSX\/)/.test(x));
+    if (!hybrid) return all;
+    const group = (re) => {
+      const mine = all.filter((x) => re.test(x));
+      const top = mine.filter((x) => x.split('/').length <= 2);
+      return top.length ? top : mine;
+    };
+    const cifs = group(/\.cif$/i);
+    return cifs.length ? cifs : group(/\.in$/i);
+  }
+  /* What the info.txt of a HybriD3 download states: the data set number, the reference, the temperature (K) and
+     the origin. null when the text is not such a file. */
+  function hybridInfo(text) {
+    const m = /hybrid3\.duke\.edu\/materials\/dataset\/(\d+)/.exec(String(text || ''));
+    if (!m) return null;
+    const ref = /^Reference:\s*(.+)$/m.exec(text);
+    const temp = /temperature\s*=\s*([-\d.]+)\s*K/.exec(text);
+    const origin = /^Origin:\s*(\S+)/m.exec(text);
+    return { dataset: +m[1], reference: ref ? ref[1].trim().replace(/\s{2,}/g, ' ') : '', temperature: temp ? String(+temp[1]) : '', experimental: origin ? /^exp/i.test(origin[1]) : null };
   }
 
   /* ---------- structure -> unit cell contents, molecules, framework ---------- */
@@ -2327,7 +2435,7 @@
     return rows.join('\n') + '\n';
   }
 
-  root.XtalCore = { readStructure, readStructures, readCif, readCifAll, readPoscar, readXyz, readShelx, buildCell, analyse, assemble, hullFaces, planePolys, tetrazineDefs, chromoInstances, stateDir, orientReport, hallOps, symbolOps, setSgTable, isMetal, isCenter, isDonor, HALIDE, RC, MASS, parseSymop, MAX_POLY_CN, distance, bondAngle, torsion, toMol2, toSvg, visibleParts, hullPolygons, bondTubes, polyhedraFor, polyhedraStats, suggestPolyMax,
+  root.XtalCore = { readStructure, readStructures, readCif, readCifAll, readPoscar, readXyz, readShelx, readAims, zipEntries, zipStructureNames, hybridInfo, STRUCTURE_NAME, buildCell, analyse, assemble, hullFaces, planePolys, tetrazineDefs, chromoInstances, stateDir, orientReport, hallOps, symbolOps, setSgTable, isMetal, isCenter, isDonor, HALIDE, RC, MASS, parseSymop, MAX_POLY_CN, distance, bondAngle, torsion, toMol2, toSvg, visibleParts, hullPolygons, bondTubes, polyhedraFor, polyhedraStats, suggestPolyMax,
     powderAtoms, powderPattern, powderProfile, readXY, toXY, patternsCsv, ANODES, anodeOf, XRAY_F0, uEquiv };
   if (typeof module !== 'undefined' && module.exports) module.exports = root.XtalCore;
 })(typeof window !== 'undefined' ? window : globalThis);
