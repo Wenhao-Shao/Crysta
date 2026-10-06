@@ -42,10 +42,10 @@ The demo shows the window and the flow. It does not have the job and it does not
 - The list of all data sets is slow. With 20 data sets for each page, page 12 did not answer in 180 s, three times.
 - The list takes a filter: `?primary_property__name=atomic+structure` gives the 786 structure data sets. `?system=<material>` gives the data sets of one material.
 - The download of a data set, `/materials/datasets/<n>/files/`, is a zip with `info.txt` and the structure files. The names are not fixed. Of the 786 structure data sets:
-  - 393 have a CIF (`files/structure.cif`, a name of the authors, or `files/additional/<name>.cif`). 13 of them have 2 to 9 CIFs: a temperature series, or the R and S forms.
-  - 241 have an FHI-aims geometry file. 18 of these also have the CIF.
+  - 394 have a CIF (`files/structure.cif`, a name of the authors, or `files/additional/<name>.cif`). 12 of them have 2 to 9 CIFs: a temperature series, or the R and S forms.
+  - 240 have an FHI-aims geometry file. 18 of these also have a CIF.
   - 170 have no structure file. HybriD3 holds only the cell parameters for them.
-  - One "geometry.in" is a CIF. The job finds the kind of a file from its lines, not from its name.
+  - One of the CIFs has the name "geometry.in". The job finds the kind of a file from its lines, not from its name.
 - The job takes the CIFs when they hold atoms, and the geometry files if they do not. The job takes a file from `additional/` only when the top folder has no file of that kind.
 - Many CIFs hold the reflection data (the hkl text of SHELX, the `_twin_refln_` loops of Jana). One CIF had 4.6 MB. The job removes this data: the 435 CIFs then have 11 MB.
 - Crysta reads and analyses all 750 structures of the 657 files (28 CIFs have more than one data block) in 11 s.
