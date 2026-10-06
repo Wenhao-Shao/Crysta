@@ -2581,6 +2581,25 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     }
     return { c: plane.c.slice(), r, pts: edge };
   }
+  /* The mark of an angle: points on the arc with the radius r around the vertex c, from the direction of p to the
+     direction of q, the short way. steps + 1 points. [] when the two directions are the same or opposite. */
+  function arcPoints(c, p, q, r, steps) {
+    const u0 = sub(p, c), v0 = sub(q, c);
+    const lu = norm(u0), lv = norm(v0);
+    if (!(lu > 1e-9) || !(lv > 1e-9)) return [];
+    const u = u0.map((x) => x / lu), v = v0.map((x) => x / lv);
+    const om = Math.acos(Math.max(-1, Math.min(1, dot(u, v))));
+    const so = Math.sin(om);
+    if (so < 1e-6) return [];
+    const n = Math.max(1, steps || 12);
+    const out = [];
+    for (let k = 0; k <= n; k++) {
+      const t = k / n;
+      const a = Math.sin((1 - t) * om) / so, b = Math.sin(t * om) / so;
+      out.push([0, 1, 2].map((i) => c[i] + r * (a * u[i] + b * v[i])));
+    }
+    return out;
+  }
   /* Triangle meshes of spheres, for the glow around chosen atoms: balls = [{ c, r }]. Each mesh is
      { vertexArr, normalArr, faceArr } and holds at most maxVerts points. */
   function ballMesh(balls, seg, maxVerts) {
@@ -2619,12 +2638,14 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
        { type: 'penetration', label }       the N atoms with this label, each with the terminal-halide plane it is measured from
        { type: 'offset' }                   a metal, the nearest metal of the next layer, the normal, the shift and the M...M vectors
        { type: 'terminal' } { type: 'label', label } { type: 'metals' } { type: 'framework' } { type: 'organic' }
-     Returns { atoms: [i], bonds: [[i, j]], planes: [{ c, n, r }], lines: [[p, q]] }.
-     atoms and bonds are indexes into blk.atoms. planes are discs (centre, unit normal, radius) and lines are
-     point pairs, in Å: the page draws them with the atoms. */
+     Returns { atoms: [i], bonds: [[i, j]], planes: [{ c, n, r }], lines: [[p, q]], arcs: [{ c, p, q, r }] }.
+     atoms and bonds are indexes into blk.atoms. planes are discs (centre, unit normal, radius), lines are
+     point pairs, and arcs are the marks of angles (vertex c, from the direction of p to the direction of q,
+     radius r), in Å: the page draws them with the atoms. */
   function highlightSet(blk, uc, info, item) {
     const A = blk.atoms;
-    const atoms = new Set(), bonds = [], seen = new Set(), planes = [], lines = [];
+    const atoms = new Set(), bonds = [], seen = new Set(), planes = [], lines = [], arcs = [];
+    const arc = (c, p, q, r) => arcs.push({ c: c.slice(), p: p.slice(), q: q.slice(), r });
     const bond = (i, j) => {
       const key = i < j ? i + ':' + j : j + ':' + i;
       atoms.add(i); atoms.add(j);
@@ -2684,14 +2705,14 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
         for (let p = 0; p < 6; p++) for (let q = p + 1; q < 6; q++) pairs.push({ p: a.bonds[p], q: a.bonds[q], t: bondAngle(A[a.bonds[p]].xyz, a.xyz, A[a.bonds[q]].xyz) });
         pairs.sort((u, v) => u.t - v.t);
         // the 12 smallest of the 15 angles are the cis angles: the first and the last of them
-        for (const pr of [pairs[0], pairs[11]]) { bond(i, pr.p); bond(i, pr.q); }
+        for (const pr of [pairs[0], pairs[11]]) { bond(i, pr.p); bond(i, pr.q); arc(a.xyz, A[pr.p].xyz, A[pr.q].xyz, 1.45); }
       } else if (item.type === 'bridge') {
         if (a.label !== item.x) return;
         const ms = a.bonds.filter((j) => isM(A[j]));
         for (let p = 0; p < ms.length; p++) for (let q = p + 1; q < ms.length; q++) {
           const la = A[ms[p]].label, lb = A[ms[q]].label;
           if (!((la === item.m1 && lb === item.m2) || (la === item.m2 && lb === item.m1))) continue;
-          if (Math.abs(bondAngle(A[ms[p]].xyz, a.xyz, A[ms[q]].xyz) - item.theta) < 0.02) { bond(ms[p], i); bond(i, ms[q]); }
+          if (Math.abs(bondAngle(A[ms[p]].xyz, a.xyz, A[ms[q]].xyz) - item.theta) < 0.02) { bond(ms[p], i); bond(i, ms[q]); arc(a.xyz, A[ms[p]].xyz, A[ms[q]].xyz, 1.35); }
         }
       } else if (item.type === 'axial') {
         if (!isM(a) || !nh) return;
@@ -2699,7 +2720,12 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
         for (const j of a.bonds) {
           if (!HALIDE.has(A[j].el)) continue;
           const v = sub(A[j].xyz, a.xyz);
-          if (Math.abs(dot(v, nh)) / norm(v) > 0.7) { bond(i, j); any = true; }
+          if (Math.abs(dot(v, nh)) / norm(v) > 0.7) {
+            bond(i, j); any = true;
+            // the angle between the bond and the normal, on the side of the bond
+            const side = dot(v, nh) > 0 ? 1 : -1;
+            arc(a.xyz, a.xyz.map((x, k) => x + side * nh[k]), A[j].xyz, 2.2);
+          }
         }
         // the layer normal through the metal, and the layer plane there
         if (any) { lines.push([a.xyz.map((x, k) => x - 3.4 * nh[k]), a.xyz.map((x, k) => x + 3.4 * nh[k])]); disc(a.xyz.slice(), 2.4); }
@@ -2777,7 +2803,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
         }
       }
     }
-    return { atoms: Array.from(atoms).sort((x, y) => x - y), bonds, planes, lines: lines.filter((ln) => distance(ln[0], ln[1]) > 1e-3) };
+    return { atoms: Array.from(atoms).sort((x, y) => x - y), bonds, planes, lines: lines.filter((ln) => distance(ln[0], ln[1]) > 1e-3), arcs };
   }
 
   /* ---------- export: Tripos mol2 of a drawn block ----------
@@ -3390,7 +3416,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     return rows.join('\n') + '\n';
   }
 
-  root.XtalCore = { readStructure, readStructures, readCif, readCifAll, readPoscar, readXyz, readShelx, readAims, zipEntries, zipStructureNames, hybridInfo, STRUCTURE_NAME, buildCell, analyse, assemble, hullFaces, planePolys, tetrazineDefs, chromoInstances, stateDir, orientReport, hallOps, symbolOps, setSgTable, isMetal, isCenter, isDonor, HALIDE, RC, MASS, parseSymop, MAX_POLY_CN, planeOfPoints, planeOfHkl, planeDistance, planeFoot, linePlaneAngle, planePlaneAngle, nearestHkl, planeDisc, ballMesh, highlightSet, distance, bondAngle, torsion, toMol2, toSvg, visibleParts, hullPolygons, bondTubes, polyhedraFor, polyhedraStats, suggestPolyMax,
+  root.XtalCore = { readStructure, readStructures, readCif, readCifAll, readPoscar, readXyz, readShelx, readAims, zipEntries, zipStructureNames, hybridInfo, STRUCTURE_NAME, buildCell, analyse, assemble, hullFaces, planePolys, tetrazineDefs, chromoInstances, stateDir, orientReport, hallOps, symbolOps, setSgTable, isMetal, isCenter, isDonor, HALIDE, RC, MASS, parseSymop, MAX_POLY_CN, planeOfPoints, planeOfHkl, planeDistance, planeFoot, linePlaneAngle, planePlaneAngle, nearestHkl, planeDisc, arcPoints, ballMesh, highlightSet, distance, bondAngle, torsion, toMol2, toSvg, visibleParts, hullPolygons, bondTubes, polyhedraFor, polyhedraStats, suggestPolyMax,
     powderAtoms, powderPattern, powderProfile, readXY, toXY, patternsCsv, ANODES, anodeOf, XRAY_F0, uEquiv };
   if (typeof module !== 'undefined' && module.exports) module.exports = root.XtalCore;
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -4951,7 +4977,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
           def: 'The mean of the ' + s.cn + ' distances from ' + s.label + ' to its bonded atoms. CN is the coordination number: the number of these bonds.' + shows });
         if (s.octahedral) {
           addF(M + ' cis X–M–X', fmt(s.cisMin, 1) + '–' + fmt(s.cisMax, 1) + '°', false, { type: 'cis', m: s.label,
-            def: 'The smallest and the largest of the 12 cis angles of the octahedron. A cis angle is the angle at ' + s.label + ' between two bonds that are side by side. The ideal value is 90°. The picture shows the two bonds of the smallest angle and the two bonds of the largest angle.' });
+            def: 'The smallest and the largest of the 12 cis angles of the octahedron. A cis angle is the angle at ' + s.label + ' between two bonds that are side by side. The ideal value is 90°. The picture shows the two bonds of the smallest angle and the two bonds of the largest angle, each with the mark of its angle.' });
           addF(M + ' Δ<i>d</i>', fmt(s.deltaD * 1e4, 2) + ' × 10<sup>−4</sup>', false, { type: 'site', m: s.label,
             def: 'The bond length distortion of the octahedron: Δd = (1/6) Σ [(d − d_mean) / d_mean]², over the 6 bonds. 0 means six equal bonds.' + shows });
           addF(M + ' <i>σ</i><sup>2</sup>', fmt(s.sigma2, 1) + ' deg<sup>2</sup>', false, { type: 'site', m: s.label,
@@ -4960,7 +4986,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
       }
       if (L) {
         if (L.axialTilt) addF('Axial M–X to layer normal', (L.axialTilt.max - L.axialTilt.min < 0.05 ? fmt(L.axialTilt.mean, 1) : fmt(L.axialTilt.min, 1) + '–' + fmt(L.axialTilt.max, 1)) + '°', false, { type: 'axial',
-          def: 'The angle between an axial M–X bond and the layer normal. 0° means that the bond is perpendicular to the layer. The picture shows the axial bonds and, at each metal, the layer normal (the line) and the layer plane (the disc).' });
+          def: 'The angle between an axial M–X bond and the layer normal. 0° means that the bond is perpendicular to the layer. The picture shows the axial bonds and, at each metal, the layer normal (the line), the layer plane (the disc) and the mark of each angle.' });
         for (const p of L.penetration) addF('N penetration, ' + esc(p.label), (p.depth >= 0 ? '+' : '−') + fmt(Math.abs(p.depth), 3) + ' Å', false, { type: 'penetration', label: p.label,
           def: 'How deep the ammonium N is below the mean plane of the terminal (axial) halides of the nearest layer face, along the layer normal. + means that the N is inside the layer. The picture shows ' + p.label + ', that plane with its halides around the N, and the line from the N to the plane.' });
         if (L.offset) {
@@ -4984,7 +5010,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
           const item = { type: 'bridge', m1: b.m1, x: b.x, m2: b.m2, theta: b.theta,
             def: 'θ is the angle at ' + b.x + ' between its two M–X bonds. M···M is the distance between the two metals.' +
               (b.thetaIn !== undefined ? ' θin is this angle after projection onto the layer plane: it gives the in-plane distortion. θout is this angle after projection onto the plane that holds M···M and the layer normal: it gives the out-of-plane distortion. 180° means no distortion.' : '') +
-              ' The picture shows the two bonds and the three atoms.' };
+              ' The picture shows the two bonds, the three atoms and the mark of the angle θ.' };
           const id = glowId(name, item);
           return '<tr data-glow="' + id + '"><td><button type="button" class="glowbtn" aria-pressed="false" title="' + glowTitle(item) + '">' + name + '</button>' + (b.equatorial === false ? ' (axial)' : '') + '</td><td>' + fmt(b.theta, 2) + '</td>' +
           (L ? '<td>' + (b.thetaIn !== undefined ? fmt(b.thetaIn, 2) : '–') + '</td><td>' + (b.thetaOut !== undefined ? fmt(b.thetaOut, 2) : '–') + '</td>' : '') + '<td>' + fmt(b.mm, 3) + '</td></tr>';
@@ -5877,7 +5903,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     if (st.glow && !st.glow.quiet) {
       const g = st.glow;
       const item = st.glowItems[g.i];
-      const set = item ? C.highlightSet(blk, uc, d.info, item) : { atoms: [], bonds: [], planes: [], lines: [] };
+      const set = item ? C.highlightSet(blk, uc, d.info, item) : { atoms: [], bonds: [], planes: [], lines: [], arcs: [] };
       const seen = set.atoms.filter((i) => map.has(i));
       g.cut = seen.length > GLOW_MAX_ATOMS;
       const shown = g.cut ? seen.slice(0, GLOW_MAX_ATOMS) : seen;
@@ -5901,12 +5927,36 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
           }
         }
       }
-      g.count = { atoms: shown.length, bonds: tubes.length, planes: set.planes.length, lines: set.lines.length };
+      // the mark of each angle: an arc between the two bonds, and the sector that it closes.
+      // The arc is a firm line that does not glow, so that it stays clear. The sector glows with the bonds.
+      let nArcs = 0;
+      const arcRods = [];
+      for (const R of set.arcs) {
+        const pts = C.arcPoints(R.c, R.p, R.q, R.r, 14);
+        if (pts.length < 2) continue;
+        nArcs++;
+        for (let k = 0; k + 1 < pts.length; k++) arcRods.push({ p: pts[k], q: pts[k + 1], rp: 0.05, rq: 0.05, cp: 0, cq: 0 });
+        const e1 = [0, 1, 2].map((i) => pts[0][i] - R.c[i]), e2 = [0, 1, 2].map((i) => pts[pts.length - 1][i] - R.c[i]);
+        let nv = [e1[1] * e2[2] - e1[2] * e2[1], e1[2] * e2[0] - e1[0] * e2[2], e1[0] * e2[1] - e1[1] * e2[0]];
+        const ln = Math.hypot(nv[0], nv[1], nv[2]) || 1;
+        nv = nv.map((x) => x / ln);
+        for (const sgn of [1, -1]) {
+          const nn = nv.map((x) => x * sgn);
+          for (let k = 0; k + 1 < pts.length; k++) {
+            const base = discs.vertexArr.length;
+            discs.vertexArr.push(R.c, sgn > 0 ? pts[k] : pts[k + 1], sgn > 0 ? pts[k + 1] : pts[k]);
+            discs.normalArr.push(nn, nn, nn);
+            discs.faceArr.push(base, base + 1, base + 2);
+          }
+        }
+      }
+      g.count = { atoms: shown.length, bonds: tubes.length, planes: set.planes.length, lines: set.lines.length, arcs: nArcs };
       // fewer faces for a large part, so that the glow stays smooth
       g.meshes = C.ballMesh(balls, shown.length > 400 ? 8 : 14).concat(C.bondTubes(tubes, 10), C.bondTubes(rods, 8), discs.faceArr.length ? [discs] : [])
         .map((m) => ({ vertexArr: m.vertexArr.map(V3), normalArr: m.normalArr.map(V3), faceArr: m.faceArr }));
       g.shapes = [];
       g.color = accent;
+      for (const m of C.bondTubes(arcRods, 8)) viewer.addCustom({ vertexArr: m.vertexArr.map(V3), normalArr: m.normalArr.map(V3), faceArr: m.faceArr, color: accent });
       paintGlow();
     }
 

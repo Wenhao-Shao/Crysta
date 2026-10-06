@@ -1906,6 +1906,25 @@
     }
     return { c: plane.c.slice(), r, pts: edge };
   }
+  /* The mark of an angle: points on the arc with the radius r around the vertex c, from the direction of p to the
+     direction of q, the short way. steps + 1 points. [] when the two directions are the same or opposite. */
+  function arcPoints(c, p, q, r, steps) {
+    const u0 = sub(p, c), v0 = sub(q, c);
+    const lu = norm(u0), lv = norm(v0);
+    if (!(lu > 1e-9) || !(lv > 1e-9)) return [];
+    const u = u0.map((x) => x / lu), v = v0.map((x) => x / lv);
+    const om = Math.acos(Math.max(-1, Math.min(1, dot(u, v))));
+    const so = Math.sin(om);
+    if (so < 1e-6) return [];
+    const n = Math.max(1, steps || 12);
+    const out = [];
+    for (let k = 0; k <= n; k++) {
+      const t = k / n;
+      const a = Math.sin((1 - t) * om) / so, b = Math.sin(t * om) / so;
+      out.push([0, 1, 2].map((i) => c[i] + r * (a * u[i] + b * v[i])));
+    }
+    return out;
+  }
   /* Triangle meshes of spheres, for the glow around chosen atoms: balls = [{ c, r }]. Each mesh is
      { vertexArr, normalArr, faceArr } and holds at most maxVerts points. */
   function ballMesh(balls, seg, maxVerts) {
@@ -1944,12 +1963,14 @@
        { type: 'penetration', label }       the N atoms with this label, each with the terminal-halide plane it is measured from
        { type: 'offset' }                   a metal, the nearest metal of the next layer, the normal, the shift and the M...M vectors
        { type: 'terminal' } { type: 'label', label } { type: 'metals' } { type: 'framework' } { type: 'organic' }
-     Returns { atoms: [i], bonds: [[i, j]], planes: [{ c, n, r }], lines: [[p, q]] }.
-     atoms and bonds are indexes into blk.atoms. planes are discs (centre, unit normal, radius) and lines are
-     point pairs, in Å: the page draws them with the atoms. */
+     Returns { atoms: [i], bonds: [[i, j]], planes: [{ c, n, r }], lines: [[p, q]], arcs: [{ c, p, q, r }] }.
+     atoms and bonds are indexes into blk.atoms. planes are discs (centre, unit normal, radius), lines are
+     point pairs, and arcs are the marks of angles (vertex c, from the direction of p to the direction of q,
+     radius r), in Å: the page draws them with the atoms. */
   function highlightSet(blk, uc, info, item) {
     const A = blk.atoms;
-    const atoms = new Set(), bonds = [], seen = new Set(), planes = [], lines = [];
+    const atoms = new Set(), bonds = [], seen = new Set(), planes = [], lines = [], arcs = [];
+    const arc = (c, p, q, r) => arcs.push({ c: c.slice(), p: p.slice(), q: q.slice(), r });
     const bond = (i, j) => {
       const key = i < j ? i + ':' + j : j + ':' + i;
       atoms.add(i); atoms.add(j);
@@ -2009,14 +2030,14 @@
         for (let p = 0; p < 6; p++) for (let q = p + 1; q < 6; q++) pairs.push({ p: a.bonds[p], q: a.bonds[q], t: bondAngle(A[a.bonds[p]].xyz, a.xyz, A[a.bonds[q]].xyz) });
         pairs.sort((u, v) => u.t - v.t);
         // the 12 smallest of the 15 angles are the cis angles: the first and the last of them
-        for (const pr of [pairs[0], pairs[11]]) { bond(i, pr.p); bond(i, pr.q); }
+        for (const pr of [pairs[0], pairs[11]]) { bond(i, pr.p); bond(i, pr.q); arc(a.xyz, A[pr.p].xyz, A[pr.q].xyz, 1.45); }
       } else if (item.type === 'bridge') {
         if (a.label !== item.x) return;
         const ms = a.bonds.filter((j) => isM(A[j]));
         for (let p = 0; p < ms.length; p++) for (let q = p + 1; q < ms.length; q++) {
           const la = A[ms[p]].label, lb = A[ms[q]].label;
           if (!((la === item.m1 && lb === item.m2) || (la === item.m2 && lb === item.m1))) continue;
-          if (Math.abs(bondAngle(A[ms[p]].xyz, a.xyz, A[ms[q]].xyz) - item.theta) < 0.02) { bond(ms[p], i); bond(i, ms[q]); }
+          if (Math.abs(bondAngle(A[ms[p]].xyz, a.xyz, A[ms[q]].xyz) - item.theta) < 0.02) { bond(ms[p], i); bond(i, ms[q]); arc(a.xyz, A[ms[p]].xyz, A[ms[q]].xyz, 1.35); }
         }
       } else if (item.type === 'axial') {
         if (!isM(a) || !nh) return;
@@ -2024,7 +2045,12 @@
         for (const j of a.bonds) {
           if (!HALIDE.has(A[j].el)) continue;
           const v = sub(A[j].xyz, a.xyz);
-          if (Math.abs(dot(v, nh)) / norm(v) > 0.7) { bond(i, j); any = true; }
+          if (Math.abs(dot(v, nh)) / norm(v) > 0.7) {
+            bond(i, j); any = true;
+            // the angle between the bond and the normal, on the side of the bond
+            const side = dot(v, nh) > 0 ? 1 : -1;
+            arc(a.xyz, a.xyz.map((x, k) => x + side * nh[k]), A[j].xyz, 2.2);
+          }
         }
         // the layer normal through the metal, and the layer plane there
         if (any) { lines.push([a.xyz.map((x, k) => x - 3.4 * nh[k]), a.xyz.map((x, k) => x + 3.4 * nh[k])]); disc(a.xyz.slice(), 2.4); }
@@ -2102,7 +2128,7 @@
         }
       }
     }
-    return { atoms: Array.from(atoms).sort((x, y) => x - y), bonds, planes, lines: lines.filter((ln) => distance(ln[0], ln[1]) > 1e-3) };
+    return { atoms: Array.from(atoms).sort((x, y) => x - y), bonds, planes, lines: lines.filter((ln) => distance(ln[0], ln[1]) > 1e-3), arcs };
   }
 
   /* ---------- export: Tripos mol2 of a drawn block ----------
@@ -2715,7 +2741,7 @@
     return rows.join('\n') + '\n';
   }
 
-  root.XtalCore = { readStructure, readStructures, readCif, readCifAll, readPoscar, readXyz, readShelx, readAims, zipEntries, zipStructureNames, hybridInfo, STRUCTURE_NAME, buildCell, analyse, assemble, hullFaces, planePolys, tetrazineDefs, chromoInstances, stateDir, orientReport, hallOps, symbolOps, setSgTable, isMetal, isCenter, isDonor, HALIDE, RC, MASS, parseSymop, MAX_POLY_CN, planeOfPoints, planeOfHkl, planeDistance, planeFoot, linePlaneAngle, planePlaneAngle, nearestHkl, planeDisc, ballMesh, highlightSet, distance, bondAngle, torsion, toMol2, toSvg, visibleParts, hullPolygons, bondTubes, polyhedraFor, polyhedraStats, suggestPolyMax,
+  root.XtalCore = { readStructure, readStructures, readCif, readCifAll, readPoscar, readXyz, readShelx, readAims, zipEntries, zipStructureNames, hybridInfo, STRUCTURE_NAME, buildCell, analyse, assemble, hullFaces, planePolys, tetrazineDefs, chromoInstances, stateDir, orientReport, hallOps, symbolOps, setSgTable, isMetal, isCenter, isDonor, HALIDE, RC, MASS, parseSymop, MAX_POLY_CN, planeOfPoints, planeOfHkl, planeDistance, planeFoot, linePlaneAngle, planePlaneAngle, nearestHkl, planeDisc, arcPoints, ballMesh, highlightSet, distance, bondAngle, torsion, toMol2, toSvg, visibleParts, hullPolygons, bondTubes, polyhedraFor, polyhedraStats, suggestPolyMax,
     powderAtoms, powderPattern, powderProfile, readXY, toXY, patternsCsv, ANODES, anodeOf, XRAY_F0, uEquiv };
   if (typeof module !== 'undefined' && module.exports) module.exports = root.XtalCore;
 })(typeof window !== 'undefined' ? window : globalThis);

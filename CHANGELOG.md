@@ -14,9 +14,9 @@ Any change to how a number is defined gets a new version and a line here.
   - For most rows, the picture shows what the definition uses, and it glows in and out:
     - a bond length: the two atoms and the bond
     - a mean bond length, Δ*d* or *σ*²: the metal and its bonds
-    - cis X–M–X: the two bonds of the smallest angle and the two bonds of the largest angle
-    - an M–X–M bridge: the two bonds and the three atoms
-    - the axial M–X angle: the axial bonds, the layer normal and the layer plane at each metal
+    - cis X–M–X: the two bonds of the smallest angle and the two bonds of the largest angle, each with the mark of its angle (an arc)
+    - an M–X–M bridge: the two bonds, the three atoms and the mark of the angle
+    - the axial M–X angle: the axial bonds, the layer normal and the layer plane at each metal, and the mark of each angle
     - the slab: the two planes of terminal halides of a layer, and the distance between them
     - the organic gallery: the two halide planes that face each other, and the distance between them
     - the N penetration: the N, the halide plane that it is measured from, and the line between them

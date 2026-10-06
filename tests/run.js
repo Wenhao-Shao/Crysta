@@ -631,6 +631,13 @@ const formula = (info) => info.formula.map((e) => e.el + e.n).join(' ');
   // what the picture draws: a disc of the plane, and spheres around chosen atoms
   const disc = X.planeDisc(flat, sq, 1.2, 12);
   check('plane disc: covers the atoms, lies in the plane', near(disc.r, 2.2, 1e-9) && disc.pts.length === 12 && disc.pts.every((q) => near(X.planeDistance(flat, q), 0, 1e-9) && near(X.distance(q, flat.c), 2.2, 1e-9)));
+  // the mark of an angle: an arc around the vertex, from one bond to the other, the short way
+  const arcQ = X.arcPoints([1, 1, 1], [3, 1, 1], [1, 5, 1], 0.8, 9);
+  check('angle mark: on the circle, from the first bond to the second, in equal steps', arcQ.length === 10 && arcQ.every((q) => near(X.distance(q, [1, 1, 1]), 0.8, 1e-12) && near(q[2], 1, 1e-12)) &&
+    near(arcQ[0][0], 1.8, 1e-12) && near(arcQ[9][1], 1.8, 1e-12) && arcQ.slice(1).every((q, k) => near(X.bondAngle(arcQ[k], [1, 1, 1], q), 10, 1e-9)));
+  const arcW = X.arcPoints([0, 0, 0], [1, 0, 0], [Math.cos(2.6), Math.sin(2.6), 0], 1, 13);
+  check('angle mark: a wide angle goes the short way', near(X.bondAngle(arcW[0], [0, 0, 0], arcW[13]), 2.6 * 180 / Math.PI, 1e-9) && arcW.every((q) => q[1] > -1e-12));
+  check('angle mark: no arc for a straight angle or a zero angle', X.arcPoints([0, 0, 0], [1, 0, 0], [-2, 0, 0], 1, 8).length === 0 && X.arcPoints([0, 0, 0], [1, 0, 0], [3, 0, 0], 1, 8).length === 0 && X.arcPoints([0, 0, 0], [0, 0, 0], [3, 0, 0], 1, 8).length === 0);
   const balls = X.ballMesh([{ c: [1, 2, 3], r: 0.5 }, { c: [4, 4, 4], r: 1 }], 8);
   const outward = (mesh) => { for (let k = 0; k < mesh.faceArr.length; k += 3) {
     const [a, b, c] = [0, 1, 2].map((t) => mesh.vertexArr[mesh.faceArr[k + t]]);
@@ -685,6 +692,13 @@ const formula = (info) => info.formula.map((e) => e.el + e.n).join(' ');
   }
   check('glow: the cis row has the bonds of the smallest and of the largest cis angle', cis.bonds.length >= 3 * nM && cis.bonds.length <= 4 * nM &&
     cisAngles.some((t) => near(t, m.cisMin, 1e-6)) && cisAngles.some((t) => near(t, m.cisMax, 1e-6)));
+  // the marks of the angles: their own angle is the angle of the row
+  const arcAngle = (R) => X.bondAngle(R.p, R.c, R.q);
+  check('glow: the cis row has a mark for the smallest and for the largest angle on each metal', cis.arcs.length === 2 * nM && cis.arcs.some((R) => near(arcAngle(R), m.cisMin, 1e-6)) && cis.arcs.some((R) => near(arcAngle(R), m.cisMax, 1e-6)) &&
+    cis.arcs.every((R) => near(arcAngle(R), m.cisMin, 1e-6) || near(arcAngle(R), m.cisMax, 1e-6)));
+  check('glow: the bridge row has a mark at X with the angle of the row', bridge.arcs.length === bridge.bonds.length / 2 && bridge.arcs.every((R) => near(arcAngle(R), b.theta, 0.02)));
+  check('glow: the axial row has a mark between each axial bond and the normal', axial.arcs.length === axial.bonds.length && axial.arcs.every((R) => arcAngle(R) > Ly.axialTilt.min - 1e-6 && arcAngle(R) < Ly.axialTilt.max + 1e-6));
+  check('glow: rows without an angle have no mark', shortest.arcs.length === 0 && site.arcs.length === 0 && set({ type: 'slab' }).arcs.length === 0);
   const slab = set({ type: 'slab' });
   check('glow: the slab row has the two halide planes of a layer and the distance between them', slab.planes.length >= 2 && slab.lines.length >= 1 && slab.lines.every((ln) => isNormal(ln) && near(along(ln), Ly.slabThickness, 1e-6)) &&
     slab.atoms.every((i) => A[i].el === 'Br' && uc.metalsOf[A[i].src].length === 1));
