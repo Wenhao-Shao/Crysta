@@ -2,6 +2,13 @@
 
 Any change to how a number is defined gets a new version and a line here.
 
+## v0.3.3
+
+- **A CIF with several structures.** Crysta now reads every data block of a CIF that holds atoms. Each block opens as a structure of its own, named after the file and the block, and is a row in the Structures table. Before, Crysta read only the first block and did not say that the file held more.
+- A block that cannot be read does not stop the others. The strip under the picture names it.
+
+No definition changed: every number is identical to v0.3.2.
+
 ## v0.3.2
 
 - The online page counts visits with Google Analytics. The tag loads only on the published address; the offline file (`dist/Crysta.html`), a copy opened from disk and a fork send nothing. Structure files stay on your computer as before: only the page visit is counted. The page footer says so.

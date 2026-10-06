@@ -22,7 +22,7 @@ Press "Load the sample structures" to load the four built-in samples: (PEA)2PbBr
 
 | Format | Read | Notes |
 |---|---|---|
-| CIF | yes | symmetry from the listed operators, or from the Hall symbol, H-M symbol or IT number |
+| CIF | yes | symmetry from the listed operators, or from the Hall symbol, H-M symbol or IT number. A file with several data blocks opens as several structures. |
 | SHELX `.res`, `.ins` | yes | CELL, LATT, SYMM, SFAC, FVAR, PART; occupancies corrected for site multiplicity |
 | VASP `POSCAR`, `CONTCAR`, `.vasp` | yes | version 5 (with the line of element symbols); no symmetry in this format |
 | XYZ, extended XYZ | yes | with `Lattice="..."` the cell is used; without it the file is shown as a single molecule with no lattice |
