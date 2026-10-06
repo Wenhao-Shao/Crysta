@@ -58,6 +58,8 @@ body { background: var(--bg); color: var(--ink); font-family: var(--font-ui); fo
 
 .head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 8px 24px; }
 .head > div { min-width: 0; }
+/* the title block gives way before the buttons move to a second row, so a long line under the title wraps in place */
+.head > div:first-child { flex: 1 1 320px; }
 .eyebrow { font-family: var(--font-data); font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
 h1 { font-family: var(--font-display); font-weight: 600; font-size: 28px; line-height: 1.1; margin: 2px 0 0; text-wrap: balance; overflow-wrap: anywhere; }
 .sub { display: flex; flex-wrap: wrap; gap: 4px 18px; font-size: 13px; color: var(--muted); margin-top: 4px; }
@@ -297,6 +299,30 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
   transform: translate(-50%, -50%); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; overflow: hidden;
   box-shadow: 0 18px 48px rgba(20, 16, 24, 0.35); resize: both; min-width: 320px; min-height: 360px; }
 .pxfloat .px-head { cursor: move; }
+/* Databases window (demo): a floating window with one tab for each database. */
+.dbfloat { z-index: 31; width: min(1040px, calc(100vw - 24px)); height: min(700px, calc(100vh - 24px)); }
+.db-main { display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 10px; min-height: 0; }
+.db-panel { grid-template-rows: auto minmax(0, 1fr) auto; min-height: 0; overflow: hidden; align-content: start; }
+.db-bar { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
+.db-bar input[type="search"] { flex: 1 1 240px; min-width: 0; font-family: var(--font-ui); font-size: 14px; color: var(--ink); background: var(--bg);
+  border: 1px solid var(--line); border-radius: 4px; padding: 5px 8px; }
+.db-table { overflow: auto; min-height: 0; }
+.db-table table { font-family: var(--font-ui); font-size: 13px; min-width: 700px; }
+.db-table th, .db-table td { text-align: left; white-space: normal; padding: 6px 14px 6px 0; vertical-align: top; overflow-wrap: break-word; }
+.db-table th { white-space: nowrap; }
+.db-table th:first-child, .db-table td:first-child { width: 42%; }
+.db-table thead th { position: sticky; top: 0; background: var(--panel); z-index: 1; padding-bottom: 4px; }
+.db-table td b { font-weight: 500; display: block; }
+.db-table td .small { display: block; }
+.db-table td:nth-child(2) { font-family: var(--font-data); font-size: 12.5px; }
+.db-act { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; white-space: nowrap; }
+.db-act a, .db-link a:not(.homelink), .db-panel > .small a, .sub a, dd a { color: var(--accent); text-underline-offset: 2px; }
+.db-link { display: grid; gap: 8px; align-content: start; max-width: 68ch; overflow-y: auto; }
+.db-link h2 { font-family: var(--font-display); font-size: 18px; letter-spacing: 0; text-transform: none; color: var(--ink); }
+.db-link p, .db-link ol { margin: 0; }
+.db-link ol { padding-left: 20px; }
+.db code { font-family: var(--font-data); font-size: 12px; }
+
 @media (max-width: 760px) {
   body.pxbody { height: auto; overflow: auto; }
   .px { height: auto; }
@@ -337,6 +363,7 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
       <a class="homelink" href="https://wenhao-shao.github.io/" title="Back to the W. Shao Laboratory website"><span aria-hidden="true">&larr;</span> W. Shao Lab</a>
       <label class="filebtn">Open structure files<input type="file" id="fileIn" multiple></label>
       <button type="button" id="btnExample">Load the sample structures</button>
+      <button type="button" id="btnDbs" title="Find a structure in a database: HybriD3, the 2D perovskite database (NMSE) or COD">Databases</button>
       <button type="button" id="btnPxrd" title="Open the powder X-ray diffraction window: simulated patterns of the loaded structures, and your measured data">Powder XRD</button>
       <button type="button" id="btnFeedback">Send feedback</button>
       <label class="bgpick" title="The background of the whole page, the 3D picture, the saved pictures and the PXRD window">Background
@@ -355,7 +382,7 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
         <div id="gl"></div>
         <div class="stage-msg" id="stageMsg">
           <strong>Drop structure files here</strong>
-          <p>CIF, SHELX .res and .ins, POSCAR and XYZ. Each file is expanded by its symmetry and sorted into frameworks, networks and whole molecules. Layered metal halides also get the 2D perovskite descriptors. Load several to compare them in one table. Powder XRD shows the simulated pattern of each structure. Drop a measured pattern (.xy) to compare it.</p>
+          <p>CIF, SHELX .res and .ins, POSCAR, XYZ and FHI-aims geometry.in. Each file is expanded by its symmetry and sorted into frameworks, networks and whole molecules. Layered metal halides also get the 2D perovskite descriptors. Load several to compare them in one table. Powder XRD shows the simulated pattern of each structure. Drop a measured pattern (.xy) to compare it.</p>
         </div>
         <div class="overlay tl" id="ovlView" hidden>
           <span class="ovl-label">View down</span>
@@ -579,6 +606,7 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
 </dialog>
 
 <script type="application/json" id="samples">__SAMPLES__</script>
+<script type="application/json" id="db-hybrid3">__DATABASES__</script>
 <script type="application/json" id="sg-table">__SGTABLE__</script>
 <!--LIB-->
 <script>
@@ -586,6 +614,9 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
 </script>
 <script>
 /*__PXRD__*/
+</script>
+<script>
+/*__DBS__*/
 </script>
 <script>
 (function () {
@@ -624,6 +655,11 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
   const D = () => st.docs[st.cur] || null;
   /* the PXRD window: simulated powder patterns of the open structures, and measured data (src/pxrd.js) */
   const pxrd = window.CrystaPxrd ? window.CrystaPxrd.create({ docs: () => st.docs, current: () => D(), addFiles: (list) => addFiles(list), name: NAME, version: '__VERSION__' }) : null;
+  /* the Databases window: find a structure in an outside database and open it here (src/dbs.js) */
+  let dbCopy = null;
+  try { dbCopy = JSON.parse($('db-hybrid3').textContent); } catch (err) { /* no database copy in this page */ }
+  const dbs = window.CrystaDatabases ? window.CrystaDatabases.create({ data: dbCopy, addFiles: (list) => addFiles(list), name: NAME, version: '__VERSION__' }) : null;
+  const safeUrl = (u) => (/^https?:\/\//i.test(String(u || '')) ? String(u) : '#');
   /* a file that is not a structure but holds two columns of numbers is taken as measured powder data */
   const isPowderData = (text) => { try { return C.readXY(text).x.length >= 20; } catch (err) { return false; } };
 
@@ -684,6 +720,12 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
   /* ---------- documents ---------- */
   function makeDoc(src) {
     const struct = C.readStructure(src.text, src.name);
+    // a structure that comes from a database carries its origin; the database gives what the file does not hold
+    if (src.origin) {
+      struct.meta.origin = src.origin;
+      if (!struct.meta.spaceGroup && src.origin.spaceGroup) { struct.meta.spaceGroup = src.origin.spaceGroup; struct.meta.sgFrom = src.origin.database; }
+      if (!struct.meta.temperature && src.origin.temperature) struct.meta.temperature = src.origin.temperature;
+    }
     const d = { src, struct, minor: false, planes: [], chromos: [], measures: [], picks: [], polyRules: [], autoStyle: {}, autoHide: {}, autoGone: {}, polyOpen: null, name: src.name.replace(/\.[^.]+$/, '') };
     rebuildCell(d);
     const L = [struct.cell.a, struct.cell.b, struct.cell.c];
@@ -821,6 +863,8 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
     if (fw) bits.push(frameworkText(fw, info.layer) + (fw.dim === 2 ? ', ' + fmt(fw.spacing, 2) + ' Å apart' : ''));
     else if (struct.meta.molecular) bits.push('single molecule, no lattice');
     else if (info.molecular) bits.push('molecular crystal');
+    const o = struct.meta.origin;
+    if (o) bits.push('from <a href="' + esc(safeUrl(o.url)) + '" target="_blank" rel="noopener">' + esc(o.database + ', ' + o.entry) + ' ↗</a>' + (o.licence ? ' (' + esc(o.licence) + ')' : ''));
     $('sub').innerHTML = bits.map((b) => '<span>' + b + '</span>').join('');
   }
 
@@ -832,7 +876,7 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
     const add = (k, v, txt) => rows.push('<dt>' + k + '</dt><dd' + (txt ? ' class="txt"' : '') + '>' + v + '</dd>');
     add('Formula', formulaHtml(info.formula));
     if (info.formulaMass) add('Formula mass', fmt(info.formulaMass, 2) + ' g mol<sup>−1</sup>');
-    if (m.spaceGroup) add('Space group', sgHtml(m.spaceGroup) + (m.sgNumber ? ' (no. ' + esc(m.sgNumber) + ')' : ''));
+    if (m.spaceGroup) add('Space group', sgHtml(m.spaceGroup) + (m.sgNumber ? ' (no. ' + esc(m.sgNumber) + ')' : '') + (m.sgFrom ? ' (as given by ' + esc(m.sgFrom) + ')' : ''));
     else if (m.sgNumber) add('Space group', 'no. ' + esc(m.sgNumber));
     if (!m.molecular) {
       ['a', 'b', 'c'].forEach((k, i) => add('<i>' + k + '</i>', esc(m.cellRaw[i]) + ' Å'));
@@ -844,6 +888,12 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
     if (m.temperature) add('<i>T</i>', esc(m.temperature) + ' K');
     if (m.R1) add('<i>R</i><sub>1</sub>', esc(m.R1));
     if (m.ccdc) add('Deposition', esc(m.ccdc), true);
+    if (m.origin) {
+      const og = m.origin;
+      add('Source', '<a href="' + esc(safeUrl(og.url)) + '" target="_blank" rel="noopener">' + esc(og.database + ', ' + og.entry) + ' ↗</a>', true);
+      if (og.reference) add('Reference', esc(og.reference) + (og.doi ? ' <a href="https://doi.org/' + esc(encodeURI(og.doi)) + '" target="_blank" rel="noopener">doi ↗</a>' : ''), true);
+      if (og.licence) add('Licence', '<a href="' + esc(safeUrl(og.licenceUrl)) + '" target="_blank" rel="noopener">' + esc(og.licence) + '</a>', true);
+    }
     add(m.molecular ? 'Atoms' : 'Atoms per cell', String(info.nAtoms));
     if (m.format !== 'CIF') add('File format', esc(m.format), true);
     const symText = {
@@ -2291,6 +2341,8 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
     });
 
     $('btnPxrd').onclick = () => { if (pxrd) pxrd.open(); };
+    $('btnDbs').onclick = () => { if (dbs) dbs.open(); };
+    $('btnDbs').hidden = !dbs;
     $('selBg').onchange = (e) => { setBackground(e.target.value, true); retheme(); };
     $('btnPxrd').hidden = !pxrd;
 
@@ -2425,6 +2477,6 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(retheme);
   }
   init();
-  window.crysta = { state: st, viewer: () => viewer, addFiles, elemLook, pxrd };
+  window.crysta = { state: st, viewer: () => viewer, addFiles, elemLook, pxrd, dbs };
 })();
 </script>

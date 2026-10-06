@@ -24,6 +24,7 @@ Press "Load the sample structures" to load the four built-in samples: (PEA)2PbBr
 |---|---|---|
 | CIF | yes | symmetry from the listed operators, or from the Hall symbol, H-M symbol or IT number |
 | SHELX `.res`, `.ins` | yes | CELL, LATT, SYMM, SFAC, FVAR, PART; occupancies corrected for site multiplicity |
+| FHI-aims `geometry.in` | yes | `lattice_vector`, `atom` and `atom_frac` lines. The format has no symmetry. HybriD3 gives its structures in this format. |
 | VASP `POSCAR`, `CONTCAR`, `.vasp` | yes | version 5 (with the line of element symbols); no symmetry in this format |
 | XYZ, extended XYZ | yes | with `Lattice="..."` the cell is used; without it the file is shown as a single molecule with no lattice |
 | Powder data `.xy`, `.xye`, `.csv`, `.txt`, `.dat` | yes | Two columns of text: 2θ in degrees, then intensity. Crysta ignores header lines. The PXRD window shows the data. |
@@ -172,6 +173,7 @@ node tests/run.js     # regression tests for src/core.js
 - `src/core.js`: file reading, symmetry, bonding, geometry, powder diffraction, mol2 and SVG writers. Pure functions, no DOM, runs in Node.
 - `src/workbench.template.html`: the page and its interface code.
 - `src/pxrd.js`: the PXRD window (plot, reflection table, measured data). It gets its numbers from `core.js`.
+- `src/dbs.js`: the Databases window (demo). `data/` holds the demo copy of the HybriD3 entry list. `design/` holds the design notes.
 - `src/sg-table.json`: Hermann–Mauguin symbol to Hall symbol, for CIFs that list no operators.
 - `examples/`: the CIFs embedded as built-in samples. The reflection list was removed from the
   (FCA3)2PbBr4 file (CCDC 2485416) to keep the page small, and its CCDC number was added as a data item.

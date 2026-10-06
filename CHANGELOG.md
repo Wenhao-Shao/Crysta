@@ -2,6 +2,17 @@
 
 Any change to how a number is defined gets a new version and a line here.
 
+## v0.4.0-demo (not released)
+
+- **Databases window, demo.** The "Databases" button in the page header opens a window with three tabs.
+  - **HybriD3 (Duke):** a demo copy of the entry list, 81 of 642 materials. Search by words and filter by dimensionality. One entry, data set 2008, has its structure in the page and opens with one press. Each other entry has a link to its HybriD3 page.
+  - **2D perovskite database (NMSE)** and **COD:** a link, the steps and the citation. Download the CIF there and drop it on Crysta.
+- A structure from a database shows its source, licence and reference under the title and in the Crystal data card.
+- Crysta reads FHI-aims `geometry.in` files, the structure format of HybriD3.
+- The plan for the full version is in `design/2026-10-05-database-browser.md`.
+
+No definition changed: every number is identical to v0.3.2.
+
 ## v0.3.2
 
 - The online page counts visits with Google Analytics. The tag loads only on the published address; the offline file (`dist/Crysta.html`), a copy opened from disk and a fork send nothing. Structure files stay on your computer as before: only the page visit is counted. The page footer says so.

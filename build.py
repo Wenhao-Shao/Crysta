@@ -20,6 +20,14 @@ tagline = pkg["tagline"]
 template = (root / "src/workbench.template.html").read_text()
 core = (root / "src/core.js").read_text()
 pxrd = (root / "src/pxrd.js").read_text()
+dbs = (root / "src/dbs.js").read_text()
+# Copy of a database entry list for the Databases window (demo: a part of HybriD3). The structure files that the
+# list names are put into it as text, so the page needs no other file.
+dbcopy = json.loads((root / "data/hybrid3-demo.json").read_text())
+for mat in dbcopy["materials"]:
+    for st in mat["structures"]:
+        st["text"] = (root / "data" / st.pop("file")).read_text()
+databases = json.dumps(dbcopy, ensure_ascii=False)
 table = (root / "src/sg-table.json").read_text()
 # built-in samples: file in examples/, name shown in the page
 SAMPLES = [
@@ -30,10 +38,11 @@ SAMPLES = [
 ]
 samples = json.dumps([{"name": shown, "text": (root / "examples" / f).read_text()} for f, shown in SAMPLES])
 lib = (root / "vendor/3Dmol-min.js").read_text()
-for part in (core, pxrd, table, lib, samples):
+for part in (core, pxrd, dbs, table, lib, samples, databases):
     assert "</script" not in part.lower() and "<!--" not in part
 
-body = (template.replace("/*__CORE__*/", core).replace("/*__PXRD__*/", pxrd).replace("__SAMPLES__", samples)
+body = (template.replace("/*__CORE__*/", core).replace("/*__PXRD__*/", pxrd).replace("/*__DBS__*/", dbs).replace("__SAMPLES__", samples)
+        .replace("__DATABASES__", databases)
         .replace("__SGTABLE__", table).replace("__VERSION__", "v" + version)
         .replace("__NAME__", name).replace("__TAGLINE__", tagline)
         .replace("__HOMEPAGE__", pkg["homepage"]))

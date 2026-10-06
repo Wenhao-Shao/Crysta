@@ -470,5 +470,30 @@ const formula = (info) => info.formula.map((e) => e.el + e.n).join(' ');
   check('csv of a simulated pattern: every point, no empty cell', table.length === sim.y.length + 1 && table.every((r) => !/,$/.test(r)) && table.some((r) => /,100\.0000$/.test(r)) && table[table.length - 1].startsWith('60.000,'));
 }
 
+// FHI-aims geometry.in, the structure format of the HybriD3 database. The file is data set 2008 of HybriD3
+// (4-fluorophenethylammonium lead iodide, Hu et al., Nat. Commun. 10, 1276, 2019; CC BY 4.0).
+{
+  const file = path.join(__dirname, '..', 'data/hybrid3/2008-geometry.in');
+  const text = fs.readFileSync(file, 'utf8');
+  const s = X.readStructure(text, 'geometry.in');
+  const uc = X.buildCell(s, {});
+  const info = X.analyse(uc);
+  check('aims format and cell', s.meta.format === 'FHI-aims' && s.meta.symSource === 'p1' && near(s.cell.a, 16.723, 1e-4) && near(s.cell.b, 8.6332, 1e-4) && near(s.cell.c, 8.8, 1e-4) && near(s.cell.be, 98.781, 1e-3));
+  check('aims atoms and formula', s.sites.length === 94 && uc.atoms.length === 94 && info.formula.map((e) => e.el + e.n).join(' ') === 'C16 H22 F2 I4 N2 Pb1' && info.Z === 2);
+  check('aims layers', info.framework.dim === 2 && info.framework.hkl.join('') === '100' && info.layer.n === 1 && near(info.framework.spacing, 16.527, 0.002));
+  check('aims Pb coordination', info.metalSites.length === 2 && info.metalSites.every((m) => m.cn === 6 && near(m.mean, 3.187, 0.002)));
+  check('aims read by content when the name says nothing', X.readStructure(text, 'download').sites.length === 94);
+  // the same atoms written as cell fractions, with a comment and a keyword that the reader does not need
+  const iv = s.sites.map((a) => 'atom_frac ' + a.f.map((x) => x.toFixed(8)).join(' ') + ' ' + a.el + '\n    initial_moment 0.0');
+  const frac = X.readAims('# written for the test\n' + text.split('\n').filter((l) => /^lattice_vector/.test(l)).join('\n') + '\n' + iv.join('\n') + '\n');
+  check('aims atom_frac gives the same structure', frac.sites.length === 94 && frac.sites.every((a, i) => a.el === s.sites[i].el && a.f.every((x, k) => near(x, s.sites[i].f[k], 1e-6))));
+  const mol = X.readAims('atom 0 0 0 O\natom 0.96 0 0 H\natom -0.24 0.93 0 H\n');
+  check('aims without lattice vectors is a molecule', mol.meta.molecular === true && mol.sites.length === 3);
+  let threw = false;
+  try { X.readAims('lattice_vector 5 0 0\natom 0 0 0 C\n'); } catch (err) { threw = /three readable lattice_vector/.test(err.message); }
+  check('aims with a broken lattice is refused', threw);
+  check('aims: a POSCAR and an XYZ file still go to their own readers', load('tests/files/rutile.POSCAR').s.meta.format === 'POSCAR' && load('tests/files/water.xyz').s.meta.format === 'XYZ');
+}
+
 console.log(passed + ' passed, ' + failed + ' failed');
 process.exit(failed ? 1 : 0);

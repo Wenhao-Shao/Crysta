@@ -84,7 +84,18 @@ translucent polygons, cell edges, hydrogen bonds and measurements as lines, labe
 written back to front. Atoms are shaded with a radial highlight or filled flat. Objects that cross
 each other in depth are approximated, because a vector file has no depth buffer.
 
-## 5. Name, release and promotion
+## 5. Databases
+
+| Item | Status |
+|---|---|
+| Databases window with a demo copy of HybriD3, and links to the NMSE 2D perovskite database and COD | demo, not released |
+| Reader for FHI-aims `geometry.in` | demo, not released |
+| Weekly copy of the HybriD3 entry list and structures (CC BY 4.0), stored with the page | next |
+| Contact with the HybriD3 group: requests from other sites, and an "Open in Crysta" link | open |
+| Contact with the NMSE group: permission for a copy | open |
+| Search of COD inside Crysta | later |
+
+## 6. Name, release and promotion
 
 | Item | Status |
 |---|---|
