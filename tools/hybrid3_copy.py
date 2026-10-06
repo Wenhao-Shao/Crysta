@@ -59,8 +59,8 @@ def fetch(url, timeout=60, tries=4):
                 return None
             say("  try", attempt + 1, "HTTP", err.code, url)
         except Exception as err:                      # time-out, broken connection
-            say("  try", attempt + 1, type(err).__name__, url)
-        time.sleep(4 * (attempt + 1))
+            say("  try", attempt + 1, type(err).__name__, str(getattr(err, "reason", err))[:80], url)
+        time.sleep(10 * (attempt + 1))                # the server stops for a time now and then: wait longer each time
     return None
 
 
@@ -192,10 +192,18 @@ def main():
             old_info = {}
     failed = False
     try:
-        systems = all_systems()
-        (out / "systems.json").write_text(json.dumps(systems, ensure_ascii=False, indent=0) + "\n")
-        info["systems"] = len(systems)
-        say("materials written:", len(systems))
+        try:
+            systems = all_systems()
+            (out / "systems.json").write_text(json.dumps(systems, ensure_ascii=False, indent=0) + "\n")
+            info["systems"] = len(systems)
+            say("materials written:", len(systems))
+        except RuntimeError as err:
+            # the list of the last copy stays in use; the structures are read all the same
+            if not (out / "systems.json").exists():
+                raise
+            info["systems"] = len(json.loads((out / "systems.json").read_text()))
+            info["systems_from_last_copy"] = True
+            say("the list of materials did not come; the last copy stays:", repr(err))
 
         if with_structures:
             index_file = out / "structures.json"
