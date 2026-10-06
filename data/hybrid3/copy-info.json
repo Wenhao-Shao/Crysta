@@ -2,7 +2,6 @@
  "source": "https://materials.hybrid3.duke.edu/materials/",
  "licence": "CC BY 4.0",
  "read": "2026-10-06",
- "systems": 642,
- "systems_stated": 642,
- "complete": true
+ "complete": false,
+ "seconds": 579
 }

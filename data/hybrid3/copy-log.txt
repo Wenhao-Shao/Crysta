@@ -1,8 +1,5 @@
-  systems 100 of 642
-  systems 200 of 642
-  systems 300 of 642
-  systems 400 of 642
-  systems 500 of 642
-  systems 600 of 642
-  systems 642 of 642
-materials written: 642
+  try 1 URLError https://materials.hybrid3.duke.edu/materials/systems/?page=1&page_size=100
+  try 2 URLError https://materials.hybrid3.duke.edu/materials/systems/?page=1&page_size=100
+  try 3 URLError https://materials.hybrid3.duke.edu/materials/systems/?page=1&page_size=100
+  try 4 URLError https://materials.hybrid3.duke.edu/materials/systems/?page=1&page_size=100
+FAILED: RuntimeError('The list of materials did not come: https://materials.hybrid3.duke.edu/materials/systems/?page=1&page_size=100')
