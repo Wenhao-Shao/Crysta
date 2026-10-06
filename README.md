@@ -4,8 +4,8 @@ Crysta is a crystal workbench that runs in a browser: a single-page tool for cry
 the symmetry, works out the bonding, sorts the atoms into frameworks, networks and whole molecules,
 draws the structure in 3D, and lets you measure, label, compare and export. It simulates the powder
 XRD pattern of each structure and compares it with your measured data. Layered metal halides
-also get the layer descriptors that 2D perovskite papers use. Nothing is installed and no data leaves
-the browser.
+also get the layer descriptors that 2D perovskite papers use. Nothing is installed and no structure data
+leaves the browser. The online page counts visits with Google Analytics; the offline file does not.
 
 Crysta grew out of the 2D Perovskite Workbench (this repository was called `perovskite-workbench` until v0.2.0).
 What is planned next is in [ROADMAP.md](ROADMAP.md).
