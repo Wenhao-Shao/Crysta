@@ -47,8 +47,8 @@ The demo shows the window and the flow. It does not have the job and it does not
   - 170 have no structure file. HybriD3 holds only the cell parameters for them.
   - One "geometry.in" is a CIF. The job finds the kind of a file from its lines, not from its name.
 - The job takes the CIFs when they hold atoms, and the geometry files if they do not. The job takes a file from `additional/` only when the top folder has no file of that kind.
-- Many CIFs hold the reflection data (the hkl text of SHELX, the `_twin_refln_` loops of Jana). One CIF had 4.6 MB. The job removes this data: the 434 CIFs then have 11 MB.
-- Crysta reads and analyses all 749 structures of the 656 files (28 CIFs have more than one data block) in 11 s.
+- Many CIFs hold the reflection data (the hkl text of SHELX, the `_twin_refln_` loops of Jana). One CIF had 4.6 MB. The job removes this data: the 435 CIFs then have 11 MB.
+- Crysta reads and analyses all 750 structures of the 657 files (28 CIFs have more than one data block) in 11 s.
 - The download sends no `Access-Control-Allow-Origin` header. A browser page can start the download, but it cannot read the file. So the job reads the downloads, and the page gets the copy.
 - The server stops for a time now and then: a request that needs 0.2 s can need 20 s to 120 s. The script tries again, goes on after a failure, and a second run reads only what is missing.
 
@@ -63,7 +63,7 @@ The demo shows the window and the flow. It does not have the job and it does not
 
 ### Files
 
-- The demo puts the entry list and every structure file into the page. This makes the page larger for each visitor: the 656 files add 2.9 MB (packed with gzip and written as base64). Without the packing they are 10 MB. The page unpacks them when the user opens the first structure (0.3 s).
+- The demo puts the entry list and every structure file into the page. This makes the page larger for each visitor: the 657 files add 2.9 MB (packed with gzip and written as base64). Without the packing they are 10 MB. The page unpacks them when the user opens the first structure (0.3 s).
 - To decide for the full version: keep them in the page, or store them next to the page (`docs/data/hybrid3/`) and load one structure when the user presses Open. The second way keeps the page small, but the offline file then needs a connection.
 
 ### Window
@@ -92,4 +92,4 @@ The demo shows the window and the flow. It does not have the job and it does not
 3. Test COD for requests from other sites.
 4. Read the `info.txt` of a HybriD3 download, so that a dropped file also gets its reference.
 5. Decide where the copy lives: in the Crysta repository or in a repository of its own.
-6. Ask the HybriD3 group about the CIFs. HybriD3 gives all its data under CC BY 4.0. But 87 of the 434 CIFs have a CCDC deposition number, and 58 have the access notice of the CCDC. Other CIFs come from the supporting information of a paper. Get the answer of the group before a release that holds the CIFs.
+6. Ask the HybriD3 group about the CIFs. HybriD3 gives all its data under CC BY 4.0. But 87 of the 435 CIFs have a CCDC deposition number, and 58 have the access notice of the CCDC. Other CIFs come from the supporting information of a paper. Get the answer of the group before a release that holds the CIFs.

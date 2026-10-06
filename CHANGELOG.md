@@ -6,7 +6,7 @@ Any change to how a number is defined gets a new version and a line here.
 
 - **Databases window, demo.** The "Databases" button in the page header opens a window with three tabs.
   - **HybriD3 (Duke):** a copy of the entry list, all 642 materials, and of the structure files. A job read them from HybriD3 on 2026-10-06. Search by words and filter by dimensionality. Each data set of an entry opens with one press. An entry with no structure file has a link to its HybriD3 page.
-  - The structure files are the files that HybriD3 gives in the download of each data set. There are 434 CIFs and 222 FHI-aims geometry files, for 615 data sets of 409 materials. If a data set has the two kinds, the window opens the CIFs. A data set with several CIFs (a temperature series) opens as one structure for each file.
+  - The structure files are the files that HybriD3 gives in the download of each data set. There are 435 CIFs and 222 FHI-aims geometry files, for 616 data sets of 410 materials. If a data set has the two kinds, the window opens the CIFs. A data set with several CIFs (a temperature series) opens as one structure for each file.
   - A CIF from HybriD3 has its symmetry and its displacement parameters. A geometry file has none: Crysta then shows the space group "as given by HybriD3".
   - Each entry shows its compound name, its common names (short forms such as pF1PEA2PbI4 first) and its IUPAC name. The Formula column gives the formula unit from the stoichiometry of HybriD3, with C and H first.
   - **2D perovskite database (NMSE)** and **COD:** a link, the steps and the citation. Download the CIF there and drop it on Crysta.
