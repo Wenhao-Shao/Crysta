@@ -17,6 +17,7 @@ jobs:
       - name: Read the HybriD3 API
         run: python3 tools/hybrid3_copy.py data/hybrid3
       - name: Commit the copy
+        if: always()        # also after a failure, so that the log and the part that was read are kept
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
