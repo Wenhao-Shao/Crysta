@@ -70,6 +70,8 @@ Status marks: **done** (released), **next** (agreed, not started), **later** (ag
 | PXRD: preferred orientation (March-Dollase), a peak width that changes with angle, background | later |
 | PXRD: fit of the scale, the 2θ zero and the cell to measured data | later |
 | PXRD: more data formats (.xrdml, .raw, .brml), f′ and f″ at any wavelength, ions, neutrons | later |
+| PXRD: *d* axis on top of the plot, and the shown patterns saved as one CSV table | done, v0.3.1 |
+| Background menu for the whole page: browser default, white or black | done, v0.3.1 |
 | Rail cards that minimize and maximize | done, v0.3.0 |
 | Minimized cards remembered between visits | later |
 | Symmetry elements, voids, contacts shorter than van der Waals | later |

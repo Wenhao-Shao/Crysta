@@ -40,6 +40,32 @@
     for (let v = Math.ceil(a / step - 1e-9) * step; v <= b + step * 1e-9; v += step) out.push(+v.toFixed(10));
     return { step, out, dec: Math.max(0, -Math.floor(Math.log10(step) + 1e-9)) };
   }
+  /* Ticks of the d axis on top of the plot. d = lambda / (2 sin theta) is not linear in 2-theta, so the ticks are
+     round d values: first the multiples of 100, then of 50, 20, 10 and so on. A value gets a tick where it has
+     room, and only where its step is not much finer than that room. Thus no odd value fills a small space. */
+  function dTicks(view, lambda, sx, xl, xr, gap) {
+    const rad = Math.PI / 180;
+    const dOf = (t) => lambda / (2 * Math.sin(t / 2 * rad));
+    const xOf = (d) => sx(2 * Math.asin(lambda / (2 * d)) / rad);
+    const dLo = dOf(Math.min(179.9, view[1])), dHi = dOf(Math.max(0.3, view[0]));
+    const placed = [];
+    for (const step of [100, 50, 20, 10, 5, 2, 1, 0.5, 0.2, 0.1, 0.05, 0.02, 0.01, 0.005, 0.002, 0.001]) {
+      const dec = Math.max(0, -Math.floor(Math.log10(step) + 1e-9));
+      const k0 = Math.ceil(dLo / step - 1e-9);
+      // large d values lie closer together on the plot, so the first 2000 values of a step hold every one that fits
+      for (let k = Math.max(1, k0); k < k0 + 2000 && k * step <= dHi + 1e-9; k++) {
+        const d = k * step;
+        if (lambda / (2 * d) >= 1) continue;
+        const x = xOf(d);
+        // the label must not touch the axis title at the left end
+        if (x < xl + 8 || x > xr + 0.5) continue;
+        if (x - xOf(d + step) < gap / 2) break;          // from here on, the values of this step lie too close together
+        if (placed.some((p) => Math.abs(p.x - x) < gap)) continue;
+        placed.push({ x, text: d.toFixed(dec) });
+      }
+    }
+    return placed;
+  }
   let meter = null;
   const textWidth = (s, px) => {
     if (!meter) meter = document.createElement('canvas').getContext('2d');
@@ -146,7 +172,8 @@
         '<div class="seg" role="group" aria-label="Intensity scale"><button type="button" data-a="lin">Linear</button><button type="button" data-a="sqrt">Square root</button></div>' +
         '<label class="chk"><input type="checkbox" id="pxMarks" data-k="marks">Reflection marks</label>' +
         '<span style="flex:1"></span>' +
-        '<button type="button" data-a="reset">Reset zoom</button><button type="button" data-a="png">Save PNG</button><button type="button" data-a="svg">Save SVG</button></div>' +
+        '<button type="button" data-a="reset">Reset zoom</button><button type="button" data-a="png">Save PNG</button><button type="button" data-a="svg">Save SVG</button>' +
+        '<button type="button" data-a="csv" title="The shown patterns as a table: one 2θ column, then one intensity column for each pattern, for the full 2θ range. Measured data are put on the 2θ grid of the Pattern settings by linear interpolation.">Save CSV</button></div>' +
         '<div class="px-plot" id="pxPlot"></div>' +
         '<div class="small" id="pxNote" aria-live="polite"></div></section>' +
         '<section class="card px-tablecard"><div class="row">' +
@@ -195,6 +222,13 @@
       if (px.float) { px.float.remove(); px.float = null; }
     }
 
+    /* the PXRD window takes the colours of the page: its theme and its Background choice */
+    function copyTheme(doc) {
+      for (const name of ['data-theme', 'data-bg']) {
+        const v = document.documentElement.getAttribute(name);
+        if (v) doc.documentElement.setAttribute(name, v); else doc.documentElement.removeAttribute(name);
+      }
+    }
     function open() {
       if (px.win && !px.win.closed && px.root) { px.win.focus(); return; }
       if (px.float) return;
@@ -211,8 +245,7 @@
             '<title>PXRD: ' + esc(host.name) + '</title>' + (font ? '<link rel="stylesheet" href="' + esc(font.href) + '">' : '') +
             '<style>' + (css ? css.textContent : '') + '</style></head><body class="pxbody"><div id="pxMount" style="height:100%"></div></body></html>');
           doc.close();
-          const theme = document.documentElement.getAttribute('data-theme');
-          if (theme) doc.documentElement.setAttribute('data-theme', theme);
+          copyTheme(doc);
           px.win = w;
           w.addEventListener('pagehide', () => { if (px.win === w) unmount(); });
           mount(doc.getElementById('pxMount'));
@@ -379,6 +412,7 @@
       if (W < 120 || H < 100) return;
       const series = seriesList();
       const ink = toHex(cssVar('--ink')), muted = toHex(cssVar('--muted')), line = toHex(cssVar('--line')), panel = toHex(cssVar('--panel')), accent = toHex(cssVar('--accent'));
+      px.root.querySelectorAll('[data-a="reset"], [data-a="png"], [data-a="svg"], [data-a="csv"]').forEach((b) => { b.disabled = !series.length; });
       if (!series.length) {
         box.innerHTML = '<div class="stage-msg"><strong>No pattern to show</strong><p>Select a reference structure in the list, or add PXRD data.</p></div>';
         px.geo = null;
@@ -398,7 +432,7 @@
         lx += w;
       }
       const markSims = px.marks ? series.filter((s) => s.kind === 'sim') : [];
-      const m = { l: 54, r: 14, t: 10 + (ly + 1) * 18 + 4, b: 40 };
+      const m = { l: 54, r: 14, t: 10 + (ly + 1) * 18 + 4 + 22, b: 40 };   // 22: the d axis above the plot
       const marksH = markSims.length ? markSims.length * 11 + 5 : 0;
       const xl = m.l, xr = W - m.r, yt = m.t, ya = H - m.b, yb = ya - marksH;
       const plotW = xr - xl;
@@ -438,11 +472,11 @@
       } else {
         const bh = (yb - yt) / series.length;
         series.forEach((s, i) => {
-          const base = yt + (i + 1) * bh - 8, head = yt + i * bh + 14;
+          const base = yt + (i + 1) * bh - 8, head = yt + i * bh + 18;
           const top = (topOf(s) || 100) * 1.04;
           const sy = (v) => base - T(v) / T(top) * (base - head);
           out.push('<line x1="' + xl + '" x2="' + xr + '" y1="' + base.toFixed(1) + '" y2="' + base.toFixed(1) + '" stroke="' + line + '" stroke-width="1"/>');
-          out.push('<text x="' + (xr - 4) + '" y="' + (yt + i * bh + 10).toFixed(1) + '" text-anchor="end" fill="' + muted + '" font-size="11">' + esc(short(s.name, 40)) + '</text>');
+          out.push('<text x="' + (xr - 4) + '" y="' + (yt + i * bh + 14).toFixed(1) + '" text-anchor="end" fill="' + muted + '" font-size="11">' + esc(short(s.name, 40)) + '</text>');
           paths.push({ s, d: pathOf(s.X, s.Y, view[0], view[1], sx, sy, plotW) });
         });
         yTitle = 'Intensity (own scale each)';
@@ -479,6 +513,14 @@
         out.push('<line x1="' + x + '" x2="' + x + '" y1="' + ya + '" y2="' + (ya + 5) + '" stroke="' + muted + '" stroke-width="1"/>' +
           '<text x="' + x + '" y="' + (ya + 18) + '" text-anchor="middle" fill="' + muted + '" font-family="' + FONT_DATA + '" font-size="11">' + v.toFixed(xt.dec) + '</text>');
       }
+      // second axis on top: the d spacing for the first wavelength
+      out.push('<line x1="' + xl + '" x2="' + xr + '" y1="' + yt + '" y2="' + yt + '" stroke="' + muted + '" stroke-width="1"/>');
+      for (const t of dTicks(view, px.lambda, sx, xl, xr, 38)) {
+        const x = t.x.toFixed(1);
+        out.push('<line x1="' + x + '" x2="' + x + '" y1="' + yt + '" y2="' + (yt - 5) + '" stroke="' + muted + '" stroke-width="1"/>' +
+          '<text x="' + x + '" y="' + (yt - 9) + '" text-anchor="middle" fill="' + muted + '" font-family="' + FONT_DATA + '" font-size="11">' + t.text + '</text>');
+      }
+      out.push('<text x="' + (xl - 7) + '" y="' + (yt - 9) + '" text-anchor="end" fill="' + ink + '"><tspan font-style="italic">d</tspan> (Å)</text>');
       const waves = 'λ = ' + px.lambda + ' Å' + (px.ka2 ? ' and ' + px.lambda2 + ' Å' : '');
       out.push('<text x="' + ((xl + xr) / 2).toFixed(1) + '" y="' + (H - 6) + '" text-anchor="middle" fill="' + ink + '">2θ (degrees), ' + esc(waves) + '</text>');
       out.push('<text transform="translate(14 ' + ((yt + yb) / 2).toFixed(1) + ') rotate(-90)" text-anchor="middle" fill="' + ink + '">' + yTitle + '</text>');
@@ -743,6 +785,14 @@
       else if (a === 'reset') { px.view = null; draw(); }
       else if (a === 'svg') { const t = svgText(); if (t) save([t], 'image/svg+xml', pictureName() + '.svg'); }
       else if (a === 'png') savePng(b);
+      else if (a === 'csv') {
+        // every shown pattern as a column on one 2-theta column, as plotted: the highest point of each is 100
+        const series = seriesList();
+        if (!series.length) return;
+        const n = Math.round((px.tmax - px.tmin) / px.step) + 1;
+        const text = C.patternsCsv(px.tmin, px.step, n, series.map((s) => ({ name: s.name + (s.kind === 'sim' ? ' (simulated)' : ' (measured)'), X: s.X, Y: s.Y })));
+        save([text], 'text/csv', pictureName() + '.csv');
+      }
       else if (a === 'copy') copyText(tableText(), b);
       else if (a === 'savetbl') save([tableText()], 'text/plain', stem(px.tableDoc.name) + '_reflections.txt');
       else if (a === 'savexy') {
@@ -859,11 +909,7 @@
     }
     function retheme() {
       if (!isOpen()) return;
-      if (px.win) {
-        const theme = document.documentElement.getAttribute('data-theme');
-        const root = px.win.document.documentElement;
-        if (theme) root.setAttribute('data-theme', theme); else root.removeAttribute('data-theme');
-      }
+      if (px.win) copyTheme(px.win.document);
       drawLists();
       draw();
     }

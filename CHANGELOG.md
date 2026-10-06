@@ -2,6 +2,15 @@
 
 Any change to how a number is defined gets a new version and a line here.
 
+## v0.3.1
+
+- **PXRD plot: *d* axis.** A second axis on top of the plot gives the *d* spacing in Å for the first wavelength. Its ticks are round *d* values.
+- **PXRD plot: Save CSV.** The button saves every shown pattern in one table for the full 2θ range. The first column is 2θ. Each shown pattern has one intensity column. A pattern that is not shown has no column. The values are as plotted: the highest point of each pattern is 100, and measured data include their 2θ shift.
+- The 2θ column is the grid of the Pattern settings (range and step). Crysta puts measured data on this grid by linear interpolation. A cell is empty where a pattern has no points.
+- **Background menu.** The page header has a Background menu: Browser default, White or Black. White and Black give the page, the 3D picture, the saved PNG and SVG, and the PXRD window one flat background. White uses the light colours and Black the dark colours. Browser default follows the light or dark setting of the browser, as before. The browser keeps the choice for the next visit.
+
+No definition changed: every number is identical to v0.3.0.
+
 ## v0.3.0
 
 - **Powder XRD window.** The "Powder XRD" button in the page header opens a new browser window. The window shows the simulated powder pattern of each open structure. If the browser blocks the new window, the same content opens as a floating window in the page.

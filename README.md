@@ -28,6 +28,7 @@ Press "Load the sample structures" to load the four built-in samples: (PEA)2PbBr
 | XYZ, extended XYZ | yes | with `Lattice="..."` the cell is used; without it the file is shown as a single molecule with no lattice |
 | Powder data `.xy`, `.xye`, `.csv`, `.txt`, `.dat` | yes | Two columns of text: 2θ in degrees, then intensity. Crysta ignores header lines. The PXRD window shows the data. |
 | Powder pattern `.xy` | write | the simulated pattern on its 2θ grid |
+| Powder patterns `.csv` | write | One 2θ column, then one intensity column for each pattern that the plot shows. |
 | Tripos mol2 | write | the shown block, with the cell |
 | PNG | write | 1×, 2× or 4× the screen size, optional transparent background |
 | SVG | write | vector drawing of the view; every atom, bond and face is a separate editable object |
@@ -54,8 +55,11 @@ Press "Load the sample structures" to load the four built-in samples: (PEA)2PbBr
 - **Powder XRD:** the "Powder XRD" button opens a separate window. Each open structure is a reference: select it
   to show its simulated pattern. The reflection table gives *h k l*, *d*, *F*, 2θ, *I* and the multiplicity.
   Add measured data to compare them with the references, as an overlay or as a stack. Cu Kα1 is the default
-  radiation. Other anodes, a typed wavelength and Kα2 are options. The plot saves as PNG or SVG, the table as
-  text and the simulated pattern as an .xy file.
+  radiation. Other anodes, a typed wavelength and Kα2 are options. The top axis of the plot gives *d* in Å.
+  The plot saves as PNG or SVG, the shown patterns as one CSV table, the reflection table as text and the
+  simulated pattern as an .xy file.
+- **Background:** the Background menu in the page header sets the whole page to the browser default, to white
+  or to black. The 3D picture, the saved pictures and the PXRD window follow.
 - **Panels:** the arrow at the top right of each card in the rail minimizes or maximizes the card.
 - **Export:** a PNG image of the view, an SVG vector drawing of it, or a mol2 file of the shown atoms.
 
@@ -115,6 +119,8 @@ These choices decide the numbers, so they are stated here. Changing any of them 
 | Peak shape | Pseudo-Voigt with one width at every angle. The defaults are FWHM 0.1° and Lorentzian part 0.5. The area of a peak is its *I*. The highest point of the pattern is 100. |
 | Second wavelength | Every reflection occurs again at the angle of λ2. Its intensity is *I* × the intensity ratio × the ratio of the two Lorentz-polarisation factors. |
 | Measured data | Crysta scales each data set so that its highest point in the 2θ range is 100. It subtracts nothing. It adds the 2θ shift to every point. |
+| *d* axis of the PXRD plot | *d* = λ1 / (2 sin θ), for the first wavelength only. |
+| CSV of the PXRD plot | The 2θ column is the grid of the Pattern settings, for the full range. The values are as plotted. Crysta puts measured data on the grid by linear interpolation between the two nearest points. |
 | mol2 atom types | SYBYL types guessed from the element and the number of bonded neighbours; every bond written as single |
 | SVG drawing | the screen view without perspective; objects written back to front by the depth of their centre; of each polyhedron only the faces turned to the viewer |
 
@@ -152,7 +158,8 @@ These choices decide the numbers, so they are stated here. Changing any of them 
 - For a large cell the simulated 2θ range is cut, and the PXRD window says where.
 - Crysta reads measured data from text columns only. It does not read Bruker .raw or .brml files, or PANalytical .xrdml files. It does not fit the simulated pattern to the data.
 - The PXRD window belongs to the Crysta page that opened it. It closes when that page closes. Patterns and data are not kept after that.
-- The page does not remember the minimized cards after it closes.
+- The page does not remember the minimized cards after it closes. It does remember the Background choice.
+- The CSV of the PXRD plot holds measured data after interpolation, not the measured points. Use a step that is not larger than the step of the measurement.
 - The SVG drawing sorts whole objects by depth, so objects that pass through each other (a bond through a polyhedron face, crossing lattice planes) can overlap in the wrong order. It has no perspective and no lighting beyond the shaded atom fill.
 
 ## Develop
