@@ -512,6 +512,8 @@ const formula = (info) => info.formula.map((e) => e.el + e.n).join(' ');
   const list = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data/hybrid3/systems.json'), 'utf8'));
   check('db copy of HybriD3: every material has a number, a name and a stoichiometry that reads', list.length > 600 && new Set(list.map((x) => x.pk)).size === list.length && list.every((x) => x.compound_name && D.hillFormula(x.stoichiometry)));
   delete global.window;
+}
+
 // a CIF with several data blocks: every block that holds atoms is a structure of its own
 {
   const cifOf = (f) => fs.readFileSync(path.join(__dirname, 'cifs', f), 'utf8');
