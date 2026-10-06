@@ -25,31 +25,52 @@ dbs = (root / "src/dbs.js").read_text()
 # list names are put into it as text, so the page needs no other file.
 h3 = root / "data/hybrid3"
 h3info = json.loads((h3 / "copy-info.json").read_text())
-h3structures = json.loads((h3 / "demo-structures.json").read_text())["structures"]
-# number of "atomic structure" data sets of each material, when the copy has the list of data sets
-h3count = {}
-if (h3 / "datasets.json").exists():
-    for ds in json.loads((h3 / "datasets.json").read_text()):
-        if ds.get("property") == "atomic structure":
-            h3count[ds.get("system")] = h3count.get(ds.get("system"), 0) + 1
+
+
+def h3reference(e):
+    """A short reference of a structure data set: first author, journal, volume, page, year."""
+    ref = e.get("reference") or {}
+    authors = (e.get("citation") or "").split('"')[0].strip().rstrip(",")
+    first = authors.split(",")[0].strip()
+    who = (first + (" et al." if "," in authors else "")) if first else ""
+    where = " ".join(x for x in [ref.get("journal"), (str(ref["vol"]) + ",") if ref.get("vol") else "", str(ref.get("pages_start") or "")] if x)
+    year = " (%s)" % ref["year"] if ref.get("year") else ""
+    text = ", ".join(x for x in [who, where.strip().rstrip(",")] if x) + year
+    doi = (ref.get("doi_isbn") or "").strip()
+    return text.strip(), (doi if doi.startswith("10.") else "")
+
+
+def h3temperature(e):
+    t = (e.get("temperature") or "").strip()
+    return t[:-2] if t.endswith(".0") else t
+
+
+# the structure data sets of each material, and the text of each structure file
+h3by, h3texts = {}, {}
+for e in (json.loads((h3 / "structures.json").read_text()) if (h3 / "structures.json").exists() else []):
+    f = h3 / "structures" / ("%d.in" % e["pk"])
+    if not (e.get("has_file") and f.exists()):
+        continue
+    # the file without comment lines and spare spaces: the numbers are not changed
+    lines = [" ".join(ln.split("#")[0].split()) for ln in f.read_text().splitlines()]
+    h3texts[str(e["pk"])] = "\n".join(ln for ln in lines if ln) + "\n"
+    ref, doi = h3reference(e)
+    h3by.setdefault(e.get("system"), []).append({
+        "dataset": e["pk"], "spaceGroup": e.get("space_group") or "", "temperature": h3temperature(e), "experimental": bool(e.get("is_experimental")),
+        "sample": e.get("sample_type") or "", "caption": e.get("caption") or "", "main": bool(e.get("representative")), "reference": ref, "doi": doi})
 h3materials = []
 for sy in json.loads((h3 / "systems.json").read_text()):
-    mine = []
-    for st in h3structures:
-        if st["system"] == sy["pk"]:
-            one = {k: v for k, v in st.items() if k not in ("file", "system")}
-            one["text"] = (h3 / st["file"]).read_text()
-            mine.append(one)
+    mine = sorted(h3by.get(sy["pk"], []), key=lambda x: (not x["main"], not x["experimental"], x["dataset"]))
     h3materials.append({
         "pk": sy["pk"], "name": sy.get("compound_name") or "", "iupac": sy.get("iupac") or "", "aliases": sy.get("group") or "",
         "formula": sy.get("formula") or "", "stoich": sy.get("stoichiometry") or "",
         "organic": "" if (sy.get("organic") or "") == "None" else (sy.get("organic") or ""), "inorganic": sy.get("inorganic") or "",
-        "dim": sy.get("dimensionality"), "n": sy.get("n") or "", "updated": sy.get("last_update") or "",
-        "onSite": h3count.get(sy["pk"]) if h3count else None, "structures": mine})
+        "dim": sy.get("dimensionality"), "n": sy.get("n") or "", "updated": sy.get("last_update") or "", "structures": mine})
 databases = json.dumps({
     "id": "hybrid3", "name": "HybriD3 materials database", "home": "https://materials.hybrid3.duke.edu/", "licence": "CC BY 4.0",
     "licenceUrl": "https://creativecommons.org/licenses/by/4.0/", "read": h3info["read"], "total": len(h3materials), "demo": True,
-    "materials": h3materials}, ensure_ascii=False)
+    "structuresOnSite": h3info.get("structures_stated"), "materials": h3materials}, ensure_ascii=False, separators=(",", ":"))
+dbstructures = json.dumps(h3texts, ensure_ascii=False, separators=(",", ":"))
 table = (root / "src/sg-table.json").read_text()
 # built-in samples: file in examples/, name shown in the page
 SAMPLES = [
@@ -60,11 +81,11 @@ SAMPLES = [
 ]
 samples = json.dumps([{"name": shown, "text": (root / "examples" / f).read_text()} for f, shown in SAMPLES])
 lib = (root / "vendor/3Dmol-min.js").read_text()
-for part in (core, pxrd, dbs, table, lib, samples, databases):
+for part in (core, pxrd, dbs, table, lib, samples, databases, dbstructures):
     assert "</script" not in part.lower() and "<!--" not in part
 
 body = (template.replace("/*__CORE__*/", core).replace("/*__PXRD__*/", pxrd).replace("/*__DBS__*/", dbs).replace("__SAMPLES__", samples)
-        .replace("__DATABASES__", databases)
+        .replace("__DATABASES__", databases).replace("__DBSTRUCTURES__", dbstructures)
         .replace("__SGTABLE__", table).replace("__VERSION__", "v" + version)
         .replace("__NAME__", name).replace("__TAGLINE__", tagline)
         .replace("__HOMEPAGE__", pkg["homepage"]))

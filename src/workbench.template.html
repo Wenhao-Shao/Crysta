@@ -317,7 +317,9 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
 .db-tag { font-style: normal; font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; border: 1px solid var(--line); border-radius: 3px; padding: 0 4px; margin-right: 6px; }
 .db-table td .small span[title] { text-decoration: underline dotted; cursor: help; }
 .db-table td:nth-child(2) { font-family: var(--font-data); font-size: 12.5px; }
-.db-act { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; white-space: nowrap; }
+.db-act { display: grid; gap: 4px; justify-items: start; }
+.db-one { display: flex; flex-wrap: wrap; gap: 2px 8px; align-items: center; }
+.db-one .small { display: inline !important; }
 .db-act a, .db-link a:not(.homelink), .db-panel > .small a, .sub a, dd a { color: var(--accent); text-underline-offset: 2px; }
 .db-link { display: grid; gap: 8px; align-content: start; max-width: 68ch; overflow-y: auto; }
 .db-link h2 { font-family: var(--font-display); font-size: 18px; letter-spacing: 0; text-transform: none; color: var(--ink); }
@@ -609,6 +611,7 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
 
 <script type="application/json" id="samples">__SAMPLES__</script>
 <script type="application/json" id="db-hybrid3">__DATABASES__</script>
+<script type="application/json" id="db-hybrid3-structures">__DBSTRUCTURES__</script>
 <script type="application/json" id="sg-table">__SGTABLE__</script>
 <!--LIB-->
 <script>
@@ -660,7 +663,13 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
   /* the Databases window: find a structure in an outside database and open it here (src/dbs.js) */
   let dbCopy = null;
   try { dbCopy = JSON.parse($('db-hybrid3').textContent); } catch (err) { /* no database copy in this page */ }
-  const dbs = window.CrystaDatabases ? window.CrystaDatabases.create({ data: dbCopy, addFiles: (list) => addFiles(list), name: NAME, version: '__VERSION__' }) : null;
+  /* the structure files of the copy: a large text, read only when the user opens the first structure */
+  let dbTexts = null;
+  const dbText = (dataset) => {
+    if (!dbTexts) { try { dbTexts = JSON.parse($('db-hybrid3-structures').textContent); } catch (err) { dbTexts = {}; } }
+    return dbTexts[dataset] || null;
+  };
+  const dbs = window.CrystaDatabases ? window.CrystaDatabases.create({ data: dbCopy, structureText: dbText, addFiles: (list) => addFiles(list), name: NAME, version: '__VERSION__' }) : null;
   const safeUrl = (u) => (/^https?:\/\//i.test(String(u || '')) ? String(u) : '#');
   /* a file that is not a structure but holds two columns of numbers is taken as measured powder data */
   const isPowderData = (text) => { try { return C.readXY(text).x.length >= 20; } catch (err) { return false; } };

@@ -473,7 +473,7 @@ const formula = (info) => info.formula.map((e) => e.el + e.n).join(' ');
 // FHI-aims geometry.in, the structure format of the HybriD3 database. The file is data set 2008 of HybriD3
 // (4-fluorophenethylammonium lead iodide, Hu et al., Nat. Commun. 10, 1276, 2019; CC BY 4.0).
 {
-  const file = path.join(__dirname, '..', 'data/hybrid3/2008-geometry.in');
+  const file = path.join(__dirname, 'files/hybrid3_2008_geometry.in');
   const text = fs.readFileSync(file, 'utf8');
   const s = X.readStructure(text, 'geometry.in');
   const uc = X.buildCell(s, {});

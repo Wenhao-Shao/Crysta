@@ -5,12 +5,12 @@ Any change to how a number is defined gets a new version and a line here.
 ## v0.4.0-demo (not released)
 
 - **Databases window, demo.** The "Databases" button in the page header opens a window with three tabs.
-  - **HybriD3 (Duke):** a copy of the entry list, all 642 materials. A job read it from the HybriD3 API on 2026-10-06. Search by words and filter by dimensionality. One entry, data set 2008, has its structure in the page and opens with one press. Each other entry has a link to its HybriD3 page.
+  - **HybriD3 (Duke):** a copy of the entry list, all 642 materials, and of the structure files. A job read them from HybriD3 on 2026-10-06. Search by words and filter by dimensionality. Each structure of an entry opens with one press. An entry with no structure has a link to its HybriD3 page.
   - Each entry shows its compound name, its common names (short forms such as pF1PEA2PbI4 first) and its IUPAC name. The Formula column gives the formula unit from the stoichiometry of HybriD3, with C and H first.
   - **2D perovskite database (NMSE)** and **COD:** a link, the steps and the citation. Download the CIF there and drop it on Crysta.
 - A structure from a database shows its source, licence and reference under the title and in the Crystal data card.
 - Crysta reads FHI-aims `geometry.in` files, the structure format of HybriD3.
-- `tools/hybrid3_copy.py` makes the copy. A GitHub job runs it, because a browser page cannot read the HybriD3 API.
+- `tools/hybrid3_copy.py` makes the copy. It reads each structure from the download that HybriD3 gives for the data set (a zip with an FHI-aims geometry file). A GitHub job runs it, because a browser page cannot read HybriD3: the server sends no `Access-Control-Allow-Origin` header for the API and for the downloads.
 - The plan for the full version is in `design/2026-10-05-database-browser.md`.
 
 No definition changed: every number is identical to v0.3.2.

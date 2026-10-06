@@ -174,7 +174,7 @@ node tests/run.js     # regression tests for src/core.js
 - `src/workbench.template.html`: the page and its interface code.
 - `src/pxrd.js`: the PXRD window (plot, reflection table, measured data). It gets its numbers from `core.js`.
 - `src/dbs.js`: the Databases window (demo). `design/` holds the design notes.
-- `tools/hybrid3_copy.py`: copies the HybriD3 entry list from its API into `data/hybrid3/`. The job `.github/workflows/hybrid3-copy.yml` runs it. `build.py` puts the copy into the page.
+- `tools/hybrid3_copy.py`: copies the HybriD3 entry list and the structure files into `data/hybrid3/`. The job `.github/workflows/hybrid3-copy.yml` runs it. `build.py` puts the copy into the page.
 - `src/sg-table.json`: Hermann–Mauguin symbol to Hall symbol, for CIFs that list no operators.
 - `examples/`: the CIFs embedded as built-in samples. The reflection list was removed from the
   (FCA3)2PbBr4 file (CCDC 2485416) to keep the page small, and its CCDC number was added as a data item.

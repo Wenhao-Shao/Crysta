@@ -1,5 +1,5 @@
 /* Databases window: find a structure in an outside database and open it in Crysta.
-   DEMO. One database has a copy inside the page: the entry list of HybriD3, with the structure of one entry.
+   DEMO. One database has a copy inside the page: the entry list of HybriD3 and the structure files of its data sets.
    The other databases are links: the user downloads the file there and drops it on Crysta.
    Crysta cannot read these databases directly from a browser (they do not allow requests from other sites),
    so the entry list is a copy. tools/hybrid3_copy.py makes it from the HybriD3 API, and build.py puts it in the page.
@@ -11,7 +11,7 @@
   /* a formula with its numbers as subscripts: C16H22N2F2PbI4 */
   const formulaHtml = (f) => esc(f).replace(/([A-Za-z\)\]])(\d+(?:\.\d+)?)/g, '$1<sub>$2</sub>');
   /* "P21/c" as HybriD3 writes it, with a space after the lattice letter so that Crysta can set the symbol */
-  const sgSpaced = (s) => String(s || '').trim().replace(/^([PABCIFR])(?=\S)/, '$1 ');
+  const sgSpaced = (s) => String(s || '').trim().replace(/\((\d)\)/g, '$1').replace(/^([PABCIFR])(?=\S)/, '$1 ');
   /* the dimensionality values as HybriD3 gives them */
   const DIMS = [['', 'All'], ['2', '2D'], ['2.5', '2.5D'], ['3', '3D'], ['1', '1D'], ['0', '0D']];
   const dimText = (d) => (d === null || d === undefined || d === '' ? '' : d + 'D');
@@ -91,6 +91,9 @@
     }
     const pageOf = (m) => db.home + 'materials/' + m.pk;
     const withFile = () => db.materials.filter((m) => m.structures.length).length;
+    const nStructures = () => db.materials.reduce((t, m) => t + m.structures.length, 0);
+    /* one structure of an entry in words: P21/c, 300 K, experiment */
+    const structureText = (s) => [sgSpaced(s.spaceGroup).replace(' ', ''), s.temperature ? s.temperature + ' K' : '', s.experimental ? 'experiment' : 'calculation', s.caption].filter(Boolean).join(', ');
 
     function hybridPanel() {
       const n = withFile();
@@ -101,8 +104,9 @@
         '<span class="small" id="dbCount" aria-live="polite"></span></div>' +
         '<div class="tbl-wrap db-table"><table id="dbTbl"></table></div>' +
         '<div class="small">Data: <a href="' + esc(db.home) + '" target="_blank" rel="noopener">' + esc(db.name) + '</a>, Duke University. Licence: <a href="' + esc(db.licenceUrl) + '" target="_blank" rel="noopener">' + esc(db.licence) + '</a>. ' +
-        'The list is a copy of all ' + db.total + ' materials, read on ' + esc(db.read) + '. <strong>Demo:</strong> ' + n + (n === 1 ? ' entry has its' : ' entries have their') + ' structure in this page. ' +
-        'For each other entry, the link opens its HybriD3 page. Download the files there and drop <code>geometry.in</code> on ' + esc(host.name) + '.</div>';
+        'The list is a copy of all ' + db.total + ' materials, read on ' + esc(db.read) + '. ' + n + ' of them have ' + nStructures() + ' structures in this page' +
+        (db.structuresOnSite ? ' (HybriD3 lists ' + db.structuresOnSite + ')' : '') + '. An entry with no structure here has a link to its HybriD3 page. ' +
+        'If you use a structure, cite the reference that ' + esc(host.name) + ' shows with it.</div>';
     }
     function nameCell(m) {
       const c = m.names.common;
@@ -118,9 +122,9 @@
       q('#dbCount').textContent = list.length + (list.length === 1 ? ' entry' : ' entries');
       tbl.innerHTML = '<thead><tr><th>Material</th><th title="The formula unit: the elements and their numbers as HybriD3 gives them, C and H first">Formula</th><th>Dim.</th><th><i>n</i></th><th>Structure</th></tr></thead><tbody>' +
         (list.length ? list.map((m) => {
-          const open = m.structures.map((s, i) => '<button type="button" class="mini primary" data-open="' + m.pk + ':' + i + '" title="Open this structure in ' + esc(host.name) + '">Open</button>' +
-            '<span class="small">' + esc([sgSpaced(s.spaceGroup).replace(' ', ''), s.temperature ? s.temperature + ' K' : '', s.experimental ? 'experiment' : 'calculation'].filter(Boolean).join(', ')) + '</span>').join('');
-          const on = typeof m.onSite === 'number' ? '<span class="small">' + (m.onSite ? m.onSite + (m.onSite === 1 ? ' structure' : ' structures') : 'no structure') + ' on HybriD3</span>' : '';
+          const open = m.structures.map((s, i) => '<div class="db-one"><button type="button" class="mini primary" data-open="' + m.pk + ':' + i + '" title="Open data set ' + s.dataset + ' in ' + esc(host.name) + '">Open</button>' +
+            '<span class="small">' + esc(structureText(s)) + '</span></div>').join('');
+          const on = '';
           return '<tr><td>' + nameCell(m) + '</td>' +
             '<td>' + formulaHtml(m.names.hill || m.formula) + '</td><td>' + esc(dimText(m.dim)) + '</td><td>' + esc(m.n || '') + '</td>' +
             '<td><div class="db-act">' + open + '<a href="' + esc(pageOf(m)) + '" target="_blank" rel="noopener" title="The page of this material in the HybriD3 database">HybriD3 page ↗</a>' + on + '</div></td></tr>';
@@ -147,10 +151,11 @@
       const [pk, i] = key.split(':');
       const m = db.materials.find((x) => String(x.pk) === pk);
       const s = m && m.structures[+i];
-      if (!s || !s.text) return;
+      const text = s ? host.structureText(String(s.dataset)) : null;
+      if (!text) return;
       const short = m.names.common[0] || m.name;
       host.addFiles([{
-        name: short + ', HybriD3 ' + s.dataset + '.in', text: s.text,
+        name: short + ', HybriD3 ' + s.dataset + '.in', text,
         // where the structure comes from: shown with the structure, so that the credit goes with it
         origin: {
           database: 'HybriD3', entry: 'data set ' + s.dataset, url: db.home + 'materials/dataset/' + s.dataset, licence: db.licence, licenceUrl: db.licenceUrl,

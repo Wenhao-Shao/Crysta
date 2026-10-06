@@ -32,30 +32,32 @@ The demo shows the window and the flow. It does not have the job and it does not
 - `src/core.js`: `readAims` reads `geometry.in` (`lattice_vector`, `atom`, `atom_frac`).
 - `tools/hybrid3_copy.py` and the job `.github/workflows/hybrid3-copy.yml`: read the list of materials from the API and commit it. The job runs on GitHub because this is where the network is open.
 - `data/hybrid3/systems.json`: all 642 materials, exactly as the API gave them on 2026-10-06.
-- `data/hybrid3/2008-geometry.in` and `demo-structures.json`: the structure of data set 2008, the one entry of the demo that opens in Crysta.
-- `build.py` puts the copy into the page, so the offline file works too. The copy adds about 250 kB to the page.
+- `data/hybrid3/structures.json` and `data/hybrid3/structures/<data set>.in`: every "atomic structure" data set, and its geometry file from the download of HybriD3.
+- `build.py` puts the entry list and the structure files into the page, so the offline file works too. The page reads the structure files only when the user opens the first structure.
 - Each entry shows the compound name, the common names and the IUPAC name. The formula is the formula unit from the stoichiometry field, with C and H first.
 
-### What the first run of the job showed
+### What the runs of the job showed
 
 - The list of materials needs 7 requests and some seconds.
-- The list of data sets is slow. With 20 data sets for each page, page 12 did not answer in 180 s, three times. The job read 220 of 2,093 data sets before that.
-- The full version must read the data sets in a different way: one data set for each request, or the file link of each data set, with a long wait and a record of where it stopped.
+- The list of all data sets is slow. With 20 data sets for each page, page 12 did not answer in 180 s, three times.
+- The list takes a filter: `?primary_property__name=atomic+structure` gives the 786 structure data sets. `?system=<material>` gives the data sets of one material.
+- The download of a data set, `/materials/datasets/<n>/files/`, is a zip with `info.txt` and one FHI-aims geometry file. The name of the geometry file is not fixed. There is no CIF in it.
+- The download sends no `Access-Control-Allow-Origin` header. A browser page can start the download, but it cannot read the file. So the job reads the downloads, and the page gets the copy.
+- The server stops for a time now and then: a request that needs 0.2 s can need 20 s to 120 s. The script tries again, goes on after a failure, and a second run reads only what is missing.
 
 ## The full version
 
 ### Job
 
-- The script calls `/materials/systems/` page by page (done). It then reads the data sets and keeps those whose property is "atomic structure" (not done: see the note on the first run).
+- The script calls `/materials/systems/` page by page. It then lists the "atomic structure" data sets in small pages and reads each structure from the download of its data set. Done in `tools/hybrid3_copy.py`.
 - For each such data set it stores the data set number, the material number, the space group and the temperature. It also stores the origin (experiment or calculation), the sample type, the reference with its DOI, and the structure as `geometry.in` text.
-- A GitHub Action runs the script once a week and commits the result. A run that fails changes nothing.
+- A GitHub Action runs the script and commits the result. To do: a weekly schedule, on the main branch.
 - The script stops if the number of materials falls by more than 10 % against the last copy. This protects the copy from a broken answer of the server.
 
 ### Files
 
-- `docs/data/hybrid3/index.json`: the entry list. The page loads it when the user opens the window.
-- `docs/data/hybrid3/<data set>.in`: one structure each. The page loads one when the user presses Open.
-- The offline file loads the same files from the published address. Without a connection the window says so and shows the links only.
+- The demo puts the entry list and every structure file into the page. This makes the page larger for each visitor.
+- To decide for the full version: keep them in the page, or store them next to the page (`docs/data/hybrid3/`) and load one structure when the user presses Open. The second way keeps the page small, but the offline file then needs a connection.
 
 ### Window
 

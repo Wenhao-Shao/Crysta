@@ -694,7 +694,8 @@
     const base = String(name || '').replace(/^.*[\\/]/, '').toUpperCase();
     if (e === 'res' || e === 'ins') return readShelx(text);
     if (e === 'xyz' || e === 'extxyz') return readXyz(text);
-    if (e === 'in' || /^\s*(lattice_vector|atom(_frac)?)\s+-?[\d.]/m.test(text)) return readAims(text);
+    // a geometry.in file is known by its lines, not by its name: some databases give a CIF under that name
+    if (/^\s*(lattice_vector|atom(_frac)?)\s+-?[\d.]/m.test(text) && !/_atom_site_fract_x/.test(text)) return readAims(text);
     if (e === 'vasp' || e === 'poscar' || /^(POSCAR|CONTCAR)/.test(base)) return readPoscar(text);
     if (/^\s*(#|data_)/m.test(text) && /_atom_site_fract_x/.test(text)) return readCif(text);
     if (/^\s*CELL\s+[\d.]+/m.test(text) && /^\s*SFAC\s/m.test(text)) return readShelx(text);
