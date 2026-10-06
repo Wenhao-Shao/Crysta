@@ -40,7 +40,7 @@ Press "Load the sample structures" to load the four built-in samples: (PEA)2PbBr
 - **Viewer:** ball and stick, space-filling or sticks; atom size and bond width sliders; five element colour schemes; two-tone or gradient bonds; coordination polyhedra; hydrogen bonds; molecule
   and framework toggles; atom labels; packing limits in cell fractions; views down a cell axis, a [uvw]
   direction or an (hkl) normal; lattice planes with an offset.
-- **Measure:** click atoms for a distance (two), an angle (three, at the second) or a torsion (four). Remove one from the list in the Measure card or by a right-click on it in the picture; Clear removes all.
+- **Measure:** click atoms for a distance (two), an angle (three, at the second) or a torsion (four). The picture marks the measured atoms. Remove a measurement with its × in the Measure card or by a right-click on it in the picture.
 - **Planes:** make a plane through three or more atoms, or a lattice plane (*hkl*) through one atom. Then click one atom for its distance from the plane, or two atoms for the angle between their line and the plane. Crysta gives the angle between each two planes, and the lattice plane (*hkl*) that is nearest to a plane through atoms.
 - **Polyhedra:** automatic around metal centres, and your own: choose a centre element, the corner elements and a distance in the Polyhedra card, or click a centre and a corner in the picture. Press a row to set colour, opacity and edges.
 - **Element appearance:** press an element in the legend to set its colour, size and opacity.
@@ -112,7 +112,7 @@ These choices decide the numbers, so they are stated here. Changing any of them 
 | Hydrogen bond | N–H or O–H donor; H···A at least 0.15 Å inside the Bondi van der Waals sum and D–H···A above 120°; acceptors are O and N of another molecule and halide, O, N or S anions |
 | Torsion | −180° to 180°, positive when the far bond is clockwise from the near bond looking down the central bond |
 | Plane through atoms | The least-squares plane through the clicked atoms: it goes through their centroid, and its normal is the direction of least spread. The rms is the root-mean-square distance of these atoms from the plane. |
-| Lattice plane through an atom | The plane through the clicked atom with its normal along the reciprocal vector *h* **a**\* + *k* **b**\* + *l* **c**\*. The layer plane is this plane for the (*hkl*) of the layers. |
+| Lattice plane through an atom | The plane through the clicked atom with its normal along the reciprocal vector *h* **a**\* + *k* **b**\* + *l* **c**\*. For a layered structure, the *h*, *k*, *l* boxes start at the (*hkl*) of the layers. |
 | Atom to plane | The distance of the atom from the plane along the normal, in Å. It is + on the side that the normal points to. For a plane through atoms, the normal follows the order of the clicks. |
 | Bond to plane | The angle between the line through the two atoms and the plane, 0° to 90°. 0° is a line in the plane. 90° minus this value is the angle to the normal. |
 | Plane to plane | The angle between the two normals, 0° to 90° |

@@ -5,7 +5,7 @@ Any change to how a number is defined gets a new version and a line here.
 ## v0.5.0
 
 - **Planes in the Measure card.** Make a plane, then measure against it.
-  - A plane goes through three or more atoms that you click (the least-squares plane, with its rms distance). Or it is a lattice plane (*hkl*) through one atom that you click. For a layered structure, "Layer plane" gives the plane of the layers through an atom.
+  - A plane goes through three or more atoms that you click (the least-squares plane). Or it is a lattice plane (*hkl*) through one atom that you click. For a layered structure, the *h*, *k*, *l* boxes start at the plane of the layers.
   - **Atom to plane:** click one atom for its distance from the plane. The sign is + on the side of the short line that the plane shows in the picture.
   - **Bond to plane:** click two atoms for the angle between their line and the plane, 0° to 90°.
   - Crysta gives the angle between each two planes, 0° to 90°.
@@ -25,7 +25,9 @@ Any change to how a number is defined gets a new version and a line here.
   - While a row glows, each polyhedron is drawn as its edges only: its faces hide the bonds inside.
   - A saved PNG shows the glow at one fixed strength. If the system asks for less motion, the glow does not move.
   - If the packing box cuts a bridge, the part inside the box glows.
-- **The lattice plane nearest to a plane through atoms.** For each plane through atoms, the Planes list gives the nearest (*hkl*) and the angle between the two planes. "Set h k l" puts these indexes in the boxes.
+- **The lattice plane nearest to a plane through atoms.** For each plane through atoms, the Planes list gives the nearest (*hkl*) and the angle between the two planes.
+- **Measured atoms keep a highlight.** After a distance, an angle, a torsion or a plane measurement, the picture marks the atoms and the lines between them. The highlight does not move.
+- **Measure card:** each measurement and each plane has a × to remove it. The Clear button is gone from the card: the strip under the picture and the right-click menu still remove all measurements. The lists use the main font of the page.
 - **Powder XRD:** an arrow at the top right of the reflection table minimizes or maximizes it, as on the side panels. With the table minimized, the plot has the height.
 
 New definitions (see the README): plane through atoms, lattice plane through an atom, nearest lattice plane, atom to plane, bond to plane, plane to plane. No other definition changed: every other number is identical to v0.4.0.

@@ -117,11 +117,10 @@ button.chip[aria-expanded="true"] { border-color: var(--accent); }
 .elchips button { padding: 2px 9px; font-family: var(--font-data); font-size: 12.5px; border-radius: 999px; }
 .pprev { font-size: 13px; }
 .pprev.warn { color: var(--warn); }
-.mlist { display: grid; gap: 4px; }
-.mlist .mrow { display: flex; align-items: center; gap: 8px; font-family: var(--font-data); font-size: 12.5px; font-variant-numeric: tabular-nums; }
-.mlist .mrow button { margin-left: auto; }
-#mpList { min-width: 0; }
-#mpList .mrow > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mlist { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; min-width: 0; }
+.mlist .mrow { display: flex; align-items: center; gap: 8px; font-family: var(--font-ui); font-size: 13px; font-variant-numeric: tabular-nums; }
+.mlist .mrow > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mlist .mrow .xbtn { margin-left: auto; margin-right: 0; padding: 0 2px; flex: none; }
 #mpList .mrow label { display: inline-flex; align-items: center; gap: 5px; flex: none; }
 .subhead { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-top: 4px; }
 /* a row of the framework card that shows its atoms in the picture */
@@ -512,12 +511,9 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
         </div>
         <div class="small" id="measHint">Click two atoms in the picture.</div>
         <div class="mlist" id="measList"></div>
-        <div class="row"><button type="button" id="measClear" disabled>Clear</button><span class="small">Right-click a measurement in the picture to remove it.</span></div>
+        <div class="small">Press × to remove a measurement, or right-click it in the picture.</div>
         <div class="subhead">Planes</div>
-        <div class="row">
-          <button type="button" id="mpAtoms">Plane through atoms</button>
-          <button type="button" id="mpLayer" hidden title="A plane parallel to the layers, through an atom that you click">Layer plane</button>
-        </div>
+        <div class="row"><button type="button" id="mpAtoms">Plane through atoms</button></div>
         <div class="idx">
           <label><em>h</em><input type="number" id="mpH" step="1" value="0"></label>
           <label><em>k</em><input type="number" id="mpK" step="1" value="0"></label>
@@ -895,6 +891,8 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
       return;
     }
     $('chkMinor').checked = d.minor;
+    // the h, k, l boxes of the Planes part start at the lattice plane of the layers, if the structure has layers
+    if (d.info.framework && d.info.framework.dim === 2) ['mpH', 'mpK', 'mpL'].forEach((id, k) => { $(id).value = d.info.framework.hkl[k]; });
     drawHeader();
     drawSheet();
     drawRanges();
@@ -1467,8 +1465,9 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
      A plane goes through three or more atoms that the user clicks (least squares), or it is a lattice plane (hkl)
      through one atom. "Atom to plane" and "Bond to plane" measure against the chosen plane. */
   const mplaneOf = (d, id) => d.mplanes.find((p) => p.id === id) || null;
-  const mplaneText = (p) => (p.kind === 'atoms' ? 'through ' + p.labels.join(' ') + ', rms ' + fmt(p.plane.rms, 3) + ' Å'
-    : (p.layer ? 'layer plane ' : '') + '(' + p.hkl.join(' ') + ') through ' + p.labels[0]);
+  const mplaneText = (p) => (p.kind === 'atoms' ? 'through ' + p.labels.join(' ') : '(' + p.hkl.join(' ') + ') through ' + p.labels[0]);
+  /* the full text of a plane, for its tooltip: with the rms distance of the atoms from a plane through atoms */
+  const mplaneTip = (p) => 'Plane ' + p.id + ' ' + mplaneText(p) + (p.kind === 'atoms' ? '. The rms distance of these atoms from the plane is ' + fmt(p.plane.rms, 3) + ' Å.' : '');
   const mplaneFull = () => 'A structure can have ' + MAX_MPLANES + ' planes. Remove one first.';
   function addMplane(d, entry) {
     const id = String.fromCharCode(65 + (d.mplaneSeq % 26));
@@ -1492,9 +1491,9 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
     if (d.mplanes.length >= MAX_MPLANES) { st.notice = mplaneFull(); drawReadout(); return; }
     let pick = { kind: 'atoms', atoms: [] };
     if (kind !== 'atoms') {
-      const hkl = kind === 'layer' ? d.info.framework.hkl.slice() : ['mpH', 'mpK', 'mpL'].map((id) => Math.round(+$(id).value) || 0);
+      const hkl = ['mpH', 'mpK', 'mpL'].map((id) => Math.round(+$(id).value) || 0);
       if (!hkl.some((x) => x !== 0)) { st.notice = 'Give h, k and l. One of them must not be 0.'; drawReadout(); return; }
-      pick = { kind: 'hkl', hkl, layer: kind === 'layer' };
+      pick = { kind: 'hkl', hkl };
     }
     st.picking = null;
     st.polyPick = null;
@@ -1525,7 +1524,7 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
     if (pk.kind === 'hkl') {
       st.planePick = null;
       const plane = C.planeOfHkl(d.uc.cell, pk.hkl, p);
-      if (plane) addMplane(d, { kind: 'hkl', hkl: pk.hkl, layer: pk.layer, labels: [atom.xl], pts: [p], plane });
+      if (plane) addMplane(d, { kind: 'hkl', hkl: pk.hkl, labels: [atom.xl], pts: [p], plane });
       return;
     }
     // clicking a picked atom again takes it back
@@ -1535,18 +1534,16 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
   function drawMeasures() {
     const d = D();
     const ms = d ? d.measures : [];
-    $('measList').innerHTML = ms.map((m, i) => '<div class="mrow"><span>' + esc(measureText(m)) + '</span><button type="button" class="mini" data-mrm="' + i + '" aria-label="Remove ' + esc(measureText(m)) + '">Remove</button></div>').join('');
-    $('measClear').disabled = !ms.length && !(d && d.picks.length);
+    const cross = (attr, what) => '<button type="button" class="xbtn" ' + attr + ' aria-label="Remove ' + esc(what) + '" title="Remove">×</button>';
+    $('measList').innerHTML = ms.map((m, i) => '<div class="mrow"><span title="' + esc(measureText(m)) + '">' + esc(measureText(m)) + '</span>' + cross('data-mrm="' + i + '"', measureText(m)) + '</div>').join('');
     // the planes, the one that the measurements use, and the angle between each two planes
     const planes = d ? d.mplanes : [];
     $('measAPlane').disabled = !planes.length;
     $('measBPlane').disabled = !planes.length;
-    $('mpLayer').hidden = !(d && d.info.framework && d.info.framework.dim === 2);
     const rows = planes.map((p) => '<div class="mrow"><label title="Measure against plane ' + p.id + '"><input type="radio" name="mpSel" value="' + p.id + '"' + (p.id === d.mplaneSel ? ' checked' : '') + '>' +
-      '<i class="sw" style="background:' + p.color + '"></i><b>' + p.id + '</b></label><span title="' + esc(mplaneText(p)) + '">' + esc(mplaneText(p)) + '</span>' +
-      '<button type="button" class="mini" data-mprm="' + p.id + '" aria-label="Remove plane ' + p.id + '">Remove</button></div>' +
+      '<i class="sw" style="background:' + p.color + '"></i><b>' + p.id + '</b></label><span title="' + esc(mplaneTip(p)) + '">' + esc(mplaneText(p)) + '</span>' + cross('data-mprm="' + p.id + '"', 'plane ' + p.id) + '</div>' +
       (p.near ? '<div class="mrow"><span title="The lattice plane with the smallest indexes that is within 1° of plane ' + p.id + '. If no plane is that near, the nearest plane with indexes up to 6.">Plane ' + p.id + ' is ' +
-        fmt(p.near.angle, 2) + '° from (' + p.near.hkl.join(' ') + ')</span><button type="button" class="mini" data-mpuse="' + p.id + '" title="Put these indexes in the h, k, l boxes">Set h k l</button></div>' : ''));
+        fmt(p.near.angle, 2) + '° from (' + p.near.hkl.join(' ') + ')</span></div>' : ''));
     for (let i = 0; i < planes.length; i++) for (let j = i + 1; j < planes.length; j++) {
       rows.push('<div class="mrow"><span>Plane ' + planes[i].id + ' to plane ' + planes[j].id + ' ' + fmt(C.planePlaneAngle(planes[i].plane, planes[j].plane), 2) + '°</span></div>');
     }
@@ -1605,7 +1602,7 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
           span(pk.atoms.length ? 'Picked: ' + pk.atoms.map((a) => a.label).join(' ') : 'Nothing picked yet.') +
           '<button type="button" class="primary" id="mpDone"' + (pk.atoms.length < 3 ? ' disabled' : '') + '>Done</button><button type="button" id="mpCancel">Cancel</button></div>');
       } else {
-        lines.push('<div class="pickbar">' + span('Click the atom that the ' + (pk.layer ? 'layer plane (' + pk.hkl.join(' ') + ')' : '(' + pk.hkl.join(' ') + ') plane') + ' goes through.') +
+        lines.push('<div class="pickbar">' + span('Click the atom that the (' + pk.hkl.join(' ') + ') plane goes through.') +
           '<button type="button" id="mpCancel">Cancel</button></div>');
       }
     }
@@ -1951,6 +1948,10 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
       viewer.addCylinder({ start: V3(p), end: V3(q), radius: 0.028, color: ink, dashed: true, dashLength: 0.12, gapLength: 0.1, fromCap: 1, toCap: 1 });
     };
     for (const m of d.measures) {
+      // the measured atoms and the lines between them keep a highlight (it does not glow in and out)
+      const own = m.pts.slice(0, MEASURE[m.type].n);
+      for (const q of own) viewer.addSphere({ center: V3(q), radius: 0.55, color: accent, opacity: 0.34 });
+      for (let k = 0; k + 1 < own.length; k++) viewer.addCylinder({ start: V3(own[k]), end: V3(own[k + 1]), radius: 0.15, color: accent, opacity: 0.3, fromCap: 1, toCap: 1 });
       for (let k = 0; k + 1 < m.pts.length; k++) dashed(m.pts[k], m.pts[k + 1]);
       // bond to plane: the line of the bond as the plane sees it, from the first atom
       if (m.proj) dashed(m.pts[0], m.proj);
@@ -1996,15 +1997,13 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
           }
         }
       }
-      // the mark of each angle: an arc between the two bonds, and the sector that it closes.
-      // The arc is a firm line that does not glow, so that it stays clear. The sector glows with the bonds.
+      // the mark of each angle: an arc between the two bonds, and the sector that it closes. They glow with the bonds.
       let nArcs = 0;
-      const arcRods = [];
       for (const R of set.arcs) {
         const pts = C.arcPoints(R.c, R.p, R.q, R.r, 14);
         if (pts.length < 2) continue;
         nArcs++;
-        for (let k = 0; k + 1 < pts.length; k++) arcRods.push({ p: pts[k], q: pts[k + 1], rp: 0.05, rq: 0.05, cp: 0, cq: 0 });
+        for (let k = 0; k + 1 < pts.length; k++) rods.push({ p: pts[k], q: pts[k + 1], rp: 0.06, rq: 0.06, cp: 0, cq: 0 });
         const e1 = [0, 1, 2].map((i) => pts[0][i] - R.c[i]), e2 = [0, 1, 2].map((i) => pts[pts.length - 1][i] - R.c[i]);
         let nv = [e1[1] * e2[2] - e1[2] * e2[1], e1[2] * e2[0] - e1[0] * e2[2], e1[0] * e2[1] - e1[1] * e2[0]];
         const ln = Math.hypot(nv[0], nv[1], nv[2]) || 1;
@@ -2025,7 +2024,6 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
         .map((m) => ({ vertexArr: m.vertexArr.map(V3), normalArr: m.normalArr.map(V3), faceArr: m.faceArr }));
       g.shapes = [];
       g.color = accent;
-      for (const m of C.bondTubes(arcRods, 8)) viewer.addCustom({ vertexArr: m.vertexArr.map(V3), normalArr: m.normalArr.map(V3), faceArr: m.faceArr, color: accent });
       paintGlow();
     }
 
@@ -2509,18 +2507,10 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
     $('measBPlane').onclick = () => setMeasure('bplane');
     $('mpAtoms').onclick = () => startPlanePick('atoms');
     $('mpHkl').onclick = () => startPlanePick('hkl');
-    $('mpLayer').onclick = () => startPlanePick('layer');
-    $('mpList').onclick = (e) => {
-      const b = e.target.closest('button[data-mprm]');
-      if (b) { removeMplane(b.dataset.mprm); return; }
-      const u = e.target.closest('button[data-mpuse]');
-      const P = u && D() ? mplaneOf(D(), u.dataset.mpuse) : null;
-      if (P && P.near) ['mpH', 'mpK', 'mpL'].forEach((id, k) => { $(id).value = P.near.hkl[k]; });
-    };
+    $('mpList').onclick = (e) => { const b = e.target.closest('button[data-mprm]'); if (b) removeMplane(b.dataset.mprm); };
     $('mpList').onchange = (e) => { if (e.target.name === 'mpSel' && D()) { D().mplaneSel = e.target.value; render(true); } };
     // a row of the framework card shows its atoms in the picture: they glow in and out until the row is pressed again
     $('cardFw').addEventListener('click', (e) => { const t = e.target.closest('[data-glow]'); if (t) toggleGlow(+t.dataset.glow); });
-    $('measClear').onclick = () => removeMeasure('all');
     $('measList').onclick = (e) => { const b = e.target.closest('button[data-mrm]'); if (b) removeMeasure(+b.dataset.mrm); };
     // right-click on a measurement in the picture: a small menu to remove it
     $('gl').addEventListener('contextmenu', (e) => {
