@@ -1311,6 +1311,10 @@
     const ns = slabs.map((sl) => sl.planes.length);
     res.n = Math.max(...ns);
     res.nUniform = ns.every((x) => x === ns[0]);
+    // for the picture: the heights of the planes of each layer along the normal. A copy of a layer is k * dhkl higher.
+    res.slabs = slabs.map((sl) => ({ top: sl.top, bot: sl.bot, centre: sl.centre, planes: sl.planes }));
+    res.dhkl = fw.dhkl;
+    res.spacing = fw.spacing;
     const s0 = slabs[0];
     if (s0.top !== null && s0.bot !== null) {
       res.slabThickness = s0.top - s0.bot;
@@ -1429,7 +1433,7 @@
           if (z(s1) && z(s2)) kind = 'near (0, 0), eclipsed';
           else if (hf(s1) && hf(s2)) kind = 'near (½, ½), staggered';
           else if ((hf(s1) && z(s2)) || (z(s1) && hf(s2))) kind = 'near (½, 0)';
-          res.offset = { s1: Math.max(s1, s2), s2: Math.min(s1, s2), kind, p1: norm(p1), p2: norm(p2) };
+          res.offset = { s1: Math.max(s1, s2), s2: Math.min(s1, s2), kind, p1: norm(p1), p2: norm(p2), v1: p1, v2: p2, m0: M0.m, m1: M1.m };
         }
       }
     }
@@ -1850,6 +1854,28 @@
     if (!(gl > 1e-12)) return null;
     return { n: G.map((x) => x / gl), c: p.slice(), rms: 0 };
   }
+  /* The lattice plane (hkl) that is nearest to a plane with the unit normal n: { hkl, angle }. angle is the angle
+     between the two planes, in degrees. Small indexes come first: the result is the plane with the smallest
+     largest index that is within tol degrees (default 1). If no plane is that near, the result is the nearest
+     plane with indexes up to maxIndex (default 6). The sign of hkl is such that its normal points as n does. */
+  function nearestHkl(cell, n, maxIndex, tol) {
+    const M = maxIndex || 6, T = tol === undefined ? 1 : tol;
+    const byIndex = [];
+    let best = null;
+    for (let h = -M; h <= M; h++) for (let k = -M; k <= M; k++) for (let l = -M; l <= M; l++) {
+      if (!h && !k && !l) continue;
+      if (gcd(gcd(h, k), l) !== 1) continue;
+      const G = [0, 1, 2].map((i) => h * cell.recip[0][i] + k * cell.recip[1][i] + l * cell.recip[2][i]);
+      const c = dot(G, n) / norm(G);
+      if (c <= 0) continue;                                 // (-h -k -l) is the same plane: keep the one that points as n
+      const entry = { hkl: [h, k, l], angle: Math.acos(Math.min(1, c)) * 180 / Math.PI };
+      const m = Math.max(Math.abs(h), Math.abs(k), Math.abs(l));
+      if (!byIndex[m] || entry.angle < byIndex[m].angle - 1e-9) byIndex[m] = entry;
+      if (!best || entry.angle < best.angle - 1e-9) best = entry;
+    }
+    for (let m = 1; m <= M; m++) if (byIndex[m] && byIndex[m].angle <= T) return byIndex[m];
+    return best;
+  }
   /* the distance of a point from a plane, in Å: positive on the side that the normal points to */
   const planeDistance = (plane, p) => dot(sub(p, plane.c), plane.n);
   /* the point of the plane that is nearest to p */
@@ -1906,26 +1932,69 @@
     return out;
   }
 
-  /* ---------- the atoms that a row of the framework card is about ---------- */
+  /* ---------- what the picture shows for a row of the framework card ---------- */
   /* blk = assemble(...), uc = buildCell(...), info = analyse(uc). item is one of:
        { type: 'bond', m, x, d }            the M-X bonds between the sites m and x with the length d (Å)
        { type: 'site', m }                  the metal site m with all its bonds
+       { type: 'cis', m }                   the two bonds of the smallest and of the largest cis X-M-X angle of the site m
        { type: 'bridge', m1, x, m2, theta } the M-X-M bridges with this angle (degrees)
-       { type: 'axial' }                    the M-X bonds along the layer normal
-       { type: 'terminal' }                 the halides with one metal neighbour
-       { type: 'label', label }             the atoms with this label
-       { type: 'metals' } { type: 'framework' } { type: 'organic' }
-     Returns { atoms: [i], bonds: [[i, j]] }: indexes into blk.atoms. */
+       { type: 'axial' }                    the M-X bonds along the layer normal, with the normal and the layer plane at each metal
+       { type: 'slab' }                     the planes of terminal halides on the two faces of each layer, and the distance between them
+       { type: 'gallery' }                  the terminal-halide planes that face each other across the organic part
+       { type: 'penetration', label }       the N atoms with this label, each with the terminal-halide plane it is measured from
+       { type: 'offset' }                   a metal, the nearest metal of the next layer, the normal, the shift and the M...M vectors
+       { type: 'terminal' } { type: 'label', label } { type: 'metals' } { type: 'framework' } { type: 'organic' }
+     Returns { atoms: [i], bonds: [[i, j]], planes: [{ c, n, r }], lines: [[p, q]] }.
+     atoms and bonds are indexes into blk.atoms. planes are discs (centre, unit normal, radius) and lines are
+     point pairs, in Å: the page draws them with the atoms. */
   function highlightSet(blk, uc, info, item) {
     const A = blk.atoms;
-    const atoms = new Set(), bonds = [], seen = new Set();
+    const atoms = new Set(), bonds = [], seen = new Set(), planes = [], lines = [];
     const bond = (i, j) => {
       const key = i < j ? i + ':' + j : j + ':' + i;
       atoms.add(i); atoms.add(j);
       if (!seen.has(key)) { seen.add(key); bonds.push([i, j]); }
     };
     const isM = (a) => !!uc.center[a.src];
-    const nh = info && info.layer ? info.layer.normal : null;
+    const L = info && info.layer ? info.layer : null;
+    const nh = L ? L.normal : null;
+    const hOf = (p) => dot(p, nh);
+    const lift = (p, H) => { const k = H - hOf(p); return [p[0] + k * nh[0], p[1] + k * nh[1], p[2] + k * nh[2]]; };   // p moved along the normal to the height H
+    const isTerminal = (a) => HALIDE.has(a.el) && uc.metalsOf[a.src].length === 1;
+    /* the height of the nearest copy of a face plane (top or bottom of a layer) to the height h */
+    const faceNear = (h) => {
+      let best = null;
+      (L && L.slabs ? L.slabs : []).forEach((sl, si) => {
+        for (const face of ['top', 'bot']) {
+          if (sl[face] === null) continue;
+          const k = Math.round((h - sl[face]) / L.dhkl);
+          const H = sl[face] + k * L.dhkl;
+          if (!best || Math.abs(h - H) < Math.abs(h - best.H)) best = { key: si + ':' + face + ':' + k, si, face, k, H };
+        }
+      });
+      return best;
+    };
+    /* the planes of terminal halides that have atoms in the picture: [{ si, face, k, H, atoms, c, r }] */
+    const facePlanes = () => {
+      const found = new Map();
+      if (!L) return [];
+      A.forEach((a, i) => {
+        if (!isTerminal(a)) return;
+        const f = faceNear(hOf(a.xyz));
+        if (!f || Math.abs(hOf(a.xyz) - f.H) > 1.5) return;
+        if (!found.has(f.key)) found.set(f.key, Object.assign({ atoms: [] }, f));
+        found.get(f.key).atoms.push(i);
+      });
+      return Array.from(found.values()).map((pl) => {
+        let c = [0, 0, 0];
+        for (const i of pl.atoms) c = add(c, A[i].xyz);
+        c = lift(c.map((x) => x / pl.atoms.length), pl.H);
+        const r = Math.max(...pl.atoms.map((i) => norm(sub(lift(A[i].xyz, pl.H), c)))) + 1.5;
+        return Object.assign(pl, { c, r });
+      });
+    };
+    const disc = (c, r) => planes.push({ c, n: nh.slice(), r });
+
     A.forEach((a, i) => {
       if (item.type === 'bond') {
         if (!isM(a) || a.label !== item.m) return;
@@ -1934,6 +2003,13 @@
         if (!isM(a) || a.label !== item.m) return;
         atoms.add(i);
         for (const j of a.bonds) bond(i, j);
+      } else if (item.type === 'cis') {
+        if (!isM(a) || a.label !== item.m || a.bonds.length !== 6) return;
+        const pairs = [];
+        for (let p = 0; p < 6; p++) for (let q = p + 1; q < 6; q++) pairs.push({ p: a.bonds[p], q: a.bonds[q], t: bondAngle(A[a.bonds[p]].xyz, a.xyz, A[a.bonds[q]].xyz) });
+        pairs.sort((u, v) => u.t - v.t);
+        // the 12 smallest of the 15 angles are the cis angles: the first and the last of them
+        for (const pr of [pairs[0], pairs[11]]) { bond(i, pr.p); bond(i, pr.q); }
       } else if (item.type === 'bridge') {
         if (a.label !== item.x) return;
         const ms = a.bonds.filter((j) => isM(A[j]));
@@ -1944,15 +2020,28 @@
         }
       } else if (item.type === 'axial') {
         if (!isM(a) || !nh) return;
+        let any = false;
         for (const j of a.bonds) {
           if (!HALIDE.has(A[j].el)) continue;
           const v = sub(A[j].xyz, a.xyz);
-          if (Math.abs(dot(v, nh)) / norm(v) > 0.7) bond(i, j);
+          if (Math.abs(dot(v, nh)) / norm(v) > 0.7) { bond(i, j); any = true; }
         }
+        // the layer normal through the metal, and the layer plane there
+        if (any) { lines.push([a.xyz.map((x, k) => x - 3.4 * nh[k]), a.xyz.map((x, k) => x + 3.4 * nh[k])]); disc(a.xyz.slice(), 2.4); }
       } else if (item.type === 'terminal') {
-        if (HALIDE.has(a.el) && uc.metalsOf[a.src].length === 1) atoms.add(i);
+        if (isTerminal(a)) atoms.add(i);
       } else if (item.type === 'label') {
         if (a.label === item.label) atoms.add(i);
+      } else if (item.type === 'penetration') {
+        if (a.label !== item.label || !nh) return;
+        const f = faceNear(hOf(a.xyz));
+        if (!f || Math.abs(hOf(a.xyz) - f.H) > 3) return;
+        const foot = lift(a.xyz, f.H);
+        atoms.add(i);
+        lines.push([a.xyz.slice(), foot]);
+        disc(foot, 3.2);
+        // the terminal halides of that plane around the N
+        A.forEach((x, j) => { if (isTerminal(x) && Math.abs(hOf(x.xyz) - f.H) < 1.5 && distance(lift(x.xyz, f.H), foot) < 4.8) atoms.add(j); });
       } else if (item.type === 'metals') {
         if (isM(a)) atoms.add(i);
       } else if (item.type === 'framework') {
@@ -1972,7 +2061,48 @@
         for (const j of a.bonds) if (isM(A[j]) && (A[j].label === item.m1 || A[j].label === item.m2)) bond(i, j);
       });
     }
-    return { atoms: Array.from(atoms).sort((x, y) => x - y), bonds };
+    if ((item.type === 'slab' || item.type === 'gallery') && L) {
+      const faces = facePlanes();
+      const use = new Set();
+      for (const T of faces) {
+        if (T.face !== 'top') continue;
+        // slab: the bottom face of the same layer. gallery: the bottom face of the next layer.
+        const B = item.type === 'slab' ? faces.find((f) => f.face === 'bot' && f.si === T.si && f.k === T.k)
+          : faces.find((f) => f.face === 'bot' && Math.abs(f.H - T.H - L.gallery) < 0.3);
+        if (!B) continue;
+        use.add(T); use.add(B);
+        lines.push([T.c, lift(T.c, B.H)]);
+      }
+      for (const f of use) { disc(f.c, f.r); for (const i of f.atoms) atoms.add(i); }
+    }
+    if (item.type === 'offset' && L && L.slabs && L.slabs.length) {
+      // a metal near the middle of the picture, and the nearest metal (seen along the normal) of the next layer
+      const ms = A.map((a, i) => i).filter((i) => isM(A[i]));
+      const ph = L.slabs[0].planes;
+      const step = L.spacing - (ph[ph.length - 1] - ph[0]);
+      let mid = [0, 0, 0];
+      for (const i of ms) mid = add(mid, A[i].xyz);
+      mid = mid.map((x) => x / Math.max(1, ms.length));
+      const order = ms.slice().sort((u, v) => distance(A[u].xyz, mid) - distance(A[v].xyz, mid));
+      // the two metal sites that the analysis used give the offset of the row exactly: use them if they are in the picture
+      const o = L.offset || {};
+      const pairs = [[(i) => A[i].src === o.m0, (j) => A[j].src === o.m1], [() => true, () => true]];
+      for (const [isFrom, isTo] of pairs) {
+        if (atoms.size) break;
+        for (const i of order.filter(isFrom)) {
+        const up = ms.filter((j) => isTo(j) && Math.abs(hOf(A[j].xyz) - hOf(A[i].xyz) - step) < 1.5);
+        if (!up.length) continue;
+        const foot = (j) => lift(A[i].xyz, hOf(A[j].xyz));
+        up.sort((u, v) => distance(foot(u), A[u].xyz) - distance(foot(v), A[v].xyz));
+        const j = up[0], F = foot(j);
+        atoms.add(i); atoms.add(j);
+        lines.push([A[i].xyz.slice(), F], [F, A[j].xyz.slice()]);
+        if (L.offset && L.offset.v1) lines.push([F, add(F, L.offset.v1)], [F, add(F, L.offset.v2)]);
+        break;
+        }
+      }
+    }
+    return { atoms: Array.from(atoms).sort((x, y) => x - y), bonds, planes, lines: lines.filter((ln) => distance(ln[0], ln[1]) > 1e-3) };
   }
 
   /* ---------- export: Tripos mol2 of a drawn block ----------
@@ -2585,7 +2715,7 @@
     return rows.join('\n') + '\n';
   }
 
-  root.XtalCore = { readStructure, readStructures, readCif, readCifAll, readPoscar, readXyz, readShelx, readAims, zipEntries, zipStructureNames, hybridInfo, STRUCTURE_NAME, buildCell, analyse, assemble, hullFaces, planePolys, tetrazineDefs, chromoInstances, stateDir, orientReport, hallOps, symbolOps, setSgTable, isMetal, isCenter, isDonor, HALIDE, RC, MASS, parseSymop, MAX_POLY_CN, planeOfPoints, planeOfHkl, planeDistance, planeFoot, linePlaneAngle, planePlaneAngle, planeDisc, ballMesh, highlightSet, distance, bondAngle, torsion, toMol2, toSvg, visibleParts, hullPolygons, bondTubes, polyhedraFor, polyhedraStats, suggestPolyMax,
+  root.XtalCore = { readStructure, readStructures, readCif, readCifAll, readPoscar, readXyz, readShelx, readAims, zipEntries, zipStructureNames, hybridInfo, STRUCTURE_NAME, buildCell, analyse, assemble, hullFaces, planePolys, tetrazineDefs, chromoInstances, stateDir, orientReport, hallOps, symbolOps, setSgTable, isMetal, isCenter, isDonor, HALIDE, RC, MASS, parseSymop, MAX_POLY_CN, planeOfPoints, planeOfHkl, planeDistance, planeFoot, linePlaneAngle, planePlaneAngle, nearestHkl, planeDisc, ballMesh, highlightSet, distance, bondAngle, torsion, toMol2, toSvg, visibleParts, hullPolygons, bondTubes, polyhedraFor, polyhedraStats, suggestPolyMax,
     powderAtoms, powderPattern, powderProfile, readXY, toXY, patternsCsv, ANODES, anodeOf, XRAY_F0, uEquiv };
   if (typeof module !== 'undefined' && module.exports) module.exports = root.XtalCore;
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -135,6 +135,7 @@ button.chip[aria-expanded="true"] { border-color: var(--accent); }
 .glowbtn[aria-pressed="true"] { background: none; border: 0; color: var(--accent); text-decoration-color: var(--accent); }
 .glowbtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
 .glowbtn[aria-pressed="true"]::before { content: ''; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); margin-right: 6px; animation: glowdot 1.4s ease-in-out infinite; }
+.glowbtn.still[aria-pressed="true"]::before { animation: none; }
 dd[data-glow], tr[data-glow] { cursor: pointer; }
 dd.lit, tr.lit td { color: var(--accent); }
 @keyframes glowdot { 0%, 100% { opacity: 0.2; } 50% { opacity: 1; } }
@@ -163,6 +164,12 @@ dd.lit, tr.lit td { color: var(--accent); }
 .readout .pickbar { font-family: var(--font-ui); font-size: 13px; }
 .readout .pickbar > span + span { flex: none; max-width: 45%; }
 .readout .alert { color: var(--warn); font-family: var(--font-ui); font-size: 13px; }
+/* the definition of a row of the framework card: the strip grows to hold the text */
+.readout.def { height: auto; min-height: 34px; white-space: normal; flex-wrap: wrap; padding: 7px 12px; gap: 4px 16px; overflow: visible; }
+.readout .defbar { flex: 1 1 100%; display: flex; gap: 12px; align-items: flex-start; font-family: var(--font-ui); font-size: 13px; line-height: 1.45; }
+.readout .defbar > span { flex: 1 1 auto; white-space: normal; overflow: visible; }
+.readout .defbar b { font-weight: 600; }
+.readout .defbar .none { color: var(--warn); }
 
 .rail { display: flex; flex-direction: column; gap: 12px; min-width: 0; min-height: 0; overflow-y: auto; padding-right: 2px; }
 .card { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px 14px; display: grid; gap: 10px; min-width: 0; }
@@ -1979,6 +1986,10 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     const ns = slabs.map((sl) => sl.planes.length);
     res.n = Math.max(...ns);
     res.nUniform = ns.every((x) => x === ns[0]);
+    // for the picture: the heights of the planes of each layer along the normal. A copy of a layer is k * dhkl higher.
+    res.slabs = slabs.map((sl) => ({ top: sl.top, bot: sl.bot, centre: sl.centre, planes: sl.planes }));
+    res.dhkl = fw.dhkl;
+    res.spacing = fw.spacing;
     const s0 = slabs[0];
     if (s0.top !== null && s0.bot !== null) {
       res.slabThickness = s0.top - s0.bot;
@@ -2097,7 +2108,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
           if (z(s1) && z(s2)) kind = 'near (0, 0), eclipsed';
           else if (hf(s1) && hf(s2)) kind = 'near (½, ½), staggered';
           else if ((hf(s1) && z(s2)) || (z(s1) && hf(s2))) kind = 'near (½, 0)';
-          res.offset = { s1: Math.max(s1, s2), s2: Math.min(s1, s2), kind, p1: norm(p1), p2: norm(p2) };
+          res.offset = { s1: Math.max(s1, s2), s2: Math.min(s1, s2), kind, p1: norm(p1), p2: norm(p2), v1: p1, v2: p2, m0: M0.m, m1: M1.m };
         }
       }
     }
@@ -2518,6 +2529,28 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     if (!(gl > 1e-12)) return null;
     return { n: G.map((x) => x / gl), c: p.slice(), rms: 0 };
   }
+  /* The lattice plane (hkl) that is nearest to a plane with the unit normal n: { hkl, angle }. angle is the angle
+     between the two planes, in degrees. Small indexes come first: the result is the plane with the smallest
+     largest index that is within tol degrees (default 1). If no plane is that near, the result is the nearest
+     plane with indexes up to maxIndex (default 6). The sign of hkl is such that its normal points as n does. */
+  function nearestHkl(cell, n, maxIndex, tol) {
+    const M = maxIndex || 6, T = tol === undefined ? 1 : tol;
+    const byIndex = [];
+    let best = null;
+    for (let h = -M; h <= M; h++) for (let k = -M; k <= M; k++) for (let l = -M; l <= M; l++) {
+      if (!h && !k && !l) continue;
+      if (gcd(gcd(h, k), l) !== 1) continue;
+      const G = [0, 1, 2].map((i) => h * cell.recip[0][i] + k * cell.recip[1][i] + l * cell.recip[2][i]);
+      const c = dot(G, n) / norm(G);
+      if (c <= 0) continue;                                 // (-h -k -l) is the same plane: keep the one that points as n
+      const entry = { hkl: [h, k, l], angle: Math.acos(Math.min(1, c)) * 180 / Math.PI };
+      const m = Math.max(Math.abs(h), Math.abs(k), Math.abs(l));
+      if (!byIndex[m] || entry.angle < byIndex[m].angle - 1e-9) byIndex[m] = entry;
+      if (!best || entry.angle < best.angle - 1e-9) best = entry;
+    }
+    for (let m = 1; m <= M; m++) if (byIndex[m] && byIndex[m].angle <= T) return byIndex[m];
+    return best;
+  }
   /* the distance of a point from a plane, in Å: positive on the side that the normal points to */
   const planeDistance = (plane, p) => dot(sub(p, plane.c), plane.n);
   /* the point of the plane that is nearest to p */
@@ -2574,26 +2607,69 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     return out;
   }
 
-  /* ---------- the atoms that a row of the framework card is about ---------- */
+  /* ---------- what the picture shows for a row of the framework card ---------- */
   /* blk = assemble(...), uc = buildCell(...), info = analyse(uc). item is one of:
        { type: 'bond', m, x, d }            the M-X bonds between the sites m and x with the length d (Å)
        { type: 'site', m }                  the metal site m with all its bonds
+       { type: 'cis', m }                   the two bonds of the smallest and of the largest cis X-M-X angle of the site m
        { type: 'bridge', m1, x, m2, theta } the M-X-M bridges with this angle (degrees)
-       { type: 'axial' }                    the M-X bonds along the layer normal
-       { type: 'terminal' }                 the halides with one metal neighbour
-       { type: 'label', label }             the atoms with this label
-       { type: 'metals' } { type: 'framework' } { type: 'organic' }
-     Returns { atoms: [i], bonds: [[i, j]] }: indexes into blk.atoms. */
+       { type: 'axial' }                    the M-X bonds along the layer normal, with the normal and the layer plane at each metal
+       { type: 'slab' }                     the planes of terminal halides on the two faces of each layer, and the distance between them
+       { type: 'gallery' }                  the terminal-halide planes that face each other across the organic part
+       { type: 'penetration', label }       the N atoms with this label, each with the terminal-halide plane it is measured from
+       { type: 'offset' }                   a metal, the nearest metal of the next layer, the normal, the shift and the M...M vectors
+       { type: 'terminal' } { type: 'label', label } { type: 'metals' } { type: 'framework' } { type: 'organic' }
+     Returns { atoms: [i], bonds: [[i, j]], planes: [{ c, n, r }], lines: [[p, q]] }.
+     atoms and bonds are indexes into blk.atoms. planes are discs (centre, unit normal, radius) and lines are
+     point pairs, in Å: the page draws them with the atoms. */
   function highlightSet(blk, uc, info, item) {
     const A = blk.atoms;
-    const atoms = new Set(), bonds = [], seen = new Set();
+    const atoms = new Set(), bonds = [], seen = new Set(), planes = [], lines = [];
     const bond = (i, j) => {
       const key = i < j ? i + ':' + j : j + ':' + i;
       atoms.add(i); atoms.add(j);
       if (!seen.has(key)) { seen.add(key); bonds.push([i, j]); }
     };
     const isM = (a) => !!uc.center[a.src];
-    const nh = info && info.layer ? info.layer.normal : null;
+    const L = info && info.layer ? info.layer : null;
+    const nh = L ? L.normal : null;
+    const hOf = (p) => dot(p, nh);
+    const lift = (p, H) => { const k = H - hOf(p); return [p[0] + k * nh[0], p[1] + k * nh[1], p[2] + k * nh[2]]; };   // p moved along the normal to the height H
+    const isTerminal = (a) => HALIDE.has(a.el) && uc.metalsOf[a.src].length === 1;
+    /* the height of the nearest copy of a face plane (top or bottom of a layer) to the height h */
+    const faceNear = (h) => {
+      let best = null;
+      (L && L.slabs ? L.slabs : []).forEach((sl, si) => {
+        for (const face of ['top', 'bot']) {
+          if (sl[face] === null) continue;
+          const k = Math.round((h - sl[face]) / L.dhkl);
+          const H = sl[face] + k * L.dhkl;
+          if (!best || Math.abs(h - H) < Math.abs(h - best.H)) best = { key: si + ':' + face + ':' + k, si, face, k, H };
+        }
+      });
+      return best;
+    };
+    /* the planes of terminal halides that have atoms in the picture: [{ si, face, k, H, atoms, c, r }] */
+    const facePlanes = () => {
+      const found = new Map();
+      if (!L) return [];
+      A.forEach((a, i) => {
+        if (!isTerminal(a)) return;
+        const f = faceNear(hOf(a.xyz));
+        if (!f || Math.abs(hOf(a.xyz) - f.H) > 1.5) return;
+        if (!found.has(f.key)) found.set(f.key, Object.assign({ atoms: [] }, f));
+        found.get(f.key).atoms.push(i);
+      });
+      return Array.from(found.values()).map((pl) => {
+        let c = [0, 0, 0];
+        for (const i of pl.atoms) c = add(c, A[i].xyz);
+        c = lift(c.map((x) => x / pl.atoms.length), pl.H);
+        const r = Math.max(...pl.atoms.map((i) => norm(sub(lift(A[i].xyz, pl.H), c)))) + 1.5;
+        return Object.assign(pl, { c, r });
+      });
+    };
+    const disc = (c, r) => planes.push({ c, n: nh.slice(), r });
+
     A.forEach((a, i) => {
       if (item.type === 'bond') {
         if (!isM(a) || a.label !== item.m) return;
@@ -2602,6 +2678,13 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
         if (!isM(a) || a.label !== item.m) return;
         atoms.add(i);
         for (const j of a.bonds) bond(i, j);
+      } else if (item.type === 'cis') {
+        if (!isM(a) || a.label !== item.m || a.bonds.length !== 6) return;
+        const pairs = [];
+        for (let p = 0; p < 6; p++) for (let q = p + 1; q < 6; q++) pairs.push({ p: a.bonds[p], q: a.bonds[q], t: bondAngle(A[a.bonds[p]].xyz, a.xyz, A[a.bonds[q]].xyz) });
+        pairs.sort((u, v) => u.t - v.t);
+        // the 12 smallest of the 15 angles are the cis angles: the first and the last of them
+        for (const pr of [pairs[0], pairs[11]]) { bond(i, pr.p); bond(i, pr.q); }
       } else if (item.type === 'bridge') {
         if (a.label !== item.x) return;
         const ms = a.bonds.filter((j) => isM(A[j]));
@@ -2612,15 +2695,28 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
         }
       } else if (item.type === 'axial') {
         if (!isM(a) || !nh) return;
+        let any = false;
         for (const j of a.bonds) {
           if (!HALIDE.has(A[j].el)) continue;
           const v = sub(A[j].xyz, a.xyz);
-          if (Math.abs(dot(v, nh)) / norm(v) > 0.7) bond(i, j);
+          if (Math.abs(dot(v, nh)) / norm(v) > 0.7) { bond(i, j); any = true; }
         }
+        // the layer normal through the metal, and the layer plane there
+        if (any) { lines.push([a.xyz.map((x, k) => x - 3.4 * nh[k]), a.xyz.map((x, k) => x + 3.4 * nh[k])]); disc(a.xyz.slice(), 2.4); }
       } else if (item.type === 'terminal') {
-        if (HALIDE.has(a.el) && uc.metalsOf[a.src].length === 1) atoms.add(i);
+        if (isTerminal(a)) atoms.add(i);
       } else if (item.type === 'label') {
         if (a.label === item.label) atoms.add(i);
+      } else if (item.type === 'penetration') {
+        if (a.label !== item.label || !nh) return;
+        const f = faceNear(hOf(a.xyz));
+        if (!f || Math.abs(hOf(a.xyz) - f.H) > 3) return;
+        const foot = lift(a.xyz, f.H);
+        atoms.add(i);
+        lines.push([a.xyz.slice(), foot]);
+        disc(foot, 3.2);
+        // the terminal halides of that plane around the N
+        A.forEach((x, j) => { if (isTerminal(x) && Math.abs(hOf(x.xyz) - f.H) < 1.5 && distance(lift(x.xyz, f.H), foot) < 4.8) atoms.add(j); });
       } else if (item.type === 'metals') {
         if (isM(a)) atoms.add(i);
       } else if (item.type === 'framework') {
@@ -2640,7 +2736,48 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
         for (const j of a.bonds) if (isM(A[j]) && (A[j].label === item.m1 || A[j].label === item.m2)) bond(i, j);
       });
     }
-    return { atoms: Array.from(atoms).sort((x, y) => x - y), bonds };
+    if ((item.type === 'slab' || item.type === 'gallery') && L) {
+      const faces = facePlanes();
+      const use = new Set();
+      for (const T of faces) {
+        if (T.face !== 'top') continue;
+        // slab: the bottom face of the same layer. gallery: the bottom face of the next layer.
+        const B = item.type === 'slab' ? faces.find((f) => f.face === 'bot' && f.si === T.si && f.k === T.k)
+          : faces.find((f) => f.face === 'bot' && Math.abs(f.H - T.H - L.gallery) < 0.3);
+        if (!B) continue;
+        use.add(T); use.add(B);
+        lines.push([T.c, lift(T.c, B.H)]);
+      }
+      for (const f of use) { disc(f.c, f.r); for (const i of f.atoms) atoms.add(i); }
+    }
+    if (item.type === 'offset' && L && L.slabs && L.slabs.length) {
+      // a metal near the middle of the picture, and the nearest metal (seen along the normal) of the next layer
+      const ms = A.map((a, i) => i).filter((i) => isM(A[i]));
+      const ph = L.slabs[0].planes;
+      const step = L.spacing - (ph[ph.length - 1] - ph[0]);
+      let mid = [0, 0, 0];
+      for (const i of ms) mid = add(mid, A[i].xyz);
+      mid = mid.map((x) => x / Math.max(1, ms.length));
+      const order = ms.slice().sort((u, v) => distance(A[u].xyz, mid) - distance(A[v].xyz, mid));
+      // the two metal sites that the analysis used give the offset of the row exactly: use them if they are in the picture
+      const o = L.offset || {};
+      const pairs = [[(i) => A[i].src === o.m0, (j) => A[j].src === o.m1], [() => true, () => true]];
+      for (const [isFrom, isTo] of pairs) {
+        if (atoms.size) break;
+        for (const i of order.filter(isFrom)) {
+        const up = ms.filter((j) => isTo(j) && Math.abs(hOf(A[j].xyz) - hOf(A[i].xyz) - step) < 1.5);
+        if (!up.length) continue;
+        const foot = (j) => lift(A[i].xyz, hOf(A[j].xyz));
+        up.sort((u, v) => distance(foot(u), A[u].xyz) - distance(foot(v), A[v].xyz));
+        const j = up[0], F = foot(j);
+        atoms.add(i); atoms.add(j);
+        lines.push([A[i].xyz.slice(), F], [F, A[j].xyz.slice()]);
+        if (L.offset && L.offset.v1) lines.push([F, add(F, L.offset.v1)], [F, add(F, L.offset.v2)]);
+        break;
+        }
+      }
+    }
+    return { atoms: Array.from(atoms).sort((x, y) => x - y), bonds, planes, lines: lines.filter((ln) => distance(ln[0], ln[1]) > 1e-3) };
   }
 
   /* ---------- export: Tripos mol2 of a drawn block ----------
@@ -3253,7 +3390,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     return rows.join('\n') + '\n';
   }
 
-  root.XtalCore = { readStructure, readStructures, readCif, readCifAll, readPoscar, readXyz, readShelx, readAims, zipEntries, zipStructureNames, hybridInfo, STRUCTURE_NAME, buildCell, analyse, assemble, hullFaces, planePolys, tetrazineDefs, chromoInstances, stateDir, orientReport, hallOps, symbolOps, setSgTable, isMetal, isCenter, isDonor, HALIDE, RC, MASS, parseSymop, MAX_POLY_CN, planeOfPoints, planeOfHkl, planeDistance, planeFoot, linePlaneAngle, planePlaneAngle, planeDisc, ballMesh, highlightSet, distance, bondAngle, torsion, toMol2, toSvg, visibleParts, hullPolygons, bondTubes, polyhedraFor, polyhedraStats, suggestPolyMax,
+  root.XtalCore = { readStructure, readStructures, readCif, readCifAll, readPoscar, readXyz, readShelx, readAims, zipEntries, zipStructureNames, hybridInfo, STRUCTURE_NAME, buildCell, analyse, assemble, hullFaces, planePolys, tetrazineDefs, chromoInstances, stateDir, orientReport, hallOps, symbolOps, setSgTable, isMetal, isCenter, isDonor, HALIDE, RC, MASS, parseSymop, MAX_POLY_CN, planeOfPoints, planeOfHkl, planeDistance, planeFoot, linePlaneAngle, planePlaneAngle, nearestHkl, planeDisc, ballMesh, highlightSet, distance, bondAngle, torsion, toMol2, toSvg, visibleParts, hullPolygons, bondTubes, polyhedraFor, polyhedraStats, suggestPolyMax,
     powderAtoms, powderPattern, powderProfile, readXY, toXY, patternsCsv, ANODES, anodeOf, XRAY_F0, uEquiv };
   if (typeof module !== 'undefined' && module.exports) module.exports = root.XtalCore;
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -4760,29 +4897,39 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     $('dlCrystal').innerHTML = rows.join('');
 
     // framework, coordination and (for layered metal halides) the 2D perovskite descriptors
+    // Each row is a button. It puts the definition of the row under the picture. A row with a type (see
+    // C.highlightSet) also glows in the picture: its atoms, its bonds, and the planes and lines of its definition.
+    // A row with quiet: true has the definition only.
     const fwRows = [];
-    // a row with an item (see C.highlightSet) is a button: its atoms glow in the picture
     stopGlow(true);
     st.glowItems = [];
-    const plain = (html) => html.replace(/<[^>]+>/g, '').replace(/&amp;/g, '&');
-    const glowId = (item, title) => { st.glowItems.push(Object.assign({}, item, { title: plain(title) })); return st.glowItems.length - 1; };
+    const glowId = (name, item) => { st.glowItems.push(Object.assign({ name }, item)); return st.glowItems.length - 1; };
+    const glowTitle = (item) => (item.quiet ? 'Show the definition' : 'Show the definition, and these atoms in the picture');
     const addF = (k, v, txt, item) => {
       if (!item || !k) { fwRows.push('<dt>' + k + '</dt><dd' + (txt ? ' class="txt"' : '') + '>' + v + '</dd>'); return; }
-      const id = glowId(item, item.title || k);
-      fwRows.push('<dt data-glow="' + id + '"><button type="button" class="glowbtn" aria-pressed="false" title="Show these atoms in the picture">' + k + '</button></dt>' +
+      const id = glowId(k, item);
+      fwRows.push('<dt data-glow="' + id + '"><button type="button" class="glowbtn" aria-pressed="false" title="' + glowTitle(item) + '">' + k + '</button></dt>' +
         '<dd data-glow="' + id + '"' + (txt ? ' class="txt"' : '') + '>' + v + '</dd>');
     };
     const L = info.layer;
     const notes = [];
     const fw0 = info.framework;
     if (fw0) {
-      addF('Connectivity', frameworkText(fw0, null), true, { type: 'framework', title: 'the framework' });
+      const net = fw0.kind === 'covalent' ? 'The atoms and their covalent bonds' : 'The metal atoms and the atoms that bridge them';
+      const reach = fw0.dim === 3 ? ' make a framework that goes on in three directions.'
+        : fw0.dim === 2 ? ' make layers. (' + fw0.hkl.join(' ') + ') is the lattice plane that is parallel to the layers.'
+          : fw0.dim === 1 ? ' make chains along [' + fw0.uvw.join(' ') + '].' : ' make separate units. They do not go on through the crystal.';
+      addF('Connectivity', frameworkText(fw0, null), true, { quiet: true, def: net + reach });
       if (fw0.dim === 2) {
-        if (L) addF('Layer thickness <i>n</i>', String(L.n) + (L.nUniform ? '' : ' (mixed)'), false, { type: 'metals', title: 'the metal atoms of the layers' });
-        addF('Layer spacing', fmt(fw0.spacing, 3) + ' Å', false, { type: 'metals', title: 'the metal atoms of the layers' });
+        if (L) addF('Layer thickness <i>n</i>', String(L.n) + (L.nUniform ? '' : ' (mixed)'), false,
+          { quiet: true, def: 'The number of metal planes in one inorganic layer. n = 1 is one sheet of polyhedra.' + (L.nUniform ? '' : ' "Mixed" means that the layers of this structure do not all have the same n.') });
+        addF('Layer spacing', fmt(fw0.spacing, 3) + ' Å', false,
+          { quiet: true, def: 'The distance from the middle plane of one inorganic layer to the middle plane of the next layer, along the layer normal.' });
         if (L && L.slabThickness !== undefined) {
-          addF('Slab, X<sub>ax</sub> to X<sub>ax</sub>', fmt(L.slabThickness, 3) + ' Å', false, { type: 'terminal', title: 'the terminal halides on the two faces of each slab' });
-          addF('Organic gallery', fmt(L.gallery, 3) + ' Å', false, { type: 'organic', title: 'the organic part' });
+          addF('Slab, X<sub>ax</sub> to X<sub>ax</sub>', fmt(L.slabThickness, 3) + ' Å', false, { type: 'slab',
+            def: 'The thickness of one inorganic layer. It is the distance between two planes, along the layer normal: the mean plane of the terminal (axial) halides on the top face, and the mean plane of those on the bottom face. It is not the distance between two atoms. The picture shows the two planes, their halides and the distance.' });
+          addF('Organic gallery', fmt(L.gallery, 3) + ' Å', false, { type: 'gallery',
+            def: 'The height of the gap that holds the organic part. It is the distance from the terminal-halide plane on the top face of one layer to the terminal-halide plane on the bottom face of the next layer, along the layer normal. Gallery = layer spacing − slab. The picture shows the two planes and the distance.' });
         }
       }
     }
@@ -4793,27 +4940,34 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
           const key = b.label + '|' + b.d.toFixed(3);
           groups.set(key, (groups.get(key) || 0) + 1);
         }
+        const M = esc(s.label);
         for (const [key, mult] of groups) {
           const [lab, dist] = key.split('|');
-          addF(esc(s.label) + '–' + esc(lab), dist + ' Å' + (mult > 1 ? ' ×' + mult : ''), false, { type: 'bond', m: s.label, x: lab, d: +dist, title: esc(s.label) + '–' + esc(lab) + ' ' + dist + ' Å' });
+          addF(M + '–' + esc(lab), dist + ' Å' + (mult > 1 ? ' ×' + mult : ''), false, { type: 'bond', m: s.label, x: lab, d: +dist,
+            def: 'The distance between ' + s.label + ' and ' + lab + '.' + (mult > 1 ? ' ×' + mult + ' means that ' + s.label + ' has ' + mult + ' bonds of this length.' : '') + ' The picture shows the two atoms and the bond, on each copy of ' + s.label + '.' });
         }
-        const whole = { type: 'site', m: s.label, title: esc(s.label) + ' and its ' + s.cn + (s.cn === 1 ? ' bond' : ' bonds') };
-        addF('Mean ' + esc(s.label) + '–X', fmt(s.mean, 3) + ' Å' + (s.cn > 1 ? ', CN ' + s.cn : ''), false, whole);
+        const shows = ' The picture shows ' + s.label + ' and its ' + s.cn + (s.cn === 1 ? ' bond.' : ' bonds.');
+        addF('Mean ' + M + '–X', fmt(s.mean, 3) + ' Å' + (s.cn > 1 ? ', CN ' + s.cn : ''), false, { type: 'site', m: s.label,
+          def: 'The mean of the ' + s.cn + ' distances from ' + s.label + ' to its bonded atoms. CN is the coordination number: the number of these bonds.' + shows });
         if (s.octahedral) {
-          addF(esc(s.label) + ' cis X–M–X', fmt(s.cisMin, 1) + '–' + fmt(s.cisMax, 1) + '°', false, whole);
-          addF(esc(s.label) + ' Δ<i>d</i>', fmt(s.deltaD * 1e4, 2) + ' × 10<sup>−4</sup>', false, whole);
-          addF(esc(s.label) + ' <i>σ</i><sup>2</sup>', fmt(s.sigma2, 1) + ' deg<sup>2</sup>', false, whole);
+          addF(M + ' cis X–M–X', fmt(s.cisMin, 1) + '–' + fmt(s.cisMax, 1) + '°', false, { type: 'cis', m: s.label,
+            def: 'The smallest and the largest of the 12 cis angles of the octahedron. A cis angle is the angle at ' + s.label + ' between two bonds that are side by side. The ideal value is 90°. The picture shows the two bonds of the smallest angle and the two bonds of the largest angle.' });
+          addF(M + ' Δ<i>d</i>', fmt(s.deltaD * 1e4, 2) + ' × 10<sup>−4</sup>', false, { type: 'site', m: s.label,
+            def: 'The bond length distortion of the octahedron: Δd = (1/6) Σ [(d − d_mean) / d_mean]², over the 6 bonds. 0 means six equal bonds.' + shows });
+          addF(M + ' <i>σ</i><sup>2</sup>', fmt(s.sigma2, 1) + ' deg<sup>2</sup>', false, { type: 'site', m: s.label,
+            def: 'The bond angle variance of the octahedron: σ² = (1/11) Σ (θ − 90°)², over the 12 cis X–M–X angles. 0 means that each cis angle is 90°.' + shows });
         }
       }
       if (L) {
-        if (L.axialTilt) addF('Axial M–X to layer normal', (L.axialTilt.max - L.axialTilt.min < 0.05 ? fmt(L.axialTilt.mean, 1) : fmt(L.axialTilt.min, 1) + '–' + fmt(L.axialTilt.max, 1)) + '°', false, { type: 'axial', title: 'the axial M–X bonds' });
-        for (const p of L.penetration) addF('N penetration, ' + esc(p.label), (p.depth >= 0 ? '+' : '−') + fmt(Math.abs(p.depth), 3) + ' Å', false, { type: 'label', label: p.label, title: 'the N atoms ' + esc(p.label) });
+        if (L.axialTilt) addF('Axial M–X to layer normal', (L.axialTilt.max - L.axialTilt.min < 0.05 ? fmt(L.axialTilt.mean, 1) : fmt(L.axialTilt.min, 1) + '–' + fmt(L.axialTilt.max, 1)) + '°', false, { type: 'axial',
+          def: 'The angle between an axial M–X bond and the layer normal. 0° means that the bond is perpendicular to the layer. The picture shows the axial bonds and, at each metal, the layer normal (the line) and the layer plane (the disc).' });
+        for (const p of L.penetration) addF('N penetration, ' + esc(p.label), (p.depth >= 0 ? '+' : '−') + fmt(Math.abs(p.depth), 3) + ' Å', false, { type: 'penetration', label: p.label,
+          def: 'How deep the ammonium N is below the mean plane of the terminal (axial) halides of the nearest layer face, along the layer normal. + means that the N is inside the layer. The picture shows ' + p.label + ', that plane with its halides around the N, and the line from the N to the plane.' });
         if (L.offset) {
-          addF('Stacking offset', '(' + fmt(L.offset.s1, 2) + ', ' + fmt(L.offset.s2, 2) + ')', false, { type: 'metals', title: 'the metal atoms of the layers' });
+          addF('Stacking offset', '(' + fmt(L.offset.s1, 2) + ', ' + fmt(L.offset.s2, 2) + ')', false, { type: 'offset',
+            def: 'The shift between two adjacent layers, seen along the layer normal: from a metal of one layer to the nearest metal of the next layer. The two numbers are this shift in units of the two in-plane M···M vectors, each from 0 to ½, the larger first. (½, ½) is the ideal Ruddlesden–Popper stacking, (0, 0) the ideal Dion–Jacobson stacking. The picture shows the two metals, the normal from the first metal, the shift, and the two M···M vectors.' });
           addF('', esc(L.offset.kind), true);
         }
-        if (L.penetration.length) notes.push('N penetration is the depth of the ammonium N below the plane of terminal (axial) halides; positive means inside the layer.');
-        if (L.offset) notes.push('Stacking offset is the in-plane shift between adjacent layers in units of the two in-plane M···M vectors: (½, ½) is the ideal Ruddlesden–Popper stacking, (0, 0) the ideal Dion–Jacobson stacking.');
       }
     }
     $('cardFw').hidden = !fwRows.length;
@@ -4827,14 +4981,17 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
       $('tblBr').innerHTML = '<thead><tr><th>M–X–M</th><th><i>θ</i></th>' + (L ? '<th><i>θ</i><sub>in</sub></th><th><i>θ</i><sub>out</sub></th>' : '') + '<th>M···M</th></tr></thead><tbody>' +
         br.map((b) => {
           const name = esc(b.m1) + '–' + esc(b.x) + '–' + esc(b.m2);
-          const id = glowId({ type: 'bridge', m1: b.m1, x: b.x, m2: b.m2, theta: b.theta }, name + ' ' + fmt(b.theta, 2) + '°');
-          return '<tr data-glow="' + id + '"><td><button type="button" class="glowbtn" aria-pressed="false" title="Show these atoms in the picture">' + name + '</button>' + (b.equatorial === false ? ' (axial)' : '') + '</td><td>' + fmt(b.theta, 2) + '</td>' +
+          const item = { type: 'bridge', m1: b.m1, x: b.x, m2: b.m2, theta: b.theta,
+            def: 'θ is the angle at ' + b.x + ' between its two M–X bonds. M···M is the distance between the two metals.' +
+              (b.thetaIn !== undefined ? ' θin is this angle after projection onto the layer plane: it gives the in-plane distortion. θout is this angle after projection onto the plane that holds M···M and the layer normal: it gives the out-of-plane distortion. 180° means no distortion.' : '') +
+              ' The picture shows the two bonds and the three atoms.' };
+          const id = glowId(name, item);
+          return '<tr data-glow="' + id + '"><td><button type="button" class="glowbtn" aria-pressed="false" title="' + glowTitle(item) + '">' + name + '</button>' + (b.equatorial === false ? ' (axial)' : '') + '</td><td>' + fmt(b.theta, 2) + '</td>' +
           (L ? '<td>' + (b.thetaIn !== undefined ? fmt(b.thetaIn, 2) : '–') + '</td><td>' + (b.thetaOut !== undefined ? fmt(b.thetaOut, 2) : '–') + '</td>' : '') + '<td>' + fmt(b.mm, 3) + '</td></tr>';
         }).join('') + '</tbody>';
-      if (L) notes.unshift('Angles in degrees, distances in Å. θ<sub>in</sub> is the M–X–M angle projected onto the layer plane; θ<sub>out</sub> is the same angle projected onto the plane that holds M···M and the layer normal.');
-      else notes.unshift('Angles in degrees, distances in Å. X is the atom that bridges two metals.' + (brAll.length > br.length ? ' The first ' + br.length + ' of ' + brAll.length + ' distinct bridges are listed.' : ''));
+      notes.push('Angles in degrees, distances in Å.' + (!L && brAll.length > br.length ? ' The first ' + br.length + ' of ' + brAll.length + ' distinct bridges are listed.' : ''));
     }
-    if (st.glowItems.length) notes.unshift('Press a row to see its atoms in the picture: they glow in and out. Press the row again to stop.');
+    if (st.glowItems.length) notes.unshift('Press a row to read its definition under the picture. For most rows, the atoms and the planes of the definition also glow in the picture. Press the row again to close it.');
     if (info.metalSites.some((s) => s.cn > C.MAX_POLY_CN)) notes.push('Sites with more than ' + C.MAX_POLY_CN + ' neighbours are drawn with bonds but without a polyhedron.');
     $('fwNote').innerHTML = notes.join(' ');
     const allOct = info.metalSites.length && info.metalSites.every((s) => s.octahedral);
@@ -5258,7 +5415,9 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     st.planePick = null;
     if (pk && pk.kind === 'atoms' && pk.atoms.length >= 3) {
       const plane = C.planeOfPoints(pk.atoms.map((a) => a.p));
-      if (plane) addMplane(d, { kind: 'atoms', labels: pk.atoms.map((a) => a.label), pts: pk.atoms.map((a) => a.p), plane });
+      // the lattice plane (hkl) that is nearest to this plane, for a structure with a lattice
+      const near = plane && !d.struct.meta.molecular ? C.nearestHkl(d.uc.cell, plane.n, 6, 1) : null;
+      if (plane) addMplane(d, { kind: 'atoms', labels: pk.atoms.map((a) => a.label), pts: pk.atoms.map((a) => a.p), plane, near });
       else st.notice = 'These atoms are on one line. They do not set a plane.';
     }
     render(true);
@@ -5290,7 +5449,9 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     $('mpLayer').hidden = !(d && d.info.framework && d.info.framework.dim === 2);
     const rows = planes.map((p) => '<div class="mrow"><label title="Measure against plane ' + p.id + '"><input type="radio" name="mpSel" value="' + p.id + '"' + (p.id === d.mplaneSel ? ' checked' : '') + '>' +
       '<i class="sw" style="background:' + p.color + '"></i><b>' + p.id + '</b></label><span title="' + esc(mplaneText(p)) + '">' + esc(mplaneText(p)) + '</span>' +
-      '<button type="button" class="mini" data-mprm="' + p.id + '" aria-label="Remove plane ' + p.id + '">Remove</button></div>');
+      '<button type="button" class="mini" data-mprm="' + p.id + '" aria-label="Remove plane ' + p.id + '">Remove</button></div>' +
+      (p.near ? '<div class="mrow"><span title="The lattice plane with the smallest indexes that is within 1° of plane ' + p.id + '. If no plane is that near, the nearest plane with indexes up to 6.">Plane ' + p.id + ' is ' +
+        fmt(p.near.angle, 2) + '° from (' + p.near.hkl.join(' ') + ')</span><button type="button" class="mini" data-mpuse="' + p.id + '" title="Put these indexes in the h, k, l boxes">Set h k l</button></div>' : ''));
     for (let i = 0; i < planes.length; i++) for (let j = i + 1; j < planes.length; j++) {
       rows.push('<div class="mrow"><span>Plane ' + planes[i].id + ' to plane ' + planes[j].id + ' ' + fmt(C.planePlaneAngle(planes[i].plane, planes[j].plane), 2) + '°</span></div>');
     }
@@ -5353,13 +5514,14 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
           '<button type="button" id="mpCancel">Cancel</button></div>');
       }
     }
-    if (st.glow && !st.planePick && !st.picking && !st.polyPick) {
+    // the definition of the chosen row of the framework card
+    $('readout').classList.toggle('def', !!st.glow);
+    if (st.glow) {
       const g = st.glow;
-      const n = g.count || { atoms: 0, bonds: 0 };
-      const what = n.atoms + (n.atoms === 1 ? ' atom' : ' atoms') + (n.bonds ? ', ' + n.bonds + (n.bonds === 1 ? ' bond' : ' bonds') : '');
-      lines.push('<div class="pickbar">' + span(n.atoms ? 'In the picture: ' + g.title + ' (' + what + (g.cut ? ', the first ' + GLOW_MAX_ATOMS + ' only' : '') + ').'
-        : g.title + ': none of these atoms is in the picture. Change the packing limits or the Display boxes.') +
-        '<button type="button" id="glowStop">Stop</button></div>');
+      const none = !g.quiet && g.count && !(g.count.atoms + g.count.planes + g.count.lines);
+      lines.push('<div class="defbar"><span><b>' + g.name + '.</b> ' + esc(g.def) +
+        (none ? ' <span class="none">The picture does not show these atoms now: change the packing limits or the Display boxes.</span>' : '') +
+        '</span><button type="button" id="glowStop">Close</button></div>');
     }
     if (st.picking) {
       const pk = st.picking;
@@ -5422,29 +5584,43 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
       const lit = el.dataset.glow === on;
       el.classList.toggle('lit', lit);
       const b = el.querySelector('.glowbtn');
-      if (b) b.setAttribute('aria-pressed', String(lit));
+      if (b) { b.setAttribute('aria-pressed', String(lit)); b.classList.toggle('still', lit && !!st.glow.quiet); }
     });
   }
   function stopGlow(quiet) {
-    if (glowTimer) { clearInterval(glowTimer); glowTimer = null; }
+    if (glowTimer) { clearTimeout(glowTimer); glowTimer = null; }
     if (!st.glow) return;
+    const drawn = !st.glow.quiet;
     st.glow = null;
     markGlow();
-    if (!quiet) render(true);
+    // a row with the definition only changed nothing in the picture
+    if (!quiet) { if (drawn) render(true); else drawReadout(); }
   }
-  function toggleGlow(i) {
-    if (!st.glowItems[i]) return;
-    if (st.glow && st.glow.i === i) { stopGlow(); return; }
-    st.glow = { i, title: st.glowItems[i].title, t0: performance.now(), shapes: [], meshes: null };
-    markGlow();
-    render(true);
-    if (!glowTimer && !stillMotion()) {
-      glowTimer = setInterval(() => {
-        if (!st.glow || !viewer || document.hidden || st.still) return;
-        paintGlow();
-        viewer.render();
-      }, 70);
+  /* one step of the glow. The next step waits at least as long as this one took, so that a slow computer stays usable. */
+  function glowStep() {
+    glowTimer = null;
+    if (!st.glow || st.glow.quiet || !viewer) return;
+    let cost = 0;
+    if (!document.hidden && !st.still) {
+      const t = performance.now();
+      paintGlow();
+      viewer.render();
+      cost = performance.now() - t;
     }
+    glowTimer = setTimeout(glowStep, Math.max(70, 2 * cost));
+  }
+  /* A row of the framework card was pressed: its definition goes under the picture. A row with atoms, bonds or
+     planes to show also glows in the picture. A row with quiet: true has the definition only. */
+  function toggleGlow(i) {
+    const item = st.glowItems[i];
+    if (!item) return;
+    if (st.glow && st.glow.i === i) { stopGlow(); return; }
+    if (glowTimer) { clearTimeout(glowTimer); glowTimer = null; }
+    const drawn = !!st.glow && !st.glow.quiet;
+    st.glow = { i, name: item.name, def: item.def, quiet: !!item.quiet, t0: performance.now(), shapes: [], meshes: null, count: null };
+    markGlow();
+    if (item.quiet && !drawn) drawReadout(); else render(true);
+    if (!item.quiet && !stillMotion()) glowTimer = setTimeout(glowStep, 70);
   }
 
   /* ---------- 3D scene ---------- */
@@ -5543,18 +5719,20 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     // polyhedra, one mesh per set (automatic per centre element, or one of the user's rules), in that set's style
     if (st.poly && st.inorg && st.style !== 'sf') {
       const meshes = {};
+      const glowOpen = !!st.glow && !st.glow.quiet;
       for (const p of blk.polyhedra) {
         const key = polyKey(blk, p);
         if (!polyShown(d, key)) continue;
         const sty = polyStyle(d, key, blk.atoms[p.center].el);
         const mesh = meshes[key] || (meshes[key] = { vertexArr: [], normalArr: [], faceArr: [], sty });
         const pts = p.verts.map((i) => blk.atoms[i].xyz);
-        for (const f of C.hullFaces(pts)) {
+        // while a row of the framework card glows, a polyhedron is its edges only: its faces hide the bonds inside
+        for (const f of glowOpen ? [] : C.hullFaces(pts)) {
           const base = mesh.vertexArr.length;
           for (const k of f.v) { mesh.vertexArr.push(V3(pts[k])); mesh.normalArr.push(V3(f.n)); }
           mesh.faceArr.push(base, base + 1, base + 2);
         }
-        if (sty.edges) {
+        if (sty.edges || glowOpen) {
           const seen = new Set();
           for (const poly of C.hullPolygons(pts)) for (let k = 0; k < poly.length; k++) {
             const u = poly[k], v = poly[(k + 1) % poly.length];
@@ -5565,7 +5743,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
           }
         }
       }
-      for (const key of Object.keys(meshes)) { const m = meshes[key]; viewer.addCustom({ vertexArr: m.vertexArr, normalArr: m.normalArr, faceArr: m.faceArr, color: m.sty.color, opacity: m.sty.opacity }); }
+      for (const key of Object.keys(meshes)) { const m = meshes[key]; if (m.faceArr.length) viewer.addCustom({ vertexArr: m.vertexArr, normalArr: m.normalArr, faceArr: m.faceArr, color: m.sty.color, opacity: m.sty.opacity }); }
     }
 
     // unit cell outline with axis letters
@@ -5694,20 +5872,38 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     }
     if (st.planePick && st.planePick.kind === 'atoms') for (const a of st.planePick.atoms) viewer.addSphere({ center: V3(a.p), radius: 0.6, color: accent, opacity: 0.45 });
 
-    // the glow of the chosen row of the framework card: a shell around its atoms and a tube along its bonds
-    if (st.glow) {
+    // the glow of the chosen row of the framework card: a shell around its atoms, a tube along its bonds,
+    // and the planes and lines that the definition of the row uses
+    if (st.glow && !st.glow.quiet) {
       const g = st.glow;
       const item = st.glowItems[g.i];
-      const set = item ? C.highlightSet(blk, uc, d.info, item) : { atoms: [], bonds: [] };
+      const set = item ? C.highlightSet(blk, uc, d.info, item) : { atoms: [], bonds: [], planes: [], lines: [] };
       const seen = set.atoms.filter((i) => map.has(i));
       g.cut = seen.length > GLOW_MAX_ATOMS;
       const shown = g.cut ? seen.slice(0, GLOW_MAX_ATOMS) : seen;
       const inSet = new Set(shown);
       const balls = shown.map((i) => ({ c: blk.atoms[i].xyz, r: Math.max(sphereR(blk.atoms[i].el) + 0.32, 0.55) }));
       const tubes = set.bonds.filter((bd) => inSet.has(bd[0]) && inSet.has(bd[1])).map((bd) => ({ p: blk.atoms[bd[0]].xyz, q: blk.atoms[bd[1]].xyz, rp: 0.24, rq: 0.24, cp: 0, cq: 0 }));
-      g.count = { atoms: shown.length, bonds: tubes.length };
+      const rods = set.lines.map((ln) => ({ p: ln[0], q: ln[1], rp: 0.09, rq: 0.09, cp: 0, cq: 0 }));
+      // each plane is a disc, drawn on its two sides, with a rim: the rim shows a plane that is seen from its edge
+      const discs = { vertexArr: [], normalArr: [], faceArr: [] };
+      for (const P of set.planes) {
+        const disc = C.planeDisc({ n: P.n, c: P.c }, [], P.r, 32);
+        for (let k = 0; k < disc.pts.length; k++) rods.push({ p: disc.pts[k], q: disc.pts[(k + 1) % disc.pts.length], rp: 0.045, rq: 0.045, cp: 0, cq: 0 });
+        for (const sgn of [1, -1]) {
+          const nv = P.n.map((x) => x * sgn);
+          for (let k = 0; k < disc.pts.length; k++) {
+            const q0 = disc.pts[k], q1 = disc.pts[(k + 1) % disc.pts.length];
+            const base = discs.vertexArr.length;
+            discs.vertexArr.push(disc.c, sgn > 0 ? q0 : q1, sgn > 0 ? q1 : q0);
+            discs.normalArr.push(nv, nv, nv);
+            discs.faceArr.push(base, base + 1, base + 2);
+          }
+        }
+      }
+      g.count = { atoms: shown.length, bonds: tubes.length, planes: set.planes.length, lines: set.lines.length };
       // fewer faces for a large part, so that the glow stays smooth
-      g.meshes = C.ballMesh(balls, shown.length > 400 ? 8 : 14).concat(C.bondTubes(tubes, 10))
+      g.meshes = C.ballMesh(balls, shown.length > 400 ? 8 : 14).concat(C.bondTubes(tubes, 10), C.bondTubes(rods, 8), discs.faceArr.length ? [discs] : [])
         .map((m) => ({ vertexArr: m.vertexArr.map(V3), normalArr: m.normalArr.map(V3), faceArr: m.faceArr }));
       g.shapes = [];
       g.color = accent;
@@ -6195,7 +6391,13 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     $('mpAtoms').onclick = () => startPlanePick('atoms');
     $('mpHkl').onclick = () => startPlanePick('hkl');
     $('mpLayer').onclick = () => startPlanePick('layer');
-    $('mpList').onclick = (e) => { const b = e.target.closest('button[data-mprm]'); if (b) removeMplane(b.dataset.mprm); };
+    $('mpList').onclick = (e) => {
+      const b = e.target.closest('button[data-mprm]');
+      if (b) { removeMplane(b.dataset.mprm); return; }
+      const u = e.target.closest('button[data-mpuse]');
+      const P = u && D() ? mplaneOf(D(), u.dataset.mpuse) : null;
+      if (P && P.near) ['mpH', 'mpK', 'mpL'].forEach((id, k) => { $(id).value = P.near.hkl[k]; });
+    };
     $('mpList').onchange = (e) => { if (e.target.name === 'mpSel' && D()) { D().mplaneSel = e.target.value; render(true); } };
     // a row of the framework card shows its atoms in the picture: they glow in and out until the row is pressed again
     $('cardFw').addEventListener('click', (e) => { const t = e.target.closest('[data-glow]'); if (t) toggleGlow(+t.dataset.glow); });

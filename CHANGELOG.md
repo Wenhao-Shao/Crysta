@@ -10,13 +10,25 @@ Any change to how a number is defined gets a new version and a line here.
   - **Bond to plane:** click two atoms for the angle between their line and the plane, 0° to 90°.
   - Crysta gives the angle between each two planes, 0° to 90°.
   - A structure can have 6 planes. The picture and the SVG drawing show the planes and the measurements.
-- **The framework card shows its atoms.** Press a row of the Inorganic framework card. The atoms and bonds of that row glow in and out in the picture. Press the row again, press Stop, or press Escape to stop.
-  - The rows are: each bond length, each metal site, each M–X–M bridge, the axial bonds, the N penetration, the slab, the gallery and the layers.
-  - The strip under the picture gives the number of atoms and bonds that glow. If the packing box cuts a bridge, the part inside the box glows.
+- **Each row of the framework card has its definition and its picture.** Press a row of the Inorganic framework card. The strip under the picture gives the definition of that number. Press the row again, press Close, or press Escape to close it.
+  - For most rows, the picture shows what the definition uses, and it glows in and out:
+    - a bond length: the two atoms and the bond
+    - a mean bond length, Δ*d* or *σ*²: the metal and its bonds
+    - cis X–M–X: the two bonds of the smallest angle and the two bonds of the largest angle
+    - an M–X–M bridge: the two bonds and the three atoms
+    - the axial M–X angle: the axial bonds, the layer normal and the layer plane at each metal
+    - the slab: the two planes of terminal halides of a layer, and the distance between them
+    - the organic gallery: the two halide planes that face each other, and the distance between them
+    - the N penetration: the N, the halide plane that it is measured from, and the line between them
+    - the stacking offset: the two metals, the normal, the shift and the two in-plane M···M vectors
+  - Connectivity, layer thickness and layer spacing have the definition only.
+  - While a row glows, each polyhedron is drawn as its edges only: its faces hide the bonds inside.
   - A saved PNG shows the glow at one fixed strength. If the system asks for less motion, the glow does not move.
+  - If the packing box cuts a bridge, the part inside the box glows.
+- **The lattice plane nearest to a plane through atoms.** For each plane through atoms, the Planes list gives the nearest (*hkl*) and the angle between the two planes. "Set h k l" puts these indexes in the boxes.
 - **Powder XRD:** an arrow at the top right of the reflection table minimizes or maximizes it, as on the side panels. With the table minimized, the plot has the height.
 
-New definitions (see the README): plane through atoms, lattice plane through an atom, atom to plane, bond to plane, plane to plane. No other definition changed: every other number is identical to v0.4.0.
+New definitions (see the README): plane through atoms, lattice plane through an atom, nearest lattice plane, atom to plane, bond to plane, plane to plane. No other definition changed: every other number is identical to v0.4.0.
 
 ## v0.4.0
 

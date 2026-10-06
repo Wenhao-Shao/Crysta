@@ -610,6 +610,24 @@ const formula = (info) => info.formula.map((e) => e.el + e.n).join(' ');
   check('(hkl) plane through an atom: normal to a and b for (001)', near(dotp(p001.n, aVec), 0, 1e-9) && near(dotp(p001.n, bVec), 0, 1e-9) && near(X.planeDistance(p001, [1, 2, 3]), 0, 1e-12) && p001.rms === 0);
   check('(hkl) plane: the c axis of a monoclinic cell is 20 degrees from the (001) normal', near(X.linePlaneAngle(p001, [0, 0, 0], cVec), 70, 1e-6) && near(Math.abs(X.planeDistance(p001, [1 + cVec[0], 2 + cVec[1], 3 + cVec[2]])), 7 * Math.sin(110 * Math.PI / 180), 1e-6));
   check('(0 0 0) sets no plane', X.planeOfHkl(mono.cell, [0, 0, 0], [0, 0, 0]) === null);
+  // the lattice plane nearest to a plane
+  const back = (hkl) => X.nearestHkl(mono.cell, X.planeOfHkl(mono.cell, hkl, [0, 0, 0]).n);
+  check('nearest (hkl): a lattice plane gives its own indexes', [[1, 0, 0], [0, 0, 1], [1, -2, 3], [5, -6, 1], [-1, 1, 0]].every((h) => { const r = back(h); return r.hkl.join() === h.join() && r.angle < 1e-4; }));
+  // a plane 0.5 degrees from (001): the simple indexes win over a nearer plane with large indexes
+  const n001 = X.planeOfHkl(mono.cell, [0, 0, 1], [0, 0, 0]).n;
+  const e = (() => { const a1 = mono.cell.toCart([1, 0, 0]); const L1 = Math.hypot(...a1); return a1.map((x) => x / L1); })();
+  const tilt = (deg) => { const t = deg * Math.PI / 180; const v = n001.map((x, k) => Math.cos(t) * x + Math.sin(t) * e[k]); const L1 = Math.hypot(...v); return v.map((x) => x / L1); };
+  const nearly = X.nearestHkl(mono.cell, tilt(0.5));
+  check('nearest (hkl): small indexes first, within 1 degree', nearly.hkl.join() === '0,0,1' && near(nearly.angle, 0.5, 1e-6));
+  // 10 degrees from (001), towards a: no plane with indexes up to 6 is within 1 degree, so the nearest of them is the result
+  const far = X.nearestHkl(mono.cell, tilt(10));
+  let least = 90;
+  for (let h = -6; h <= 6; h++) for (let k = -6; k <= 6; k++) for (let l = -6; l <= 6; l++) {
+    if (h || k || l) least = Math.min(least, X.planePlaneAngle({ n: tilt(10) }, X.planeOfHkl(mono.cell, [h, k, l], [0, 0, 0])));
+  }
+  check('nearest (hkl): the nearest plane with indexes up to 6 when no plane is within 1 degree', far.hkl.join() === '1,0,6' && far.angle > 1 && near(far.angle, least, 1e-9));
+  const flip = X.nearestHkl(mono.cell, n001.map((x) => -x));
+  check('nearest (hkl): the indexes point as the normal does', flip.hkl.join() === '0,0,-1' && flip.angle < 1e-4);
   // what the picture draws: a disc of the plane, and spheres around chosen atoms
   const disc = X.planeDisc(flat, sq, 1.2, 12);
   check('plane disc: covers the atoms, lies in the plane', near(disc.r, 2.2, 1e-9) && disc.pts.length === 12 && disc.pts.every((q) => near(X.planeDistance(flat, q), 0, 1e-9) && near(X.distance(q, flat.c), 2.2, 1e-9)));
@@ -652,6 +670,40 @@ const formula = (info) => info.formula.map((e) => e.el + e.n).join(' ');
   check('glow: terminal halides, metals, framework and organic part', term.atoms.every((i) => A[i].el === 'Br') && term.atoms.length === axial.bonds.length && term.bonds.length === 0 &&
     set({ type: 'metals' }).atoms.every((i) => A[i].el === 'Pb') && set({ type: 'framework' }).atoms.every((i) => A[i].el === 'Pb' || A[i].el === 'Br') &&
     set({ type: 'organic' }).atoms.every((i) => A[i].kind === 'molecule') && set({ type: 'organic' }).atoms.length + set({ type: 'framework' }).atoms.length === A.length);
+  // the planes and lines that the definitions use
+  const Ly = info.layer, nh = Ly.normal;
+  const hOf = (q) => q[0] * nh[0] + q[1] * nh[1] + q[2] * nh[2];
+  const along = (ln) => Math.abs(hOf(ln[1]) - hOf(ln[0]));
+  const isNormal = (ln) => near(along(ln), X.distance(ln[0], ln[1]), 1e-9);
+  check('glow: the axial row has the layer normal and the layer plane at each metal', axial.lines.length === axial.planes.length && axial.planes.length === A.filter((a) => uc.center[a.src]).length &&
+    axial.lines.every(isNormal) && axial.planes.every((P) => P.n.join() === nh.join()));
+  const cis = set({ type: 'cis', m: m.label });
+  const cisAngles = [];
+  for (const i of A.map((a, k) => k).filter((k) => A[k].label === m.label)) {
+    const mine = cis.bonds.filter((bd) => bd[0] === i || bd[1] === i).map((bd) => (bd[0] === i ? bd[1] : bd[0]));
+    for (let p = 0; p < mine.length; p++) for (let q = p + 1; q < mine.length; q++) cisAngles.push(X.bondAngle(A[mine[p]].xyz, A[i].xyz, A[mine[q]].xyz));
+  }
+  check('glow: the cis row has the bonds of the smallest and of the largest cis angle', cis.bonds.length >= 3 * nM && cis.bonds.length <= 4 * nM &&
+    cisAngles.some((t) => near(t, m.cisMin, 1e-6)) && cisAngles.some((t) => near(t, m.cisMax, 1e-6)));
+  const slab = set({ type: 'slab' });
+  check('glow: the slab row has the two halide planes of a layer and the distance between them', slab.planes.length >= 2 && slab.lines.length >= 1 && slab.lines.every((ln) => isNormal(ln) && near(along(ln), Ly.slabThickness, 1e-6)) &&
+    slab.atoms.every((i) => A[i].el === 'Br' && uc.metalsOf[A[i].src].length === 1));
+  const gal = set({ type: 'gallery' });
+  check('glow: the gallery row has the planes that face each other and the distance between them', gal.planes.length >= 2 && gal.lines.length >= 1 && gal.lines.every((ln) => isNormal(ln) && near(along(ln), Ly.gallery, 1e-6)) &&
+    near(Ly.gallery + Ly.slabThickness, Ly.spacing, 1e-9));
+  const pen = set({ type: 'penetration', label: Ly.penetration[0].label });
+  check('glow: the N penetration row has the N, the halide plane and the line between them', pen.lines.length > 0 && pen.lines.length === pen.planes.length && pen.lines.every(isNormal) &&
+    near(pen.lines.reduce((t, ln) => t + along(ln), 0) / pen.lines.length, Math.abs(Ly.penetration[0].depth), 1e-6) && pen.atoms.some((i) => A[i].label === Ly.penetration[0].label) && pen.atoms.some((i) => A[i].el === 'Br'));
+  // the stacking offset: the shift in the picture, in units of the two M...M vectors, is the offset of the row
+  const big = X.assemble(uc, [0, 0, 0], [2, 2, 2], []);
+  const off = X.highlightSet(big, uc, info, { type: 'offset' });
+  const shift = off.lines[1][1].map((x, k) => x - off.lines[1][0][k]);
+  const v1 = Ly.offset.v1, v2 = Ly.offset.v2, dp = (u, v) => u[0] * v[0] + u[1] * v[1] + u[2] * v[2];
+  const det = dp(v1, v1) * dp(v2, v2) - dp(v1, v2) * dp(v1, v2);
+  const fold = (x) => Math.abs(x - Math.round(x));
+  const s1 = fold((dp(shift, v1) * dp(v2, v2) - dp(v1, v2) * dp(shift, v2)) / det), s2 = fold((dp(v1, v1) * dp(shift, v2) - dp(v1, v2) * dp(shift, v1)) / det);
+  check('glow: the stacking offset row has two metals, the normal, the shift and the two M...M vectors', off.atoms.length === 2 && off.atoms.every((i) => big.atoms[i].el === 'Pb') && off.lines.length === 4 && isNormal(off.lines[0]) &&
+    near(along(off.lines[1]), 0, 1e-9) && near(Math.max(s1, s2), Ly.offset.s1, 1e-6) && near(Math.min(s1, s2), Ly.offset.s2, 1e-6));
   const nLab = info.layer.penetration[0].label;
   check('glow: a label row gives the atoms with that label, and an unknown row gives nothing', labels(set({ type: 'label', label: nLab })) === nLab && set({ type: 'label', label: 'Zz9' }).atoms.length === 0 && set({ type: 'other' }).atoms.length === 0);
   // a bridge that the packing box cuts (the layer of this structure is at z = 0): no X atom of it has two metals in the box
