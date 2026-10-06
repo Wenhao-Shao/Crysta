@@ -230,7 +230,7 @@ select { font-family: var(--font-ui); padding: 3px 4px; max-width: 100%; }
 
 dl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 3px 14px; margin: 0; font-size: 13px; }
 dt { color: var(--muted); }
-dd { margin: 0; font-family: var(--font-data); font-size: 12.5px; font-variant-numeric: tabular-nums; text-align: right; overflow-wrap: anywhere; }
+dd { margin: 0; font-family: var(--font-ui); font-size: 13px; font-variant-numeric: tabular-nums; text-align: right; overflow-wrap: anywhere; }
 dd.txt { font-family: var(--font-ui); font-size: 13px; }
 sub, sup { font-size: 0.75em; line-height: 0; }
 .tbl-wrap { overflow-x: auto; }
@@ -238,6 +238,9 @@ table { border-collapse: collapse; width: 100%; font-family: var(--font-data); f
 th { font-family: var(--font-ui); font-weight: 500; color: var(--muted); font-size: 12px; text-align: right; padding: 0 0 4px 12px; white-space: nowrap; }
 td { text-align: right; padding: 3px 0 3px 12px; border-top: 1px solid var(--line); white-space: nowrap; }
 th:first-child, td:first-child { text-align: left; padding-left: 0; }
+/* the tables of the side cards use the main font, as the other rows of these cards */
+.rail table { font-family: var(--font-ui); font-size: 13px; }
+.rail td input[type="checkbox"], .rail th input[type="checkbox"] { margin: 0 6px 0 0; vertical-align: -2px; accent-color: var(--accent); }
 #tblCmp td:first-child { position: sticky; left: 0; background: var(--panel); }
 #tblCmp tr.on td { background: var(--accent-soft); }
 #tblCmp tr.on td:first-child { background: var(--accent-soft); }
@@ -263,6 +266,13 @@ dialog.fb::backdrop { background: rgba(20, 16, 24, 0.55); }
 .fb .alert { color: var(--warn); font-size: 13px; overflow-wrap: anywhere; }
 .fb .alert a { color: inherit; }
 .fb .alert.good { color: var(--ink); }
+.cite .citebody { display: grid; gap: 12px; }
+.cite h3 { margin: 4px 0 0; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.cite ul { margin: 0; padding-left: 18px; display: grid; gap: 8px; font-size: 13px; color: var(--muted); }
+.cite li b { color: var(--ink); font-weight: 600; }
+.cite a { color: var(--accent); overflow-wrap: anywhere; }
+.citebox { margin: 0; font-family: var(--font-ui); font-size: 14px; line-height: 1.45; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 8px 10px; overflow-wrap: anywhere; white-space: pre-wrap; user-select: all; -webkit-user-select: all; }
+pre.citebox { font-family: var(--font-data); font-size: 12.5px; }
 .fb .actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
 
 /* Rail cards fold: an arrow at the top right of each card minimizes or maximizes it. */
@@ -408,6 +418,7 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
       <button type="button" id="btnDbs" title="Find a structure in a database: HybriD3, the 2D perovskite database (NMSE) or COD">Databases</button>
       <button type="button" id="btnPxrd" title="Open the powder X-ray diffraction window: simulated patterns of the loaded structures, and your measured data">Powder XRD</button>
       <button type="button" id="btnFeedback">Send feedback</button>
+      <button type="button" id="btnCite" title="How to cite Crysta, and what to cite with it">How to cite</button>
       <label class="bgpick" title="The background of the whole page, the 3D picture, the saved pictures and the PXRD window">Background
         <select id="selBg">
           <option value="auto">Browser default</option>
@@ -520,13 +531,15 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
         <div class="mlist" id="measList"></div>
         <div class="small">Press × to remove a measurement, or right-click it in the picture.</div>
         <div class="subhead">Planes</div>
-        <div class="row"><button type="button" id="mpAtoms">Plane through atoms</button></div>
+        <div class="row">
+          <button type="button" id="mpAtoms">Plane through atoms</button>
+          <button type="button" id="mpHkl" title="The lattice plane (hkl) through an atom that you click. Give h, k and l in the boxes.">(<i>hkl</i>) plane</button>
+        </div>
         <div class="idx">
           <label><em>h</em><input type="number" id="mpH" step="1" value="0"></label>
           <label><em>k</em><input type="number" id="mpK" step="1" value="0"></label>
           <label><em>l</em><input type="number" id="mpL" step="1" value="1"></label>
         </div>
-        <div class="row"><button type="button" id="mpHkl" title="The lattice plane (hkl) through an atom that you click">(<i>hkl</i>) plane</button></div>
         <div class="mlist" id="mpList"></div>
         <div class="small" id="mpNote">Make a plane, then measure against it: the distance of an atom from the plane, or the angle between a bond and the plane. Crysta gives the angle between each two planes.</div>
       </section>
@@ -628,6 +641,34 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
 </div>
 
 <div class="ctx" id="ctxMenu" role="menu" hidden></div>
+
+<dialog class="fb cite" id="citeDlg" aria-labelledby="citeTitle">
+  <div class="citebody">
+    <h2 id="citeTitle">How to cite Crysta</h2>
+    <p>Use this citation. Give the version: the definition of a number can change between versions, and the changelog lists each change.</p>
+    <div class="citebox" id="citeText">W. Shao, Crysta: a crystal structure workbench in the browser, version 0.5.0 (2026). https://wenhao-shao.github.io/Crysta/</div>
+    <pre class="citebox" id="citeBib" hidden>@software{crysta,
+  author  = {Shao, Wenhao},
+  title   = {Crysta: a crystal structure workbench in the browser},
+  version = {0.5.0},
+  year    = {2026},
+  url     = {https://wenhao-shao.github.io/Crysta/}
+}</pre>
+    <div class="row">
+      <button type="button" class="primary" id="citeCopy">Copy the citation</button>
+      <button type="button" id="citeCopyBib">Copy as BibTeX</button>
+      <span class="small" id="citeMsg" role="status"></span>
+    </div>
+    <h3>Cite these also, if you use them</h3>
+    <ul>
+      <li><b>The structure.</b> Cite the paper or the database that each structure file comes from. For a structure from HybriD3, cite the reference that Crysta shows with the structure, and the HybriD3 database.</li>
+      <li><b>The pictures.</b> Crysta draws with 3Dmol.js: N. Rego and D. Koes, <i>Bioinformatics</i> <b>31</b>, 1322–1324 (2015). <a href="https://doi.org/10.1093/bioinformatics/btu829" target="_blank" rel="noopener">doi:10.1093/bioinformatics/btu829</a></li>
+      <li><b>Simulated powder patterns.</b> The scattering factors are from <i>International Tables for Crystallography</i>, Volume C, table 6.1.1.4. The dispersion corrections were calculated with GEMMI: M. Wojdyr, <i>Journal of Open Source Software</i> <b>7</b>, 4200 (2022). <a href="https://doi.org/10.21105/joss.04200" target="_blank" rel="noopener">doi:10.21105/joss.04200</a></li>
+    </ul>
+    <p>Crysta has no paper and no DOI yet. The file CITATION.cff in the repository has the same citation for reference managers.</p>
+    <div class="row between"><button type="button" id="citeClose">Close</button></div>
+  </div>
+</dialog>
 
 <dialog class="fb" id="fbDlg" aria-labelledby="fbTitle">
   <form id="fbForm">
@@ -2633,6 +2674,9 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
        { type: 'gallery' }                  the terminal-halide planes that face each other across the organic part
        { type: 'penetration', label }       the N atoms with this label, each with the terminal-halide plane it is measured from
        { type: 'offset' }                   a metal, the nearest metal of the next layer, the normal, the shift and the M...M vectors
+       { type: 'hbond', D, H, A, dDA }      the hydrogen bonds D-H...A between these sites with this D...A distance (Å):
+                                            D, H and A, the D-H bond, the H...A line and the angle at H. H is null for a
+                                            file without H atoms: then D, A and the D...A line.
        { type: 'terminal' } { type: 'label', label } { type: 'metals' } { type: 'framework' } { type: 'organic' }
      Returns { atoms: [i], bonds: [[i, j]], planes: [{ c, n, r }], lines: [[p, q]], arcs: [{ c, p, q, r }] }.
      atoms and bonds are indexes into blk.atoms. planes are discs (centre, unit normal, radius), lines are
@@ -2749,6 +2793,18 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     });
     if (item.type === 'framework') {
       for (const i of atoms) for (const j of A[i].bonds) if (atoms.has(j) && j > i) bond(i, j);
+    }
+    if (item.type === 'hbond') {
+      for (const h of blk.hbonds || []) {
+        if (A[h.d].label !== item.D || A[h.a].label !== item.A || Math.abs(h.dDA - item.dDA) > 0.006) continue;
+        if ((h.h >= 0 ? A[h.h].label : null) !== (item.H || null)) continue;
+        atoms.add(h.d); atoms.add(h.a);
+        if (h.h >= 0) {
+          bond(h.d, h.h);
+          lines.push([A[h.h].xyz.slice(), A[h.a].xyz.slice()]);
+          arc(A[h.h].xyz, A[h.d].xyz, A[h.a].xyz, 0.5);
+        } else lines.push([A[h.d].xyz.slice(), A[h.a].xyz.slice()]);
+      }
     }
     // A layer that the packing box cuts has bridges with one metal outside the box. Then the X atoms of the
     // bridge are shown with the metal that is there.
@@ -4716,7 +4772,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
       if (!struct.meta.spaceGroup && src.origin.spaceGroup) { struct.meta.spaceGroup = src.origin.spaceGroup; struct.meta.sgFrom = src.origin.database; }
       if (!struct.meta.temperature && src.origin.temperature) struct.meta.temperature = src.origin.temperature;
     }
-    const d = { src, struct, minor: false, planes: [], chromos: [], measures: [], picks: [], mplanes: [], mplaneSel: null, mplaneSeq: 0, polyRules: [], autoStyle: {}, autoHide: {}, autoGone: {}, polyOpen: null,
+    const d = { src, struct, minor: false, planes: [], chromos: [], measures: [], picks: [], mplanes: [], mplaneSel: null, mplaneSeq: 0, hbHide: new Set(), polyRules: [], autoStyle: {}, autoHide: {}, autoGone: {}, polyOpen: null,
       name: src.name.replace(/\.[^.]+$/, '') + (many ? ' · ' + struct.meta.block : '') };
     rebuildCell(d);
     const L = [struct.cell.a, struct.cell.b, struct.cell.c];
@@ -4749,7 +4805,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     for (const h of big.hbonds) {
       const A = big.atoms;
       const key = A[h.d].label + '|' + (h.h >= 0 ? A[h.h].label : '') + '|' + A[h.a].label + '|' + h.dDA.toFixed(2);
-      if (!seen.has(key)) seen.set(key, { D: A[h.d].label, H: h.h >= 0 ? A[h.h].label : null, A: A[h.a].label, dHA: h.dHA, dDA: h.dDA, angle: h.angle });
+      if (!seen.has(key)) seen.set(key, { key, D: A[h.d].label, H: h.h >= 0 ? A[h.h].label : null, A: A[h.a].label, dHA: h.dHA, dDA: h.dDA, angle: h.angle });
     }
     d.hbRows = Array.from(seen.values()).sort((p, q) => p.dDA - q.dDA);
     d.hbFromH = big.hasH;
@@ -5021,18 +5077,32 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     const allOct = info.metalSites.length && info.metalSites.every((s) => s.octahedral);
     $('polyName').textContent = allOct ? 'Octahedra' : 'Polyhedra';
 
-    // hydrogen bonds
+    // hydrogen bonds: a row has a box that shows or hides that bond in the picture, and it is a button as the
+    // rows of the framework card are (its definition under the picture, and its atoms glow)
     const hb = d.hbRows;
     $('cardHB').hidden = !hb.length;
     if (hb.length) {
+      const some = hb.some((r) => !d.hbHide.has(r.key));
+      const head = (text) => '<th><label title="Show or hide all of them in the picture"><input type="checkbox" id="hbAll"' + (some ? ' checked' : '') + '>' + text + '</label></th>';
+      const first = (r, name, item) => {
+        const id = glowId(name, Object.assign({ keepFaces: true }, item));
+        return '<tr data-glow="' + id + '"><td><input type="checkbox" data-hb="' + esc(r.key) + '"' + (d.hbHide.has(r.key) ? '' : ' checked') + ' aria-label="Show ' + name + ' in the picture">' +
+          '<button type="button" class="glowbtn" aria-pressed="false" title="' + glowTitle(item) + '">' + name + '</button></td>';
+      };
+      const boxes = ' Clear the box of a row to hide that one in the picture. The Hydrogen bonds box of the Display card shows or hides all of them. Press a row to read its definition and to see its atoms glow.';
       if (d.hbFromH) {
-        $('tblHB').innerHTML = '<thead><tr><th>D–H···A</th><th>H···A</th><th>D···A</th><th>∠DHA</th></tr></thead><tbody>' +
-          hb.map((r) => '<tr><td>' + esc(r.D) + '–' + esc(r.H) + '···' + esc(r.A) + '</td><td>' + fmt(r.dHA, 2) + '</td><td>' + fmt(r.dDA, 3) + '</td><td>' + fmt(r.angle, 0) + '°</td></tr>').join('') + '</tbody>';
-        $('hbNote').textContent = 'Distances in Å. Criteria: H···A at least 0.15 Å inside the van der Waals sum and D–H···A above 120°. H positions are as given in the file.';
+        $('tblHB').innerHTML = '<thead><tr>' + head('D–H···A') + '<th>H···A</th><th>D···A</th><th>∠DHA</th></tr></thead><tbody>' +
+          hb.map((r) => first(r, esc(r.D) + '–' + esc(r.H) + '···' + esc(r.A), { type: 'hbond', D: r.D, H: r.H, A: r.A, dDA: r.dDA,
+            def: 'A hydrogen bond from the donor ' + r.D + ', through ' + r.H + ', to the acceptor ' + r.A + '. H···A and D···A are distances. ∠DHA is the angle at ' + r.H + '. ' + NAME +
+              ' lists a contact when H···A is at least 0.15 Å inside the van der Waals sum and the angle is above 120°. The picture shows the three atoms, the D–H bond, the H···A line and the mark of the angle.' }) +
+            '<td>' + fmt(r.dHA, 2) + '</td><td>' + fmt(r.dDA, 3) + '</td><td>' + fmt(r.angle, 0) + '°</td></tr>').join('') + '</tbody>';
+        $('hbNote').textContent = 'Distances in Å. Criteria: H···A at least 0.15 Å inside the van der Waals sum and D–H···A above 120°. H positions are as given in the file.' + boxes;
       } else {
-        $('tblHB').innerHTML = '<thead><tr><th>D···A</th><th>distance</th></tr></thead><tbody>' +
-          hb.map((r) => '<tr><td>' + esc(r.D) + '···' + esc(r.A) + '</td><td>' + fmt(r.dDA, 3) + '</td></tr>').join('') + '</tbody>';
-        $('hbNote').textContent = 'No H atoms in this file, so short N/O···halide contacts are listed instead (Å).';
+        $('tblHB').innerHTML = '<thead><tr>' + head('D···A') + '<th>distance</th></tr></thead><tbody>' +
+          hb.map((r) => first(r, esc(r.D) + '···' + esc(r.A), { type: 'hbond', D: r.D, H: null, A: r.A, dDA: r.dDA,
+            def: 'A short contact between the donor ' + r.D + ' and the halide ' + r.A + '. The file has no H atoms, so ' + NAME + ' lists the contacts that are shorter than the van der Waals sum plus 0.15 Å. The picture shows the two atoms and the line between them.' }) +
+            '<td>' + fmt(r.dDA, 3) + '</td></tr>').join('') + '</tbody>';
+        $('hbNote').textContent = 'No H atoms in this file, so short N/O···halide contacts are listed instead (Å).' + boxes;
       }
     }
     $('hbTitle').textContent = d.hbFromH ? 'Hydrogen bonds' : 'Short donor–halide contacts';
@@ -5583,6 +5653,9 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     $('readout').innerHTML = lines.join('');
   }
 
+  /* the key of a hydrogen bond of the picture: the same text as the key of its row in the Hydrogen bonds card */
+  const hbKey = (blk, h) => blk.atoms[h.d].label + '|' + (h.h >= 0 ? blk.atoms[h.h].label : '') + '|' + blk.atoms[h.a].label + '|' + h.dDA.toFixed(2);
+
   /* ---------- glow: the atoms of one row of the framework card ----------
      st.glowItems holds what each row is about (see C.highlightSet). st.glow is the row that glows now, or null.
      render() builds the meshes of the glow. A timer draws them again with a new strength, so that they go in and out. */
@@ -5603,7 +5676,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
   }
   function markGlow() {
     const on = st.glow ? String(st.glow.i) : null;
-    $('cardFw').querySelectorAll('[data-glow]').forEach((el) => {
+    document.querySelectorAll('#cardFw [data-glow], #cardHB [data-glow]').forEach((el) => {
       const lit = el.dataset.glow === on;
       el.classList.toggle('lit', lit);
       const b = el.querySelector('.glowbtn');
@@ -5640,7 +5713,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     if (st.glow && st.glow.i === i) { stopGlow(); return; }
     if (glowTimer) { clearTimeout(glowTimer); glowTimer = null; }
     const drawn = !!st.glow && !st.glow.quiet;
-    st.glow = { i, name: item.name, def: item.def, quiet: !!item.quiet, t0: performance.now(), shapes: [], meshes: null, count: null };
+    st.glow = { i, name: item.name, def: item.def, quiet: !!item.quiet, keepFaces: !!item.keepFaces, t0: performance.now(), shapes: [], meshes: null, count: null };
     markGlow();
     if (item.quiet && !drawn) drawReadout(); else render(true);
     if (!item.quiet && !stillMotion()) glowTimer = setTimeout(glowStep, 70);
@@ -5742,7 +5815,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     // polyhedra, one mesh per set (automatic per centre element, or one of the user's rules), in that set's style
     if (st.poly && st.inorg && st.style !== 'sf') {
       const meshes = {};
-      const glowOpen = !!st.glow && !st.glow.quiet;
+      const glowOpen = !!st.glow && !st.glow.quiet && !st.glow.keepFaces;
       for (const p of blk.polyhedra) {
         const key = polyKey(blk, p);
         if (!polyShown(d, key)) continue;
@@ -5788,7 +5861,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     // hydrogen bonds
     if (st.hb && st.style !== 'sf') {
       for (const h of blk.hbonds) {
-        if (!map.has(h.d) || !map.has(h.a)) continue;
+        if (!map.has(h.d) || !map.has(h.a) || d.hbHide.has(hbKey(blk, h))) continue;
         const from = st.H && h.h >= 0 ? blk.atoms[h.h] : blk.atoms[h.d];
         viewer.addCylinder({ start: V3(from.xyz), end: V3(blk.atoms[h.a].xyz), radius: 0.03, color: accent, dashed: true, dashLength: 0.16, gapLength: 0.12, fromCap: 1, toCap: 1 });
       }
@@ -6290,7 +6363,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     }
     if (st.hb && st.style !== 'sf') {
       for (const h of blk.hbonds) {
-        if (!isVisible(blk.atoms[h.d]) || !isVisible(blk.atoms[h.a]) || solid(h.d) <= 0 || solid(h.a) <= 0) continue;
+        if (!isVisible(blk.atoms[h.d]) || !isVisible(blk.atoms[h.a]) || solid(h.d) <= 0 || solid(h.a) <= 0 || d.hbHide.has(hbKey(blk, h))) continue;
         const from = st.H && h.h >= 0 ? blk.atoms[h.h] : blk.atoms[h.d];
         items.push({ t: 'line', p: from.xyz, q: blk.atoms[h.a].xyz, w: 0.06 * scale, color: accent, dash: [0.16 * scale, 0.2 * scale], cls: 'hbond' });
       }
@@ -6442,6 +6515,26 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     $('mpList').onchange = (e) => { if (e.target.name === 'mpSel' && D()) { D().mplaneSel = e.target.value; render(true); } };
     // a row of the framework card shows its atoms in the picture: they glow in and out until the row is pressed again
     $('cardFw').addEventListener('click', (e) => { const t = e.target.closest('[data-glow]'); if (t) toggleGlow(+t.dataset.glow); });
+    // the rows of the Hydrogen bonds card do the same. The box of a row shows or hides that bond in the picture.
+    $('cardHB').addEventListener('click', (e) => {
+      if (e.target.closest('input, label')) return;
+      const t = e.target.closest('[data-glow]');
+      if (t) toggleGlow(+t.dataset.glow);
+    });
+    $('cardHB').addEventListener('change', (e) => {
+      const d = D();
+      if (!d) return;
+      if (e.target.id === 'hbAll') {
+        if (e.target.checked) d.hbHide.clear(); else d.hbRows.forEach((r) => d.hbHide.add(r.key));
+        $('cardHB').querySelectorAll('input[data-hb]').forEach((box) => { box.checked = e.target.checked; });
+      } else if (e.target.dataset.hb !== undefined) {
+        if (e.target.checked) d.hbHide.delete(e.target.dataset.hb); else d.hbHide.add(e.target.dataset.hb);
+        const all = $('hbAll');
+        all.checked = d.hbRows.some((r) => !d.hbHide.has(r.key));
+        all.indeterminate = all.checked && d.hbHide.size > 0;
+      } else return;
+      render(true);
+    });
     $('measList').onclick = (e) => { const b = e.target.closest('button[data-mrm]'); if (b) removeMeasure(+b.dataset.mrm); };
     // right-click on a measurement in the picture: a small menu to remove it
     $('gl').addEventListener('contextmenu', (e) => {
@@ -6776,6 +6869,32 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
       if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, fallback);
       else fallback();
     }
+
+    // How to cite: the citation of this version, as text and as BibTeX, and what to cite with it
+    $('btnCite').onclick = () => {
+      const dlg = $('citeDlg');
+      $('citeMsg').textContent = '';
+      $('citeBib').hidden = true;
+      if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
+    };
+    $('citeClose').onclick = () => { const dlg = $('citeDlg'); if (dlg.close) dlg.close(); else dlg.removeAttribute('open'); };
+    const citeCopy = (box, what) => {
+      const text = box.textContent;
+      // if the browser does not let the page copy, the text is selected: the user copies it with the keyboard
+      const fallback = () => {
+        box.hidden = false;
+        const range = document.createRange();
+        range.selectNodeContents(box);
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+        $('citeMsg').textContent = 'Press Ctrl+C (or ⌘C) to copy the selected text.';
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(() => { $('citeMsg').textContent = what + ' copied.'; }, fallback);
+      else fallback();
+    };
+    $('citeCopy').onclick = () => citeCopy($('citeText'), 'Citation');
+    $('citeCopyBib').onclick = () => { $('citeBib').hidden = false; citeCopy($('citeBib'), 'BibTeX entry'); };
 
     // feedback box: a note goes straight to the maintainer through Formspree, or opens as a pre-filled GitHub issue
     const FORMSPREE = 'https://formspree.io/f/mnnvojry';

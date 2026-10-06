@@ -10,7 +10,7 @@ served from the host of "homepage"). The offline file carries no such code.
 The name shown in the page comes from "displayName" in package.json.
 The address in the canonical link and the link-preview tags comes from "homepage".
 """
-import json, pathlib, urllib.parse
+import html, json, pathlib, urllib.parse
 
 root = pathlib.Path(__file__).parent
 pkg = json.loads((root / "package.json").read_text())
@@ -68,6 +68,25 @@ databases = json.dumps({
     "id": "hybrid3", "name": "HybriD3 materials database", "home": "https://materials.hybrid3.duke.edu/", "licence": "CC BY 4.0",
     "licenceUrl": "https://creativecommons.org/licenses/by/4.0/", "read": h3info["read"], "total": len(h3materials),
     "structuresOnSite": h3info.get("structures_stated"), "materials": h3materials}, ensure_ascii=False, separators=(",", ":"))
+# How to cite: one source (the "citation" part of package.json) for the box in the page and for CITATION.cff
+cite = pkg["citation"]
+cite_year = cite["released"][:4]
+cite_names = ", ".join(a["given"][0] + ". " + a["family"] for a in cite["authors"])
+cite_text = "%s, %s, version %s (%s). %s" % (cite_names, cite["title"], version, cite_year, pkg["homepage"])
+cite_bib = ("@software{crysta,\n  author  = {%s},\n  title   = {%s},\n  version = {%s},\n  year    = {%s},\n  url     = {%s}\n}"
+            % (" and ".join(a["family"] + ", " + a["given"] for a in cite["authors"]), cite["title"], version, cite_year, pkg["homepage"]))
+cff = ["# This file is made by build.py from package.json. Change the \"citation\" part there, not this file.",
+       "cff-version: 1.2.0", 'message: "If you use Crysta, cite it as below. Give the version: the definition of a number can change between versions."',
+       "type: software", 'title: "%s"' % cite["title"], "authors:"]
+for a in cite["authors"]:
+    cff += ['  - family-names: "%s"' % a["family"], '    given-names: "%s"' % a["given"]]
+    for key in ("affiliation", "orcid"):
+        if a.get(key):
+            cff.append('    %s: "%s"' % (key, a[key]))
+cff += ['version: "%s"' % version, "date-released: %s" % cite["released"], 'url: "%s"' % pkg["homepage"], 'repository-code: "%s"' % cite["repository"],
+        "license: MIT", 'abstract: "%s"' % pkg["description"].replace('"', "'"), "keywords:", "  - crystallography", "  - crystal structure", "  - CIF",
+        "  - powder X-ray diffraction", "  - 2D perovskite"]
+(root / "CITATION.cff").write_text("\n".join(cff) + "\n")
 table = (root / "src/sg-table.json").read_text()
 # built-in samples: file in examples/, name shown in the page
 SAMPLES = [
@@ -84,6 +103,7 @@ for part in (core, pxrd, dbs, table, lib, samples, databases):
 body = (template.replace("/*__CORE__*/", core).replace("/*__PXRD__*/", pxrd).replace("/*__DBS__*/", dbs).replace("__SAMPLES__", samples)
         .replace("__DATABASES__", databases)
         .replace("__SGTABLE__", table).replace("__VERSION__", "v" + version)
+        .replace("__CITE_TEXT__", html.escape(cite_text)).replace("__CITE_BIB__", html.escape(cite_bib))
         .replace("__NAME__", name).replace("__TAGLINE__", tagline)
         .replace("__HOMEPAGE__", pkg["homepage"]))
 cdn = '<script src="https://cdn.jsdelivr.net/npm/3dmol@2.5.5/build/3Dmol-min.js"></script>'

@@ -1962,6 +1962,9 @@
        { type: 'gallery' }                  the terminal-halide planes that face each other across the organic part
        { type: 'penetration', label }       the N atoms with this label, each with the terminal-halide plane it is measured from
        { type: 'offset' }                   a metal, the nearest metal of the next layer, the normal, the shift and the M...M vectors
+       { type: 'hbond', D, H, A, dDA }      the hydrogen bonds D-H...A between these sites with this D...A distance (Å):
+                                            D, H and A, the D-H bond, the H...A line and the angle at H. H is null for a
+                                            file without H atoms: then D, A and the D...A line.
        { type: 'terminal' } { type: 'label', label } { type: 'metals' } { type: 'framework' } { type: 'organic' }
      Returns { atoms: [i], bonds: [[i, j]], planes: [{ c, n, r }], lines: [[p, q]], arcs: [{ c, p, q, r }] }.
      atoms and bonds are indexes into blk.atoms. planes are discs (centre, unit normal, radius), lines are
@@ -2078,6 +2081,18 @@
     });
     if (item.type === 'framework') {
       for (const i of atoms) for (const j of A[i].bonds) if (atoms.has(j) && j > i) bond(i, j);
+    }
+    if (item.type === 'hbond') {
+      for (const h of blk.hbonds || []) {
+        if (A[h.d].label !== item.D || A[h.a].label !== item.A || Math.abs(h.dDA - item.dDA) > 0.006) continue;
+        if ((h.h >= 0 ? A[h.h].label : null) !== (item.H || null)) continue;
+        atoms.add(h.d); atoms.add(h.a);
+        if (h.h >= 0) {
+          bond(h.d, h.h);
+          lines.push([A[h.h].xyz.slice(), A[h.a].xyz.slice()]);
+          arc(A[h.h].xyz, A[h.d].xyz, A[h.a].xyz, 0.5);
+        } else lines.push([A[h.d].xyz.slice(), A[h.a].xyz.slice()]);
+      }
     }
     // A layer that the packing box cuts has bridges with one metal outside the box. Then the X atoms of the
     // bridge are shown with the metal that is there.

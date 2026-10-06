@@ -720,10 +720,29 @@ const formula = (info) => info.formula.map((e) => e.el + e.n).join(' ');
     near(along(off.lines[1]), 0, 1e-9) && near(Math.max(s1, s2), Ly.offset.s1, 1e-6) && near(Math.min(s1, s2), Ly.offset.s2, 1e-6));
   const nLab = info.layer.penetration[0].label;
   check('glow: a label row gives the atoms with that label, and an unknown row gives nothing', labels(set({ type: 'label', label: nLab })) === nLab && set({ type: 'label', label: 'Zz9' }).atoms.length === 0 && set({ type: 'other' }).atoms.length === 0);
+  // a hydrogen bond row: D, H and A, the D-H bond, the H...A line and the mark of the angle at H
+  const hb0 = blk.hbonds[0];
+  const hbItem = { type: 'hbond', D: A[hb0.d].label, H: A[hb0.h].label, A: A[hb0.a].label, dDA: hb0.dDA };
+  const hbSet = set(hbItem);
+  const same = blk.hbonds.filter((h) => A[h.d].label === hbItem.D && A[h.h].label === hbItem.H && A[h.a].label === hbItem.A && Math.abs(h.dDA - hb0.dDA) < 0.006);
+  check('glow: a hydrogen bond row has D, H and A, the D-H bond, the H...A line and the angle at H', same.length >= 1 && hbSet.lines.length === same.length && hbSet.bonds.length === same.length && hbSet.arcs.length === same.length &&
+    hbSet.atoms.length === 3 * same.length && hbSet.lines.every((ln) => near(X.distance(ln[0], ln[1]), hb0.dHA, 0.006)) && hbSet.arcs.every((R) => near(X.bondAngle(R.p, R.c, R.q), hb0.angle, 0.5)) &&
+    set({ type: 'hbond', D: hbItem.D, H: hbItem.H, A: hbItem.A, dDA: hb0.dDA + 0.5 }).atoms.length === 0);
   // a bridge that the packing box cuts (the layer of this structure is at z = 0): no X atom of it has two metals in the box
   const cutB = info.layer.bridges.find((x) => A.every((a) => a.label !== x.x || a.bonds.filter((j) => uc.center[A[j].src]).length < 2));
   const part = set({ type: 'bridge', m1: cutB.m1, x: cutB.x, m2: cutB.m2, theta: cutB.theta });
   check('glow: a bridge with one metal outside the box shows the part that is there', part.bonds.length > 0 && part.bonds.every(([i, j]) => A[i].label === cutB.x || A[j].label === cutB.x));
+}
+
+// How to cite: CITATION.cff and the built page have the version of package.json
+{
+  const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, '../package.json'), 'utf8'));
+  const cff = fs.readFileSync(path.join(__dirname, '../CITATION.cff'), 'utf8');
+  const built = fs.readFileSync(path.join(__dirname, '../docs/index.html'), 'utf8');
+  check('citation: CITATION.cff has the version, the title, the author and the date', cff.includes('version: "' + pkg.version + '"') && cff.includes('title: "' + pkg.citation.title + '"') &&
+    cff.includes('family-names: "' + pkg.citation.authors[0].family + '"') && cff.includes('date-released: ' + pkg.citation.released) && /^cff-version: 1\.2\.0$/m.test(cff));
+  check('citation: the page gives the same citation, as text and as BibTeX', built.includes(pkg.citation.title + ', version ' + pkg.version + ' (' + pkg.citation.released.slice(0, 4) + '). ' + pkg.homepage) &&
+    built.includes('version = {' + pkg.version + '}') && !built.includes('__CITE_'));
 }
 
 console.log(passed + ' passed, ' + failed + ' failed');

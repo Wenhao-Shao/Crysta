@@ -28,6 +28,11 @@ Any change to how a number is defined gets a new version and a line here.
 - **The lattice plane nearest to a plane through atoms.** For each plane through atoms, the Planes list gives the nearest (*hkl*) and the angle between the two planes.
 - **Measured atoms keep a highlight.** After a distance, an angle, a torsion or a plane measurement, the picture marks the atoms and the lines between them. The highlight does not move.
 - **Measure card:** each measurement and each plane has a × to remove it. The Clear button is gone from the card: the strip under the picture and the right-click menu still remove all measurements. The lists use the main font of the page.
+- **Hydrogen bonds card.**
+  - Each row has a box. Clear the box to hide that hydrogen bond in the picture and in the SVG drawing. The box in the table head shows or hides all of them. The Hydrogen bonds box of the Display card still switches all of them.
+  - Press a row for its definition under the picture. The donor, the H and the acceptor glow, with the D–H bond, the H···A line and the mark of the angle at H.
+- **How to cite.** The "How to cite" button in the page header gives the citation of this version, as text and as BibTeX, and what to cite with it: the source of each structure, 3Dmol.js, and the sources of the scattering factors. The repository has a `CITATION.cff` file. `build.py` makes it from the "citation" part of `package.json`.
+- The numbers in the side cards (framework, M–X–M, hydrogen bonds, crystal data) use the main font of the page.
 - **Powder XRD:** an arrow at the top right of the reflection table minimizes or maximizes it, as on the side panels. With the table minimized, the plot has the height.
 
 New definitions (see the README): plane through atoms, lattice plane through an atom, nearest lattice plane, atom to plane, bond to plane, plane to plane. No other definition changed: every other number is identical to v0.4.0.

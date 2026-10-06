@@ -193,6 +193,16 @@ node tests/run.js     # regression tests for src/core.js
 
 The name and version live in `package.json` (`displayName`, `version`) and are printed in the page.
 
+## How to cite
+
+Crysta has no paper and no DOI yet. Cite it as software, with the version:
+
+> W. Shao, Crysta: a crystal structure workbench in the browser, version 0.5.0 (2026). https://wenhao-shao.github.io/Crysta/
+
+- The "How to cite" button in the page gives this citation for the version that you use, also as BibTeX.
+- `CITATION.cff` has the same data for GitHub and for reference managers. `build.py` makes it from the "citation" part of `package.json`: change the authors, the title and the release date there.
+- Cite also the source of each structure file, and 3Dmol.js for the pictures (N. Rego and D. Koes, *Bioinformatics* **31**, 1322–1324 (2015)).
+
 ## Licence
 
 MIT. See `LICENSE`. 3Dmol.js is distributed under its own BSD-3-Clause licence, see `vendor/`.
