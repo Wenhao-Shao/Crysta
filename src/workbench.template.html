@@ -43,6 +43,11 @@
   color-scheme: dark;
 }
 
+/* The Background menu. White and Black give the page, the cards and the 3D stage one flat colour. White also
+   takes the light colours and Black the dark colours, whatever the browser prefers (data-theme is set with it). */
+:root[data-bg="white"] { --bg: #ffffff; --panel: #ffffff; --stage: #ffffff; --line: #d3cfd8; }
+:root[data-bg="black"] { --bg: #000000; --panel: #000000; --stage: #000000; --line: #3b3641; }
+
 *, *::before, *::after { box-sizing: border-box; }
 [hidden] { display: none !important; }
 html, body { height: 100%; }
@@ -58,6 +63,8 @@ h1 { font-family: var(--font-display); font-weight: 600; font-size: 28px; line-h
 .sub b { color: var(--ink); font-weight: 500; }
 .bar { text-decoration: overline; }
 .tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.bgpick { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
+.bgpick select { color: var(--ink); background: var(--panel); padding: 4px 6px; font-size: 13px; }
 
 .main { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 14px; min-height: 0; }
 .main.solo { grid-template-columns: minmax(0, 1fr); }
@@ -331,6 +338,13 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
       <button type="button" id="btnExample">Load the sample structures</button>
       <button type="button" id="btnPxrd" title="Open the powder X-ray diffraction window: simulated patterns of the loaded structures, and your measured data">Powder XRD</button>
       <button type="button" id="btnFeedback">Send feedback</button>
+      <label class="bgpick" title="The background of the whole page, the 3D picture, the saved pictures and the PXRD window">Background
+        <select id="selBg">
+          <option value="auto">Browser default</option>
+          <option value="white">White</option>
+          <option value="black">Black</option>
+        </select>
+      </label>
     </div>
   </header>
 
@@ -1949,8 +1963,28 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
     });
   }
 
+  /* The Background menu: 'auto' follows the browser (light or dark), 'white' and 'black' set a flat background
+     with the light or the dark colours. The choice is kept in this browser. */
+  const BG_KEY = 'crysta.background';
+  let bgChoice = 'auto';
+  let hostTheme = document.documentElement.getAttribute('data-theme');   // a theme that the host page set, if any
+  function setBackground(v, keep) {
+    const root = document.documentElement;
+    bgChoice = v === 'white' || v === 'black' ? v : 'auto';
+    if (bgChoice === 'auto') {
+      root.removeAttribute('data-bg');
+      if (hostTheme) root.setAttribute('data-theme', hostTheme); else root.removeAttribute('data-theme');
+    } else {
+      root.setAttribute('data-bg', bgChoice);
+      root.setAttribute('data-theme', bgChoice === 'white' ? 'light' : 'dark');
+    }
+    $('selBg').value = bgChoice;
+    if (keep) { try { localStorage.setItem(BG_KEY, bgChoice); } catch (err) { /* no storage in this browser */ } }
+  }
+
   function init() {
     const stage = $('stage');
+    try { setBackground(localStorage.getItem(BG_KEY) || 'auto', false); } catch (err) { /* no storage in this browser */ }
     let libMsg = '';
     if (!window.$3Dmol) {
       libMsg = 'The 3D library (3Dmol.js) did not load, so structures cannot be drawn. The tables are still computed from each CIF.';
@@ -2256,6 +2290,7 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
     });
 
     $('btnPxrd').onclick = () => { if (pxrd) pxrd.open(); };
+    $('selBg').onchange = (e) => { setBackground(e.target.value, true); retheme(); };
     $('btnPxrd').hidden = !pxrd;
 
     // files and the structures table
@@ -2375,9 +2410,17 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
     };
 
     if (viewer && window.ResizeObserver) new ResizeObserver(() => { viewer.resize(); viewer.render(); }).observe(stage);
-    const retheme = () => { drawLegend(); if (viewer && D()) render(true); if (pxrd) pxrd.retheme(); };
+    const retheme = () => {
+      drawLegend();
+      if (viewer && D()) render(true);
+      else if (viewer) { viewer.setBackgroundColor(cssVar('--stage'), 1); viewer.render(); }   // no structure yet: only the empty stage changes
+      if (pxrd) pxrd.retheme();
+    };
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', retheme);
-    new MutationObserver(retheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    new MutationObserver(() => {
+      if (bgChoice === 'auto') hostTheme = document.documentElement.getAttribute('data-theme');
+      retheme();
+    }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(retheme);
   }
   init();

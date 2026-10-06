@@ -453,6 +453,21 @@ const formula = (info) => info.formula.map((e) => e.el + e.n).join(' ');
   const text = X.toXY(5, 0.01, Float64Array.from([0, 50, 100]), 'test');
   xy = X.readXY(text);
   check('xy written pattern reads back', text.startsWith('# test\n5.000 0.0000\n') && xy.x.length === 3 && near(xy.x[2], 5.02, 1e-9) && xy.y[2] === 100);
+
+  // several patterns as one CSV table: a pattern on the grid is copied, a pattern on another grid is interpolated
+  const grid = Float64Array.from([5, 5.01, 5.02, 5.03]);
+  const csv = X.patternsCsv(5, 0.01, 4, [
+    { name: 'quartz, alpha (simulated)', X: grid, Y: Float64Array.from([1, 2, 3, 4]) },
+    { name: 'scan.xy (measured)', X: Float64Array.from([5.005, 5.025]), Y: Float64Array.from([10, 30]) }
+  ]).split('\n');
+  check('csv header: one 2-theta column, a name with a comma in quotes', csv[0] === '2theta (deg),"quartz, alpha (simulated)",scan.xy (measured)');
+  check('csv pattern on the grid is copied', csv[1] === '5.000,1.0000,' && csv[4] === '5.030,4.0000,');
+  check('csv pattern on another grid is interpolated, empty outside its points', csv[2] === '5.010,2.0000,15.0000' && csv[3] === '5.020,3.0000,25.0000' && csv.length === 6 && csv[5] === '');
+  check('csv name that starts like a formula gets a space', X.patternsCsv(5, 0.01, 1, [{ name: '=1+1', X: grid, Y: grid }]).startsWith('2theta (deg), =1+1\n'));
+  const sim = X.powderProfile(X.powderPattern(read('examples/quartz_SiO2.cif'), { tthMin: 5, tthMax: 60 }).reflections, { tthMin: 5, tthMax: 60, step: 0.02 });
+  const simX = Float64Array.from(sim.y, (v, i) => sim.x0 + i * sim.step);
+  const table = X.patternsCsv(5, 0.02, sim.y.length, [{ name: 'q', X: simX, Y: sim.y }]).trim().split('\n');
+  check('csv of a simulated pattern: every point, no empty cell', table.length === sim.y.length + 1 && table.every((r) => !/,$/.test(r)) && table.some((r) => /,100\.0000$/.test(r)) && table[table.length - 1].startsWith('60.000,'));
 }
 
 console.log(passed + ' passed, ' + failed + ' failed');

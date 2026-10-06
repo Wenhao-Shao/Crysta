@@ -2268,7 +2268,39 @@
     return rows.join('\n') + '\n';
   }
 
+  /* Several patterns as the text of a CSV file: one 2-theta column on one grid (x0, step, n points), then one
+     intensity column for each pattern. columns is [{ name, X, Y }] with X in rising order. A pattern on a
+     different grid is put on this grid by linear interpolation between its two nearest points. A cell stays
+     empty where the pattern has no points. */
+  function patternsCsv(x0, step, n, columns) {
+    const dec = Math.max(2, Math.min(5, Math.ceil(-Math.log10(step) - 1e-9) + 1));
+    // a name that starts like a formula gets a space in front, so that a spreadsheet does not run it
+    const cell = (s) => {
+      let t = String(s);
+      if (/^[=+\-@]/.test(t)) t = ' ' + t;
+      return /[",\r\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t;
+    };
+    const rows = [['2theta (deg)'].concat(columns.map((c) => cell(c.name))).join(',')];
+    const at = columns.map(() => 0);
+    const tol = step * 1e-6;
+    for (let i = 0; i < n; i++) {
+      const x = x0 + i * step;
+      const cells = [x.toFixed(dec)];
+      columns.forEach((c, k) => {
+        const X = c.X, Y = c.Y, m = X.length;
+        if (!m || x < X[0] - tol || x > X[m - 1] + tol) { cells.push(''); return; }
+        let j = at[k];
+        while (j < m - 1 && X[j + 1] <= x + tol) j++;
+        at[k] = j;
+        if (j >= m - 1 || Math.abs(X[j] - x) <= tol || x < X[j]) { cells.push(Y[j].toFixed(4)); return; }
+        cells.push((Y[j] + (x - X[j]) / (X[j + 1] - X[j]) * (Y[j + 1] - Y[j])).toFixed(4));
+      });
+      rows.push(cells.join(','));
+    }
+    return rows.join('\n') + '\n';
+  }
+
   root.XtalCore = { readStructure, readCif, readPoscar, readXyz, readShelx, buildCell, analyse, assemble, hullFaces, planePolys, tetrazineDefs, chromoInstances, stateDir, orientReport, hallOps, symbolOps, setSgTable, isMetal, isCenter, isDonor, HALIDE, RC, MASS, parseSymop, MAX_POLY_CN, distance, bondAngle, torsion, toMol2, toSvg, visibleParts, hullPolygons, bondTubes, polyhedraFor, polyhedraStats, suggestPolyMax,
-    powderAtoms, powderPattern, powderProfile, readXY, toXY, ANODES, anodeOf, XRAY_F0, uEquiv };
+    powderAtoms, powderPattern, powderProfile, readXY, toXY, patternsCsv, ANODES, anodeOf, XRAY_F0, uEquiv };
   if (typeof module !== 'undefined' && module.exports) module.exports = root.XtalCore;
 })(typeof window !== 'undefined' ? window : globalThis);

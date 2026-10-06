@@ -49,6 +49,11 @@
   color-scheme: dark;
 }
 
+/* The Background menu. White and Black give the page, the cards and the 3D stage one flat colour. White also
+   takes the light colours and Black the dark colours, whatever the browser prefers (data-theme is set with it). */
+:root[data-bg="white"] { --bg: #ffffff; --panel: #ffffff; --stage: #ffffff; --line: #d3cfd8; }
+:root[data-bg="black"] { --bg: #000000; --panel: #000000; --stage: #000000; --line: #3b3641; }
+
 *, *::before, *::after { box-sizing: border-box; }
 [hidden] { display: none !important; }
 html, body { height: 100%; }
@@ -64,6 +69,8 @@ h1 { font-family: var(--font-display); font-weight: 600; font-size: 28px; line-h
 .sub b { color: var(--ink); font-weight: 500; }
 .bar { text-decoration: overline; }
 .tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.bgpick { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
+.bgpick select { color: var(--ink); background: var(--panel); padding: 4px 6px; font-size: 13px; }
 
 .main { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 14px; min-height: 0; }
 .main.solo { grid-template-columns: minmax(0, 1fr); }
@@ -339,6 +346,13 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
       <button type="button" id="btnExample">Load the sample structures</button>
       <button type="button" id="btnPxrd" title="Open the powder X-ray diffraction window: simulated patterns of the loaded structures, and your measured data">Powder XRD</button>
       <button type="button" id="btnFeedback">Send feedback</button>
+      <label class="bgpick" title="The background of the whole page, the 3D picture, the saved pictures and the PXRD window">Background
+        <select id="selBg">
+          <option value="auto">Browser default</option>
+          <option value="white">White</option>
+          <option value="black">Black</option>
+        </select>
+      </label>
     </div>
   </header>
 
@@ -532,7 +546,7 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
         <div class="small" id="hbNote"></div>
       </section>
 
-      <div class="foot">Crysta v0.3.0. Drawn with 3Dmol.js. Symmetry expansion, bonding, molecule assembly and every distance and angle are computed in this page from the file. Nothing is uploaded.</div>
+      <div class="foot">Crysta v0.3.1. Drawn with 3Dmol.js. Symmetry expansion, bonding, molecule assembly and every distance and angle are computed in this page from the file. Nothing is uploaded.</div>
     </aside>
   </div>
 </div>
@@ -2845,8 +2859,40 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
     return rows.join('\n') + '\n';
   }
 
+  /* Several patterns as the text of a CSV file: one 2-theta column on one grid (x0, step, n points), then one
+     intensity column for each pattern. columns is [{ name, X, Y }] with X in rising order. A pattern on a
+     different grid is put on this grid by linear interpolation between its two nearest points. A cell stays
+     empty where the pattern has no points. */
+  function patternsCsv(x0, step, n, columns) {
+    const dec = Math.max(2, Math.min(5, Math.ceil(-Math.log10(step) - 1e-9) + 1));
+    // a name that starts like a formula gets a space in front, so that a spreadsheet does not run it
+    const cell = (s) => {
+      let t = String(s);
+      if (/^[=+\-@]/.test(t)) t = ' ' + t;
+      return /[",\r\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t;
+    };
+    const rows = [['2theta (deg)'].concat(columns.map((c) => cell(c.name))).join(',')];
+    const at = columns.map(() => 0);
+    const tol = step * 1e-6;
+    for (let i = 0; i < n; i++) {
+      const x = x0 + i * step;
+      const cells = [x.toFixed(dec)];
+      columns.forEach((c, k) => {
+        const X = c.X, Y = c.Y, m = X.length;
+        if (!m || x < X[0] - tol || x > X[m - 1] + tol) { cells.push(''); return; }
+        let j = at[k];
+        while (j < m - 1 && X[j + 1] <= x + tol) j++;
+        at[k] = j;
+        if (j >= m - 1 || Math.abs(X[j] - x) <= tol || x < X[j]) { cells.push(Y[j].toFixed(4)); return; }
+        cells.push((Y[j] + (x - X[j]) / (X[j + 1] - X[j]) * (Y[j + 1] - Y[j])).toFixed(4));
+      });
+      rows.push(cells.join(','));
+    }
+    return rows.join('\n') + '\n';
+  }
+
   root.XtalCore = { readStructure, readCif, readPoscar, readXyz, readShelx, buildCell, analyse, assemble, hullFaces, planePolys, tetrazineDefs, chromoInstances, stateDir, orientReport, hallOps, symbolOps, setSgTable, isMetal, isCenter, isDonor, HALIDE, RC, MASS, parseSymop, MAX_POLY_CN, distance, bondAngle, torsion, toMol2, toSvg, visibleParts, hullPolygons, bondTubes, polyhedraFor, polyhedraStats, suggestPolyMax,
-    powderAtoms, powderPattern, powderProfile, readXY, toXY, ANODES, anodeOf, XRAY_F0, uEquiv };
+    powderAtoms, powderPattern, powderProfile, readXY, toXY, patternsCsv, ANODES, anodeOf, XRAY_F0, uEquiv };
   if (typeof module !== 'undefined' && module.exports) module.exports = root.XtalCore;
 })(typeof window !== 'undefined' ? window : globalThis);
 
@@ -2893,6 +2939,32 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
     const out = [];
     for (let v = Math.ceil(a / step - 1e-9) * step; v <= b + step * 1e-9; v += step) out.push(+v.toFixed(10));
     return { step, out, dec: Math.max(0, -Math.floor(Math.log10(step) + 1e-9)) };
+  }
+  /* Ticks of the d axis on top of the plot. d = lambda / (2 sin theta) is not linear in 2-theta, so the ticks are
+     round d values: first the multiples of 100, then of 50, 20, 10 and so on. A value gets a tick where it has
+     room, and only where its step is not much finer than that room. Thus no odd value fills a small space. */
+  function dTicks(view, lambda, sx, xl, xr, gap) {
+    const rad = Math.PI / 180;
+    const dOf = (t) => lambda / (2 * Math.sin(t / 2 * rad));
+    const xOf = (d) => sx(2 * Math.asin(lambda / (2 * d)) / rad);
+    const dLo = dOf(Math.min(179.9, view[1])), dHi = dOf(Math.max(0.3, view[0]));
+    const placed = [];
+    for (const step of [100, 50, 20, 10, 5, 2, 1, 0.5, 0.2, 0.1, 0.05, 0.02, 0.01, 0.005, 0.002, 0.001]) {
+      const dec = Math.max(0, -Math.floor(Math.log10(step) + 1e-9));
+      const k0 = Math.ceil(dLo / step - 1e-9);
+      // large d values lie closer together on the plot, so the first 2000 values of a step hold every one that fits
+      for (let k = Math.max(1, k0); k < k0 + 2000 && k * step <= dHi + 1e-9; k++) {
+        const d = k * step;
+        if (lambda / (2 * d) >= 1) continue;
+        const x = xOf(d);
+        // the label must not touch the axis title at the left end
+        if (x < xl + 8 || x > xr + 0.5) continue;
+        if (x - xOf(d + step) < gap / 2) break;          // from here on, the values of this step lie too close together
+        if (placed.some((p) => Math.abs(p.x - x) < gap)) continue;
+        placed.push({ x, text: d.toFixed(dec) });
+      }
+    }
+    return placed;
   }
   let meter = null;
   const textWidth = (s, px) => {
@@ -3000,7 +3072,8 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
         '<div class="seg" role="group" aria-label="Intensity scale"><button type="button" data-a="lin">Linear</button><button type="button" data-a="sqrt">Square root</button></div>' +
         '<label class="chk"><input type="checkbox" id="pxMarks" data-k="marks">Reflection marks</label>' +
         '<span style="flex:1"></span>' +
-        '<button type="button" data-a="reset">Reset zoom</button><button type="button" data-a="png">Save PNG</button><button type="button" data-a="svg">Save SVG</button></div>' +
+        '<button type="button" data-a="reset">Reset zoom</button><button type="button" data-a="png">Save PNG</button><button type="button" data-a="svg">Save SVG</button>' +
+        '<button type="button" data-a="csv" title="The shown patterns as a table: one 2θ column, then one intensity column for each pattern, for the full 2θ range. Measured data are put on the 2θ grid of the Pattern settings by linear interpolation.">Save CSV</button></div>' +
         '<div class="px-plot" id="pxPlot"></div>' +
         '<div class="small" id="pxNote" aria-live="polite"></div></section>' +
         '<section class="card px-tablecard"><div class="row">' +
@@ -3049,6 +3122,13 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
       if (px.float) { px.float.remove(); px.float = null; }
     }
 
+    /* the PXRD window takes the colours of the page: its theme and its Background choice */
+    function copyTheme(doc) {
+      for (const name of ['data-theme', 'data-bg']) {
+        const v = document.documentElement.getAttribute(name);
+        if (v) doc.documentElement.setAttribute(name, v); else doc.documentElement.removeAttribute(name);
+      }
+    }
     function open() {
       if (px.win && !px.win.closed && px.root) { px.win.focus(); return; }
       if (px.float) return;
@@ -3065,8 +3145,7 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
             '<title>PXRD: ' + esc(host.name) + '</title>' + (font ? '<link rel="stylesheet" href="' + esc(font.href) + '">' : '') +
             '<style>' + (css ? css.textContent : '') + '</style></head><body class="pxbody"><div id="pxMount" style="height:100%"></div></body></html>');
           doc.close();
-          const theme = document.documentElement.getAttribute('data-theme');
-          if (theme) doc.documentElement.setAttribute('data-theme', theme);
+          copyTheme(doc);
           px.win = w;
           w.addEventListener('pagehide', () => { if (px.win === w) unmount(); });
           mount(doc.getElementById('pxMount'));
@@ -3233,6 +3312,7 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
       if (W < 120 || H < 100) return;
       const series = seriesList();
       const ink = toHex(cssVar('--ink')), muted = toHex(cssVar('--muted')), line = toHex(cssVar('--line')), panel = toHex(cssVar('--panel')), accent = toHex(cssVar('--accent'));
+      px.root.querySelectorAll('[data-a="reset"], [data-a="png"], [data-a="svg"], [data-a="csv"]').forEach((b) => { b.disabled = !series.length; });
       if (!series.length) {
         box.innerHTML = '<div class="stage-msg"><strong>No pattern to show</strong><p>Select a reference structure in the list, or add PXRD data.</p></div>';
         px.geo = null;
@@ -3252,7 +3332,7 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
         lx += w;
       }
       const markSims = px.marks ? series.filter((s) => s.kind === 'sim') : [];
-      const m = { l: 54, r: 14, t: 10 + (ly + 1) * 18 + 4, b: 40 };
+      const m = { l: 54, r: 14, t: 10 + (ly + 1) * 18 + 4 + 22, b: 40 };   // 22: the d axis above the plot
       const marksH = markSims.length ? markSims.length * 11 + 5 : 0;
       const xl = m.l, xr = W - m.r, yt = m.t, ya = H - m.b, yb = ya - marksH;
       const plotW = xr - xl;
@@ -3292,11 +3372,11 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
       } else {
         const bh = (yb - yt) / series.length;
         series.forEach((s, i) => {
-          const base = yt + (i + 1) * bh - 8, head = yt + i * bh + 14;
+          const base = yt + (i + 1) * bh - 8, head = yt + i * bh + 18;
           const top = (topOf(s) || 100) * 1.04;
           const sy = (v) => base - T(v) / T(top) * (base - head);
           out.push('<line x1="' + xl + '" x2="' + xr + '" y1="' + base.toFixed(1) + '" y2="' + base.toFixed(1) + '" stroke="' + line + '" stroke-width="1"/>');
-          out.push('<text x="' + (xr - 4) + '" y="' + (yt + i * bh + 10).toFixed(1) + '" text-anchor="end" fill="' + muted + '" font-size="11">' + esc(short(s.name, 40)) + '</text>');
+          out.push('<text x="' + (xr - 4) + '" y="' + (yt + i * bh + 14).toFixed(1) + '" text-anchor="end" fill="' + muted + '" font-size="11">' + esc(short(s.name, 40)) + '</text>');
           paths.push({ s, d: pathOf(s.X, s.Y, view[0], view[1], sx, sy, plotW) });
         });
         yTitle = 'Intensity (own scale each)';
@@ -3333,6 +3413,14 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
         out.push('<line x1="' + x + '" x2="' + x + '" y1="' + ya + '" y2="' + (ya + 5) + '" stroke="' + muted + '" stroke-width="1"/>' +
           '<text x="' + x + '" y="' + (ya + 18) + '" text-anchor="middle" fill="' + muted + '" font-family="' + FONT_DATA + '" font-size="11">' + v.toFixed(xt.dec) + '</text>');
       }
+      // second axis on top: the d spacing for the first wavelength
+      out.push('<line x1="' + xl + '" x2="' + xr + '" y1="' + yt + '" y2="' + yt + '" stroke="' + muted + '" stroke-width="1"/>');
+      for (const t of dTicks(view, px.lambda, sx, xl, xr, 38)) {
+        const x = t.x.toFixed(1);
+        out.push('<line x1="' + x + '" x2="' + x + '" y1="' + yt + '" y2="' + (yt - 5) + '" stroke="' + muted + '" stroke-width="1"/>' +
+          '<text x="' + x + '" y="' + (yt - 9) + '" text-anchor="middle" fill="' + muted + '" font-family="' + FONT_DATA + '" font-size="11">' + t.text + '</text>');
+      }
+      out.push('<text x="' + (xl - 7) + '" y="' + (yt - 9) + '" text-anchor="end" fill="' + ink + '"><tspan font-style="italic">d</tspan> (Å)</text>');
       const waves = 'λ = ' + px.lambda + ' Å' + (px.ka2 ? ' and ' + px.lambda2 + ' Å' : '');
       out.push('<text x="' + ((xl + xr) / 2).toFixed(1) + '" y="' + (H - 6) + '" text-anchor="middle" fill="' + ink + '">2θ (degrees), ' + esc(waves) + '</text>');
       out.push('<text transform="translate(14 ' + ((yt + yb) / 2).toFixed(1) + ') rotate(-90)" text-anchor="middle" fill="' + ink + '">' + yTitle + '</text>');
@@ -3597,6 +3685,14 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
       else if (a === 'reset') { px.view = null; draw(); }
       else if (a === 'svg') { const t = svgText(); if (t) save([t], 'image/svg+xml', pictureName() + '.svg'); }
       else if (a === 'png') savePng(b);
+      else if (a === 'csv') {
+        // every shown pattern as a column on one 2-theta column, as plotted: the highest point of each is 100
+        const series = seriesList();
+        if (!series.length) return;
+        const n = Math.round((px.tmax - px.tmin) / px.step) + 1;
+        const text = C.patternsCsv(px.tmin, px.step, n, series.map((s) => ({ name: s.name + (s.kind === 'sim' ? ' (simulated)' : ' (measured)'), X: s.X, Y: s.Y })));
+        save([text], 'text/csv', pictureName() + '.csv');
+      }
       else if (a === 'copy') copyText(tableText(), b);
       else if (a === 'savetbl') save([tableText()], 'text/plain', stem(px.tableDoc.name) + '_reflections.txt');
       else if (a === 'savexy') {
@@ -3713,11 +3809,7 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
     }
     function retheme() {
       if (!isOpen()) return;
-      if (px.win) {
-        const theme = document.documentElement.getAttribute('data-theme');
-        const root = px.win.document.documentElement;
-        if (theme) root.setAttribute('data-theme', theme); else root.removeAttribute('data-theme');
-      }
+      if (px.win) copyTheme(px.win.document);
       drawLists();
       draw();
     }
@@ -3765,7 +3857,7 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
   let hoverLabel = null;
   const D = () => st.docs[st.cur] || null;
   /* the PXRD window: simulated powder patterns of the open structures, and measured data (src/pxrd.js) */
-  const pxrd = window.CrystaPxrd ? window.CrystaPxrd.create({ docs: () => st.docs, current: () => D(), addFiles: (list) => addFiles(list), name: NAME, version: 'v0.3.0' }) : null;
+  const pxrd = window.CrystaPxrd ? window.CrystaPxrd.create({ docs: () => st.docs, current: () => D(), addFiles: (list) => addFiles(list), name: NAME, version: 'v0.3.1' }) : null;
   /* a file that is not a structure but holds two columns of numbers is taken as measured powder data */
   const isPowderData = (text) => { try { return C.readXY(text).x.length >= 20; } catch (err) { return false; } };
 
@@ -4381,7 +4473,7 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
       ['Axial tilt (°)', L && L.axialTilt ? num(L.axialTilt.mean, 1) : ''],
       ['N penetration (Å)', L && L.penetration.length ? num(mean(L.penetration.map((p) => p.depth)), 3) : ''],
       ['Stacking offset', L && L.offset ? '(' + fmt(L.offset.s1, 2) + ', ' + fmt(L.offset.s2, 2) + ')' : ''],
-      ['Crysta version', 'v0.3.0']
+      ['Crysta version', 'v0.3.1']
     ];
   }
   /* columns of the table that hold a mean over the independent sites of a structure */
@@ -5106,8 +5198,28 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
     });
   }
 
+  /* The Background menu: 'auto' follows the browser (light or dark), 'white' and 'black' set a flat background
+     with the light or the dark colours. The choice is kept in this browser. */
+  const BG_KEY = 'crysta.background';
+  let bgChoice = 'auto';
+  let hostTheme = document.documentElement.getAttribute('data-theme');   // a theme that the host page set, if any
+  function setBackground(v, keep) {
+    const root = document.documentElement;
+    bgChoice = v === 'white' || v === 'black' ? v : 'auto';
+    if (bgChoice === 'auto') {
+      root.removeAttribute('data-bg');
+      if (hostTheme) root.setAttribute('data-theme', hostTheme); else root.removeAttribute('data-theme');
+    } else {
+      root.setAttribute('data-bg', bgChoice);
+      root.setAttribute('data-theme', bgChoice === 'white' ? 'light' : 'dark');
+    }
+    $('selBg').value = bgChoice;
+    if (keep) { try { localStorage.setItem(BG_KEY, bgChoice); } catch (err) { /* no storage in this browser */ } }
+  }
+
   function init() {
     const stage = $('stage');
+    try { setBackground(localStorage.getItem(BG_KEY) || 'auto', false); } catch (err) { /* no storage in this browser */ }
     let libMsg = '';
     if (!window.$3Dmol) {
       libMsg = 'The 3D library (3Dmol.js) did not load, so structures cannot be drawn. The tables are still computed from each CIF.';
@@ -5413,6 +5525,7 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
     });
 
     $('btnPxrd').onclick = () => { if (pxrd) pxrd.open(); };
+    $('selBg').onchange = (e) => { setBackground(e.target.value, true); retheme(); };
     $('btnPxrd').hidden = !pxrd;
 
     // files and the structures table
@@ -5462,7 +5575,7 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
     const ISSUES = 'https://github.com/Wenhao-Shao/Crysta/issues/new';
     const fbUrl = () => {
       const title = '[' + $('fbKind').value + '] ' + $('fbSummary').value.trim();
-      const tail = '\n\n---\nSent from the Crysta feedback box\nCrysta v0.3.0\nBrowser: ' + navigator.userAgent;
+      const tail = '\n\n---\nSent from the Crysta feedback box\nCrysta v0.3.1\nBrowser: ' + navigator.userAgent;
       let details = $('fbDetails').value.trim() || '(no details given)';
       const make = (d) => ISSUES + '?title=' + encodeURIComponent(title) + '&body=' + encodeURIComponent(d + tail);
       let url = make(details);
@@ -5511,7 +5624,7 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
       data.append('summary', summary);
       data.append('details', $('fbDetails').value.trim() || '(no details given)');
       if (email) data.append('email', email);
-      data.append('workbench', 'v0.3.0');
+      data.append('workbench', 'v0.3.1');
       data.append('browser', navigator.userAgent);
       const buttons = [$('fbDirect'), $('fbGithub')];
       buttons.forEach((b) => { b.disabled = true; });
@@ -5532,9 +5645,17 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
     };
 
     if (viewer && window.ResizeObserver) new ResizeObserver(() => { viewer.resize(); viewer.render(); }).observe(stage);
-    const retheme = () => { drawLegend(); if (viewer && D()) render(true); if (pxrd) pxrd.retheme(); };
+    const retheme = () => {
+      drawLegend();
+      if (viewer && D()) render(true);
+      else if (viewer) { viewer.setBackgroundColor(cssVar('--stage'), 1); viewer.render(); }   // no structure yet: only the empty stage changes
+      if (pxrd) pxrd.retheme();
+    };
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', retheme);
-    new MutationObserver(retheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    new MutationObserver(() => {
+      if (bgChoice === 'auto') hostTheme = document.documentElement.getAttribute('data-theme');
+      retheme();
+    }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(retheme);
   }
   init();
