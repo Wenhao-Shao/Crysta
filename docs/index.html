@@ -135,6 +135,20 @@ button.chip[aria-expanded="true"] { border-color: var(--accent); }
 .mlist { display: grid; gap: 4px; }
 .mlist .mrow { display: flex; align-items: center; gap: 8px; font-family: var(--font-data); font-size: 12.5px; font-variant-numeric: tabular-nums; }
 .mlist .mrow button { margin-left: auto; }
+#mpList { min-width: 0; }
+#mpList .mrow > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#mpList .mrow label { display: inline-flex; align-items: center; gap: 5px; flex: none; }
+.subhead { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-top: 4px; }
+/* a row of the framework card that shows its atoms in the picture */
+.glowbtn { all: unset; cursor: pointer; color: inherit; font: inherit; text-decoration: underline dotted var(--line); text-underline-offset: 3px; }
+.glowbtn:hover { color: var(--accent); text-decoration-color: var(--accent); }
+.glowbtn[aria-pressed="true"] { background: none; border: 0; color: var(--accent); text-decoration-color: var(--accent); }
+.glowbtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
+.glowbtn[aria-pressed="true"]::before { content: ''; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); margin-right: 6px; animation: glowdot 1.4s ease-in-out infinite; }
+dd[data-glow], tr[data-glow] { cursor: pointer; }
+dd.lit, tr.lit td { color: var(--accent); }
+@keyframes glowdot { 0%, 100% { opacity: 0.2; } 50% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .glowbtn[aria-pressed="true"]::before { animation: none; } }
 .stage-msg { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 12px; padding: 24px; text-align: center; color: var(--muted); }
 .stage-msg strong { font-family: var(--font-display); font-size: 22px; font-weight: 600; color: var(--ink); }
 .stage-msg p { margin: 0; max-width: 52ch; }
@@ -288,6 +302,8 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
 .px-tip .ln b { font-family: var(--font-data); font-weight: 500; font-variant-numeric: tabular-nums; }
 .px-tip .hk { font-family: var(--font-data); font-size: 12px; font-variant-numeric: tabular-nums; padding-left: 21px; }
 .px-tablecard { grid-template-rows: auto minmax(0, 1fr) auto; min-height: 0; }
+.px-work.notable { grid-template-rows: minmax(220px, 1fr); }
+.px-work.notable .px-tablecard { display: none; }
 .px-tablecard .tbl-wrap { overflow: auto; min-height: 0; padding-right: 6px; }
 .px-tablecard thead th { position: sticky; top: 0; background: var(--panel); z-index: 1; }
 .px-tablecard th:first-child, .px-tablecard td:first-child { text-align: right; }
@@ -495,9 +511,26 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
           <button type="button" id="measAngle" aria-pressed="false">Angle</button>
           <button type="button" id="measTors" aria-pressed="false">Torsion</button>
         </div>
+        <div class="seg" role="group" aria-label="What a click on atoms measures against the chosen plane">
+          <button type="button" id="measAPlane" aria-pressed="false" disabled>Atom to plane</button>
+          <button type="button" id="measBPlane" aria-pressed="false" disabled>Bond to plane</button>
+        </div>
         <div class="small" id="measHint">Click two atoms in the picture.</div>
         <div class="mlist" id="measList"></div>
         <div class="row"><button type="button" id="measClear" disabled>Clear</button><span class="small">Right-click a measurement in the picture to remove it.</span></div>
+        <div class="subhead">Planes</div>
+        <div class="row">
+          <button type="button" id="mpAtoms">Plane through atoms</button>
+          <button type="button" id="mpLayer" hidden title="A plane parallel to the layers, through an atom that you click">Layer plane</button>
+        </div>
+        <div class="idx">
+          <label><em>h</em><input type="number" id="mpH" step="1" value="0"></label>
+          <label><em>k</em><input type="number" id="mpK" step="1" value="0"></label>
+          <label><em>l</em><input type="number" id="mpL" step="1" value="1"></label>
+        </div>
+        <div class="row"><button type="button" id="mpHkl" title="The lattice plane (hkl) through an atom that you click">(<i>hkl</i>) plane</button></div>
+        <div class="mlist" id="mpList"></div>
+        <div class="small" id="mpNote">Make a plane, then measure against it: the distance of an atom from the plane, or the angle between a bond and the plane. Crysta gives the angle between each two planes.</div>
       </section>
 
       <section class="card">
@@ -591,7 +624,7 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
         <div class="small" id="hbNote"></div>
       </section>
 
-      <div class="foot">Crysta v0.4.0. Drawn with 3Dmol.js. Symmetry expansion, bonding, molecule assembly and every distance and angle are computed in this page from the file. Nothing is uploaded. The online page counts visits with Google Analytics; the offline file does not.</div>
+      <div class="foot">Crysta v0.5.0. Drawn with 3Dmol.js. Symmetry expansion, bonding, molecule assembly and every distance and angle are computed in this page from the file. Nothing is uploaded. The online page counts visits with Google Analytics; the offline file does not.</div>
     </aside>
   </div>
 </div>
@@ -2462,6 +2495,156 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
     return Math.atan2(y, x) * 180 / Math.PI;
   }
 
+  /* ---------- planes for measurements ---------- */
+  /* A plane is { n, c, rms }: unit normal, a point of the plane, and the root-mean-square distance of the atoms
+     that set it (0 for a lattice plane). */
+  /* The least-squares plane through three or more points. null when the points do not set a plane
+     (fewer than three, or all on one line). */
+  function planeOfPoints(P) {
+    if (!P || P.length < 3) return null;
+    const r = planeNormal(P);
+    // the points must spread in two directions: the largest distance from the line through the first point
+    // and the farthest point must be clear of zero
+    let far = 0, fk = 0;
+    for (let k = 1; k < P.length; k++) { const dd = norm(sub(P[k], P[0])); if (dd > far) { far = dd; fk = k; } }
+    if (far < 1e-6) return null;
+    const u = sub(P[fk], P[0]).map((x) => x / far);
+    const off = Math.max(...P.map((q) => { const w = sub(q, P[0]); return norm(sub(w, u.map((x) => x * dot(w, u)))); }));
+    if (off < 1e-3 || !r.n.every(isFinite)) return null;
+    return { n: r.n, c: r.cen, rms: r.rms };
+  }
+  /* The lattice plane (hkl) through the point p (Cartesian). null for (0 0 0). */
+  function planeOfHkl(cell, hkl, p) {
+    const G = [0, 1, 2].map((k) => hkl[0] * cell.recip[0][k] + hkl[1] * cell.recip[1][k] + hkl[2] * cell.recip[2][k]);
+    const gl = norm(G);
+    if (!(gl > 1e-12)) return null;
+    return { n: G.map((x) => x / gl), c: p.slice(), rms: 0 };
+  }
+  /* the distance of a point from a plane, in Å: positive on the side that the normal points to */
+  const planeDistance = (plane, p) => dot(sub(p, plane.c), plane.n);
+  /* the point of the plane that is nearest to p */
+  const planeFoot = (plane, p) => { const k = planeDistance(plane, p); return sub(p, plane.n.map((x) => x * k)); };
+  /* the angle between the line p-q and a plane, 0 to 90 degrees: 0 = the line lies in the plane */
+  function linePlaneAngle(plane, p, q) {
+    const v = sub(q, p);
+    const L = norm(v);
+    if (!(L > 1e-9)) return NaN;
+    return Math.asin(Math.min(1, Math.abs(dot(v, plane.n)) / L)) * 180 / Math.PI;
+  }
+  /* the angle between two planes, 0 to 90 degrees */
+  const planePlaneAngle = (a, b) => Math.acos(Math.min(1, Math.abs(dot(a.n, b.n)))) * 180 / Math.PI;
+
+  /* A disc of a plane for the picture: { c, r, pts }. The centre is the plane point, the disc covers the points
+     that set the plane with `pad` Å to spare, and pts are `sides` points on its edge. */
+  function planeDisc(plane, pts, pad, sides) {
+    const n = plane.n;
+    let e1 = cross(n, Math.abs(n[0]) < 0.9 ? [1, 0, 0] : [0, 1, 0]);
+    e1 = e1.map((x) => x / norm(e1));
+    const e2 = cross(n, e1);
+    const r = Math.max(0, ...(pts || []).map((q) => norm(sub(planeFoot(plane, q), plane.c)))) + pad;
+    const m = sides || 36;
+    const edge = [];
+    for (let k = 0; k < m; k++) {
+      const th = 2 * Math.PI * k / m;
+      edge.push([0, 1, 2].map((i) => plane.c[i] + r * (Math.cos(th) * e1[i] + Math.sin(th) * e2[i])));
+    }
+    return { c: plane.c.slice(), r, pts: edge };
+  }
+  /* Triangle meshes of spheres, for the glow around chosen atoms: balls = [{ c, r }]. Each mesh is
+     { vertexArr, normalArr, faceArr } and holds at most maxVerts points. */
+  function ballMesh(balls, seg, maxVerts) {
+    const n = seg || 12, m = Math.max(3, Math.round(n / 2)), cap = maxVerts || 60000;
+    const out = [];
+    let cur = null;
+    for (const b of balls) {
+      if (!cur || cur.vertexArr.length + (m + 1) * n > cap) { cur = { vertexArr: [], normalArr: [], faceArr: [] }; out.push(cur); }
+      const base = cur.vertexArr.length;
+      for (let i = 0; i <= m; i++) {
+        const th = Math.PI * i / m;
+        for (let j = 0; j < n; j++) {
+          const ph = 2 * Math.PI * j / n;
+          const u = [Math.sin(th) * Math.cos(ph), Math.sin(th) * Math.sin(ph), Math.cos(th)];
+          cur.vertexArr.push([b.c[0] + b.r * u[0], b.c[1] + b.r * u[1], b.c[2] + b.r * u[2]]);
+          cur.normalArr.push(u);
+        }
+      }
+      for (let i = 0; i < m; i++) for (let j = 0; j < n; j++) {
+        const a = base + i * n + j, b2 = base + i * n + (j + 1) % n, c = a + n, d = b2 + n;
+        cur.faceArr.push(a, c, b2, b2, c, d);
+      }
+    }
+    return out;
+  }
+
+  /* ---------- the atoms that a row of the framework card is about ---------- */
+  /* blk = assemble(...), uc = buildCell(...), info = analyse(uc). item is one of:
+       { type: 'bond', m, x, d }            the M-X bonds between the sites m and x with the length d (Å)
+       { type: 'site', m }                  the metal site m with all its bonds
+       { type: 'bridge', m1, x, m2, theta } the M-X-M bridges with this angle (degrees)
+       { type: 'axial' }                    the M-X bonds along the layer normal
+       { type: 'terminal' }                 the halides with one metal neighbour
+       { type: 'label', label }             the atoms with this label
+       { type: 'metals' } { type: 'framework' } { type: 'organic' }
+     Returns { atoms: [i], bonds: [[i, j]] }: indexes into blk.atoms. */
+  function highlightSet(blk, uc, info, item) {
+    const A = blk.atoms;
+    const atoms = new Set(), bonds = [], seen = new Set();
+    const bond = (i, j) => {
+      const key = i < j ? i + ':' + j : j + ':' + i;
+      atoms.add(i); atoms.add(j);
+      if (!seen.has(key)) { seen.add(key); bonds.push([i, j]); }
+    };
+    const isM = (a) => !!uc.center[a.src];
+    const nh = info && info.layer ? info.layer.normal : null;
+    A.forEach((a, i) => {
+      if (item.type === 'bond') {
+        if (!isM(a) || a.label !== item.m) return;
+        for (const j of a.bonds) if (A[j].label === item.x && Math.abs(distance(a.xyz, A[j].xyz) - item.d) < 0.0015) bond(i, j);
+      } else if (item.type === 'site') {
+        if (!isM(a) || a.label !== item.m) return;
+        atoms.add(i);
+        for (const j of a.bonds) bond(i, j);
+      } else if (item.type === 'bridge') {
+        if (a.label !== item.x) return;
+        const ms = a.bonds.filter((j) => isM(A[j]));
+        for (let p = 0; p < ms.length; p++) for (let q = p + 1; q < ms.length; q++) {
+          const la = A[ms[p]].label, lb = A[ms[q]].label;
+          if (!((la === item.m1 && lb === item.m2) || (la === item.m2 && lb === item.m1))) continue;
+          if (Math.abs(bondAngle(A[ms[p]].xyz, a.xyz, A[ms[q]].xyz) - item.theta) < 0.02) { bond(ms[p], i); bond(i, ms[q]); }
+        }
+      } else if (item.type === 'axial') {
+        if (!isM(a) || !nh) return;
+        for (const j of a.bonds) {
+          if (!HALIDE.has(A[j].el)) continue;
+          const v = sub(A[j].xyz, a.xyz);
+          if (Math.abs(dot(v, nh)) / norm(v) > 0.7) bond(i, j);
+        }
+      } else if (item.type === 'terminal') {
+        if (HALIDE.has(a.el) && uc.metalsOf[a.src].length === 1) atoms.add(i);
+      } else if (item.type === 'label') {
+        if (a.label === item.label) atoms.add(i);
+      } else if (item.type === 'metals') {
+        if (isM(a)) atoms.add(i);
+      } else if (item.type === 'framework') {
+        if (a.kind !== 'molecule') atoms.add(i);
+      } else if (item.type === 'organic') {
+        if (a.kind === 'molecule') atoms.add(i);
+      }
+    });
+    if (item.type === 'framework') {
+      for (const i of atoms) for (const j of A[i].bonds) if (atoms.has(j) && j > i) bond(i, j);
+    }
+    // A layer that the packing box cuts has bridges with one metal outside the box. Then the X atoms of the
+    // bridge are shown with the metal that is there.
+    if (item.type === 'bridge' && !atoms.size) {
+      A.forEach((a, i) => {
+        if (a.label !== item.x) return;
+        for (const j of a.bonds) if (isM(A[j]) && (A[j].label === item.m1 || A[j].label === item.m2)) bond(i, j);
+      });
+    }
+    return { atoms: Array.from(atoms).sort((x, y) => x - y), bonds };
+  }
+
   /* ---------- export: Tripos mol2 of a drawn block ----------
      Atom types are SYBYL types guessed from the element and the number of bonded neighbours.
      Bond orders are not assigned: every bond is written as a single bond. */
@@ -3072,7 +3255,7 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
     return rows.join('\n') + '\n';
   }
 
-  root.XtalCore = { readStructure, readStructures, readCif, readCifAll, readPoscar, readXyz, readShelx, readAims, zipEntries, zipStructureNames, hybridInfo, STRUCTURE_NAME, buildCell, analyse, assemble, hullFaces, planePolys, tetrazineDefs, chromoInstances, stateDir, orientReport, hallOps, symbolOps, setSgTable, isMetal, isCenter, isDonor, HALIDE, RC, MASS, parseSymop, MAX_POLY_CN, distance, bondAngle, torsion, toMol2, toSvg, visibleParts, hullPolygons, bondTubes, polyhedraFor, polyhedraStats, suggestPolyMax,
+  root.XtalCore = { readStructure, readStructures, readCif, readCifAll, readPoscar, readXyz, readShelx, readAims, zipEntries, zipStructureNames, hybridInfo, STRUCTURE_NAME, buildCell, analyse, assemble, hullFaces, planePolys, tetrazineDefs, chromoInstances, stateDir, orientReport, hallOps, symbolOps, setSgTable, isMetal, isCenter, isDonor, HALIDE, RC, MASS, parseSymop, MAX_POLY_CN, planeOfPoints, planeOfHkl, planeDistance, planeFoot, linePlaneAngle, planePlaneAngle, planeDisc, ballMesh, highlightSet, distance, bondAngle, torsion, toMol2, toSvg, visibleParts, hullPolygons, bondTubes, polyhedraFor, polyhedraStats, suggestPolyMax,
     powderAtoms, powderPattern, powderProfile, readXY, toXY, patternsCsv, ANODES, anodeOf, XRAY_F0, uEquiv };
   if (typeof module !== 'undefined' && module.exports) module.exports = root.XtalCore;
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -3161,7 +3344,7 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
       win: null, root: null, float: null, observer: null,
       lambda: 1.54059, source: 'Cu', ka2: false, lambda2: 1.54443, ratio: 0.5,
       tmin: 3, tmax: 70, rangeSet: false, fwhm: 0.1, eta: 0.5, step: 0.01, bDefault: 1,
-      stack: false, sqrt: false, marks: true, minRel: 0.1, order: 'tth',
+      stack: false, sqrt: false, marks: true, table: true, minRel: 0.1, order: 'tth',
       data: [], nextSlot: 0, nextId: 1, tableDoc: null, view: null, mark: null, rows: [], geo: null, notice: '', timer: 0, dragFrom: null
     };
     const q = (sel) => (px.root ? px.root.querySelector(sel) : null);
@@ -3252,6 +3435,7 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
         '<div class="seg" role="group" aria-label="How the patterns are arranged"><button type="button" data-a="overlay">Overlay</button><button type="button" data-a="stack">Stacked</button></div>' +
         '<div class="seg" role="group" aria-label="Intensity scale"><button type="button" data-a="lin">Linear</button><button type="button" data-a="sqrt">Square root</button></div>' +
         '<label class="chk"><input type="checkbox" id="pxMarks" data-k="marks">Reflection marks</label>' +
+        '<label class="chk" title="Show or hide the table of reflections. Without the table, the plot has the full height."><input type="checkbox" id="pxTable" data-k="table">Reflection table</label>' +
         '<span style="flex:1"></span>' +
         '<button type="button" data-a="reset">Reset zoom</button><button type="button" data-a="png">Save PNG</button><button type="button" data-a="svg">Save SVG</button>' +
         '<button type="button" data-a="csv" title="The shown patterns as a table: one 2θ column, then one intensity column for each pattern, for the full 2θ range. Measured data are put on the 2θ grid of the Pattern settings by linear interpolation.">Save CSV</button></div>' +
@@ -3388,6 +3572,9 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
       set('#pxOrder', px.order);
       q('#pxKa2').checked = px.ka2;
       q('#pxMarks').checked = px.marks;
+      q('#pxTable').checked = px.table;
+      // without the table, the plot has the full height of the window
+      q('.px-work').classList.toggle('notable', !px.table);
       px.root.querySelectorAll('.k2').forEach((e) => { e.hidden = !px.ka2; });
       const press = (a, on) => { const b = q('button[data-a="' + a + '"]'); if (b) b.setAttribute('aria-pressed', String(on)); };
       press('overlay', !px.stack); press('stack', px.stack); press('lin', !px.sqrt); press('sqrt', px.sqrt);
@@ -3926,6 +4113,7 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
       else if (k === 'step') px.step = num(0.005, 0.05, px.step);
       else if (k === 'bDefault') px.bDefault = num(0, 20, px.bDefault);
       else if (k === 'marks') px.marks = t.checked;
+      else if (k === 'table') px.table = t.checked;
       else if (k === 'minRel') px.minRel = num(0, 100, px.minRel);
       else if (k === 'order') px.order = t.value;
       else if (k === 'tableDoc') { const x = sims().find((y) => y.s.id === t.value); px.tableDoc = x ? x.d : null; px.mark = null; }
@@ -4269,8 +4457,14 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
   const MAX_PLANES = 60;
   const MAX_LABELS = 400;
   const MAX_MEASURES = 20;
+  const MAX_MPLANES = 6;         // planes for measurements in one structure
+  const MPLANE_COLORS = ['#0077b6', '#d95f00', '#1a9a5a', '#7a3fb5', '#c2185b', '#8a6d00'];
+  const GLOW_PERIOD = 1400;      // milliseconds for one glow in and out
+  const GLOW_MAX_ATOMS = 4000;
   const MAX_IMAGE_SIDE = 8000;   // pixels; larger canvases are cut or left black by many graphics cards
-  const MEASURE = { dist: { n: 2, name: 'Distance', hint: 'Click two atoms in the picture.' }, angle: { n: 3, name: 'Angle', hint: 'Click three atoms; the angle is at the second.' }, tors: { n: 4, name: 'Torsion', hint: 'Click four atoms in a chain; the torsion is about the middle two.' } };
+  const MEASURE = { dist: { n: 2, name: 'Distance', hint: 'Click two atoms in the picture.' }, angle: { n: 3, name: 'Angle', hint: 'Click three atoms; the angle is at the second.' }, tors: { n: 4, name: 'Torsion', hint: 'Click four atoms in a chain; the torsion is about the middle two.' },
+    aplane: { n: 1, name: 'Atom to plane', hint: 'Click one atom. The value is its distance from the chosen plane.' },
+    bplane: { n: 2, name: 'Bond to plane', hint: 'Click two atoms. The value is the angle between their line and the chosen plane.' } };
   const PLANE_COLORS = ['#8a63ff', '#d1a800', '#00a3a3', '#d4577b'];
   const STATE_COLORS = ['#d95f00', '#0077b6', '#7a3fb5', '#1a9a5a', '#c2185b', '#8a6d00'];
   const MODES = [['normal', 'perpendicular to the plane'], ['along', 'in plane, along the axis'], ['perp', 'in plane, perpendicular to the axis'], ['angle', 'in plane, at an angle to the axis']];
@@ -4279,17 +4473,20 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
     style: 'bs', poly: true, cellBox: true, H: true, hb: true, org: true, inorg: true,
     arrow: 1.9, notice: '', shown: 0, picking: null, measure: 'dist', labels: 'off', px: 1, bondGrad: true,
     atomScale: 1, bondScale: 1,  // the Atom size and Bond width sliders: every sphere and every stick, times this
-    scheme: 'crysta'             // the Element colours menu
+    scheme: 'crysta',            // the Element colours menu
+    planePick: null,             // the user is clicking atoms to set a plane for measurements
+    glow: null, glowItems: [],   // the row of the framework card that glows in the picture, and what each row is about
+    still: false                 // true while a picture is saved: the glow is drawn at one fixed strength
   };
   let viewer = null;
   let hoverLabel = null;
   const D = () => st.docs[st.cur] || null;
   /* the PXRD window: simulated powder patterns of the open structures, and measured data (src/pxrd.js) */
-  const pxrd = window.CrystaPxrd ? window.CrystaPxrd.create({ docs: () => st.docs, current: () => D(), addFiles: (list) => addFiles(list), name: NAME, version: 'v0.4.0' }) : null;
+  const pxrd = window.CrystaPxrd ? window.CrystaPxrd.create({ docs: () => st.docs, current: () => D(), addFiles: (list) => addFiles(list), name: NAME, version: 'v0.5.0' }) : null;
   /* the Databases window: find a structure in an outside database and open it here (src/dbs.js) */
   let dbCopy = null;
   try { dbCopy = JSON.parse($('db-hybrid3').textContent); } catch (err) { /* no database copy in this page */ }
-  const dbs = window.CrystaDatabases ? window.CrystaDatabases.create({ data: dbCopy, name: NAME, version: 'v0.4.0' }) : null;
+  const dbs = window.CrystaDatabases ? window.CrystaDatabases.create({ data: dbCopy, name: NAME, version: 'v0.5.0' }) : null;
   const safeUrl = (u) => (/^https?:\/\//i.test(String(u || '')) ? String(u) : '#');
   /* a file that is not a structure but holds two columns of numbers is taken as measured powder data */
   const isPowderData = (text) => { try { return C.readXY(text).x.length >= 20; } catch (err) { return false; } };
@@ -4358,7 +4555,7 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
       if (!struct.meta.spaceGroup && src.origin.spaceGroup) { struct.meta.spaceGroup = src.origin.spaceGroup; struct.meta.sgFrom = src.origin.database; }
       if (!struct.meta.temperature && src.origin.temperature) struct.meta.temperature = src.origin.temperature;
     }
-    const d = { src, struct, minor: false, planes: [], chromos: [], measures: [], picks: [], polyRules: [], autoStyle: {}, autoHide: {}, autoGone: {}, polyOpen: null,
+    const d = { src, struct, minor: false, planes: [], chromos: [], measures: [], picks: [], mplanes: [], mplaneSel: null, mplaneSeq: 0, polyRules: [], autoStyle: {}, autoHide: {}, autoGone: {}, polyOpen: null,
       name: src.name.replace(/\.[^.]+$/, '') + (many ? ' · ' + struct.meta.block : '') };
     rebuildCell(d);
     const L = [struct.cell.a, struct.cell.b, struct.cell.c];
@@ -4443,6 +4640,8 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
     st.cur = i;
     st.picking = null;
     st.polyPick = null;
+    st.planePick = null;
+    stopGlow(true);
     const d = D();
     $('main').classList.toggle('solo', !d);
     $('rail').hidden = !d;
@@ -4560,18 +4759,28 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
 
     // framework, coordination and (for layered metal halides) the 2D perovskite descriptors
     const fwRows = [];
-    const addF = (k, v, txt) => fwRows.push('<dt>' + k + '</dt><dd' + (txt ? ' class="txt"' : '') + '>' + v + '</dd>');
+    // a row with an item (see C.highlightSet) is a button: its atoms glow in the picture
+    stopGlow(true);
+    st.glowItems = [];
+    const plain = (html) => html.replace(/<[^>]+>/g, '').replace(/&amp;/g, '&');
+    const glowId = (item, title) => { st.glowItems.push(Object.assign({}, item, { title: plain(title) })); return st.glowItems.length - 1; };
+    const addF = (k, v, txt, item) => {
+      if (!item || !k) { fwRows.push('<dt>' + k + '</dt><dd' + (txt ? ' class="txt"' : '') + '>' + v + '</dd>'); return; }
+      const id = glowId(item, item.title || k);
+      fwRows.push('<dt data-glow="' + id + '"><button type="button" class="glowbtn" aria-pressed="false" title="Show these atoms in the picture">' + k + '</button></dt>' +
+        '<dd data-glow="' + id + '"' + (txt ? ' class="txt"' : '') + '>' + v + '</dd>');
+    };
     const L = info.layer;
     const notes = [];
     const fw0 = info.framework;
     if (fw0) {
-      addF('Connectivity', frameworkText(fw0, null), true);
+      addF('Connectivity', frameworkText(fw0, null), true, { type: 'framework', title: 'the framework' });
       if (fw0.dim === 2) {
-        if (L) addF('Layer thickness <i>n</i>', String(L.n) + (L.nUniform ? '' : ' (mixed)'));
-        addF('Layer spacing', fmt(fw0.spacing, 3) + ' Å');
+        if (L) addF('Layer thickness <i>n</i>', String(L.n) + (L.nUniform ? '' : ' (mixed)'), false, { type: 'metals', title: 'the metal atoms of the layers' });
+        addF('Layer spacing', fmt(fw0.spacing, 3) + ' Å', false, { type: 'metals', title: 'the metal atoms of the layers' });
         if (L && L.slabThickness !== undefined) {
-          addF('Slab, X<sub>ax</sub> to X<sub>ax</sub>', fmt(L.slabThickness, 3) + ' Å');
-          addF('Organic gallery', fmt(L.gallery, 3) + ' Å');
+          addF('Slab, X<sub>ax</sub> to X<sub>ax</sub>', fmt(L.slabThickness, 3) + ' Å', false, { type: 'terminal', title: 'the terminal halides on the two faces of each slab' });
+          addF('Organic gallery', fmt(L.gallery, 3) + ' Å', false, { type: 'organic', title: 'the organic part' });
         }
       }
     }
@@ -4584,20 +4793,21 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
         }
         for (const [key, mult] of groups) {
           const [lab, dist] = key.split('|');
-          addF(esc(s.label) + '–' + esc(lab), dist + ' Å' + (mult > 1 ? ' ×' + mult : ''));
+          addF(esc(s.label) + '–' + esc(lab), dist + ' Å' + (mult > 1 ? ' ×' + mult : ''), false, { type: 'bond', m: s.label, x: lab, d: +dist, title: esc(s.label) + '–' + esc(lab) + ' ' + dist + ' Å' });
         }
-        addF('Mean ' + esc(s.label) + '–X', fmt(s.mean, 3) + ' Å' + (s.cn > 1 ? ', CN ' + s.cn : ''));
+        const whole = { type: 'site', m: s.label, title: esc(s.label) + ' and its ' + s.cn + (s.cn === 1 ? ' bond' : ' bonds') };
+        addF('Mean ' + esc(s.label) + '–X', fmt(s.mean, 3) + ' Å' + (s.cn > 1 ? ', CN ' + s.cn : ''), false, whole);
         if (s.octahedral) {
-          addF(esc(s.label) + ' cis X–M–X', fmt(s.cisMin, 1) + '–' + fmt(s.cisMax, 1) + '°');
-          addF(esc(s.label) + ' Δ<i>d</i>', fmt(s.deltaD * 1e4, 2) + ' × 10<sup>−4</sup>');
-          addF(esc(s.label) + ' <i>σ</i><sup>2</sup>', fmt(s.sigma2, 1) + ' deg<sup>2</sup>');
+          addF(esc(s.label) + ' cis X–M–X', fmt(s.cisMin, 1) + '–' + fmt(s.cisMax, 1) + '°', false, whole);
+          addF(esc(s.label) + ' Δ<i>d</i>', fmt(s.deltaD * 1e4, 2) + ' × 10<sup>−4</sup>', false, whole);
+          addF(esc(s.label) + ' <i>σ</i><sup>2</sup>', fmt(s.sigma2, 1) + ' deg<sup>2</sup>', false, whole);
         }
       }
       if (L) {
-        if (L.axialTilt) addF('Axial M–X to layer normal', (L.axialTilt.max - L.axialTilt.min < 0.05 ? fmt(L.axialTilt.mean, 1) : fmt(L.axialTilt.min, 1) + '–' + fmt(L.axialTilt.max, 1)) + '°');
-        for (const p of L.penetration) addF('N penetration, ' + esc(p.label), (p.depth >= 0 ? '+' : '−') + fmt(Math.abs(p.depth), 3) + ' Å');
+        if (L.axialTilt) addF('Axial M–X to layer normal', (L.axialTilt.max - L.axialTilt.min < 0.05 ? fmt(L.axialTilt.mean, 1) : fmt(L.axialTilt.min, 1) + '–' + fmt(L.axialTilt.max, 1)) + '°', false, { type: 'axial', title: 'the axial M–X bonds' });
+        for (const p of L.penetration) addF('N penetration, ' + esc(p.label), (p.depth >= 0 ? '+' : '−') + fmt(Math.abs(p.depth), 3) + ' Å', false, { type: 'label', label: p.label, title: 'the N atoms ' + esc(p.label) });
         if (L.offset) {
-          addF('Stacking offset', '(' + fmt(L.offset.s1, 2) + ', ' + fmt(L.offset.s2, 2) + ')');
+          addF('Stacking offset', '(' + fmt(L.offset.s1, 2) + ', ' + fmt(L.offset.s2, 2) + ')', false, { type: 'metals', title: 'the metal atoms of the layers' });
           addF('', esc(L.offset.kind), true);
         }
         if (L.penetration.length) notes.push('N penetration is the depth of the ammonium N below the plane of terminal (axial) halides; positive means inside the layer.');
@@ -4613,11 +4823,16 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
     if (br.length) {
       // the in-plane and out-of-plane split only exists for a layered metal halide
       $('tblBr').innerHTML = '<thead><tr><th>M–X–M</th><th><i>θ</i></th>' + (L ? '<th><i>θ</i><sub>in</sub></th><th><i>θ</i><sub>out</sub></th>' : '') + '<th>M···M</th></tr></thead><tbody>' +
-        br.map((b) => '<tr><td>' + esc(b.m1) + '–' + esc(b.x) + '–' + esc(b.m2) + (b.equatorial === false ? ' (axial)' : '') + '</td><td>' + fmt(b.theta, 2) + '</td>' +
-          (L ? '<td>' + (b.thetaIn !== undefined ? fmt(b.thetaIn, 2) : '–') + '</td><td>' + (b.thetaOut !== undefined ? fmt(b.thetaOut, 2) : '–') + '</td>' : '') + '<td>' + fmt(b.mm, 3) + '</td></tr>').join('') + '</tbody>';
+        br.map((b) => {
+          const name = esc(b.m1) + '–' + esc(b.x) + '–' + esc(b.m2);
+          const id = glowId({ type: 'bridge', m1: b.m1, x: b.x, m2: b.m2, theta: b.theta }, name + ' ' + fmt(b.theta, 2) + '°');
+          return '<tr data-glow="' + id + '"><td><button type="button" class="glowbtn" aria-pressed="false" title="Show these atoms in the picture">' + name + '</button>' + (b.equatorial === false ? ' (axial)' : '') + '</td><td>' + fmt(b.theta, 2) + '</td>' +
+          (L ? '<td>' + (b.thetaIn !== undefined ? fmt(b.thetaIn, 2) : '–') + '</td><td>' + (b.thetaOut !== undefined ? fmt(b.thetaOut, 2) : '–') + '</td>' : '') + '<td>' + fmt(b.mm, 3) + '</td></tr>';
+        }).join('') + '</tbody>';
       if (L) notes.unshift('Angles in degrees, distances in Å. θ<sub>in</sub> is the M–X–M angle projected onto the layer plane; θ<sub>out</sub> is the same angle projected onto the plane that holds M···M and the layer normal.');
       else notes.unshift('Angles in degrees, distances in Å. X is the atom that bridges two metals.' + (brAll.length > br.length ? ' The first ' + br.length + ' of ' + brAll.length + ' distinct bridges are listed.' : ''));
     }
+    if (st.glowItems.length) notes.unshift('Press a row to see its atoms in the picture: they glow in and out. Press the row again to stop.');
     if (info.metalSites.some((s) => s.cn > C.MAX_POLY_CN)) notes.push('Sites with more than ' + C.MAX_POLY_CN + ' neighbours are drawn with bonds but without a polyhedron.');
     $('fwNote').innerHTML = notes.join(' ');
     const allOct = info.metalSites.length && info.metalSites.every((s) => s.octahedral);
@@ -4869,6 +5084,7 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
     }).join('');
   }
   function startPicking() {
+    st.planePick = null;
     st.picking = { step: 1, plane: [], axis: [] };
     const d = D();
     d.picks = [];
@@ -4933,7 +5149,7 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
       ['Axial tilt (°)', L && L.axialTilt ? num(L.axialTilt.mean, 1) : ''],
       ['N penetration (Å)', L && L.penetration.length ? num(mean(L.penetration.map((p) => p.depth)), 3) : ''],
       ['Stacking offset', L && L.offset ? '(' + fmt(L.offset.s1, 2) + ', ' + fmt(L.offset.s2, 2) + ')' : ''],
-      ['Crysta version', 'v0.4.0']
+      ['Crysta version', 'v0.5.0']
     ];
   }
   /* columns of the table that hold a mean over the independent sites of a structure */
@@ -4974,20 +5190,112 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
     return [rows[0].map((c) => c[0]).join('\t')].concat(rows.map((r) => r.map((c) => c[1]).join('\t'))).join('\n');
   }
 
-  /* one measurement as text: A···B 3.012 Å, A–B–C 109.5°, A–B–C–D −60.2° */
-  function measureText(m) {
-    if (m.type === 'dist') return m.labels.join('···') + ' ' + fmt(m.value, 3) + ' Å';
-    return m.labels.join('–') + ' ' + (m.value < 0 ? '−' : '') + fmt(Math.abs(m.value), m.type === 'angle' ? 2 : 1) + '°';
-  }
+  /* one measurement as text: A···B 3.012 Å, A–B–C 109.5°, A–B–C–D −60.2°, A to plane P +0.123 Å, A–B to plane P 12.34° */
+  const signedText = (x, dp) => (x < 0 ? '−' : '+') + fmt(Math.abs(x), dp);
   function measureValueText(m) {
     if (m.type === 'dist') return fmt(m.value, 3) + ' Å';
+    if (m.type === 'aplane') return signedText(m.value, 3) + ' Å';
+    if (m.type === 'bplane') return fmt(m.value, 2) + '°';
     return (m.value < 0 ? '−' : '') + fmt(Math.abs(m.value), m.type === 'angle' ? 2 : 1) + '°';
+  }
+  function measureText(m) {
+    if (m.type === 'dist') return m.labels.join('···') + ' ' + measureValueText(m);
+    if (m.type === 'aplane' || m.type === 'bplane') return m.labels.join('–') + ' to plane ' + m.plane + ' ' + measureValueText(m);
+    return m.labels.join('–') + ' ' + measureValueText(m);
+  }
+  /* where the value of a measurement sits: on the line, at the vertex of the angle, or on the central bond of the torsion */
+  const measureAnchor = (m) => {
+    const mid = (p, q) => [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2, (p[2] + q[2]) / 2];
+    return m.type === 'angle' ? m.pts[1] : m.type === 'tors' ? mid(m.pts[1], m.pts[2]) : mid(m.pts[0], m.pts[1]);
+  };
+
+  /* ---------- planes for measurements ----------
+     A plane goes through three or more atoms that the user clicks (least squares), or it is a lattice plane (hkl)
+     through one atom. "Atom to plane" and "Bond to plane" measure against the chosen plane. */
+  const mplaneOf = (d, id) => d.mplanes.find((p) => p.id === id) || null;
+  const mplaneText = (p) => (p.kind === 'atoms' ? 'through ' + p.labels.join(' ') + ', rms ' + fmt(p.plane.rms, 3) + ' Å'
+    : (p.layer ? 'layer plane ' : '') + '(' + p.hkl.join(' ') + ') through ' + p.labels[0]);
+  const mplaneFull = () => 'A structure can have ' + MAX_MPLANES + ' planes. Remove one first.';
+  function addMplane(d, entry) {
+    const id = String.fromCharCode(65 + (d.mplaneSeq % 26));
+    d.mplanes.push(Object.assign({ id, color: MPLANE_COLORS[d.mplaneSeq % MPLANE_COLORS.length] }, entry));
+    d.mplaneSeq++;
+    d.mplaneSel = id;
+  }
+  function removeMplane(id) {
+    const d = D();
+    if (!d) return;
+    d.mplanes = d.mplanes.filter((p) => p.id !== id);
+    // a measurement against the plane goes with it
+    d.measures = d.measures.filter((m) => m.plane !== id);
+    if (d.mplaneSel === id) d.mplaneSel = d.mplanes.length ? d.mplanes[d.mplanes.length - 1].id : null;
+    if (!d.mplanes.length && (st.measure === 'aplane' || st.measure === 'bplane')) { setMeasure('dist'); return; }
+    render(true);
+  }
+  function startPlanePick(kind) {
+    const d = D();
+    if (!d) return;
+    if (d.mplanes.length >= MAX_MPLANES) { st.notice = mplaneFull(); drawReadout(); return; }
+    let pick = { kind: 'atoms', atoms: [] };
+    if (kind !== 'atoms') {
+      const hkl = kind === 'layer' ? d.info.framework.hkl.slice() : ['mpH', 'mpK', 'mpL'].map((id) => Math.round(+$(id).value) || 0);
+      if (!hkl.some((x) => x !== 0)) { st.notice = 'Give h, k and l. One of them must not be 0.'; drawReadout(); return; }
+      pick = { kind: 'hkl', hkl, layer: kind === 'layer' };
+    }
+    st.picking = null;
+    st.polyPick = null;
+    st.planePick = pick;
+    st.notice = '';
+    d.picks = [];
+    render(true);
+    $('stage').scrollIntoView({ block: 'nearest' });
+  }
+  function finishPlanePick() {
+    const d = D();
+    const pk = st.planePick;
+    st.planePick = null;
+    if (pk && pk.kind === 'atoms' && pk.atoms.length >= 3) {
+      const plane = C.planeOfPoints(pk.atoms.map((a) => a.p));
+      if (plane) addMplane(d, { kind: 'atoms', labels: pk.atoms.map((a) => a.label), pts: pk.atoms.map((a) => a.p), plane });
+      else st.notice = 'These atoms are on one line. They do not set a plane.';
+    }
+    render(true);
+  }
+  function planePickAtom(atom) {
+    const d = D();
+    const pk = st.planePick;
+    const p = [atom.x, atom.y, atom.z];
+    st.notice = '';
+    if (pk.kind === 'hkl') {
+      st.planePick = null;
+      const plane = C.planeOfHkl(d.uc.cell, pk.hkl, p);
+      if (plane) addMplane(d, { kind: 'hkl', hkl: pk.hkl, layer: pk.layer, labels: [atom.xl], pts: [p], plane });
+      return;
+    }
+    // clicking a picked atom again takes it back
+    const at = pk.atoms.findIndex((a) => Math.hypot(a.p[0] - p[0], a.p[1] - p[1], a.p[2] - p[2]) < 0.01);
+    if (at >= 0) pk.atoms.splice(at, 1); else pk.atoms.push({ p, label: atom.xl });
   }
   function drawMeasures() {
     const d = D();
     const ms = d ? d.measures : [];
     $('measList').innerHTML = ms.map((m, i) => '<div class="mrow"><span>' + esc(measureText(m)) + '</span><button type="button" class="mini" data-mrm="' + i + '" aria-label="Remove ' + esc(measureText(m)) + '">Remove</button></div>').join('');
     $('measClear').disabled = !ms.length && !(d && d.picks.length);
+    // the planes, the one that the measurements use, and the angle between each two planes
+    const planes = d ? d.mplanes : [];
+    $('measAPlane').disabled = !planes.length;
+    $('measBPlane').disabled = !planes.length;
+    $('mpLayer').hidden = !(d && d.info.framework && d.info.framework.dim === 2);
+    const rows = planes.map((p) => '<div class="mrow"><label title="Measure against plane ' + p.id + '"><input type="radio" name="mpSel" value="' + p.id + '"' + (p.id === d.mplaneSel ? ' checked' : '') + '>' +
+      '<i class="sw" style="background:' + p.color + '"></i><b>' + p.id + '</b></label><span title="' + esc(mplaneText(p)) + '">' + esc(mplaneText(p)) + '</span>' +
+      '<button type="button" class="mini" data-mprm="' + p.id + '" aria-label="Remove plane ' + p.id + '">Remove</button></div>');
+    for (let i = 0; i < planes.length; i++) for (let j = i + 1; j < planes.length; j++) {
+      rows.push('<div class="mrow"><span>Plane ' + planes[i].id + ' to plane ' + planes[j].id + ' ' + fmt(C.planePlaneAngle(planes[i].plane, planes[j].plane), 2) + '°</span></div>');
+    }
+    $('mpList').innerHTML = rows.join('');
+    $('mpNote').textContent = planes.length
+      ? 'The marked plane is the one that Atom to plane and Bond to plane use. A distance is + on the side of the short line that the plane shows in the picture.'
+      : 'Make a plane, then measure against it: the distance of an atom from the plane, or the angle between a bond and the plane. ' + NAME + ' gives the angle between each two planes.';
   }
   function removeMeasure(i) {
     const d = D();
@@ -5032,6 +5340,25 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
       lines.push('<div class="pickbar">' + span(pk.centre ? 'Centre: ' + pk.centre.label + '. Now click one atom at a corner of the polyhedron.' : 'Click the atom at the centre of the polyhedron.') +
         '<button type="button" id="polyPickCancel">Cancel</button></div>');
     }
+    if (st.planePick) {
+      const pk = st.planePick;
+      if (pk.kind === 'atoms') {
+        lines.push('<div class="pickbar">' + span('Click three or more atoms to set the plane.') +
+          span(pk.atoms.length ? 'Picked: ' + pk.atoms.map((a) => a.label).join(' ') : 'Nothing picked yet.') +
+          '<button type="button" class="primary" id="mpDone"' + (pk.atoms.length < 3 ? ' disabled' : '') + '>Done</button><button type="button" id="mpCancel">Cancel</button></div>');
+      } else {
+        lines.push('<div class="pickbar">' + span('Click the atom that the ' + (pk.layer ? 'layer plane (' + pk.hkl.join(' ') + ')' : '(' + pk.hkl.join(' ') + ') plane') + ' goes through.') +
+          '<button type="button" id="mpCancel">Cancel</button></div>');
+      }
+    }
+    if (st.glow && !st.planePick && !st.picking && !st.polyPick) {
+      const g = st.glow;
+      const n = g.count || { atoms: 0, bonds: 0 };
+      const what = n.atoms + (n.atoms === 1 ? ' atom' : ' atoms') + (n.bonds ? ', ' + n.bonds + (n.bonds === 1 ? ' bond' : ' bonds') : '');
+      lines.push('<div class="pickbar">' + span(n.atoms ? 'In the picture: ' + g.title + ' (' + what + (g.cut ? ', the first ' + GLOW_MAX_ATOMS + ' only' : '') + ').'
+        : g.title + ': none of these atoms is in the picture. Change the packing limits or the Display boxes.') +
+        '<button type="button" id="glowStop">Stop</button></div>');
+    }
     if (st.picking) {
       const pk = st.picking;
       if (pk.step === 1) {
@@ -5067,6 +5394,55 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
         '<button type="button" class="mini" id="btnClear">Clear</button></div>');
     }
     $('readout').innerHTML = lines.join('');
+  }
+
+  /* ---------- glow: the atoms of one row of the framework card ----------
+     st.glowItems holds what each row is about (see C.highlightSet). st.glow is the row that glows now, or null.
+     render() builds the meshes of the glow. A timer draws them again with a new strength, so that they go in and out. */
+  let glowTimer = null;
+  const stillMotion = () => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  function glowStrength() {
+    // one fixed strength for a saved picture, and for a user who asked the system for less motion
+    if (st.still || stillMotion()) return 0.55;
+    const t = (performance.now() - st.glow.t0) / GLOW_PERIOD;
+    return 0.1 + 0.7 * (0.5 - 0.5 * Math.cos(2 * Math.PI * t));
+  }
+  function paintGlow() {
+    const g = st.glow;
+    if (!g || !viewer || !g.meshes) return;
+    for (const sh of g.shapes || []) viewer.removeShape(sh);
+    const opacity = glowStrength();
+    g.shapes = g.meshes.map((m) => viewer.addCustom({ vertexArr: m.vertexArr, normalArr: m.normalArr, faceArr: m.faceArr, color: g.color, opacity }));
+  }
+  function markGlow() {
+    const on = st.glow ? String(st.glow.i) : null;
+    $('cardFw').querySelectorAll('[data-glow]').forEach((el) => {
+      const lit = el.dataset.glow === on;
+      el.classList.toggle('lit', lit);
+      const b = el.querySelector('.glowbtn');
+      if (b) b.setAttribute('aria-pressed', String(lit));
+    });
+  }
+  function stopGlow(quiet) {
+    if (glowTimer) { clearInterval(glowTimer); glowTimer = null; }
+    if (!st.glow) return;
+    st.glow = null;
+    markGlow();
+    if (!quiet) render(true);
+  }
+  function toggleGlow(i) {
+    if (!st.glowItems[i]) return;
+    if (st.glow && st.glow.i === i) { stopGlow(); return; }
+    st.glow = { i, title: st.glowItems[i].title, t0: performance.now(), shapes: [], meshes: null };
+    markGlow();
+    render(true);
+    if (!glowTimer && !stillMotion()) {
+      glowTimer = setInterval(() => {
+        if (!st.glow || !viewer || document.hidden || st.still) return;
+        paintGlow();
+        viewer.render();
+      }, 70);
+    }
   }
 
   /* ---------- 3D scene ---------- */
@@ -5272,16 +5648,39 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
       else if (st.notice.startsWith('Only the first ' + MAX_LABELS)) st.notice = '';
     } else if (st.notice.startsWith('Only the first ' + MAX_LABELS)) st.notice = '';
 
-    // measurements and picks
-    const mid = (p, q) => [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2, (p[2] + q[2]) / 2];
-    for (const m of d.measures) {
-      for (let k = 0; k + 1 < m.pts.length; k++) {
-        viewer.addCylinder({ start: V3(m.pts[k]), end: V3(m.pts[k + 1]), radius: 0.028, color: ink, dashed: true, dashLength: 0.12, gapLength: 0.1, fromCap: 1, toCap: 1 });
+    // planes for measurements: a disc, its edge, and a short line along the normal with the letter of the plane
+    for (const P of d.mplanes) {
+      const disc = C.planeDisc(P.plane, P.pts, P.kind === 'atoms' ? 1.2 : 4, 36);
+      const mesh = { vertexArr: [], normalArr: [], faceArr: [] };
+      for (const sgn of [1, -1]) {
+        const nv = V3(P.plane.n.map((x) => x * sgn));
+        for (let k = 0; k < disc.pts.length; k++) {
+          const q0 = disc.pts[k], q1 = disc.pts[(k + 1) % disc.pts.length];
+          const base = mesh.vertexArr.length;
+          mesh.vertexArr.push(V3(disc.c), V3(sgn > 0 ? q0 : q1), V3(sgn > 0 ? q1 : q0));
+          mesh.normalArr.push(nv, nv, nv);
+          mesh.faceArr.push(base, base + 1, base + 2);
+        }
       }
-      // the value sits on the bond, at the angle's vertex, or on the central bond of the torsion
-      const at = m.type === 'dist' ? mid(m.pts[0], m.pts[1]) : m.type === 'angle' ? m.pts[1] : mid(m.pts[1], m.pts[2]);
+      viewer.addCustom(Object.assign(mesh, { color: P.color, opacity: P.id === d.mplaneSel ? 0.34 : 0.2 }));
+      for (let k = 0; k < disc.pts.length; k++) viewer.addCylinder({ start: V3(disc.pts[k]), end: V3(disc.pts[(k + 1) % disc.pts.length]), radius: 0.025, color: P.color, fromCap: 1, toCap: 1 });
+      const tip = [0, 1, 2].map((k) => disc.c[k] + 0.9 * P.plane.n[k]);
+      viewer.addCylinder({ start: V3(disc.c), end: V3(tip), radius: 0.04, color: P.color, fromCap: 1, toCap: 1 });
+      addText(P.id, { position: V3([0, 1, 2].map((k) => disc.c[k] + 1.15 * P.plane.n[k])), font: 'IBM Plex Mono, monospace', fontSize: 13 * px, fontColor: '#ffffff',
+        backgroundColor: P.color, backgroundOpacity: 0.95, borderThickness: 0, inFront: true, alignment: 'center' });
+    }
+
+    // measurements and picks
+    const dashed = (p, q) => {
+      if (Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]) < 1e-3) return;
+      viewer.addCylinder({ start: V3(p), end: V3(q), radius: 0.028, color: ink, dashed: true, dashLength: 0.12, gapLength: 0.1, fromCap: 1, toCap: 1 });
+    };
+    for (const m of d.measures) {
+      for (let k = 0; k + 1 < m.pts.length; k++) dashed(m.pts[k], m.pts[k + 1]);
+      // bond to plane: the line of the bond as the plane sees it, from the first atom
+      if (m.proj) dashed(m.pts[0], m.proj);
       addText(measureValueText(m), {
-        position: V3(at),
+        position: V3(measureAnchor(m)),
         font: 'IBM Plex Mono, monospace', fontSize: 13 * px, fontColor: panel, backgroundColor: ink, backgroundOpacity: 0.9, borderThickness: 0, inFront: true, alignment: 'center'
       });
     }
@@ -5290,6 +5689,27 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
     if (st.picking) {
       for (const a of st.picking.plane) viewer.addSphere({ center: V3(a.p), radius: 0.6, color: accent, opacity: 0.45 });
       for (const a of st.picking.axis) viewer.addSphere({ center: V3(a.p), radius: 0.6, color: ink, opacity: 0.45 });
+    }
+    if (st.planePick && st.planePick.kind === 'atoms') for (const a of st.planePick.atoms) viewer.addSphere({ center: V3(a.p), radius: 0.6, color: accent, opacity: 0.45 });
+
+    // the glow of the chosen row of the framework card: a shell around its atoms and a tube along its bonds
+    if (st.glow) {
+      const g = st.glow;
+      const item = st.glowItems[g.i];
+      const set = item ? C.highlightSet(blk, uc, d.info, item) : { atoms: [], bonds: [] };
+      const seen = set.atoms.filter((i) => map.has(i));
+      g.cut = seen.length > GLOW_MAX_ATOMS;
+      const shown = g.cut ? seen.slice(0, GLOW_MAX_ATOMS) : seen;
+      const inSet = new Set(shown);
+      const balls = shown.map((i) => ({ c: blk.atoms[i].xyz, r: Math.max(sphereR(blk.atoms[i].el) + 0.32, 0.55) }));
+      const tubes = set.bonds.filter((bd) => inSet.has(bd[0]) && inSet.has(bd[1])).map((bd) => ({ p: blk.atoms[bd[0]].xyz, q: blk.atoms[bd[1]].xyz, rp: 0.24, rq: 0.24, cp: 0, cq: 0 }));
+      g.count = { atoms: shown.length, bonds: tubes.length };
+      // fewer faces for a large part, so that the glow stays smooth
+      g.meshes = C.ballMesh(balls, shown.length > 400 ? 8 : 14).concat(C.bondTubes(tubes, 10))
+        .map((m) => ({ vertexArr: m.vertexArr.map(V3), normalArr: m.normalArr.map(V3), faceArr: m.faceArr }));
+      g.shapes = [];
+      g.color = accent;
+      paintGlow();
     }
 
     // hover and click
@@ -5330,6 +5750,11 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
         render(true);
         return;
       }
+      if (st.planePick) {
+        planePickAtom(atom);
+        render(true);
+        return;
+      }
       if (st.picking) {
         pickAtom(atom);
         render(true);
@@ -5342,9 +5767,24 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
       else d.picks.push({ p, label: atom.xl });
       if (d.picks.length >= MEASURE[st.measure].n) {
         const pts = d.picks.map((a) => a.p);
-        const value = st.measure === 'dist' ? C.distance(pts[0], pts[1]) : st.measure === 'angle' ? C.bondAngle(pts[0], pts[1], pts[2]) : C.torsion(pts[0], pts[1], pts[2], pts[3]);
-        if (isFinite(value)) {
-          d.measures.push({ type: st.measure, pts, labels: d.picks.map((a) => a.label), value });
+        const entry = { type: st.measure, pts, labels: d.picks.map((a) => a.label), value: NaN };
+        const P = mplaneOf(d, d.mplaneSel);
+        if (st.measure === 'dist') entry.value = C.distance(pts[0], pts[1]);
+        else if (st.measure === 'angle') entry.value = C.bondAngle(pts[0], pts[1], pts[2]);
+        else if (st.measure === 'tors') entry.value = C.torsion(pts[0], pts[1], pts[2], pts[3]);
+        else if (P && st.measure === 'aplane') {
+          // the dashed line goes from the atom to the nearest point of the plane
+          entry.value = C.planeDistance(P.plane, pts[0]);
+          entry.plane = P.id;
+          pts.push(C.planeFoot(P.plane, pts[0]));
+        } else if (P && st.measure === 'bplane') {
+          entry.value = C.linePlaneAngle(P.plane, pts[0], pts[1]);
+          entry.plane = P.id;
+          const f0 = C.planeFoot(P.plane, pts[0]), f1 = C.planeFoot(P.plane, pts[1]);
+          entry.proj = [0, 1, 2].map((k) => pts[0][k] + f1[k] - f0[k]);
+        }
+        if (isFinite(entry.value)) {
+          d.measures.push(entry);
           if (d.measures.length > MAX_MEASURES) d.measures.shift();
         }
         d.picks = [];
@@ -5459,6 +5899,8 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
     $('measDist').setAttribute('aria-pressed', String(kind === 'dist'));
     $('measAngle').setAttribute('aria-pressed', String(kind === 'angle'));
     $('measTors').setAttribute('aria-pressed', String(kind === 'tors'));
+    $('measAPlane').setAttribute('aria-pressed', String(kind === 'aplane'));
+    $('measBPlane').setAttribute('aria-pressed', String(kind === 'bplane'));
     $('measHint').textContent = MEASURE[kind].hint;
     const d = D();
     if (d) { d.picks = []; render(true); }
@@ -5492,6 +5934,7 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
       if (k > 1) { gl.style.inset = 'auto'; gl.style.left = '0'; gl.style.top = '0'; gl.style.width = (w * k) + 'px'; gl.style.height = (h * k) + 'px'; viewer.resize(); }
       st.px = k;
       st.clear = $('pngClear').checked;
+      st.still = true;
       render(true);
       viewer.setView(view);
       viewer.render();
@@ -5499,6 +5942,7 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
     } catch (err) { uri = null; }
     st.px = 1;
     st.clear = false;
+    st.still = false;
     if (k > 1) { gl.style.inset = ''; gl.style.left = ''; gl.style.top = ''; gl.style.width = ''; gl.style.height = ''; viewer.resize(); }
     render(true);
     viewer.setView(view);
@@ -5621,10 +6065,20 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
         }
       }
     }
+    for (const P of d.mplanes) {
+      const disc = C.planeDisc(P.plane, P.pts, P.kind === 'atoms' ? 1.2 : 4, 36);
+      items.push({ t: 'face', pts: disc.pts, color: P.color, opacity: 0.3, cls: 'measure-plane' });
+      text([0, 1, 2].map((k) => disc.c[k] + 1.15 * P.plane.n[k]), P.id, 13, '#ffffff', P.color, 0.95, 'measure-plane');
+    }
     for (const m of d.measures) {
-      for (let k = 0; k + 1 < m.pts.length; k++) items.push({ t: 'line', p: m.pts[k], q: m.pts[k + 1], w: Math.max(0.6, 0.056 * scale), color: ink, dash: [0.12 * scale, 0.18 * scale], cls: 'measure' });
-      const at = m.type === 'dist' ? mid(m.pts[0], m.pts[1]) : m.type === 'angle' ? m.pts[1] : mid(m.pts[1], m.pts[2]);
-      text(at, measureValueText(m), 13, panel, ink, 0.9, 'measure');
+      const segs = [];
+      for (let k = 0; k + 1 < m.pts.length; k++) segs.push([m.pts[k], m.pts[k + 1]]);
+      if (m.proj) segs.push([m.pts[0], m.proj]);
+      for (const sg of segs) {
+        if (Math.hypot(sg[0][0] - sg[1][0], sg[0][1] - sg[1][1], sg[0][2] - sg[1][2]) < 1e-3) continue;
+        items.push({ t: 'line', p: sg[0], q: sg[1], w: Math.max(0.6, 0.056 * scale), color: ink, dash: [0.12 * scale, 0.18 * scale], cls: 'measure' });
+      }
+      text(measureAnchor(m), measureValueText(m), 13, panel, ink, 0.9, 'measure');
     }
     if (st.labels !== 'off') {
       blk.atoms.forEach((a, i) => { if (isVisible(a) && solid(i) > 0 && (st.labels === 'all' || a.el !== 'H')) text(a.xyz, a.label, 11, ink, panel, 0.55, 'atom-label'); });
@@ -5734,6 +6188,15 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
     $('measDist').onclick = () => setMeasure('dist');
     $('measAngle').onclick = () => setMeasure('angle');
     $('measTors').onclick = () => setMeasure('tors');
+    $('measAPlane').onclick = () => setMeasure('aplane');
+    $('measBPlane').onclick = () => setMeasure('bplane');
+    $('mpAtoms').onclick = () => startPlanePick('atoms');
+    $('mpHkl').onclick = () => startPlanePick('hkl');
+    $('mpLayer').onclick = () => startPlanePick('layer');
+    $('mpList').onclick = (e) => { const b = e.target.closest('button[data-mprm]'); if (b) removeMplane(b.dataset.mprm); };
+    $('mpList').onchange = (e) => { if (e.target.name === 'mpSel' && D()) { D().mplaneSel = e.target.value; render(true); } };
+    // a row of the framework card shows its atoms in the picture: they glow in and out until the row is pressed again
+    $('cardFw').addEventListener('click', (e) => { const t = e.target.closest('[data-glow]'); if (t) toggleGlow(+t.dataset.glow); });
     $('measClear').onclick = () => removeMeasure('all');
     $('measList').onclick = (e) => { const b = e.target.closest('button[data-mrm]'); if (b) removeMeasure(+b.dataset.mrm); };
     // right-click on a measurement in the picture: a small menu to remove it
@@ -5757,7 +6220,13 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
       removeMeasure(b.dataset.mrm === 'all' ? 'all' : +b.dataset.mrm);
     };
     document.addEventListener('mousedown', (e) => { if (!$('ctxMenu').hidden && !e.target.closest('#ctxMenu')) closeMenu(); });
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeMenu(); if (st.editEl) closeElPop(); } });
+    document.addEventListener('keydown', (e) => {
+      if (e.key !== 'Escape') return;
+      closeMenu();
+      if (st.editEl) closeElPop();
+      // Escape also stops the glow, but not while the key belongs to an open window or a text field
+      if (st.glow && !e.target.closest('.pxfloat, input, select, textarea')) stopGlow();
+    });
     // element appearance: press an element in the legend
     $('legend').onclick = (e) => {
       const b = e.target.closest('button[data-el]');
@@ -5809,7 +6278,7 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
     };
     $('pfMax').oninput = (e) => { const v = parseFloat(e.target.value); D().polyForm.max = v > 0 ? v : null; drawPolyPreview(); };
     $('pfSuggest').onclick = suggestPolyForm;
-    $('pfPick').onclick = () => { st.picking = null; st.polyPick = { centre: null }; D().picks = []; render(true); $('stage').scrollIntoView({ block: 'nearest' }); };
+    $('pfPick').onclick = () => { st.picking = null; st.planePick = null; st.polyPick = { centre: null }; D().picks = []; render(true); $('stage').scrollIntoView({ block: 'nearest' }); };
     $('pfAdd').onclick = () => {
       const d = D();
       const f = d.polyForm;
@@ -5852,7 +6321,8 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
     $('chkSpin').onchange = (e) => { if (viewer) viewer.spin(e.target.checked ? 'y' : false, 0.6); };
     $('chkMinor').onchange = (e) => {
       const d = D();
-      d.minor = e.target.checked; d.measures = []; d.picks = [];
+      d.minor = e.target.checked; d.measures = []; d.picks = []; d.mplanes = []; d.mplaneSel = null; st.planePick = null;
+      if (st.measure === 'aplane' || st.measure === 'bplane') setMeasure('dist');
       rebuildCell(d);
       drawHeader(); drawSheet(); drawChromos(); drawCompare();
       render(true);
@@ -5988,6 +6458,9 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
       if (id === 'pickNext') { st.picking.step = 2; render(true); }
       if (id === 'pickDone') finishPicking();
       if (id === 'pickCancel') { st.picking = null; st.notice = ''; render(true); }
+      if (id === 'mpDone') finishPlanePick();
+      if (id === 'mpCancel') { st.planePick = null; st.notice = ''; render(true); }
+      if (id === 'glowStop') stopGlow();
       if (id === 'polyPickCancel') { st.polyPick = null; render(true); }
     };
 
@@ -6065,7 +6538,7 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
     const ISSUES = 'https://github.com/Wenhao-Shao/Crysta/issues/new';
     const fbUrl = () => {
       const title = '[' + $('fbKind').value + '] ' + $('fbSummary').value.trim();
-      const tail = '\n\n---\nSent from the Crysta feedback box\nCrysta v0.4.0\nBrowser: ' + navigator.userAgent;
+      const tail = '\n\n---\nSent from the Crysta feedback box\nCrysta v0.5.0\nBrowser: ' + navigator.userAgent;
       let details = $('fbDetails').value.trim() || '(no details given)';
       const make = (d) => ISSUES + '?title=' + encodeURIComponent(title) + '&body=' + encodeURIComponent(d + tail);
       let url = make(details);
@@ -6114,7 +6587,7 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
       data.append('summary', summary);
       data.append('details', $('fbDetails').value.trim() || '(no details given)');
       if (email) data.append('email', email);
-      data.append('workbench', 'v0.4.0');
+      data.append('workbench', 'v0.5.0');
       data.append('browser', navigator.userAgent);
       const buttons = [$('fbDirect'), $('fbGithub')];
       buttons.forEach((b) => { b.disabled = true; });

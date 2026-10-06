@@ -585,5 +585,80 @@ const formula = (info) => info.formula.map((e) => e.el + e.n).join(' ');
   delete global.window;
 }
 
+// Planes for measurements: a plane through atoms, a lattice plane through an atom, and what is measured against them
+{
+  const sq = [[1, 0, 0.2], [0, 1, 0.2], [-1, 0, 0.2], [0, -1, 0.2]];
+  const flat = X.planeOfPoints(sq);
+  check('plane through four atoms of a square', near(Math.abs(flat.n[2]), 1, 1e-9) && near(flat.c[2], 0.2, 1e-12) && near(flat.rms, 0, 1e-9));
+  check('plane: distance of an atom, with its sign', near(Math.abs(X.planeDistance(flat, [0.3, 0.4, 0.75])), 0.55, 1e-9) &&
+    near(X.planeDistance(flat, [0, 0, 1]), -X.planeDistance(flat, [0, 0, -0.6]), 1e-9));
+  const foot = X.planeFoot(flat, [0.3, 0.4, 0.75]);
+  check('plane: the nearest point of the plane', near(foot[0], 0.3, 1e-9) && near(foot[1], 0.4, 1e-9) && near(foot[2], 0.2, 1e-9));
+  check('plane: angle of a bond to the plane, 0 to 90', near(X.linePlaneAngle(flat, [0, 0, 0], [1, 0, 1]), 45, 1e-9) && near(X.linePlaneAngle(flat, [0, 0, 0], [1, 0, -1]), 45, 1e-9) &&
+    near(X.linePlaneAngle(flat, [0, 0, 0], [2, 1, 0]), 0, 1e-9) && near(X.linePlaneAngle(flat, [0, 0, 5], [0, 0, 1]), 90, 1e-6) && isNaN(X.linePlaneAngle(flat, [1, 1, 1], [1, 1, 1])));
+  // a puckered ring: the plane is the least-squares plane, and the rms is the size of the pucker
+  const puck = X.planeOfPoints([[1, 0, 0.1], [0, 1, -0.1], [-1, 0, 0.1], [0, -1, -0.1]]);
+  check('plane through puckered atoms: least squares and rms', near(Math.abs(puck.n[2]), 1, 1e-9) && near(puck.rms, 0.1, 1e-9));
+  const tilted = X.planeOfPoints([[0, 0, 0], [1, 0, 0], [0, 1, 1]]);
+  check('angle between two planes, 0 to 90', near(X.planePlaneAngle(flat, tilted), 45, 1e-9) && near(X.planePlaneAngle(tilted, flat), 45, 1e-9) && near(X.planePlaneAngle(flat, flat), 0, 1e-6));
+  check('atoms on one line, or fewer than three, set no plane', X.planeOfPoints([[0, 0, 0], [1, 0, 0], [2, 0, 0]]) === null && X.planeOfPoints([[0, 0, 0], [1, 0, 0]]) === null);
+  // lattice planes: (001) of a monoclinic cell is normal to c*, not to c
+  const mono = X.readStructure('data_m\n_cell_length_a 5\n_cell_length_b 6\n_cell_length_c 7\n_cell_angle_alpha 90\n_cell_angle_beta 110\n_cell_angle_gamma 90\n_symmetry_space_group_name_H-M \'P 1\'\nloop_\n_atom_site_label\n_atom_site_fract_x\n_atom_site_fract_y\n_atom_site_fract_z\nC1 0 0 0\n', 'm.cif');
+  const p001 = X.planeOfHkl(mono.cell, [0, 0, 1], [1, 2, 3]);
+  const aVec = mono.cell.toCart([1, 0, 0]), bVec = mono.cell.toCart([0, 1, 0]), cVec = mono.cell.toCart([0, 0, 1]);
+  const dotp = (u, v) => u[0] * v[0] + u[1] * v[1] + u[2] * v[2];
+  check('(hkl) plane through an atom: normal to a and b for (001)', near(dotp(p001.n, aVec), 0, 1e-9) && near(dotp(p001.n, bVec), 0, 1e-9) && near(X.planeDistance(p001, [1, 2, 3]), 0, 1e-12) && p001.rms === 0);
+  check('(hkl) plane: the c axis of a monoclinic cell is 20 degrees from the (001) normal', near(X.linePlaneAngle(p001, [0, 0, 0], cVec), 70, 1e-6) && near(Math.abs(X.planeDistance(p001, [1 + cVec[0], 2 + cVec[1], 3 + cVec[2]])), 7 * Math.sin(110 * Math.PI / 180), 1e-6));
+  check('(0 0 0) sets no plane', X.planeOfHkl(mono.cell, [0, 0, 0], [0, 0, 0]) === null);
+  // what the picture draws: a disc of the plane, and spheres around chosen atoms
+  const disc = X.planeDisc(flat, sq, 1.2, 12);
+  check('plane disc: covers the atoms, lies in the plane', near(disc.r, 2.2, 1e-9) && disc.pts.length === 12 && disc.pts.every((q) => near(X.planeDistance(flat, q), 0, 1e-9) && near(X.distance(q, flat.c), 2.2, 1e-9)));
+  const balls = X.ballMesh([{ c: [1, 2, 3], r: 0.5 }, { c: [4, 4, 4], r: 1 }], 8);
+  const outward = (mesh) => { for (let k = 0; k < mesh.faceArr.length; k += 3) {
+    const [a, b, c] = [0, 1, 2].map((t) => mesh.vertexArr[mesh.faceArr[k + t]]);
+    const u = [b[0] - a[0], b[1] - a[1], b[2] - a[2]], v = [c[0] - a[0], c[1] - a[1], c[2] - a[2]];
+    const nrm = [u[1] * v[2] - u[2] * v[1], u[2] * v[0] - u[0] * v[2], u[0] * v[1] - u[1] * v[0]];
+    const na = mesh.normalArr[mesh.faceArr[k]], nb = mesh.normalArr[mesh.faceArr[k + 1]], nc = mesh.normalArr[mesh.faceArr[k + 2]];
+    if (dotp(nrm, [na[0] + nb[0] + nc[0], na[1] + nb[1] + nc[1], na[2] + nb[2] + nc[2]]) < -1e-12) return false;
+  } return true; };
+  check('sphere mesh: points on the spheres, faces to the outside', balls.length === 1 && balls[0].vertexArr.length === 2 * 5 * 8 && balls[0].faceArr.length === 2 * 4 * 8 * 6 &&
+    balls[0].vertexArr.slice(0, 40).every((q) => near(X.distance(q, [1, 2, 3]), 0.5, 1e-9)) && balls[0].vertexArr.slice(40).every((q) => near(X.distance(q, [4, 4, 4]), 1, 1e-9)) && outward(balls[0]));
+  check('sphere mesh: a new mesh when one is full', X.ballMesh([{ c: [0, 0, 0], r: 1 }, { c: [3, 0, 0], r: 1 }, { c: [6, 0, 0], r: 1 }], 8, 80).length === 2);
+}
+
+// The atoms that a row of the framework card is about (the part of the structure that glows)
+{
+  const s = X.readStructure(fs.readFileSync(path.join(__dirname, '../examples/PEA2PbBr4.cif'), 'utf8'), 'PEA2PbBr4.cif');
+  const uc = X.buildCell(s, {});
+  const info = X.analyse(uc);
+  const blk = X.assemble(uc, [0, 0, 0], [2, 2, 1], []);
+  const A = blk.atoms;
+  const set = (item) => X.highlightSet(blk, uc, info, item);
+  const labels = (r) => Array.from(new Set(r.atoms.map((i) => A[i].label))).sort().join(' ');
+  const m = info.metalSites[0];
+  const nM = A.filter((a) => a.label === m.label).length;
+  const shortest = set({ type: 'bond', m: m.label, x: m.bonds[0].label, d: +m.bonds[0].d.toFixed(3) });
+  check('glow: one bond row gives that bond on each copy of the metal', shortest.bonds.length === nM && labels(shortest) === [m.bonds[0].label, m.label].sort().join(' ') &&
+    shortest.bonds.every(([i, j]) => near(X.distance(A[i].xyz, A[j].xyz), m.bonds[0].d, 0.0015)));
+  const site = set({ type: 'site', m: m.label });
+  check('glow: a site row gives the metal and its six bonds', site.bonds.length === 6 * nM && site.atoms.length === 7 * nM);
+  const b = info.layer.bridges.find((x) => set({ type: 'bridge', m1: x.m1, x: x.x, m2: x.m2, theta: x.theta }).atoms.length > 0 && x.equatorial);
+  const bridge = set({ type: 'bridge', m1: b.m1, x: b.x, m2: b.m2, theta: b.theta });
+  check('glow: a bridge row gives M-X-M with the angle of the row', bridge.bonds.length >= 2 && bridge.bonds.length % 2 === 0 && labels(bridge) === Array.from(new Set([b.m1, b.x, b.m2])).sort().join(' '));
+  const axial = set({ type: 'axial' });
+  check('glow: the axial bonds are near the layer normal', axial.bonds.length === 2 * A.filter((a) => uc.center[a.src]).length &&
+    axial.bonds.every(([i, j]) => 90 - X.linePlaneAngle({ n: info.layer.normal, c: [0, 0, 0] }, A[i].xyz, A[j].xyz) < info.layer.axialTilt.max + 0.01));
+  const term = set({ type: 'terminal' });
+  check('glow: terminal halides, metals, framework and organic part', term.atoms.every((i) => A[i].el === 'Br') && term.atoms.length === axial.bonds.length && term.bonds.length === 0 &&
+    set({ type: 'metals' }).atoms.every((i) => A[i].el === 'Pb') && set({ type: 'framework' }).atoms.every((i) => A[i].el === 'Pb' || A[i].el === 'Br') &&
+    set({ type: 'organic' }).atoms.every((i) => A[i].kind === 'molecule') && set({ type: 'organic' }).atoms.length + set({ type: 'framework' }).atoms.length === A.length);
+  const nLab = info.layer.penetration[0].label;
+  check('glow: a label row gives the atoms with that label, and an unknown row gives nothing', labels(set({ type: 'label', label: nLab })) === nLab && set({ type: 'label', label: 'Zz9' }).atoms.length === 0 && set({ type: 'other' }).atoms.length === 0);
+  // a bridge that the packing box cuts (the layer of this structure is at z = 0): no X atom of it has two metals in the box
+  const cutB = info.layer.bridges.find((x) => A.every((a) => a.label !== x.x || a.bonds.filter((j) => uc.center[A[j].src]).length < 2));
+  const part = set({ type: 'bridge', m1: cutB.m1, x: cutB.x, m2: cutB.m2, theta: cutB.theta });
+  check('glow: a bridge with one metal outside the box shows the part that is there', part.bonds.length > 0 && part.bonds.every(([i, j]) => A[i].label === cutB.x || A[j].label === cutB.x));
+}
+
 console.log(passed + ' passed, ' + failed + ' failed');
 process.exit(failed ? 1 : 0);

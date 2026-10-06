@@ -2,6 +2,22 @@
 
 Any change to how a number is defined gets a new version and a line here.
 
+## v0.5.0
+
+- **Planes in the Measure card.** Make a plane, then measure against it.
+  - A plane goes through three or more atoms that you click (the least-squares plane, with its rms distance). Or it is a lattice plane (*hkl*) through one atom that you click. For a layered structure, "Layer plane" gives the plane of the layers through an atom.
+  - **Atom to plane:** click one atom for its distance from the plane. The sign is + on the side of the short line that the plane shows in the picture.
+  - **Bond to plane:** click two atoms for the angle between their line and the plane, 0° to 90°.
+  - Crysta gives the angle between each two planes, 0° to 90°.
+  - A structure can have 6 planes. The picture and the SVG drawing show the planes and the measurements.
+- **The framework card shows its atoms.** Press a row of the Inorganic framework card. The atoms and bonds of that row glow in and out in the picture. Press the row again, press Stop, or press Escape to stop.
+  - The rows are: each bond length, each metal site, each M–X–M bridge, the axial bonds, the N penetration, the slab, the gallery and the layers.
+  - The strip under the picture gives the number of atoms and bonds that glow. If the packing box cuts a bridge, the part inside the box glows.
+  - A saved PNG shows the glow at one fixed strength. If the system asks for less motion, the glow does not move.
+- **Powder XRD:** the "Reflection table" box hides or shows the table of reflections. Without the table, the plot has the full height of the window.
+
+New definitions (see the README): plane through atoms, lattice plane through an atom, atom to plane, bond to plane, plane to plane. No other definition changed: every other number is identical to v0.4.0.
+
 ## v0.4.0
 
 - **Databases window.** The "Databases" button in the page header opens a window with three tabs.

@@ -80,7 +80,7 @@
       win: null, root: null, float: null, observer: null,
       lambda: 1.54059, source: 'Cu', ka2: false, lambda2: 1.54443, ratio: 0.5,
       tmin: 3, tmax: 70, rangeSet: false, fwhm: 0.1, eta: 0.5, step: 0.01, bDefault: 1,
-      stack: false, sqrt: false, marks: true, minRel: 0.1, order: 'tth',
+      stack: false, sqrt: false, marks: true, table: true, minRel: 0.1, order: 'tth',
       data: [], nextSlot: 0, nextId: 1, tableDoc: null, view: null, mark: null, rows: [], geo: null, notice: '', timer: 0, dragFrom: null
     };
     const q = (sel) => (px.root ? px.root.querySelector(sel) : null);
@@ -171,6 +171,7 @@
         '<div class="seg" role="group" aria-label="How the patterns are arranged"><button type="button" data-a="overlay">Overlay</button><button type="button" data-a="stack">Stacked</button></div>' +
         '<div class="seg" role="group" aria-label="Intensity scale"><button type="button" data-a="lin">Linear</button><button type="button" data-a="sqrt">Square root</button></div>' +
         '<label class="chk"><input type="checkbox" id="pxMarks" data-k="marks">Reflection marks</label>' +
+        '<label class="chk" title="Show or hide the table of reflections. Without the table, the plot has the full height."><input type="checkbox" id="pxTable" data-k="table">Reflection table</label>' +
         '<span style="flex:1"></span>' +
         '<button type="button" data-a="reset">Reset zoom</button><button type="button" data-a="png">Save PNG</button><button type="button" data-a="svg">Save SVG</button>' +
         '<button type="button" data-a="csv" title="The shown patterns as a table: one 2θ column, then one intensity column for each pattern, for the full 2θ range. Measured data are put on the 2θ grid of the Pattern settings by linear interpolation.">Save CSV</button></div>' +
@@ -307,6 +308,9 @@
       set('#pxOrder', px.order);
       q('#pxKa2').checked = px.ka2;
       q('#pxMarks').checked = px.marks;
+      q('#pxTable').checked = px.table;
+      // without the table, the plot has the full height of the window
+      q('.px-work').classList.toggle('notable', !px.table);
       px.root.querySelectorAll('.k2').forEach((e) => { e.hidden = !px.ka2; });
       const press = (a, on) => { const b = q('button[data-a="' + a + '"]'); if (b) b.setAttribute('aria-pressed', String(on)); };
       press('overlay', !px.stack); press('stack', px.stack); press('lin', !px.sqrt); press('sqrt', px.sqrt);
@@ -845,6 +849,7 @@
       else if (k === 'step') px.step = num(0.005, 0.05, px.step);
       else if (k === 'bDefault') px.bDefault = num(0, 20, px.bDefault);
       else if (k === 'marks') px.marks = t.checked;
+      else if (k === 'table') px.table = t.checked;
       else if (k === 'minRel') px.minRel = num(0, 100, px.minRel);
       else if (k === 'order') px.order = t.value;
       else if (k === 'tableDoc') { const x = sims().find((y) => y.s.id === t.value); px.tableDoc = x ? x.d : null; px.mark = null; }

@@ -41,13 +41,14 @@ Press "Load the sample structures" to load the four built-in samples: (PEA)2PbBr
   and framework toggles; atom labels; packing limits in cell fractions; views down a cell axis, a [uvw]
   direction or an (hkl) normal; lattice planes with an offset.
 - **Measure:** click atoms for a distance (two), an angle (three, at the second) or a torsion (four). Remove one from the list in the Measure card or by a right-click on it in the picture; Clear removes all.
+- **Planes:** make a plane through three or more atoms, or a lattice plane (*hkl*) through one atom. Then click one atom for its distance from the plane, or two atoms for the angle between their line and the plane. Crysta gives the angle between each two planes.
 - **Polyhedra:** automatic around metal centres, and your own: choose a centre element, the corner elements and a distance in the Polyhedra card, or click a centre and a corner in the picture. Press a row to set colour, opacity and edges.
 - **Element appearance:** press an element in the legend to set its colour, size and opacity.
 - **Structure types:** metal-anion frameworks (oxides, sulfides, halides), frameworks joined through
   molecular linkers, covalent networks, molecular crystals, molecular complexes and salts.
 - **2D perovskite module:** layer thickness n, spacing, slab and gallery height, in-plane and out-of-plane
   M-X-M angles, axial tilt, ammonium N penetration, stacking offset. Shown when a layered,
-  halide-bridged framework is found.
+  halide-bridged framework is found. Press a row of the framework card and its atoms glow in the picture.
 - **Chromophores:** pick three or more atoms on one molecule for a plane and two for an in-plane axis.
   The definition is copied to every symmetry-equivalent molecule. Each chromophore holds any number of
   transition-dipole states, drawn as double-headed arrows. 1,2,4,5-tetrazine rings are found
@@ -59,7 +60,7 @@ Press "Load the sample structures" to load the four built-in samples: (PEA)2PbBr
   Add measured data to compare them with the references, as an overlay or as a stack. Cu Kα1 is the default
   radiation. Other anodes, a typed wavelength and Kα2 are options. The top axis of the plot gives *d* in Å.
   The plot saves as PNG or SVG, the shown patterns as one CSV table, the reflection table as text and the
-  simulated pattern as an .xy file.
+  simulated pattern as an .xy file. The "Reflection table" box hides the table, and the plot then has the full height.
 - **Background:** the Background menu in the page header sets the whole page to the browser default, to white
   or to black. The 3D picture, the saved pictures and the PXRD window follow.
 - **Panels:** the arrow at the top right of each card in the rail minimizes or maximizes the card.
@@ -110,6 +111,11 @@ These choices decide the numbers, so they are stated here. Changing any of them 
 | Stacking offset | in-plane shift between adjacent layers in units of the two in-plane M···M vectors; (½, ½) is ideal Ruddlesden–Popper, (0, 0) ideal Dion–Jacobson |
 | Hydrogen bond | N–H or O–H donor; H···A at least 0.15 Å inside the Bondi van der Waals sum and D–H···A above 120°; acceptors are O and N of another molecule and halide, O, N or S anions |
 | Torsion | −180° to 180°, positive when the far bond is clockwise from the near bond looking down the central bond |
+| Plane through atoms | The least-squares plane through the clicked atoms: it goes through their centroid, and its normal is the direction of least spread. The rms is the root-mean-square distance of these atoms from the plane. |
+| Lattice plane through an atom | The plane through the clicked atom with its normal along the reciprocal vector *h* **a**\* + *k* **b**\* + *l* **c**\*. The layer plane is this plane for the (*hkl*) of the layers. |
+| Atom to plane | The distance of the atom from the plane along the normal, in Å. It is + on the side that the normal points to. For a plane through atoms, the normal follows the order of the clicks. |
+| Bond to plane | The angle between the line through the two atoms and the plane, 0° to 90°. 0° is a line in the plane. 90° minus this value is the angle to the normal. |
+| Plane to plane | The angle between the two normals, 0° to 90° |
 | Powder pattern: atoms | Every site and every disorder part, each with its occupancy. Copies of one site that coincide count once. |
 | Scattering factor | Neutral atoms. *f*0(*s*) = Σ *a*i exp(−*b*i *s*²) + *c* with *s* = sin θ / λ. The coefficients are from International Tables C, table 6.1.1.4. Charges in the file are not used. |
 | Dispersion | *f*′ and *f*″ (Cromer–Liberman, as computed by gemmi) for the Kα lines of Cu, Mo, Co, Fe, Cr and Ag. They are zero at any other wavelength. |

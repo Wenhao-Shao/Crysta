@@ -2,7 +2,7 @@
   "name": "crysta",
   "displayName": "Crysta",
   "tagline": "A crystal workbench in the browser: view, measure, export",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Browser tool for crystal structures: 3D view, bonding and frameworks, measurements, simulated powder XRD patterns compared with measured data, PNG, SVG and mol2 export, with 2D perovskite layer descriptors, transition-dipole axes and multi-structure comparison",
   "homepage": "https://wenhao-shao.github.io/Crysta/",
   "analytics": {
