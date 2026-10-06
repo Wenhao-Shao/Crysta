@@ -1,0 +1,22 @@
+# One-time look at how HybriD3 gives the files of a data set. Remove with tools/hybrid3_probe.py.
+name: HybriD3 probe
+on:
+  push:
+    branches: [database-browser-demo]
+    paths: ['tools/hybrid3_probe.py']
+permissions:
+  contents: write
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 tools/hybrid3_probe.py data/hybrid3/probe.txt
+      - if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/hybrid3/probe.txt
+          git commit -m "HybriD3 probe: result" || echo "nothing"
+          git push
