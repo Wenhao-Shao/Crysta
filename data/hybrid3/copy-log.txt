@@ -6,18 +6,3 @@
   systems 600 of 642
   systems 642 of 642
 materials written: 642
-  datasets 20 of 2093
-  datasets 40 of 2093
-  datasets 60 of 2093
-  datasets 80 of 2093
-  datasets 100 of 2093
-  datasets 120 of 2093
-  datasets 140 of 2093
-  datasets 160 of 2093
-  datasets 180 of 2093
-  datasets 200 of 2093
-  datasets 220 of 2093
-  try 1 failed for https://materials.hybrid3.duke.edu/materials/datasets/?page=12&page_size=20 : TimeoutError('The read operation timed out')
-  try 2 failed for https://materials.hybrid3.duke.edu/materials/datasets/?page=12&page_size=20 : TimeoutError('The read operation timed out')
-  try 3 failed for https://materials.hybrid3.duke.edu/materials/datasets/?page=12&page_size=20 : TimeoutError('The read operation timed out')
-FAILED: RuntimeError('The HybriD3 API did not answer: https://materials.hybrid3.duke.edu/materials/datasets/?page=12&page_size=20')
