@@ -20,6 +20,54 @@ tagline = pkg["tagline"]
 template = (root / "src/workbench.template.html").read_text()
 core = (root / "src/core.js").read_text()
 pxrd = (root / "src/pxrd.js").read_text()
+dbs = (root / "src/dbs.js").read_text()
+# Copy of a database entry list for the Databases window: the materials of HybriD3 and the list of their structure
+# data sets. The page holds no structure file. It links to HybriD3, where the user downloads the files.
+h3 = root / "data/hybrid3"
+h3info = json.loads((h3 / "copy-info.json").read_text())
+
+
+def h3reference(e):
+    """A short reference of a structure data set: first author, journal, volume, page, year."""
+    ref = e.get("reference") or {}
+    authors = (e.get("citation") or "").split('"')[0].strip().rstrip(",")
+    first = authors.split(",")[0].strip()
+    who = (first + (" et al." if "," in authors else "")) if first else ""
+    where = " ".join(x for x in [ref.get("journal"), (str(ref["vol"]) + ",") if ref.get("vol") else "", str(ref.get("pages_start") or "")] if x)
+    year = " (%s)" % ref["year"] if ref.get("year") else ""
+    text = ", ".join(x for x in [who, where.strip().rstrip(",")] if x) + year
+    doi = (ref.get("doi_isbn") or "").strip()
+    return text.strip(), (doi if doi.startswith("10.") else "")
+
+
+def h3temperature(e):
+    t = (e.get("temperature") or "").strip()
+    return t[:-2] if t.endswith(".0") else t
+
+
+# the structure data sets of each material that have a structure file in their download (a CIF or a geometry file)
+h3by = {}
+for e in (json.loads((h3 / "structures.json").read_text()) if (h3 / "structures.json").exists() else []):
+    files = [{"name": part["name"], "kind": part["kind"]} for part in e.get("parts") or []]
+    if not files:
+        continue
+    ref, doi = h3reference(e)
+    h3by.setdefault(e.get("system"), []).append({
+        "dataset": e["pk"], "spaceGroup": e.get("space_group") or "", "temperature": h3temperature(e), "experimental": bool(e.get("is_experimental")),
+        "sample": e.get("sample_type") or "", "caption": e.get("caption") or "", "main": bool(e.get("representative")), "reference": ref, "doi": doi,
+        "files": files})
+h3materials = []
+for sy in json.loads((h3 / "systems.json").read_text()):
+    mine = sorted(h3by.get(sy["pk"], []), key=lambda x: (not x["main"], not x["experimental"], x["dataset"]))
+    h3materials.append({
+        "pk": sy["pk"], "name": sy.get("compound_name") or "", "iupac": sy.get("iupac") or "", "aliases": sy.get("group") or "",
+        "formula": sy.get("formula") or "", "stoich": sy.get("stoichiometry") or "",
+        "organic": "" if (sy.get("organic") or "") == "None" else (sy.get("organic") or ""), "inorganic": sy.get("inorganic") or "",
+        "dim": sy.get("dimensionality"), "n": sy.get("n") or "", "updated": sy.get("last_update") or "", "structures": mine})
+databases = json.dumps({
+    "id": "hybrid3", "name": "HybriD3 materials database", "home": "https://materials.hybrid3.duke.edu/", "licence": "CC BY 4.0",
+    "licenceUrl": "https://creativecommons.org/licenses/by/4.0/", "read": h3info["read"], "total": len(h3materials),
+    "structuresOnSite": h3info.get("structures_stated"), "materials": h3materials}, ensure_ascii=False, separators=(",", ":"))
 table = (root / "src/sg-table.json").read_text()
 # built-in samples: file in examples/, name shown in the page
 SAMPLES = [
@@ -30,10 +78,11 @@ SAMPLES = [
 ]
 samples = json.dumps([{"name": shown, "text": (root / "examples" / f).read_text()} for f, shown in SAMPLES])
 lib = (root / "vendor/3Dmol-min.js").read_text()
-for part in (core, pxrd, table, lib, samples):
+for part in (core, pxrd, dbs, table, lib, samples, databases):
     assert "</script" not in part.lower() and "<!--" not in part
 
-body = (template.replace("/*__CORE__*/", core).replace("/*__PXRD__*/", pxrd).replace("__SAMPLES__", samples)
+body = (template.replace("/*__CORE__*/", core).replace("/*__PXRD__*/", pxrd).replace("/*__DBS__*/", dbs).replace("__SAMPLES__", samples)
+        .replace("__DATABASES__", databases)
         .replace("__SGTABLE__", table).replace("__VERSION__", "v" + version)
         .replace("__NAME__", name).replace("__TAGLINE__", tagline)
         .replace("__HOMEPAGE__", pkg["homepage"]))
