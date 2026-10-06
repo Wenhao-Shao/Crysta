@@ -1,0 +1,33 @@
+# Reads the entry list and the structures of the HybriD3 materials database (CC BY 4.0) and commits the copy.
+# A browser page cannot read HybriD3 (the server allows no requests from other sites), so the Databases window
+# of Crysta uses this copy. A second run reads only what is new or was not read.
+name: HybriD3 copy
+on:
+  workflow_dispatch:
+  push:
+    branches: [database-browser-demo]
+    paths: ['tools/hybrid3_copy.py', '.github/workflows/hybrid3-copy.yml']
+permissions:
+  contents: write
+concurrency:
+  group: hybrid3-copy
+  cancel-in-progress: false
+jobs:
+  copy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 100
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+      - name: Read HybriD3
+        run: python3 tools/hybrid3_copy.py data/hybrid3 --structures
+      - name: Commit the copy
+        if: always()        # also after a failure, so that the log and the part that was read are kept
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/hybrid3
+          git commit -m "HybriD3 copy: entry list and structures read from HybriD3" || echo "The copy did not change."
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"

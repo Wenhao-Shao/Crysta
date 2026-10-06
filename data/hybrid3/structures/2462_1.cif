@@ -1,0 +1,1487 @@
+data_1
+_audit_creation_date               2023-02-09
+_audit_creation_method
+;
+Olex2 1.5
+(compiled 2022.04.07 svn.rca3783a0 for OlexSys, GUI svn.r6498)
+;
+_shelxl_version_number             2014/6
+_audit_contact_author_address      ?
+_audit_contact_author_email        ?
+_audit_contact_author_name         ''
+_audit_contact_author_phone        ?
+_publ_contact_author_id_orcid      ?
+_publ_section_references
+;
+Dolomanov, O.V., Bourhis, L.J., Gildea, R.J, Howard, J.A.K. & Puschmann, H.
+ (2009), J. Appl. Cryst. 42, 339-341.
+Sheldrick, G.M. (2008). Acta Cryst. A64, 112-122.
+;
+_chemical_name_common              ?
+_chemical_name_systematic          ?
+_chemical_formula_moiety           'C20 H24 I4 N2 S4 Sn'
+_chemical_formula_sum              'C20 H24 I4 N2 S4 Sn'
+_chemical_formula_weight           1046.94
+_chemical_absolute_configuration   ?
+_chemical_melting_point            ?
+loop_
+  _atom_type_symbol
+  _atom_type_description
+  _atom_type_scat_dispersion_real
+  _atom_type_scat_dispersion_imag
+  _atom_type_scat_source
+ 'C' 'C' 0.0033 0.0016 'International Tables Vol C Tables 4.2.6.8 and 6.1.1.4'
+ 'H' 'H' 0.0000 0.0000 'International Tables Vol C Tables 4.2.6.8 and 6.1.1.4'
+ 'I' 'I' -0.4742 1.8119 'International Tables Vol C Tables 4.2.6.8 and 6.1.1.4'
+ 'N' 'N' 0.0061 0.0033 'International Tables Vol C Tables 4.2.6.8 and 6.1.1.4'
+ 'S' 'S' 0.1246 0.1234 'International Tables Vol C Tables 4.2.6.8 and 6.1.1.4'
+ 'Sn' 'Sn' -0.6537 1.4246
+ 'International Tables Vol C Tables 4.2.6.8 and 6.1.1.4'
+_shelx_space_group_comment
+;
+The symmetry employed for this shelxl refinement is uniquely defined
+by the following loop, which should always be used as a source of
+symmetry information in preference to the above space-group names.
+They are only intended as comments.
+;
+_space_group_crystal_system        'monoclinic'
+_space_group_IT_number             8
+_space_group_name_H-M_alt          'C 1 m 1'
+_space_group_name_Hall             'C -2y'
+loop_
+  _space_group_symop_operation_xyz
+ 'x, y, z'
+ 'x, -y, z'
+ 'x+1/2, y+1/2, z'
+ 'x+1/2, -y+1/2, z'
+_cell_length_a                     8.5791(8)
+_cell_length_b                     40.673(6)
+_cell_length_c                     6.0303(8)
+_cell_angle_alpha                  90
+_cell_angle_beta                   134.654(6)
+_cell_angle_gamma                  90
+_cell_volume                       1496.8(3)
+_cell_formula_units_Z              2
+_cell_measurement_reflns_used      8553
+_cell_measurement_temperature      150.00
+_cell_measurement_theta_max        26.615
+_cell_measurement_theta_min        3.005
+_shelx_estimated_absorpt_T_max     ?
+_shelx_estimated_absorpt_T_min     ?
+_exptl_absorpt_coefficient_mu      5.270
+_exptl_absorpt_correction_T_max    0.7456
+_exptl_absorpt_correction_T_min    0.6304
+_exptl_absorpt_correction_type     none
+_exptl_absorpt_process_details
+;
+SADABS-2016/2 (Bruker,2016/2) was used for absorption correction.
+wR2(int) was 0.1117 before and 0.0706 after correction.
+The Ratio of minimum to maximum transmission is 0.8455.
+The \l/2 correction factor is Not present.
+;
+_exptl_absorpt_special_details     ?
+_exptl_crystal_colour              ?
+_exptl_crystal_density_diffrn      2.323
+_exptl_crystal_density_meas        ?
+_exptl_crystal_density_method      ?
+_exptl_crystal_description       PLATE
+_exptl_crystal_F_000               968
+_exptl_crystal_size_max            ?
+_exptl_crystal_size_mid            ?
+_exptl_crystal_size_min            ?
+_exptl_transmission_factor_max     ?
+_exptl_transmission_factor_min     ?
+_diffrn_reflns_av_R_equivalents    0.0762
+_diffrn_reflns_av_unetI/netI       0.0508
+_diffrn_reflns_Laue_measured_fraction_full  0.945
+_diffrn_reflns_Laue_measured_fraction_max  0.956
+_diffrn_reflns_limit_h_max         11
+_diffrn_reflns_limit_h_min         -11
+_diffrn_reflns_limit_k_max         52
+_diffrn_reflns_limit_k_min         -52
+_diffrn_reflns_limit_l_max         7
+_diffrn_reflns_limit_l_min         -7
+_diffrn_reflns_number              21431
+_diffrn_reflns_point_group_measured_fraction_full  0.948
+_diffrn_reflns_point_group_measured_fraction_max  0.958
+_diffrn_reflns_theta_full          25.242
+_diffrn_reflns_theta_max           27.460
+_diffrn_reflns_theta_min           3.376
+_diffrn_ambient_temperature        150.00
+_diffrn_detector_area_resol_mean   ?
+_diffrn_measured_fraction_theta_full  0.945
+_diffrn_measured_fraction_theta_max  0.956
+_diffrn_measurement_device_type    'Bruker APEX-II CCD'
+_diffrn_measurement_method         '\w scans'
+_diffrn_radiation_type             MoK\a
+_diffrn_radiation_wavelength       0.71073
+_diffrn_source                     ?
+_diffrn_standards_number           0
+_reflns_Friedel_coverage           0.990
+_reflns_Friedel_fraction_full      0.950
+_reflns_Friedel_fraction_max       0.960
+_reflns_number_gt                  2638
+_reflns_number_total               3249
+_reflns_special_details
+;
+ Reflections were merged by SHELXL according to the crystal
+ class for the calculation of statistics and refinement.
+ 
+ _reflns_Friedel_fraction is defined as the number of unique
+ Friedel pairs measured divided by the number that would be
+ possible theoretically, ignoring centric projections and
+ systematic absences.
+;
+_reflns_threshold_expression       'I > 2\s(I)'
+_computing_cell_refinement         'SAINT V8.40B (?, 2016)'
+_computing_data_collection         ?
+_computing_data_reduction          'SAINT V8.40B (?, 2016)'
+_computing_molecular_graphics      'Olex2 1.5 (Dolomanov et al., 2009)'
+_computing_publication_material    'Olex2 1.5 (Dolomanov et al., 2009)'
+_computing_structure_refinement    'XL  (Sheldrick, 2008)'
+_computing_structure_solution      'XS  (Sheldrick, 2008)'
+_refine_diff_density_max           2.953
+_refine_diff_density_min           -1.404
+_refine_diff_density_rms           0.269
+_refine_ls_abs_structure_details
+;
+ Refined as an inversion twin.
+;
+_refine_ls_abs_structure_Flack     0.37(17)
+_refine_ls_extinction_coef         .
+_refine_ls_extinction_method       none
+_refine_ls_goodness_of_fit_ref     1.077
+_refine_ls_hydrogen_treatment      constr
+_refine_ls_matrix_type             full
+_refine_ls_number_parameters       250
+_refine_ls_number_reflns           3249
+_refine_ls_number_restraints       394
+_refine_ls_R_factor_all            0.0768
+_refine_ls_R_factor_gt             0.0626
+_refine_ls_restrained_S_all        1.075
+_refine_ls_shift/su_max            0.000
+_refine_ls_shift/su_mean           0.000
+_refine_ls_structure_factor_coef   Fsqd
+_refine_ls_weighting_details
+ 'w=1/[\s^2^(Fo^2^)+(0.0771P)^2^+32.6155P] where P=(Fo^2^+2Fc^2^)/3'
+_refine_ls_weighting_scheme        calc
+_refine_ls_wR_factor_gt            0.1473
+_refine_ls_wR_factor_ref           0.1565
+_refine_special_details
+;
+ Refined as a 2-component inversion twin.
+;
+_atom_sites_solution_hydrogens     geom
+_atom_sites_solution_primary       direct
+_atom_sites_solution_secondary     ?
+loop_
+  _atom_site_label
+  _atom_site_type_symbol
+  _atom_site_fract_x
+  _atom_site_fract_y
+  _atom_site_fract_z
+  _atom_site_U_iso_or_equiv
+  _atom_site_adp_type
+  _atom_site_occupancy
+  _atom_site_site_symmetry_order
+  _atom_site_calc_flag
+  _atom_site_refinement_flags_posn
+  _atom_site_refinement_flags_adp
+  _atom_site_refinement_flags_occupancy
+  _atom_site_disorder_assembly
+  _atom_site_disorder_group
+ I1 I -0.113(3) 0.0000 -0.193(3) 0.0109(17) Uani 0.25 2 d S TU P . .
+ I2 I -0.114(2) 0.0000 0.027(3) 0.014(3) Uani 0.25 2 d S TU P . .
+ I3 I -0.506(3) 0.0000 0.035(4) 0.0106(18) Uani 0.25 2 d S TU P . .
+ I4 I -0.7468(19) 0.0000 -0.204(3) 0.009(2) Uani 0.25 2 d S TU P . .
+ I5 I -0.6133(6) 0.07891(2) -0.5728(7) 0.0302(3) Uani 1 1 d . U . . .
+ Sn1 Sn -0.6178(12) 0.0000 -0.5680(17) 0.0073(8) Uani 0.5 2 d S TU P . .
+ S1 S -1.1135(12) 0.15213(15) -1.2548(15) 0.0456(14) Uani 1 1 d D U . A -2
+ S2 S -0.566(3) 0.2124(6) -0.548(6) 0.097(6) Uani 0.5 1 d D U P B -2
+ C2 C -1.221(5) 0.1135(5) -1.698(5) 0.087(8) Uani 1 1 d D U . . .
+ H2A H -1.2709 0.1226 -1.8872 0.104 Uiso 1 1 calc R U . A .
+ H2B H -1.3456 0.1131 -1.7216 0.104 Uiso 1 1 calc R U . . .
+ C3 C -1.049(4) 0.1354(5) -1.431(5) 0.071(6) Uani 1 1 d D U . A -2
+ C4 C -0.818(5) 0.1445(7) -1.280(6) 0.057(5) Uani 1 1 d D U . A -2
+ H4 H -0.7509 0.1372 -1.3428 0.069 Uiso 1 1 calc R U . A -2
+ C5 C -0.727(5) 0.1657(8) -1.030(7) 0.079(7) Uani 1 1 d D U . A -2
+ H5 H -0.5888 0.1753 -0.9039 0.095 Uiso 1 1 calc R U . A -2
+ C6 C -0.872(3) 0.1704(7) -0.997(5) 0.078(6) Uani 1 1 d D U . A -2
+ C10 C -0.603(7) 0.2287(12) -0.336(10) 0.095(8) Uani 0.5 1 d D U P B -2
+ H10 H -0.4937 0.2415 -0.1625 0.114 Uiso 0.5 1 calc R U P B -2
+ C8 C -0.928(5) 0.2022(11) -0.676(9) 0.080(8) Uani 0.5 1 d D U P B -2
+ H8 H -1.0721 0.1959 -0.7916 0.096 Uiso 0.5 1 calc R U P B -2
+ C9 C -0.799(7) 0.2232(12) -0.417(10) 0.086(9) Uani 0.5 1 d D U P B -2
+ H9 H -0.8365 0.2319 -0.3165 0.103 Uiso 0.5 1 calc R U P B -2
+ Sn2 Sn -0.6039(14) 0.00935(11) -0.551(2) 0.0052(8) Uani 0.25 1 d . U P . .
+ S3 S -0.547(3) 0.2080(7) -0.438(6) 0.111(8) Uani 0.5 1 d D U P B -1
+ C7 C -0.798(3) 0.1926(6) -0.727(5) 0.081(6) Uani 1 1 d D U . . .
+ C11 C -0.512(7) 0.1848(13) -0.177(7) 0.108(12) Uani 0.5 1 d D U P B -1
+ H11 H -0.3853 0.1841 0.0353 0.130 Uiso 0.5 1 calc R U P B -1
+ C12 C -0.714(8) 0.1655(11) -0.337(10) 0.085(13) Uani 0.5 1 d D U P B -1
+ H12 H -0.7264 0.1513 -0.2285 0.102 Uiso 0.5 1 calc R U P B -1
+ C13 C -0.888(6) 0.1700(12) -0.665(10) 0.089(11) Uani 0.5 1 d D U P B -1
+ H13 H -1.0269 0.1605 -0.8044 0.107 Uiso 0.5 1 calc R U P B -1
+ I6 I -0.114(3) 0.0047(4) 0.056(4) 0.010(3) Uani 0.125 1 d . U P . .
+ I8 I -0.708(2) -0.0054(3) -0.168(3) 0.010(2) Uani 0.125 1 d . U P . .
+ I7 I -0.483(3) -0.0057(3) 0.058(4) 0.008(2) Uani 0.125 1 d . U P . .
+ I9 I -0.113(3) 0.0056(3) -0.171(4) 0.014(3) Uani 0.125 1 d . U P . .
+ N2 N -1.112(5) 0.0644(7) -1.399(6) 0.023(6) Uani 0.5 1 d D U P C -1
+ H2D H -1.2141 0.0726 -1.4114 0.027 Uiso 0.5 1 calc R U P C -1
+ H2E H -0.9799 0.0698 -1.2163 0.027 Uiso 0.5 1 calc R U P C -1
+ H2C H -1.1246 0.0426 -1.4165 0.027 Uiso 0.5 1 calc R U P C -1
+ C1 C -1.142(5) 0.0781(5) -1.656(6) 0.070(9) Uani 1 1 d D U . . .
+ H1BC H -1.2496 0.0656 -1.8464 0.084 Uiso 0.5 1 calc R U P C -1
+ H1BD H -1.0045 0.0780 -1.6000 0.084 Uiso 0.5 1 calc R U P C -1
+ H1AB H -1.2474 0.0642 -1.6870 0.084 Uiso 0.5 1 calc R U P C -2
+ H1AA H -1.1606 0.0741 -1.8323 0.084 Uiso 0.5 1 calc R U P C -2
+ N1 N -0.917(4) 0.0639(7) -1.372(6) 0.025(6) Uani 0.5 1 d D U P C -2
+ H1B H -0.8262 0.0665 -1.3964 0.031 Uiso 0.5 1 calc R U P C -2
+ H1C H -0.9302 0.0426 -1.3549 0.031 Uiso 0.5 1 calc R U P C -2
+ H1A H -0.8631 0.0744 -1.2012 0.031 Uiso 0.5 1 calc R U P C -2
+loop_
+  _atom_site_aniso_label
+  _atom_site_aniso_U_11
+  _atom_site_aniso_U_22
+  _atom_site_aniso_U_33
+  _atom_site_aniso_U_23
+  _atom_site_aniso_U_13
+  _atom_site_aniso_U_12
+ I1 0.0109(17) 0.0109(17) 0.0109(17) 0.000 0.0076(12) 0.000
+ I2 0.014(3) 0.013(3) 0.014(3) 0.000 0.009(2) 0.000
+ I3 0.0106(18) 0.0106(18) 0.0106(18) 0.000 0.0074(13) 0.000
+ I4 0.009(3) 0.009(3) 0.009(2) 0.000 0.0065(18) 0.000
+ I5 0.0330(5) 0.0304(5) 0.0290(5) 0.0015(8) 0.0224(4) 0.0009(8)
+ Sn1 0.0074(8) 0.0073(8) 0.0072(8) 0.000 0.0052(6) 0.000
+ S1 0.055(3) 0.049(3) 0.044(3) -0.002(2) 0.039(3) -0.002(3)
+ S2 0.096(9) 0.070(7) 0.087(9) 0.009(7) 0.051(7) -0.023(6)
+ C2 0.081(11) 0.078(11) 0.082(11) 0.006(9) 0.050(8) -0.010(9)
+ C3 0.070(8) 0.068(8) 0.068(8) 0.003(7) 0.046(6) -0.002(7)
+ C4 0.060(9) 0.062(9) 0.064(8) -0.005(7) 0.049(7) 0.001(7)
+ C5 0.072(9) 0.072(9) 0.077(9) -0.004(8) 0.047(7) -0.004(8)
+ C6 0.075(8) 0.070(8) 0.071(8) -0.001(7) 0.045(6) 0.000(7)
+ C10 0.095(9) 0.075(9) 0.090(10) 0.000(8) 0.055(7) -0.010(8)
+ C8 0.085(10) 0.073(10) 0.080(10) -0.001(8) 0.057(7) -0.003(8)
+ C9 0.091(11) 0.078(11) 0.084(11) -0.004(9) 0.060(8) 0.001(9)
+ Sn2 0.0053(8) 0.0053(8) 0.0051(8) 0.00003(15) 0.0037(6) -0.00007(15)
+ S3 0.104(9) 0.073(8) 0.092(10) -0.005(8) 0.046(8) -0.017(7)
+ C7 0.083(8) 0.071(8) 0.081(8) 0.004(7) 0.055(6) -0.009(7)
+ C11 0.099(12) 0.073(11) 0.094(12) -0.006(11) 0.047(11) -0.006(10)
+ C12 0.088(14) 0.067(13) 0.085(14) -0.009(12) 0.056(12) 0.000(12)
+ C13 0.089(12) 0.069(11) 0.084(11) -0.003(10) 0.051(10) -0.002(10)
+ I6 0.010(3) 0.011(3) 0.010(3) -0.0011(14) 0.007(2) 0.0010(14)
+ I8 0.010(3) 0.011(3) 0.010(3) 0.0004(13) 0.007(2) 0.0010(13)
+ I7 0.008(3) 0.010(3) 0.008(2) 0.0000(13) 0.006(2) 0.0014(14)
+ I9 0.013(3) 0.015(3) 0.014(3) -0.0011(14) 0.010(2) 0.0014(14)
+ N2 0.023(7) 0.023(7) 0.023(6) 0.002(3) 0.016(5) -0.002(3)
+ C1 0.075(14) 0.066(13) 0.066(15) -0.005(9) 0.048(12) -0.002(11)
+ N1 0.048(17) 0.021(13) 0.041(15) -0.004(11) 0.043(14) -0.004(12)
+_geom_special_details
+;
+ All esds (except the esd in the dihedral angle between two l.s. planes)
+ are estimated using the full covariance matrix.  The cell esds are taken
+ into account individually in the estimation of esds in distances, angles
+ and torsion angles; correlations between esds in cell parameters are only
+ used when they are defined by crystal symmetry.  An approximate (isotropic)
+ treatment of cell esds is used for estimating esds involving l.s. planes.
+;
+loop_
+  _geom_bond_atom_site_label_1
+  _geom_bond_atom_site_label_2
+  _geom_bond_distance
+  _geom_bond_site_symmetry_2
+  _geom_bond_publ_flag
+ I1 I2 1.33(2) . ?
+ I1 Sn1 3.177(18) . ?
+ I1 Sn1 3.124(17) 1_656 ?
+ I1 Sn2 3.122(18) 2 ?
+ I1 Sn2 3.122(18) . ?
+ I1 I6 1.52(2) 2 ?
+ I1 I6 1.52(2) . ?
+ I1 I9 0.262(18) 2 ?
+ I2 Sn1 3.074(17) 1_656 ?
+ I2 Sn1 3.125(17) . ?
+ I2 Sn2 3.178(17) 2_656 ?
+ I2 Sn2 3.061(17) . ?
+ I2 Sn2 3.178(17) 1_656 ?
+ I2 Sn2 3.061(17) 2 ?
+ I2 I6 0.26(2) 2 ?
+ I2 I9 1.22(2) 2 ?
+ I2 I9 1.22(2) . ?
+ I3 I4 1.47(2) . ?
+ I3 Sn1 3.139(19) 1_556 ?
+ I3 Sn1 3.043(18) . ?
+ I3 Sn2 3.163(19) 1_556 ?
+ I3 Sn2 3.031(18) . ?
+ I3 Sn2 3.163(19) 2_556 ?
+ I3 Sn2 3.031(18) 2 ?
+ I3 I8 1.248(17) . ?
+ I3 I8 1.248(17) 2 ?
+ I3 I7 0.275(18) 2 ?
+ I4 Sn1 3.073(14) . ?
+ I4 Sn1 3.159(13) 1_556 ?
+ I4 Sn2 3.222(14) 1_556 ?
+ I4 Sn2 3.222(14) 2_556 ?
+ I4 Sn2 3.101(15) 2 ?
+ I4 Sn2 3.101(15) . ?
+ I4 I8 0.325(17) 2 ?
+ I4 I7 1.629(17) 2 ?
+ I4 I7 1.629(17) . ?
+ I5 Sn1 3.2101(11) . ?
+ I5 Sn2 2.831(5) . ?
+ Sn1 I2 3.074(17) 1_454 ?
+ Sn1 Sn2 0.390(6) 2 ?
+ Sn1 I6 3.120(18) 1_454 ?
+ Sn1 I6 3.120(18) 2_454 ?
+ Sn1 I8 3.013(16) . ?
+ Sn1 I8 3.013(16) 2 ?
+ Sn1 I7 3.083(18) . ?
+ Sn1 I7 3.083(18) 2 ?
+ Sn1 I9 3.10(2) 2_454 ?
+ Sn1 I9 3.10(2) 1_454 ?
+ S1 C3 1.652(14) . ?
+ S1 C6 1.656(14) . ?
+ S2 C10 1.658(15) . ?
+ S2 C7 1.656(14) . ?
+ C2 H2A 0.9700 . ?
+ C2 H2B 0.9700 . ?
+ C2 C3 1.491(14) . ?
+ C2 C1 1.534(14) . ?
+ C3 C4 1.53(4) . ?
+ C4 H4 0.9300 . ?
+ C4 C5 1.403(10) . ?
+ C5 H5 0.9300 . ?
+ C5 C6 1.407(14) . ?
+ C6 C7 1.554(13) . ?
+ C10 H10 0.9300 . ?
+ C10 C9 1.398(15) . ?
+ C8 H8 0.9300 . ?
+ C8 C9 1.403(15) . ?
+ C8 C7 1.408(13) . ?
+ C9 H9 0.9300 . ?
+ Sn2 Sn2 0.761(9) 2 ?
+ Sn2 I6 3.078(18) . ?
+ Sn2 I8 3.062(16) . ?
+ Sn2 I8 3.007(16) 2 ?
+ Sn2 I7 3.096(18) . ?
+ Sn2 I7 3.038(18) 2 ?
+ Sn2 I9 3.07(2) . ?
+ S3 C7 1.667(14) . ?
+ S3 C11 1.671(10) . ?
+ C7 C13 1.411(15) . ?
+ C11 H11 0.9300 . ?
+ C11 C12 1.485(13) . ?
+ C12 H12 0.9300 . ?
+ C12 C13 1.427(10) . ?
+ C13 H13 0.9300 . ?
+ I6 Sn1 3.120(18) 1_656 ?
+ I6 Sn2 3.198(18) 1_656 ?
+ I6 Sn2 3.124(18) 2 ?
+ I6 I6 0.38(3) 2 ?
+ I6 I9 1.44(2) 2 ?
+ I6 I9 1.38(2) . ?
+ I8 Sn1 3.132(15) 1_556 ?
+ I8 Sn2 3.007(16) 2 ?
+ I8 Sn2 3.163(15) 2_556 ?
+ I8 Sn2 3.215(15) 1_556 ?
+ I8 I8 0.44(3) 2 ?
+ I8 I7 1.37(2) . ?
+ I8 I7 1.45(2) 2 ?
+ I7 Sn1 3.187(19) 1_556 ?
+ I7 Sn2 3.18(2) 2_556 ?
+ I7 Sn2 3.038(18) 2 ?
+ I7 I8 1.45(2) 2 ?
+ I7 I7 0.47(2) 2 ?
+ I9 Sn1 3.10(2) 1_656 ?
+ I9 Sn2 3.18(2) 1_656 ?
+ I9 Sn2 3.13(2) 2 ?
+ I9 I6 1.44(2) 2 ?
+ I9 I9 0.45(3) 2 ?
+ N2 H2D 0.8900 . ?
+ N2 H2E 0.8900 . ?
+ N2 H2C 0.8900 . ?
+ N2 C1 1.491(14) . ?
+ C1 H1BC 0.9700 . ?
+ C1 H1BD 0.9700 . ?
+ C1 H1AB 0.9700 . ?
+ C1 H1AA 0.9700 . ?
+ C1 N1 1.531(15) . ?
+ N1 H1B 0.8900 . ?
+ N1 H1C 0.8900 . ?
+ N1 H1A 0.8900 . ?
+loop_
+  _geom_angle_atom_site_label_1
+  _geom_angle_atom_site_label_2
+  _geom_angle_atom_site_label_3
+  _geom_angle
+  _geom_angle_site_symmetry_1
+  _geom_angle_site_symmetry_3
+  _geom_angle_publ_flag
+ I2 I1 Sn1 75.7(10) . . ?
+ I2 I1 Sn1 75.6(10) . 1_656 ?
+ I2 I1 Sn2 75.0(10) . . ?
+ I2 I1 Sn2 75.0(10) . 2 ?
+ I2 I1 I6 7.2(5) . 2 ?
+ I2 I1 I6 7.2(5) . . ?
+ Sn1 I1 Sn1 151.2(6) 1_656 . ?
+ Sn2 I1 Sn1 7.03(10) 2 . ?
+ Sn2 I1 Sn1 149.8(6) 2 1_656 ?
+ Sn2 I1 Sn1 7.03(10) . . ?
+ Sn2 I1 Sn1 149.8(6) . 1_656 ?
+ Sn2 I1 Sn2 13.99(19) . 2 ?
+ I6 I1 Sn1 75.7(8) 2 . ?
+ I6 I1 Sn1 75.7(8) . . ?
+ I6 I1 Sn1 75.8(8) 2 1_656 ?
+ I6 I1 Sn1 75.8(8) . 1_656 ?
+ I6 I1 Sn2 74.2(8) . . ?
+ I6 I1 Sn2 74.2(8) 2 2 ?
+ I6 I1 Sn2 76.0(8) 2 . ?
+ I6 I1 Sn2 76.0(8) . 2 ?
+ I6 I1 I6 14.4(11) . 2 ?
+ I9 I1 I2 60(6) 2 . ?
+ I9 I1 Sn1 83(7) 2 . ?
+ I9 I1 Sn1 83(7) 2 1_656 ?
+ I9 I1 Sn2 89(7) 2 . ?
+ I9 I1 Sn2 77(7) 2 2 ?
+ I9 I1 I6 53(6) 2 2 ?
+ I9 I1 I6 67(6) 2 . ?
+ I1 I2 Sn1 79.7(10) . 1_656 ?
+ I1 I2 Sn1 80.0(10) . . ?
+ I1 I2 Sn2 80.4(10) . 2_656 ?
+ I1 I2 Sn2 80.2(10) . . ?
+ I1 I2 Sn2 80.4(10) . 1_656 ?
+ I1 I2 Sn2 80.2(10) . 2 ?
+ Sn1 I2 Sn1 159.8(6) 1_656 . ?
+ Sn1 I2 Sn2 6.90(9) 1_656 2_656 ?
+ Sn1 I2 Sn2 159.2(5) . 2_656 ?
+ Sn1 I2 Sn2 159.2(5) . 1_656 ?
+ Sn1 I2 Sn2 6.90(9) 1_656 1_656 ?
+ Sn2 I2 Sn1 158.6(5) 2 1_656 ?
+ Sn2 I2 Sn1 7.14(10) 2 . ?
+ Sn2 I2 Sn1 158.7(5) . 1_656 ?
+ Sn2 I2 Sn1 7.13(10) . . ?
+ Sn2 I2 Sn2 160.6(6) . 2_656 ?
+ Sn2 I2 Sn2 13.75(17) 1_656 2_656 ?
+ Sn2 I2 Sn2 156.0(5) . 1_656 ?
+ Sn2 I2 Sn2 160.6(6) 2 1_656 ?
+ Sn2 I2 Sn2 156.0(5) 2 2_656 ?
+ Sn2 I2 Sn2 14.27(19) . 2 ?
+ I6 I2 I1 133(5) 2 . ?
+ I6 I2 Sn1 97(7) 2 1_656 ?
+ I6 I2 Sn1 96(7) 2 . ?
+ I6 I2 Sn2 91(6) 2 2 ?
+ I6 I2 Sn2 102(7) 2 . ?
+ I6 I2 Sn2 102(7) 2 1_656 ?
+ I6 I2 Sn2 92(7) 2 2_656 ?
+ I6 I2 I9 123(5) 2 2 ?
+ I6 I2 I9 144(5) 2 . ?
+ I9 I2 I1 10.7(6) 2 . ?
+ I9 I2 I1 10.7(6) . . ?
+ I9 I2 Sn1 79.8(10) . 1_656 ?
+ I9 I2 Sn1 80.3(10) 2 . ?
+ I9 I2 Sn1 80.3(10) . . ?
+ I9 I2 Sn1 79.8(10) 2 1_656 ?
+ I9 I2 Sn2 81.8(10) . 2_656 ?
+ I9 I2 Sn2 79.1(10) 2 2 ?
+ I9 I2 Sn2 81.8(10) 2 1_656 ?
+ I9 I2 Sn2 81.8(10) . 2 ?
+ I9 I2 Sn2 81.8(10) 2 . ?
+ I9 I2 Sn2 79.2(10) 2 2_656 ?
+ I9 I2 Sn2 79.1(10) . . ?
+ I9 I2 Sn2 79.2(10) . 1_656 ?
+ I9 I2 I9 21.4(13) 2 . ?
+ I4 I3 Sn1 77.3(9) . . ?
+ I4 I3 Sn1 77.3(10) . 1_556 ?
+ I4 I3 Sn2 78.9(9) . . ?
+ I4 I3 Sn2 79.0(10) . 1_556 ?
+ I4 I3 Sn2 78.9(9) . 2 ?
+ I4 I3 Sn2 79.0(10) . 2_556 ?
+ Sn1 I3 Sn1 154.6(7) . 1_556 ?
+ Sn1 I3 Sn2 155.2(6) . 1_556 ?
+ Sn1 I3 Sn2 7.09(11) 1_556 1_556 ?
+ Sn1 I3 Sn2 7.09(11) 1_556 2_556 ?
+ Sn1 I3 Sn2 155.2(6) . 2_556 ?
+ Sn2 I3 Sn1 7.36(12) 2 . ?
+ Sn2 I3 Sn1 7.36(11) . . ?
+ Sn2 I3 Sn1 155.1(6) 2 1_556 ?
+ Sn2 I3 Sn1 155.1(6) . 1_556 ?
+ Sn2 I3 Sn2 14.42(19) . 2 ?
+ Sn2 I3 Sn2 13.81(18) 1_556 2_556 ?
+ Sn2 I3 Sn2 153.6(6) 2 2_556 ?
+ Sn2 I3 Sn2 153.6(6) . 1_556 ?
+ Sn2 I3 Sn2 157.8(7) . 2_556 ?
+ Sn2 I3 Sn2 157.8(7) 2 1_556 ?
+ I8 I3 I4 10.2(7) . . ?
+ I8 I3 I4 10.2(7) 2 . ?
+ I8 I3 Sn1 76.8(8) . . ?
+ I8 I3 Sn1 76.8(8) 2 . ?
+ I8 I3 Sn1 78.2(9) . 1_556 ?
+ I8 I3 Sn1 78.2(9) 2 1_556 ?
+ I8 I3 Sn2 78.6(9) 2 1_556 ?
+ I8 I3 Sn2 77.0(8) . 2 ?
+ I8 I3 Sn2 79.6(8) 2 2 ?
+ I8 I3 Sn2 81.1(9) . 1_556 ?
+ I8 I3 Sn2 78.6(9) . 2_556 ?
+ I8 I3 Sn2 77.0(8) 2 . ?
+ I8 I3 Sn2 79.6(8) . . ?
+ I8 I3 Sn2 81.1(9) 2 2_556 ?
+ I8 I3 I8 20.3(14) 2 . ?
+ I7 I3 I4 122(6) 2 . ?
+ I7 I3 Sn1 96(7) 2 . ?
+ I7 I3 Sn1 98(7) 2 1_556 ?
+ I7 I3 Sn2 101(7) 2 2 ?
+ I7 I3 Sn2 89(6) 2 . ?
+ I7 I3 Sn2 91(7) 2 1_556 ?
+ I7 I3 Sn2 103(7) 2 2_556 ?
+ I7 I3 I8 132(7) 2 . ?
+ I7 I3 I8 112(6) 2 2 ?
+ I3 I4 Sn1 75.0(9) . . ?
+ I3 I4 Sn1 75.8(9) . 1_556 ?
+ I3 I4 Sn2 73.5(9) . . ?
+ I3 I4 Sn2 74.5(9) . 1_556 ?
+ I3 I4 Sn2 74.5(9) . 2_556 ?
+ I3 I4 Sn2 73.5(9) . 2 ?
+ I3 I4 I7 8.2(4) . . ?
+ I3 I4 I7 8.3(4) . 2 ?
+ Sn1 I4 Sn1 150.7(5) . 1_556 ?
+ Sn1 I4 Sn2 7.23(11) . 2 ?
+ Sn1 I4 Sn2 148.7(4) . 2_556 ?
+ Sn1 I4 Sn2 6.92(10) 1_556 2_556 ?
+ Sn1 I4 Sn2 148.7(4) . 1_556 ?
+ Sn1 I4 Sn2 7.23(11) . . ?
+ Sn1 I4 Sn2 6.92(10) 1_556 1_556 ?
+ Sn2 I4 Sn1 148.4(4) 2 1_556 ?
+ Sn2 I4 Sn1 148.4(4) . 1_556 ?
+ Sn2 I4 Sn2 14.09(18) . 2 ?
+ Sn2 I4 Sn2 145.0(5) 2 2_556 ?
+ Sn2 I4 Sn2 148.0(5) . 2_556 ?
+ Sn2 I4 Sn2 145.0(5) . 1_556 ?
+ Sn2 I4 Sn2 148.0(5) 2 1_556 ?
+ Sn2 I4 Sn2 13.56(16) 1_556 2_556 ?
+ I8 I4 I3 43(3) 2 . ?
+ I8 I4 Sn1 76(4) 2 . ?
+ I8 I4 Sn1 82(4) 2 1_556 ?
+ I8 I4 Sn2 80(4) 2 2 ?
+ I8 I4 Sn2 77(4) 2 1_556 ?
+ I8 I4 Sn2 86(4) 2 2_556 ?
+ I8 I4 Sn2 70(4) 2 . ?
+ I8 I4 I7 51(3) 2 . ?
+ I8 I4 I7 34(4) 2 2 ?
+ I7 I4 Sn1 75.0(6) 2 . ?
+ I7 I4 Sn1 76.1(6) . 1_556 ?
+ I7 I4 Sn1 76.1(6) 2 1_556 ?
+ I7 I4 Sn1 75.0(6) . . ?
+ I7 I4 Sn2 73.8(6) 2 1_556 ?
+ I7 I4 Sn2 72.5(6) 2 . ?
+ I7 I4 Sn2 74.6(6) . . ?
+ I7 I4 Sn2 73.8(6) . 2_556 ?
+ I7 I4 Sn2 72.5(6) . 2 ?
+ I7 I4 Sn2 75.8(6) 2 2_556 ?
+ I7 I4 Sn2 74.6(6) 2 2 ?
+ I7 I4 Sn2 75.8(6) . 1_556 ?
+ I7 I4 I7 16.5(8) . 2 ?
+ Sn2 I5 Sn1 1.7(3) . . ?
+ I2 Sn1 I6 4.8(4) 1_454 2_454 ?
+ I2 Sn1 I6 4.8(4) 1_454 1_454 ?
+ I2 Sn1 I7 95.4(5) 1_454 2 ?
+ I2 Sn1 I7 95.4(5) 1_454 . ?
+ I2 Sn1 I9 22.7(4) 1_454 1_454 ?
+ I2 Sn1 I9 22.7(4) 1_454 2_454 ?
+ I3 Sn1 I2 92.7(5) . 1_454 ?
+ I3 Sn1 I4 27.7(4) . . ?
+ I3 Sn1 I6 89.5(5) . 2_454 ?
+ I3 Sn1 I6 89.5(5) . 1_454 ?
+ I3 Sn1 I7 5.1(3) . 2 ?
+ I3 Sn1 I7 5.1(3) . . ?
+ I3 Sn1 I9 115.0(5) . 1_454 ?
+ I3 Sn1 I9 115.0(5) . 2_454 ?
+ I4 Sn1 I2 65.0(4) . 1_454 ?
+ I4 Sn1 I6 61.8(4) . 1_454 ?
+ I4 Sn1 I6 61.8(4) . 2_454 ?
+ I4 Sn1 I7 30.7(3) . . ?
+ I4 Sn1 I7 30.7(3) . 2 ?
+ I4 Sn1 I9 87.3(4) . 1_454 ?
+ I4 Sn1 I9 87.3(4) . 2_454 ?
+ Sn2 Sn1 I2 102(2) 2 1_454 ?
+ Sn2 Sn1 I3 85(2) 2 . ?
+ Sn2 Sn1 I4 91(2) 2 . ?
+ Sn2 Sn1 I6 105(2) 2 1_454 ?
+ Sn2 Sn1 I6 98(2) 2 2_454 ?
+ Sn2 Sn1 I8 86(2) 2 . ?
+ Sn2 Sn1 I8 94(2) 2 2 ?
+ Sn2 Sn1 I7 80(2) 2 . ?
+ Sn2 Sn1 I7 88(2) 2 2 ?
+ Sn2 Sn1 I9 107(2) 2 1_454 ?
+ Sn2 Sn1 I9 99(2) 2 2_454 ?
+ I6 Sn1 I6 7.0(5) 2_454 1_454 ?
+ I8 Sn1 I2 69.3(4) . 1_454 ?
+ I8 Sn1 I2 69.3(4) 2 1_454 ?
+ I8 Sn1 I3 23.8(3) 2 . ?
+ I8 Sn1 I3 23.8(3) . . ?
+ I8 Sn1 I4 6.0(3) 2 . ?
+ I8 Sn1 I4 6.0(3) . . ?
+ I8 Sn1 I6 65.9(4) 2 1_454 ?
+ I8 Sn1 I6 66.4(4) 2 2_454 ?
+ I8 Sn1 I6 66.4(4) . 1_454 ?
+ I8 Sn1 I6 65.9(4) . 2_454 ?
+ I8 Sn1 I8 8.4(5) 2 . ?
+ I8 Sn1 I7 27.4(4) 2 . ?
+ I8 Sn1 I7 26.0(5) 2 2 ?
+ I8 Sn1 I7 27.4(4) . 2 ?
+ I8 Sn1 I7 26.0(5) . . ?
+ I8 Sn1 I9 92.0(5) 2 2_454 ?
+ I8 Sn1 I9 91.3(5) . 2_454 ?
+ I8 Sn1 I9 91.3(5) 2 1_454 ?
+ I8 Sn1 I9 92.0(5) . 1_454 ?
+ I7 Sn1 I6 92.4(5) 2 2_454 ?
+ I7 Sn1 I6 92.4(5) . 1_454 ?
+ I7 Sn1 I6 91.8(5) 2 1_454 ?
+ I7 Sn1 I6 91.8(5) . 2_454 ?
+ I7 Sn1 I7 8.7(4) . 2 ?
+ I7 Sn1 I9 117.9(5) . 1_454 ?
+ I7 Sn1 I9 117.2(5) 2 1_454 ?
+ I7 Sn1 I9 117.9(5) 2 2_454 ?
+ I7 Sn1 I9 117.2(5) . 2_454 ?
+ I9 Sn1 I6 25.6(4) 1_454 1_454 ?
+ I9 Sn1 I6 25.6(4) 2_454 2_454 ?
+ I9 Sn1 I6 26.7(4) 1_454 2_454 ?
+ I9 Sn1 I6 26.7(4) 2_454 1_454 ?
+ I9 Sn1 I9 8.4(5) 2_454 1_454 ?
+ C3 S1 C6 91.4(13) . . ?
+ C7 S2 C10 84.6(12) . . ?
+ H2A C2 H2B 107.8 . . ?
+ C3 C2 H2A 109.0 . . ?
+ C3 C2 H2B 109.0 . . ?
+ C3 C2 C1 113.1(19) . . ?
+ C1 C2 H2A 109.0 . . ?
+ C1 C2 H2B 109.0 . . ?
+ C2 C3 S1 114.4(14) . . ?
+ C2 C3 C4 132.2(19) . . ?
+ C4 C3 S1 113.4(16) . . ?
+ C3 C4 H4 126.3 . . ?
+ C5 C4 C3 107(2) . . ?
+ C5 C4 H4 126.3 . . ?
+ C4 C5 H5 124.5 . . ?
+ C4 C5 C6 111(2) . . ?
+ C6 C5 H5 124.5 . . ?
+ C5 C6 S1 117.0(19) . . ?
+ C5 C6 C7 118.7(16) . . ?
+ C7 C6 S1 124.3(14) . . ?
+ S2 C10 H10 120.0 . . ?
+ C9 C10 S2 120.0(18) . . ?
+ C9 C10 H10 120.0 . . ?
+ C9 C8 H8 126.7 . . ?
+ C9 C8 C7 106.6(14) . . ?
+ C7 C8 H8 126.7 . . ?
+ C10 C9 C8 107.5(15) . . ?
+ C10 C9 H9 126.2 . . ?
+ C8 C9 H9 126.2 . . ?
+ I2 Sn2 I1 24.8(4) . . ?
+ I2 Sn2 I4 95.5(4) . . ?
+ I2 Sn2 I6 4.9(4) . . ?
+ I2 Sn2 I8 90.7(4) . . ?
+ I2 Sn2 I7 65.1(4) . . ?
+ I2 Sn2 I9 22.9(4) . . ?
+ I3 Sn2 I1 92.6(5) . . ?
+ I3 Sn2 I2 68.0(5) . . ?
+ I3 Sn2 I4 27.6(4) . . ?
+ I3 Sn2 I6 65.1(5) . . ?
+ I3 Sn2 I8 23.6(3) . . ?
+ I3 Sn2 I7 5.0(4) . . ?
+ I3 Sn2 I7 5.2(3) . 2 ?
+ I3 Sn2 I9 90.8(5) . . ?
+ I4 Sn2 I1 119.9(4) . . ?
+ I5 Sn2 I1 97.7(2) . . ?
+ I5 Sn2 I2 98.5(2) . . ?
+ I5 Sn2 I3 98.9(2) . . ?
+ I5 Sn2 I4 98.2(2) . . ?
+ I5 Sn2 I6 95.0(4) . . ?
+ I5 Sn2 I8 94.3(3) . 2 ?
+ I5 Sn2 I8 102.5(3) . . ?
+ I5 Sn2 I7 94.5(3) . 2 ?
+ I5 Sn2 I7 103.2(3) . . ?
+ I5 Sn2 I9 93.7(3) . . ?
+ Sn2 Sn2 I1 83.01(9) 2 . ?
+ Sn2 Sn2 I2 82.87(10) 2 . ?
+ Sn2 Sn2 I3 82.79(10) 2 . ?
+ Sn2 Sn2 I4 82.96(9) 2 . ?
+ Sn2 Sn2 I5 178.09(16) 2 . ?
+ Sn2 Sn2 I6 86.5(3) 2 . ?
+ Sn2 Sn2 I8 86.9(3) 2 2 ?
+ Sn2 Sn2 I8 78.7(3) 2 . ?
+ Sn2 Sn2 I7 87.2(2) 2 2 ?
+ Sn2 Sn2 I7 78.6(2) 2 . ?
+ Sn2 Sn2 I9 87.1(3) 2 . ?
+ I6 Sn2 I1 28.4(4) . . ?
+ I6 Sn2 I4 92.7(4) . . ?
+ I6 Sn2 I7 62.4(5) . . ?
+ I8 Sn2 I1 114.9(5) . . ?
+ I8 Sn2 I1 116.5(5) 2 . ?
+ I8 Sn2 I2 91.8(4) 2 . ?
+ I8 Sn2 I3 23.8(3) 2 . ?
+ I8 Sn2 I4 5.8(3) 2 . ?
+ I8 Sn2 I4 6.0(3) . . ?
+ I8 Sn2 I6 88.7(4) 2 . ?
+ I8 Sn2 I6 88.2(4) . . ?
+ I8 Sn2 I8 8.2(5) 2 . ?
+ I8 Sn2 I7 27.4(4) 2 . ?
+ I8 Sn2 I7 25.8(4) . . ?
+ I8 Sn2 I7 26.3(5) 2 2 ?
+ I8 Sn2 I9 113.6(5) . . ?
+ I8 Sn2 I9 114.5(5) 2 . ?
+ I7 Sn2 I1 90.5(5) 2 . ?
+ I7 Sn2 I1 89.4(5) . . ?
+ I7 Sn2 I2 65.8(5) 2 . ?
+ I7 Sn2 I4 30.5(3) . . ?
+ I7 Sn2 I4 30.8(3) 2 . ?
+ I7 Sn2 I6 62.5(5) 2 . ?
+ I7 Sn2 I8 27.4(4) 2 . ?
+ I7 Sn2 I7 8.7(4) 2 . ?
+ I7 Sn2 I9 88.4(5) 2 . ?
+ I9 Sn2 I1 4.8(3) . . ?
+ I9 Sn2 I4 118.4(4) . . ?
+ I9 Sn2 I6 25.9(4) . . ?
+ I9 Sn2 I7 88.0(5) . . ?
+ C7 S3 C11 91.1(10) . . ?
+ C6 C7 S2 112.6(15) . . ?
+ C8 C7 S2 119.7(13) . . ?
+ C8 C7 C6 126.0(13) . . ?
+ C13 C7 S3 120.9(16) . . ?
+ S3 C11 H11 125.3 . . ?
+ C12 C11 S3 109.4(9) . . ?
+ C12 C11 H11 125.3 . . ?
+ C11 C12 H12 122.0 . . ?
+ C13 C12 C11 116.0(10) . . ?
+ C13 C12 H12 122.0 . . ?
+ C7 C13 C12 102.5(13) . . ?
+ C7 C13 H13 128.7 . . ?
+ C12 C13 H13 128.7 . . ?
+ I1 I6 Sn1 76.6(8) . . ?
+ I1 I6 Sn1 76.1(7) . 1_656 ?
+ I1 I6 Sn2 77.5(8) . . ?
+ I1 I6 Sn2 77.6(8) . 1_656 ?
+ I1 I6 Sn2 75.8(8) . 2 ?
+ Sn1 I6 Sn1 152.4(6) 1_656 . ?
+ Sn1 I6 Sn2 154.0(6) . 1_656 ?
+ Sn1 I6 Sn2 149.9(6) 1_656 2 ?
+ Sn1 I6 Sn2 6.94(10) 1_656 1_656 ?
+ Sn2 I6 Sn1 7.08(10) 2 . ?
+ Sn2 I6 Sn1 153.3(6) . 1_656 ?
+ Sn2 I6 Sn1 6.98(9) . . ?
+ Sn2 I6 Sn2 153.0(6) . 1_656 ?
+ Sn2 I6 Sn2 14.06(19) . 2 ?
+ Sn2 I6 Sn2 153.2(6) 2 1_656 ?
+ I6 I6 I1 82.8(5) 2 . ?
+ I6 I6 Sn1 86.5(3) 2 1_656 ?
+ I6 I6 Sn1 86.5(3) 2 . ?
+ I6 I6 Sn2 93.5(3) 2 . ?
+ I6 I6 Sn2 93.4(3) 2 1_656 ?
+ I6 I6 Sn2 79.5(3) 2 2 ?
+ I6 I6 I9 91.5(10) 2 . ?
+ I6 I6 I9 73.1(6) 2 2 ?
+ I9 I6 I1 9.7(5) 2 . ?
+ I9 I6 I1 8.7(6) . . ?
+ I9 I6 Sn1 76.5(10) 2 . ?
+ I9 I6 Sn1 77.1(10) . . ?
+ I9 I6 Sn1 76.4(11) . 1_656 ?
+ I9 I6 Sn1 75.9(10) 2 1_656 ?
+ I9 I6 Sn2 78.6(10) 2 . ?
+ I9 I6 Sn2 77.4(10) . 2 ?
+ I9 I6 Sn2 76.9(11) . 1_656 ?
+ I9 I6 Sn2 78.6(10) 2 1_656 ?
+ I9 I6 Sn2 76.9(11) . . ?
+ I9 I6 Sn2 74.6(10) 2 2 ?
+ I9 I6 I9 18.4(11) . 2 ?
+ I3 I8 Sn1 78.8(9) . 1_556 ?
+ I3 I8 Sn1 79.5(8) . . ?
+ I3 I8 Sn2 76.8(8) . . ?
+ I3 I8 Sn2 78.6(8) . 2_556 ?
+ I3 I8 Sn2 76.4(8) . 1_556 ?
+ I3 I8 Sn2 79.1(8) . 2 ?
+ I3 I8 I7 8.1(7) . 2 ?
+ I3 I8 I7 10.7(5) . . ?
+ Sn1 I8 Sn1 157.8(6) . 1_556 ?
+ Sn1 I8 Sn2 7.09(11) 1_556 2_556 ?
+ Sn1 I8 Sn2 7.30(12) . . ?
+ Sn1 I8 Sn2 157.9(5) . 2_556 ?
+ Sn1 I8 Sn2 153.4(5) . 1_556 ?
+ Sn1 I8 Sn2 6.89(11) 1_556 1_556 ?
+ Sn2 I8 Sn1 7.43(12) 2 . ?
+ Sn2 I8 Sn1 157.7(5) 2 1_556 ?
+ Sn2 I8 Sn1 153.1(5) . 1_556 ?
+ Sn2 I8 Sn2 14.36(19) 2 . ?
+ Sn2 I8 Sn2 13.67(17) 2_556 1_556 ?
+ Sn2 I8 Sn2 147.7(5) . 1_556 ?
+ Sn2 I8 Sn2 155.0(6) . 2_556 ?
+ Sn2 I8 Sn2 155.2(6) 2 1_556 ?
+ Sn2 I8 Sn2 155.5(6) 2 2_556 ?
+ I8 I8 I3 79.9(7) 2 . ?
+ I8 I8 Sn1 85.8(3) 2 . ?
+ I8 I8 Sn1 86.0(2) 2 1_556 ?
+ I8 I8 Sn2 78.7(3) 2 . ?
+ I8 I8 Sn2 93.1(3) 2 2 ?
+ I8 I8 Sn2 92.9(3) 2 2_556 ?
+ I8 I8 Sn2 79.2(3) 2 1_556 ?
+ I8 I8 I7 90.6(9) 2 . ?
+ I8 I8 I7 71.7(6) 2 2 ?
+ I7 I8 Sn1 79.8(11) . . ?
+ I7 I8 Sn1 79.7(10) . 1_556 ?
+ I7 I8 Sn1 78.9(9) 2 1_556 ?
+ I7 I8 Sn1 79.0(10) 2 . ?
+ I7 I8 Sn2 78.5(10) . 1_556 ?
+ I7 I8 Sn2 79.7(10) 2 2 ?
+ I7 I8 Sn2 78.5(11) . . ?
+ I7 I8 Sn2 75.5(9) 2 1_556 ?
+ I7 I8 Sn2 78.1(10) . 2 ?
+ I7 I8 Sn2 78.1(10) . 2_556 ?
+ I7 I8 Sn2 79.7(9) 2 2_556 ?
+ I7 I8 Sn2 75.3(10) 2 . ?
+ I7 I8 I7 18.8(11) . 2 ?
+ I4 I7 Sn1 74.3(6) . . ?
+ I4 I7 Sn1 74.2(6) . 1_556 ?
+ I4 I7 Sn2 76.8(6) . 2 ?
+ I4 I7 Sn2 76.7(7) . 2_556 ?
+ I4 I7 Sn2 75.0(6) . . ?
+ Sn1 I7 Sn1 148.2(6) . 1_556 ?
+ Sn1 I7 Sn2 7.24(12) . . ?
+ Sn1 I7 Sn2 151.0(6) . 2_556 ?
+ Sn2 I7 Sn1 7.26(11) 2 . ?
+ Sn2 I7 Sn1 7.03(11) 2_556 1_556 ?
+ Sn2 I7 Sn1 150.8(6) 2 1_556 ?
+ Sn2 I7 Sn1 147.0(5) . 1_556 ?
+ Sn2 I7 Sn2 14.2(2) 2 . ?
+ Sn2 I7 Sn2 151.3(6) . 2_556 ?
+ Sn2 I7 Sn2 151.9(7) 2 2_556 ?
+ I8 I7 I4 10.0(5) 2 . ?
+ I8 I7 I4 7.7(6) . . ?
+ I8 I7 Sn1 74.7(10) 2 1_556 ?
+ I8 I7 Sn1 75.2(10) . 1_556 ?
+ I8 I7 Sn1 73.6(9) 2 . ?
+ I8 I7 Sn1 74.1(9) . . ?
+ I8 I7 Sn2 76.8(11) . 2_556 ?
+ I8 I7 Sn2 77.2(9) 2 2 ?
+ I8 I7 Sn2 72.9(9) 2 . ?
+ I8 I7 Sn2 75.8(9) . . ?
+ I8 I7 Sn2 75.6(10) . 2 ?
+ I8 I7 Sn2 78.3(10) 2 2_556 ?
+ I8 I7 I8 17.7(10) . 2 ?
+ I7 I7 I4 81.8(4) 2 . ?
+ I7 I7 Sn1 85.7(2) 2 . ?
+ I7 I7 Sn1 85.8(2) 2 1_556 ?
+ I7 I7 Sn2 78.6(2) 2 . ?
+ I7 I7 Sn2 92.6(2) 2 2_556 ?
+ I7 I7 Sn2 92.8(2) 2 2 ?
+ I7 I7 I8 89.4(9) 2 . ?
+ I7 I7 I8 71.7(6) 2 2 ?
+ I2 I9 Sn1 77.4(10) . . ?
+ I2 I9 Sn1 77.4(10) . 1_656 ?
+ I2 I9 Sn2 78.0(10) . . ?
+ I2 I9 Sn2 78.7(10) . 1_656 ?
+ I2 I9 Sn2 75.6(10) . 2 ?
+ I2 I9 I6 6.1(7) . 2 ?
+ I2 I9 I6 9.2(6) . . ?
+ Sn1 I9 Sn1 154.5(6) 1_656 . ?
+ Sn1 I9 Sn2 155.9(6) . 1_656 ?
+ Sn1 I9 Sn2 6.96(9) 1_656 1_656 ?
+ Sn1 I9 Sn2 150.9(6) 1_656 2 ?
+ Sn2 I9 Sn1 155.2(6) . 1_656 ?
+ Sn2 I9 Sn1 7.01(10) . . ?
+ Sn2 I9 Sn1 7.10(11) 2 . ?
+ Sn2 I9 Sn2 154.0(6) 2 1_656 ?
+ Sn2 I9 Sn2 14.05(19) . 2 ?
+ Sn2 I9 Sn2 154.6(7) . 1_656 ?
+ I6 I9 Sn1 78.0(10) . 1_656 ?
+ I6 I9 Sn1 77.4(10) 2 1_656 ?
+ I6 I9 Sn1 77.2(10) 2 . ?
+ I6 I9 Sn1 77.8(11) . . ?
+ I6 I9 Sn2 74.6(10) 2 2 ?
+ I6 I9 Sn2 79.4(10) 2 1_656 ?
+ I6 I9 Sn2 78.1(10) . 1_656 ?
+ I6 I9 Sn2 78.6(11) 2 . ?
+ I6 I9 Sn2 77.3(11) . . ?
+ I6 I9 Sn2 77.1(11) . 2 ?
+ I6 I9 I6 15.4(12) . 2 ?
+ I9 I9 I2 79.3(6) 2 . ?
+ I9 I9 Sn1 85.8(2) 2 1_656 ?
+ I9 I9 Sn1 85.9(2) 2 . ?
+ I9 I9 Sn2 92.8(2) 2 1_656 ?
+ I9 I9 Sn2 92.9(3) 2 . ?
+ I9 I9 Sn2 78.8(3) 2 2 ?
+ I9 I9 I6 88.5(10) 2 . ?
+ I9 I9 I6 73.1(6) 2 2 ?
+ H2D N2 H2E 109.5 . . ?
+ H2D N2 H2C 109.5 . . ?
+ H2E N2 H2C 109.5 . . ?
+ C1 N2 H2D 109.5 . . ?
+ C1 N2 H2E 109.5 . . ?
+ C1 N2 H2C 109.5 . . ?
+ C2 C1 H1BC 110.8 . . ?
+ C2 C1 H1BD 110.8 . . ?
+ C2 C1 H1AB 105.5 . . ?
+ C2 C1 H1AA 105.5 . . ?
+ N2 C1 C2 105(2) . . ?
+ N2 C1 H1BC 110.8 . . ?
+ N2 C1 H1BD 110.8 . . ?
+ H1BC C1 H1BD 108.9 . . ?
+ H1AB C1 H1AA 106.1 . . ?
+ N1 C1 C2 127(2) . . ?
+ N1 C1 H1AB 105.5 . . ?
+ N1 C1 H1AA 105.5 . . ?
+ C1 N1 H1B 109.5 . . ?
+ C1 N1 H1C 109.5 . . ?
+ C1 N1 H1A 109.5 . . ?
+ H1B N1 H1C 109.5 . . ?
+ H1B N1 H1A 109.5 . . ?
+ H1C N1 H1A 109.5 . . ?
+loop_
+  _geom_torsion_atom_site_label_1
+  _geom_torsion_atom_site_label_2
+  _geom_torsion_atom_site_label_3
+  _geom_torsion_atom_site_label_4
+  _geom_torsion
+  _geom_torsion_site_symmetry_1
+  _geom_torsion_site_symmetry_2
+  _geom_torsion_site_symmetry_3
+  _geom_torsion_site_symmetry_4
+  _geom_torsion_publ_flag
+ I1 I2 I9 Sn1 -88(8) . . . 1_656 ?
+ I1 I2 I9 Sn1 88(8) . . . . ?
+ I1 I2 I9 Sn2 -95(8) . . . 1_656 ?
+ I1 I2 I9 Sn2 81(8) . . . 2 ?
+ I1 I2 I9 Sn2 95(8) . . . . ?
+ I1 I2 I9 I6 0(14) . . . 2 ?
+ I1 I2 I9 I6 179(12) . . . . ?
+ I1 I2 I9 I9 0(8) . . . 2 ?
+ I1 I6 I9 I2 -1(13) . . . . ?
+ I1 I6 I9 Sn1 86(9) . . . . ?
+ I1 I6 I9 Sn1 -86(9) . . . 1_656 ?
+ I1 I6 I9 Sn2 -94(9) . . . 1_656 ?
+ I1 I6 I9 Sn2 78(9) . . . 2 ?
+ I1 I6 I9 Sn2 93(9) . . . . ?
+ I1 I6 I9 I6 0(9) . . . 2 ?
+ I1 I6 I9 I9 0(9) . . . 2 ?
+ I2 I1 I6 Sn1 -89(10) . . . . ?
+ I2 I1 I6 Sn1 88(10) . . . 1_656 ?
+ I2 I1 I6 Sn2 94(10) . . . 1_656 ?
+ I2 I1 I6 Sn2 -82(10) . . . 2 ?
+ I2 I1 I6 Sn2 -96(10) . . . . ?
+ I2 I1 I6 I6 -1(10) . . . 2 ?
+ I2 I1 I6 I9 0(11) . . . 2 ?
+ I2 I1 I6 I9 179(15) . . . . ?
+ I3 I4 I7 Sn1 87(9) . . . 1_556 ?
+ I3 I4 I7 Sn1 -89(9) . . . . ?
+ I3 I4 I7 Sn2 -81(9) . . . . ?
+ I3 I4 I7 Sn2 94(9) . . . 2_556 ?
+ I3 I4 I7 Sn2 -96(9) . . . 2 ?
+ I3 I4 I7 I8 -4(8) . . . 2 ?
+ I3 I4 I7 I8 -176(14) . . . . ?
+ I3 I4 I7 I7 -1(9) . . . 2 ?
+ I3 I8 I7 I4 3(12) . . . . ?
+ I3 I8 I7 Sn1 -87(8) . . . . ?
+ I3 I8 I7 Sn1 84(8) . . . 1_556 ?
+ I3 I8 I7 Sn2 91(8) . . . 2_556 ?
+ I3 I8 I7 Sn2 -94(8) . . . 2 ?
+ I3 I8 I7 Sn2 -80(8) . . . . ?
+ I3 I8 I7 I8 -1(8) . . . 2 ?
+ I3 I8 I7 I7 -1(8) . . . 2 ?
+ I4 I3 I8 Sn1 -84(6) . . . 1_556 ?
+ I4 I3 I8 Sn1 92(6) . . . . ?
+ I4 I3 I8 Sn2 85(6) . . . . ?
+ I4 I3 I8 Sn2 -91(6) . . . 2_556 ?
+ I4 I3 I8 Sn2 -77(6) . . . 1_556 ?
+ I4 I3 I8 Sn2 99(6) . . . 2 ?
+ I4 I3 I8 I8 4(6) . . . 2 ?
+ I4 I3 I8 I7 -177(10) . . . . ?
+ I4 I3 I8 I7 6(10) . . . 2 ?
+ Sn1 I1 I2 Sn1 180.000(2) . . . 1_656 ?
+ Sn1 I1 I2 Sn1 180.000(2) 1_656 . . . ?
+ Sn1 I1 I2 Sn2 -172.76(9) 1_656 . . 2 ?
+ Sn1 I1 I2 Sn2 -7.24(9) . . . . ?
+ Sn1 I1 I2 Sn2 172.76(10) 1_656 . . . ?
+ Sn1 I1 I2 Sn2 6.97(9) 1_656 . . 1_656 ?
+ Sn1 I1 I2 Sn2 7.24(9) . . . 2 ?
+ Sn1 I1 I2 Sn2 -173.03(9) . . . 1_656 ?
+ Sn1 I1 I2 Sn2 -6.97(8) 1_656 . . 2_656 ?
+ Sn1 I1 I2 Sn2 173.03(8) . . . 2_656 ?
+ Sn1 I1 I2 I6 -91(10) 1_656 . . 2 ?
+ Sn1 I1 I2 I6 89(10) . . . 2 ?
+ Sn1 I1 I2 I9 -90(8) . . . . ?
+ Sn1 I1 I2 I9 90(8) . . . 2 ?
+ Sn1 I1 I2 I9 -90(8) 1_656 . . 2 ?
+ Sn1 I1 I2 I9 90(8) 1_656 . . . ?
+ Sn1 I1 I6 Sn1 176.3(3) . . . 1_656 ?
+ Sn1 I1 I6 Sn1 -176.3(3) 1_656 . . . ?
+ Sn1 I1 I6 Sn2 6.94(9) 1_656 . . 1_656 ?
+ Sn1 I1 I6 Sn2 -7.11(10) . . . . ?
+ Sn1 I1 I6 Sn2 -176.7(3) . . . 1_656 ?
+ Sn1 I1 I6 Sn2 -169.1(3) 1_656 . . 2 ?
+ Sn1 I1 I6 Sn2 7.25(11) . . . 2 ?
+ Sn1 I1 I6 Sn2 176.6(3) 1_656 . . . ?
+ Sn1 I1 I6 I6 88.15(17) . . . 2 ?
+ Sn1 I1 I6 I6 -88.16(18) 1_656 . . 2 ?
+ Sn1 I1 I6 I9 88(8) . . . 2 ?
+ Sn1 I1 I6 I9 -88(8) 1_656 . . 2 ?
+ Sn1 I1 I6 I9 91(9) 1_656 . . . ?
+ Sn1 I1 I6 I9 -92(9) . . . . ?
+ Sn1 I2 I9 Sn1 -176.2(2) . . . 1_656 ?
+ Sn1 I2 I9 Sn1 176.2(2) 1_656 . . . ?
+ Sn1 I2 I9 Sn2 169.1(2) 1_656 . . 2 ?
+ Sn1 I2 I9 Sn2 7.15(11) . . . . ?
+ Sn1 I2 I9 Sn2 176.8(2) . . . 1_656 ?
+ Sn1 I2 I9 Sn2 -176.7(2) 1_656 . . . ?
+ Sn1 I2 I9 Sn2 -6.99(10) 1_656 . . 1_656 ?
+ Sn1 I2 I9 Sn2 -7.07(11) . . . 2 ?
+ Sn1 I2 I9 I6 -87(12) . . . 2 ?
+ Sn1 I2 I9 I6 89(12) 1_656 . . 2 ?
+ Sn1 I2 I9 I6 -92(8) 1_656 . . . ?
+ Sn1 I2 I9 I6 91(8) . . . . ?
+ Sn1 I2 I9 I9 88.1(2) 1_656 . . 2 ?
+ Sn1 I2 I9 I9 -88.1(2) . . . 2 ?
+ Sn1 I3 I4 Sn1 180.000(2) 1_556 . . . ?
+ Sn1 I3 I4 Sn1 180.000(3) . . . 1_556 ?
+ Sn1 I3 I4 Sn2 172.65(10) 1_556 . . . ?
+ Sn1 I3 I4 Sn2 7.35(10) . . . 2 ?
+ Sn1 I3 I4 Sn2 7.04(9) 1_556 . . 1_556 ?
+ Sn1 I3 I4 Sn2 172.96(9) . . . 2_556 ?
+ Sn1 I3 I4 Sn2 -7.35(10) . . . . ?
+ Sn1 I3 I4 Sn2 -172.65(10) 1_556 . . 2 ?
+ Sn1 I3 I4 Sn2 -172.96(9) . . . 1_556 ?
+ Sn1 I3 I4 Sn2 -7.04(9) 1_556 . . 2_556 ?
+ Sn1 I3 I4 I8 -86(6) . . . 2 ?
+ Sn1 I3 I4 I8 94(6) 1_556 . . 2 ?
+ Sn1 I3 I4 I7 -89(9) . . . 2 ?
+ Sn1 I3 I4 I7 91(9) 1_556 . . 2 ?
+ Sn1 I3 I4 I7 89(9) . . . . ?
+ Sn1 I3 I4 I7 -91(9) 1_556 . . . ?
+ Sn1 I3 I8 Sn1 175.4(3) 1_556 . . . ?
+ Sn1 I3 I8 Sn1 -175.4(3) . . . 1_556 ?
+ Sn1 I3 I8 Sn2 177.3(3) . . . 2_556 ?
+ Sn1 I3 I8 Sn2 -177.0(3) 1_556 . . 2 ?
+ Sn1 I3 I8 Sn2 7.56(11) . . . 2 ?
+ Sn1 I3 I8 Sn2 -7.22(10) 1_556 . . 2_556 ?
+ Sn1 I3 I8 Sn2 168.5(2) 1_556 . . . ?
+ Sn1 I3 I8 Sn2 -168.9(2) . . . 1_556 ?
+ Sn1 I3 I8 Sn2 6.59(10) 1_556 . . 1_556 ?
+ Sn1 I3 I8 Sn2 -6.93(11) . . . . ?
+ Sn1 I3 I8 I8 -87.59(19) . . . 2 ?
+ Sn1 I3 I8 I8 87.9(2) 1_556 . . 2 ?
+ Sn1 I3 I8 I7 91(8) . . . . ?
+ Sn1 I3 I8 I7 -94(8) 1_556 . . . ?
+ Sn1 I3 I8 I7 90(10) 1_556 . . 2 ?
+ Sn1 I3 I8 I7 -86(10) . . . 2 ?
+ Sn1 I4 I7 Sn1 175.7(2) . . . 1_556 ?
+ Sn1 I4 I7 Sn1 -175.7(2) 1_556 . . . ?
+ Sn1 I4 I7 Sn2 -7.05(10) . . . 2 ?
+ Sn1 I4 I7 Sn2 6.77(9) 1_556 . . 2_556 ?
+ Sn1 I4 I7 Sn2 -177.5(3) . . . 2_556 ?
+ Sn1 I4 I7 Sn2 177.2(3) 1_556 . . 2 ?
+ Sn1 I4 I7 Sn2 7.48(11) . . . . ?
+ Sn1 I4 I7 Sn2 -168.2(3) 1_556 . . . ?
+ Sn1 I4 I7 I8 -88(7) . . . . ?
+ Sn1 I4 I7 I8 84(5) . . . 2 ?
+ Sn1 I4 I7 I8 -91(5) 1_556 . . 2 ?
+ Sn1 I4 I7 I8 97(7) 1_556 . . . ?
+ Sn1 I4 I7 I7 -87.94(15) 1_556 . . 2 ?
+ Sn1 I4 I7 I7 87.78(15) . . . 2 ?
+ Sn1 I6 I9 I2 86(8) 1_656 . . . ?
+ Sn1 I6 I9 I2 -87(8) . . . . ?
+ Sn1 I6 I9 Sn1 -172.1(3) . . . 1_656 ?
+ Sn1 I6 I9 Sn1 172.1(3) 1_656 . . . ?
+ Sn1 I6 I9 Sn2 164.9(3) 1_656 . . 2 ?
+ Sn1 I6 I9 Sn2 7.17(9) . . . . ?
+ Sn1 I6 I9 Sn2 179.3(3) 1_656 . . . ?
+ Sn1 I6 I9 Sn2 -7.25(10) . . . 2 ?
+ Sn1 I6 I9 Sn2 -179.3(3) . . . 1_656 ?
+ Sn1 I6 I9 Sn2 -7.11(9) 1_656 . . 1_656 ?
+ Sn1 I6 I9 I6 -86.11(14) . . . 2 ?
+ Sn1 I6 I9 I6 86.03(14) 1_656 . . 2 ?
+ Sn1 I6 I9 I9 -86.11(14) . . . 2 ?
+ Sn1 I6 I9 I9 86.03(14) 1_656 . . 2 ?
+ Sn1 I8 I7 I4 90(7) . . . . ?
+ Sn1 I8 I7 I4 -81(7) 1_556 . . . ?
+ Sn1 I8 I7 Sn1 171.4(3) . . . 1_556 ?
+ Sn1 I8 I7 Sn1 -171.4(3) 1_556 . . . ?
+ Sn1 I8 I7 Sn2 -7.36(10) . . . 2 ?
+ Sn1 I8 I7 Sn2 7.05(9) 1_556 . . 2_556 ?
+ Sn1 I8 I7 Sn2 -164.1(3) 1_556 . . . ?
+ Sn1 I8 I7 Sn2 -178.8(3) 1_556 . . 2 ?
+ Sn1 I8 I7 Sn2 7.30(11) . . . . ?
+ Sn1 I8 I7 Sn2 178.5(3) . . . 2_556 ?
+ Sn1 I8 I7 I8 -85.80(14) 1_556 . . 2 ?
+ Sn1 I8 I7 I8 85.64(15) . . . 2 ?
+ Sn1 I8 I7 I7 85.65(15) . . . 2 ?
+ Sn1 I8 I7 I7 -85.80(14) 1_556 . . 2 ?
+ S1 C3 C4 C5 -1(3) . . . . ?
+ S1 C6 C7 S2 -170(2) . . . . ?
+ S1 C6 C7 C8 -5(5) . . . . ?
+ S2 C10 C9 C8 2(6) . . . . ?
+ C2 C3 C4 C5 -178.7(17) . . . . ?
+ C3 S1 C6 C5 1(3) . . . . ?
+ C3 S1 C6 C7 -180(3) . . . . ?
+ C3 C2 C1 N1 3(4) . . . . ?
+ C3 C4 C5 C6 2(3) . . . . ?
+ C4 C5 C6 S1 -2(4) . . . . ?
+ C4 C5 C6 C7 179(3) . . . . ?
+ C5 C6 C7 S2 9(4) . . . . ?
+ C5 C6 C7 C8 174(3) . . . . ?
+ C6 S1 C3 C2 178.0(12) . . . . ?
+ C6 S1 C3 C4 -0.1(18) . . . . ?
+ C10 S2 C7 C6 178(3) . . . . ?
+ C10 S2 C7 C8 12(4) . . . . ?
+ C9 C8 C7 S2 -13(5) . . . . ?
+ C9 C8 C7 C6 -177(4) . . . . ?
+ Sn2 I1 I2 Sn1 -172.76(9) . . . 1_656 ?
+ Sn2 I1 I2 Sn1 172.76(9) 2 . . 1_656 ?
+ Sn2 I1 I2 Sn1 -7.24(9) 2 . . . ?
+ Sn2 I1 I2 Sn1 7.24(9) . . . . ?
+ Sn2 I1 I2 Sn2 14.48(19) . . . 2 ?
+ Sn2 I1 I2 Sn2 -179.73(6) . . . 2_656 ?
+ Sn2 I1 I2 Sn2 -165.79(17) . . . 1_656 ?
+ Sn2 I1 I2 Sn2 165.79(17) 2 . . 2_656 ?
+ Sn2 I1 I2 Sn2 179.73(6) 2 . . 1_656 ?
+ Sn2 I1 I2 Sn2 -14.48(19) 2 . . . ?
+ Sn2 I1 I2 I6 82(10) 2 . . 2 ?
+ Sn2 I1 I2 I6 97(10) . . . 2 ?
+ Sn2 I1 I2 I9 -98(8) 2 . . . ?
+ Sn2 I1 I2 I9 -83(8) . . . . ?
+ Sn2 I1 I2 I9 98(8) . . . 2 ?
+ Sn2 I1 I2 I9 83(8) 2 . . 2 ?
+ Sn2 I1 I6 Sn1 169.1(3) 2 . . 1_656 ?
+ Sn2 I1 I6 Sn1 7.11(10) . . . . ?
+ Sn2 I1 I6 Sn1 -176.6(3) . . . 1_656 ?
+ Sn2 I1 I6 Sn1 -7.25(10) 2 . . . ?
+ Sn2 I1 I6 Sn2 176.0(3) 2 . . 1_656 ?
+ Sn2 I1 I6 Sn2 14.36(19) . . . 2 ?
+ Sn2 I1 I6 Sn2 -169.6(4) . . . 1_656 ?
+ Sn2 I1 I6 Sn2 -14.36(19) 2 . . . ?
+ Sn2 I1 I6 I6 95.3(2) . . . 2 ?
+ Sn2 I1 I6 I6 80.90(19) 2 . . 2 ?
+ Sn2 I1 I6 I9 81(8) 2 . . 2 ?
+ Sn2 I1 I6 I9 96(8) . . . 2 ?
+ Sn2 I1 I6 I9 -85(9) . . . . ?
+ Sn2 I1 I6 I9 -99(9) 2 . . . ?
+ Sn2 I2 I9 Sn1 -169.1(2) 2 . . 1_656 ?
+ Sn2 I2 I9 Sn1 -176.8(2) 1_656 . . . ?
+ Sn2 I2 I9 Sn1 -7.15(11) . . . . ?
+ Sn2 I2 I9 Sn1 7.07(11) 2 . . . ?
+ Sn2 I2 I9 Sn1 169.5(2) 2_656 . . . ?
+ Sn2 I2 I9 Sn1 6.99(10) 1_656 . . 1_656 ?
+ Sn2 I2 I9 Sn1 -6.70(10) 2_656 . . 1_656 ?
+ Sn2 I2 I9 Sn1 176.7(2) . . . 1_656 ?
+ Sn2 I2 I9 Sn2 -14.22(19) . . . 2 ?
+ Sn2 I2 I9 Sn2 -176.1(2) 2 . . 1_656 ?
+ Sn2 I2 I9 Sn2 -169.7(3) 1_656 . . . ?
+ Sn2 I2 I9 Sn2 176.1(2) 1_656 . . 2 ?
+ Sn2 I2 I9 Sn2 14.22(19) 2 . . . ?
+ Sn2 I2 I9 Sn2 162.4(3) 2_656 . . 2 ?
+ Sn2 I2 I9 Sn2 176.6(2) 2_656 . . . ?
+ Sn2 I2 I9 Sn2 169.7(3) . . . 1_656 ?
+ Sn2 I2 I9 Sn2 -13.69(17) 2_656 . . 1_656 ?
+ Sn2 I2 I9 I6 -99(8) 2_656 . . . ?
+ Sn2 I2 I9 I6 84(8) . . . . ?
+ Sn2 I2 I9 I6 -85(8) 1_656 . . . ?
+ Sn2 I2 I9 I6 -95(12) . . . 2 ?
+ Sn2 I2 I9 I6 98(8) 2 . . . ?
+ Sn2 I2 I9 I6 -80(12) 2 . . 2 ?
+ Sn2 I2 I9 I6 96(12) 1_656 . . 2 ?
+ Sn2 I2 I9 I6 82(12) 2_656 . . 2 ?
+ Sn2 I2 I9 I9 -81.1(2) 2 . . 2 ?
+ Sn2 I2 I9 I9 95.0(2) 1_656 . . 2 ?
+ Sn2 I2 I9 I9 81.4(2) 2_656 . . 2 ?
+ Sn2 I2 I9 I9 -95.3(2) . . . 2 ?
+ Sn2 I3 I4 Sn1 172.96(9) 1_556 . . . ?
+ Sn2 I3 I4 Sn1 7.35(9) . . . . ?
+ Sn2 I3 I4 Sn1 172.65(10) 2 . . 1_556 ?
+ Sn2 I3 I4 Sn1 7.04(9) 2_556 . . 1_556 ?
+ Sn2 I3 I4 Sn1 -172.96(9) 2_556 . . . ?
+ Sn2 I3 I4 Sn1 -7.35(10) 2 . . . ?
+ Sn2 I3 I4 Sn1 -172.65(9) . . . 1_556 ?
+ Sn2 I3 I4 Sn1 -7.04(9) 1_556 . . 1_556 ?
+ Sn2 I3 I4 Sn2 179.69(6) 2_556 . . . ?
+ Sn2 I3 I4 Sn2 -14.70(19) 2 . . . ?
+ Sn2 I3 I4 Sn2 165.61(17) 2 . . 2_556 ?
+ Sn2 I3 I4 Sn2 -179.69(6) 1_556 . . 2 ?
+ Sn2 I3 I4 Sn2 -179.69(6) . . . 2_556 ?
+ Sn2 I3 I4 Sn2 -165.62(17) . . . 1_556 ?
+ Sn2 I3 I4 Sn2 14.07(17) 2_556 . . 1_556 ?
+ Sn2 I3 I4 Sn2 165.62(17) 1_556 . . . ?
+ Sn2 I3 I4 Sn2 -14.07(17) 1_556 . . 2_556 ?
+ Sn2 I3 I4 Sn2 14.70(19) . . . 2 ?
+ Sn2 I3 I4 Sn2 -165.61(17) 2_556 . . 2 ?
+ Sn2 I3 I4 Sn2 179.69(6) 2 . . 1_556 ?
+ Sn2 I3 I4 I8 -93(6) 2 . . 2 ?
+ Sn2 I3 I4 I8 -79(6) . . . 2 ?
+ Sn2 I3 I4 I8 101(6) 2_556 . . 2 ?
+ Sn2 I3 I4 I8 87(6) 1_556 . . 2 ?
+ Sn2 I3 I4 I7 -96(9) 2 . . 2 ?
+ Sn2 I3 I4 I7 98(9) 2_556 . . 2 ?
+ Sn2 I3 I4 I7 -82(8) . . . 2 ?
+ Sn2 I3 I4 I7 82(8) 2 . . . ?
+ Sn2 I3 I4 I7 96(9) . . . . ?
+ Sn2 I3 I4 I7 -98(9) 1_556 . . . ?
+ Sn2 I3 I4 I7 -84(8) 2_556 . . . ?
+ Sn2 I3 I4 I7 84(8) 1_556 . . 2 ?
+ Sn2 I3 I8 Sn1 -177.3(3) 2_556 . . . ?
+ Sn2 I3 I8 Sn1 -7.56(11) 2 . . . ?
+ Sn2 I3 I8 Sn1 -168.5(2) . . . 1_556 ?
+ Sn2 I3 I8 Sn1 -6.59(10) 1_556 . . 1_556 ?
+ Sn2 I3 I8 Sn1 177.0(3) 2 . . 1_556 ?
+ Sn2 I3 I8 Sn1 168.9(2) 1_556 . . . ?
+ Sn2 I3 I8 Sn1 7.22(10) 2_556 . . 1_556 ?
+ Sn2 I3 I8 Sn1 6.93(11) . . . . ?
+ Sn2 I3 I8 Sn2 -161.9(3) . . . 1_556 ?
+ Sn2 I3 I8 Sn2 -13.81(17) 1_556 . . 2_556 ?
+ Sn2 I3 I8 Sn2 175.7(2) 2_556 . . . ?
+ Sn2 I3 I8 Sn2 -176.4(2) 2 . . 1_556 ?
+ Sn2 I3 I8 Sn2 -169.8(3) 2_556 . . 2 ?
+ Sn2 I3 I8 Sn2 13.81(17) 2_556 . . 1_556 ?
+ Sn2 I3 I8 Sn2 14.49(19) . . . 2 ?
+ Sn2 I3 I8 Sn2 169.8(3) 2 . . 2_556 ?
+ Sn2 I3 I8 Sn2 176.4(2) 1_556 . . 2 ?
+ Sn2 I3 I8 Sn2 -14.49(19) 2 . . . ?
+ Sn2 I3 I8 Sn2 -175.7(2) . . . 2_556 ?
+ Sn2 I3 I8 Sn2 161.9(3) 1_556 . . . ?
+ Sn2 I3 I8 I8 -95.1(2) 2 . . 2 ?
+ Sn2 I3 I8 I8 -80.66(19) . . . 2 ?
+ Sn2 I3 I8 I8 95.1(2) 2_556 . . 2 ?
+ Sn2 I3 I8 I8 81.28(19) 1_556 . . 2 ?
+ Sn2 I3 I8 I7 97(10) 2_556 . . 2 ?
+ Sn2 I3 I8 I7 -100(8) 1_556 . . . ?
+ Sn2 I3 I8 I7 83(10) 1_556 . . 2 ?
+ Sn2 I3 I8 I7 -93(10) 2 . . 2 ?
+ Sn2 I3 I8 I7 -86(8) 2_556 . . . ?
+ Sn2 I3 I8 I7 98(8) . . . . ?
+ Sn2 I3 I8 I7 83(8) 2 . . . ?
+ Sn2 I3 I8 I7 -79(10) . . . 2 ?
+ Sn2 I4 I7 Sn1 -7.48(11) . . . . ?
+ Sn2 I4 I7 Sn1 168.2(3) . . . 1_556 ?
+ Sn2 I4 I7 Sn1 7.13(10) 1_556 . . 1_556 ?
+ Sn2 I4 I7 Sn1 7.05(10) 2 . . . ?
+ Sn2 I4 I7 Sn1 -6.77(9) 2_556 . . 1_556 ?
+ Sn2 I4 I7 Sn1 -168.6(3) 1_556 . . . ?
+ Sn2 I4 I7 Sn1 177.5(3) 2_556 . . . ?
+ Sn2 I4 I7 Sn1 -177.2(3) 2 . . 1_556 ?
+ Sn2 I4 I7 Sn2 175.0(3) . . . 2_556 ?
+ Sn2 I4 I7 Sn2 170.5(3) 2_556 . . 2 ?
+ Sn2 I4 I7 Sn2 -175.6(3) 1_556 . . 2 ?
+ Sn2 I4 I7 Sn2 -161.1(3) 1_556 . . . ?
+ Sn2 I4 I7 Sn2 13.90(17) 1_556 . . 2_556 ?
+ Sn2 I4 I7 Sn2 -175.0(3) 2_556 . . . ?
+ Sn2 I4 I7 Sn2 14.53(19) 2 . . . ?
+ Sn2 I4 I7 Sn2 -14.53(19) . . . 2 ?
+ Sn2 I4 I7 Sn2 -170.5(3) 2 . . 2_556 ?
+ Sn2 I4 I7 I8 -95(7) . . . . ?
+ Sn2 I4 I7 I8 91(5) 2 . . 2 ?
+ Sn2 I4 I7 I8 -98(5) 2_556 . . 2 ?
+ Sn2 I4 I7 I8 -81(7) 2 . . . ?
+ Sn2 I4 I7 I8 -84(5) 1_556 . . 2 ?
+ Sn2 I4 I7 I8 104(7) 1_556 . . . ?
+ Sn2 I4 I7 I8 90(7) 2_556 . . . ?
+ Sn2 I4 I7 I8 77(5) . . . 2 ?
+ Sn2 I4 I7 I7 80.30(19) . . . 2 ?
+ Sn2 I4 I7 I7 -94.70(18) 2_556 . . 2 ?
+ Sn2 I4 I7 I7 94.83(18) 2 . . 2 ?
+ Sn2 I4 I7 I7 -80.81(18) 1_556 . . 2 ?
+ Sn2 I6 I9 I2 -94(8) . . . . ?
+ Sn2 I6 I9 I2 -79(8) 2 . . . ?
+ Sn2 I6 I9 I2 93(8) 1_656 . . . ?
+ Sn2 I6 I9 Sn1 179.3(3) 1_656 . . . ?
+ Sn2 I6 I9 Sn1 7.11(9) 1_656 . . 1_656 ?
+ Sn2 I6 I9 Sn1 -164.9(3) 2 . . 1_656 ?
+ Sn2 I6 I9 Sn1 7.25(10) 2 . . . ?
+ Sn2 I6 I9 Sn1 -7.17(9) . . . . ?
+ Sn2 I6 I9 Sn1 -179.3(3) . . . 1_656 ?
+ Sn2 I6 I9 Sn2 -172.0(3) 2 . . 1_656 ?
+ Sn2 I6 I9 Sn2 173.6(3) . . . 1_656 ?
+ Sn2 I6 I9 Sn2 172.0(3) 1_656 . . 2 ?
+ Sn2 I6 I9 Sn2 -173.6(3) 1_656 . . . ?
+ Sn2 I6 I9 Sn2 -14.41(19) . . . 2 ?
+ Sn2 I6 I9 Sn2 14.41(19) 2 . . . ?
+ Sn2 I6 I9 I6 93.14(16) 1_656 . . 2 ?
+ Sn2 I6 I9 I6 -78.86(17) 2 . . 2 ?
+ Sn2 I6 I9 I6 -93.27(17) . . . 2 ?
+ Sn2 I6 I9 I9 -93.28(17) . . . 2 ?
+ Sn2 I6 I9 I9 -78.86(17) 2 . . 2 ?
+ Sn2 I6 I9 I9 93.14(15) 1_656 . . 2 ?
+ Sn2 I8 I7 I4 98(7) 2 . . . ?
+ Sn2 I8 I7 I4 -88(7) 2_556 . . . ?
+ Sn2 I8 I7 I4 83(7) . . . . ?
+ Sn2 I8 I7 I4 -74(7) 1_556 . . . ?
+ Sn2 I8 I7 Sn1 178.8(3) 2 . . 1_556 ?
+ Sn2 I8 I7 Sn1 -164.5(3) 1_556 . . . ?
+ Sn2 I8 I7 Sn1 7.36(10) 2 . . . ?
+ Sn2 I8 I7 Sn1 164.1(3) . . . 1_556 ?
+ Sn2 I8 I7 Sn1 -178.5(3) 2_556 . . . ?
+ Sn2 I8 I7 Sn1 -7.30(10) . . . . ?
+ Sn2 I8 I7 Sn1 -7.05(9) 2_556 . . 1_556 ?
+ Sn2 I8 I7 Sn1 6.91(9) 1_556 . . 1_556 ?
+ Sn2 I8 I7 Sn2 14.66(19) 2 . . . ?
+ Sn2 I8 I7 Sn2 -14.66(19) . . . 2 ?
+ Sn2 I8 I7 Sn2 13.95(17) 1_556 . . 2_556 ?
+ Sn2 I8 I7 Sn2 174.1(3) 2_556 . . 2 ?
+ Sn2 I8 I7 Sn2 -171.2(3) 2_556 . . . ?
+ Sn2 I8 I7 Sn2 -157.2(3) 1_556 . . . ?
+ Sn2 I8 I7 Sn2 171.2(3) . . . 2_556 ?
+ Sn2 I8 I7 Sn2 -171.9(3) 1_556 . . 2 ?
+ Sn2 I8 I7 Sn2 -174.1(3) 2 . . 2_556 ?
+ Sn2 I8 I7 I8 78.34(17) . . . 2 ?
+ Sn2 I8 I7 I8 -78.90(16) 1_556 . . 2 ?
+ Sn2 I8 I7 I8 -92.85(15) 2_556 . . 2 ?
+ Sn2 I8 I7 I8 93.00(17) 2 . . 2 ?
+ Sn2 I8 I7 I7 93.01(17) 2 . . 2 ?
+ Sn2 I8 I7 I7 -78.90(16) 1_556 . . 2 ?
+ Sn2 I8 I7 I7 -92.85(16) 2_556 . . 2 ?
+ Sn2 I8 I7 I7 78.35(17) . . . 2 ?
+ S3 C7 C13 C12 -3(4) . . . . ?
+ S3 C11 C12 C13 1(2) . . . . ?
+ C7 S2 C10 C9 -8(5) . . . . ?
+ C7 C8 C9 C10 6(5) . . . . ?
+ C7 S3 C11 C12 -2(3) . . . . ?
+ C11 S3 C7 C13 3(4) . . . . ?
+ C11 C12 C13 C7 1(3) . . . . ?
+ I6 I1 I2 Sn1 -91(10) . . . 1_656 ?
+ I6 I1 I2 Sn1 -89(10) 2 . . . ?
+ I6 I1 I2 Sn1 89(10) . . . . ?
+ I6 I1 I2 Sn1 91(10) 2 . . 1_656 ?
+ I6 I1 I2 Sn2 -82(10) 2 . . 2 ?
+ I6 I1 I2 Sn2 97(10) . . . 2 ?
+ I6 I1 I2 Sn2 -84(10) . . . 1_656 ?
+ I6 I1 I2 Sn2 -97(10) 2 . . . ?
+ I6 I1 I2 Sn2 -98(10) . . . 2_656 ?
+ I6 I1 I2 Sn2 82(10) . . . . ?
+ I6 I1 I2 Sn2 98(10) 2 . . 1_656 ?
+ I6 I1 I2 Sn2 84(10) 2 . . 2_656 ?
+ I6 I1 I2 I6 179(20) . . . 2 ?
+ I6 I1 I2 I9 1(14) 2 . . 2 ?
+ I6 I1 I2 I9 -180(11) 2 . . . ?
+ I6 I1 I2 I9 180(11) . . . 2 ?
+ I6 I1 I2 I9 -1(14) . . . . ?
+ I6 I1 I6 Sn1 88.16(18) 2 . . 1_656 ?
+ I6 I1 I6 Sn1 -88.15(16) 2 . . . ?
+ I6 I1 I6 Sn2 -95.3(2) 2 . . . ?
+ I6 I1 I6 Sn2 95.1(2) 2 . . 1_656 ?
+ I6 I1 I6 Sn2 -80.90(19) 2 . . 2 ?
+ I6 I1 I6 I9 180(9) 2 . . . ?
+ I6 I1 I6 I9 0(7) 2 . . 2 ?
+ I6 I2 I9 Sn1 87(12) 2 . . . ?
+ I6 I2 I9 Sn1 -89(12) 2 . . 1_656 ?
+ I6 I2 I9 Sn2 80(12) 2 . . 2 ?
+ I6 I2 I9 Sn2 -96(12) 2 . . 1_656 ?
+ I6 I2 I9 Sn2 95(12) 2 . . . ?
+ I6 I2 I9 I6 179(20) 2 . . . ?
+ I6 I2 I9 I9 -1(12) 2 . . 2 ?
+ I6 I6 I9 I2 0(8) 2 . . . ?
+ I6 I6 I9 Sn1 -86.03(14) 2 . . 1_656 ?
+ I6 I6 I9 Sn1 86.11(14) 2 . . . ?
+ I6 I6 I9 Sn2 78.86(17) 2 . . 2 ?
+ I6 I6 I9 Sn2 -93.14(16) 2 . . 1_656 ?
+ I6 I6 I9 Sn2 93.27(17) 2 . . . ?
+ I6 I6 I9 I9 0.000(5) 2 . . 2 ?
+ I8 I3 I4 Sn1 94(6) . . . 1_556 ?
+ I8 I3 I4 Sn1 -94(6) 2 . . 1_556 ?
+ I8 I3 I4 Sn1 -86(6) . . . . ?
+ I8 I3 I4 Sn1 86(6) 2 . . . ?
+ I8 I3 I4 Sn2 87(6) . . . 2_556 ?
+ I8 I3 I4 Sn2 101(6) . . . 1_556 ?
+ I8 I3 I4 Sn2 -101(6) 2 . . 2_556 ?
+ I8 I3 I4 Sn2 79(6) 2 . . . ?
+ I8 I3 I4 Sn2 -79(6) . . . 2 ?
+ I8 I3 I4 Sn2 93(6) 2 . . 2 ?
+ I8 I3 I4 Sn2 -93(6) . . . . ?
+ I8 I3 I4 Sn2 -87(6) 2 . . 1_556 ?
+ I8 I3 I4 I8 -172(11) . . . 2 ?
+ I8 I3 I4 I7 3(11) . . . . ?
+ I8 I3 I4 I7 -175(9) . . . 2 ?
+ I8 I3 I4 I7 175(9) 2 . . . ?
+ I8 I3 I4 I7 -3(11) 2 . . 2 ?
+ I8 I3 I8 Sn1 87.59(19) 2 . . . ?
+ I8 I3 I8 Sn1 -87.9(2) 2 . . 1_556 ?
+ I8 I3 I8 Sn2 95.1(2) 2 . . 2 ?
+ I8 I3 I8 Sn2 -81.28(19) 2 . . 1_556 ?
+ I8 I3 I8 Sn2 -95.1(2) 2 . . 2_556 ?
+ I8 I3 I8 Sn2 80.66(19) 2 . . . ?
+ I8 I3 I8 I7 179(8) 2 . . . ?
+ I8 I3 I8 I7 2(10) 2 . . 2 ?
+ I8 I4 I7 Sn1 -84(5) 2 . . . ?
+ I8 I4 I7 Sn1 91(5) 2 . . 1_556 ?
+ I8 I4 I7 Sn2 98(5) 2 . . 2_556 ?
+ I8 I4 I7 Sn2 -77(5) 2 . . . ?
+ I8 I4 I7 Sn2 -91(5) 2 . . 2 ?
+ I8 I4 I7 I8 -172(13) 2 . . . ?
+ I8 I4 I7 I7 3(5) 2 . . 2 ?
+ I8 I8 I7 I4 5(7) 2 . . . ?
+ I8 I8 I7 Sn1 85.80(14) 2 . . 1_556 ?
+ I8 I8 I7 Sn1 -85.64(15) 2 . . . ?
+ I8 I8 I7 Sn2 -78.34(17) 2 . . . ?
+ I8 I8 I7 Sn2 92.85(16) 2 . . 2_556 ?
+ I8 I8 I7 Sn2 -93.00(17) 2 . . 2 ?
+ I8 I8 I7 I7 0.003(3) 2 . . 2 ?
+ I7 I3 I4 Sn1 -91(9) 2 . . 1_556 ?
+ I7 I3 I4 Sn1 89(9) 2 . . . ?
+ I7 I3 I4 Sn2 -84(8) 2 . . 1_556 ?
+ I7 I3 I4 Sn2 96(9) 2 . . 2 ?
+ I7 I3 I4 Sn2 82(8) 2 . . . ?
+ I7 I3 I4 Sn2 -98(9) 2 . . 2_556 ?
+ I7 I3 I4 I8 3(11) 2 . . 2 ?
+ I7 I3 I4 I7 178(17) 2 . . . ?
+ I7 I3 I8 Sn1 86(10) 2 . . . ?
+ I7 I3 I8 Sn1 -90(10) 2 . . 1_556 ?
+ I7 I3 I8 Sn2 -97(10) 2 . . 2_556 ?
+ I7 I3 I8 Sn2 79(10) 2 . . . ?
+ I7 I3 I8 Sn2 93(10) 2 . . 2 ?
+ I7 I3 I8 Sn2 -83(10) 2 . . 1_556 ?
+ I7 I3 I8 I8 -2(10) 2 . . 2 ?
+ I7 I3 I8 I7 177(17) 2 . . . ?
+ I7 I4 I7 Sn1 87.94(15) 2 . . 1_556 ?
+ I7 I4 I7 Sn1 -87.78(15) 2 . . . ?
+ I7 I4 I7 Sn2 -94.83(18) 2 . . 2 ?
+ I7 I4 I7 Sn2 -80.30(19) 2 . . . ?
+ I7 I4 I7 Sn2 94.70(18) 2 . . 2_556 ?
+ I7 I4 I7 I8 -3(5) 2 . . 2 ?
+ I7 I4 I7 I8 -175(7) 2 . . . ?
+ I7 I8 I7 I4 5(7) 2 . . . ?
+ I7 I8 I7 Sn1 -85.65(15) 2 . . . ?
+ I7 I8 I7 Sn1 85.80(14) 2 . . 1_556 ?
+ I7 I8 I7 Sn2 -78.35(17) 2 . . . ?
+ I7 I8 I7 Sn2 92.85(16) 2 . . 2_556 ?
+ I7 I8 I7 Sn2 -93.01(17) 2 . . 2 ?
+ I7 I8 I7 I8 -0.003(3) 2 . . 2 ?
+ I9 I1 I2 Sn1 -90(8) 2 . . . ?
+ I9 I1 I2 Sn1 90(8) 2 . . 1_656 ?
+ I9 I1 I2 Sn2 97(8) 2 . . 1_656 ?
+ I9 I1 I2 Sn2 83(8) 2 . . 2_656 ?
+ I9 I1 I2 Sn2 -98(8) 2 . . . ?
+ I9 I1 I2 Sn2 -83(8) 2 . . 2 ?
+ I9 I1 I2 I6 -1(14) 2 . . 2 ?
+ I9 I1 I2 I9 179(16) 2 . . . ?
+ I9 I1 I6 Sn1 88(8) 2 . . 1_656 ?
+ I9 I1 I6 Sn1 -88(8) 2 . . . ?
+ I9 I1 I6 Sn2 -96(8) 2 . . . ?
+ I9 I1 I6 Sn2 95(8) 2 . . 1_656 ?
+ I9 I1 I6 Sn2 -81(8) 2 . . 2 ?
+ I9 I1 I6 I6 0(7) 2 . . 2 ?
+ I9 I1 I6 I9 179(16) 2 . . . ?
+ I9 I2 I9 Sn1 88.1(2) 2 . . . ?
+ I9 I2 I9 Sn1 -88.1(2) 2 . . 1_656 ?
+ I9 I2 I9 Sn2 95.3(2) 2 . . . ?
+ I9 I2 I9 Sn2 81.1(2) 2 . . 2 ?
+ I9 I2 I9 Sn2 -95.0(2) 2 . . 1_656 ?
+ I9 I2 I9 I6 180(8) 2 . . . ?
+ I9 I2 I9 I6 1(12) 2 . . 2 ?
+ I9 I6 I9 I2 0(8) 2 . . . ?
+ I9 I6 I9 Sn1 -86.03(14) 2 . . 1_656 ?
+ I9 I6 I9 Sn1 86.11(14) 2 . . . ?
+ I9 I6 I9 Sn2 93.28(17) 2 . . . ?
+ I9 I6 I9 Sn2 78.86(17) 2 . . 2 ?
+ I9 I6 I9 Sn2 -93.14(15) 2 . . 1_656 ?
+ I9 I6 I9 I6 0.000(7) 2 . . 2 ?
+ C1 C2 C3 S1 -121(2) . . . . ?
+ C1 C2 C3 C4 57(2) . . . . ?
+_shelx_res_checksum                2877
+_shelx_hkl_checksum                68460
+_olex2_submission_special_instructions  'No special instructions were received'
+loop_
+  _twin_individual_id
+  _twin_individual_mass_fraction_refined
+ 1 0.63(17)
+ 2 0.37(17)

@@ -1,0 +1,328 @@
+#
+# Cambridge Structural Database (CSD) hosted by the Cambridge
+#
+# guidelines are available at http://www.ccdc.cam.ac.uk/access/V1
+# Audit and citation data items may have been added by the CCDC.
+# this file and to allow appropriate attribution of the data.
+#######################################################################
+data_sau3
+_audit_block_doi                 10.5517/cc3r9mr
+_database_code_depnum_ccdc_archive 'CCDC 111774'
+loop_
+_citation_id
+_citation_doi
+_citation_year
+1 10.1039/a608415j 1997
+_audit_update_record
+;
+1998-11-24 deposited with the CCDC.	2019-08-30 downloaded from the CCDC.
+;
+_audit_creation_method           ?
+_chemical_name_systematic
+;
+1,4-phenylenediammonium-hexaiodolead(II)
+;
+_chemical_name_common            ?
+_chemical_formula_moiety         ?
+_chemical_formula_structural     'Pb2 I6,(C6 H10 N2),(C4 H8 O)3'
+_chemical_formula_analytical     ?
+_chemical_formula_sum            'C10 H18 N2 O Pb2 I6'
+_chemical_formula_weight         1502.32
+_chemical_melting_point          ?
+_chemical_compound_source        ?
+
+_symmetry_cell_setting           triclinic
+_symmetry_space_group_name_H-M   P-1
+loop_
+_symmetry_equiv_pos_as_xyz
+'x, y, z'
+'-x, -y, -z'
+_cell_length_a                   8.322(1)
+_cell_length_b                   13.076(2)
+_cell_length_c                   17.037(4)
+_cell_angle_alpha                70.64(1)
+_cell_angle_beta                 83.86(1)
+_cell_angle_gamma                72.31(1)
+_cell_volume                     1666
+_cell_formula_units_Z            2
+_cell_measurement_temperature    223
+_cell_measurement_reflns_used    38
+_cell_measurement_theta_min      ?
+_cell_measurement_theta_max      ?
+_exptl_crystal_description       parallelepiped
+_exptl_crystal_colour            orange-brown
+_exptl_crystal_size_max          0.32
+_exptl_crystal_size_mid          0.16
+_exptl_crystal_size_min          0.12
+_exptl_crystal_density_meas      ?
+_exptl_crystal_density_diffrn    2.99
+_exptl_crystal_density_method    ?
+_exptl_crystal_F_000             ?
+_exptl_absorpt_coefficient_mu    156.9
+_exptl_absorpt_correction_type   Psi-scans
+_exptl_absorpt_correction_T_min  0.189
+_exptl_absorpt_correction_T_max  0.083
+_exptl_special_details
+;
+;
+_diffrn_ambient_temperature      223
+_diffrn_radiation_wavelength     0.71073
+_diffrn_radiation_type           MoK\a
+_diffrn_radiation_source         'fine-focus sealed tube'
+_diffrn_radiation_monochromator  graphite
+_diffrn_measurement_device       'Nicolet R3m/V diffractometer'
+_diffrn_measurement_method       'theta-2theta scans'
+_diffrn_standards_number         2
+_diffrn_standards_interval_count 100
+_diffrn_standards_interval_time  120
+_diffrn_standards_decay_%        0
+_diffrn_reflns_number            4321
+_diffrn_reflns_av_R_equivalents  ?
+_diffrn_reflns_av_sigmaI/netI    ?
+_diffrn_reflns_limit_h_min       -8
+_diffrn_reflns_limit_h_max       8
+_diffrn_reflns_limit_k_min       -13
+_diffrn_reflns_limit_k_max       13
+_diffrn_reflns_limit_l_min       0
+_diffrn_reflns_limit_l_max       18
+_diffrn_reflns_theta_min         2.01
+_diffrn_reflns_theta_max         22.5
+_reflns_number_total             4321
+_reflns_number_observed          3180
+_reflns_observed_criterion       3sigma(I)
+_computing_data_collection       'Nicolet SHELXTL PLUS (1987)'
+_computing_cell_refinement       'Nicolet SHELXTL PLUS (1987)'
+_computing_data_reduction        'Nicolet SHELXTL PLUS (1987)'
+_computing_structure_solution    'Nicolet SHELXTL PLUS (1987)'
+_computing_structure_refinement  'Nicolet SHELXTL PLUS (1987)'
+_computing_molecular_graphics    'Nicolet SHELXTL PLUS (1987)'
+_computing_publication_material  local
+_atom_type_scat_source           'Nicolet SHELXTL PLUS (1987)'
+_refine_special_details
+;Since the unitary structure factors displayed centric statistics, space
+group P-1 was assumed from the outset. However, all attempts to solve the
+structure was unsuccessful. A solution in space group P1 was tried by
+simply fixing the position of one of the Pb atoms randomly and locating the
+remaining Pb and I atoms in difference maps. This method yielded a
+chemically meaningful arrangement of Pb and I atoms.  It was noted that
+these atoms had a centrosymmetric arrangement, so the unique set was
+translated to conform to the inversion center in space group P1bar and all
+further refinement was performed in the centrosymmetric space group.
+Remaining nonhydrogen atoms were located in subsequent difference Fourier
+synthesis. Hydrogens could not be located in difference maps, and no
+attempt was made to include them in ideal positions. One of the THF
+molecules was found to be significantly disordered over two distinct
+positions, with population factors of 70%:30% for the O3:O3A orientations.
+The major orientation was refined using mild distant constraints and the
+minor orientation was refined as a rigid body based on the idealized best
+model found while refining the individual atoms with mild constraints. No
+unusually high correlations were noted between any of the variables in the
+last cycle of full least squares refinement, and the final difference map
+showed a maximum peak of 2.3 e / \%A^3^ , located near Pb.
+;
+
+_refine_ls_structure_factor_coef F
+_refine_ls_matrix_type           full
+_refine_ls_weighting_scheme      1/sigma^2^
+_atom_sites_solution_secondary   difmap
+_refine_ls_extinction_method     'none applied'
+_refine_ls_extinction_coef       ?
+_refine_ls_number_reflns         3180
+_refine_ls_number_parameters     259
+_refine_ls_number_restraints     ?
+_refine_ls_R_factor_obs          0.041
+_refine_ls_wR_factor_obs         0.041
+_refine_ls_goodness_of_fit_obs   2.14
+_refine_ls_shift/esd_max         0.05
+_refine_diff_density_max         2.3
+_refine_diff_density_min         -1.5
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+_atom_site_U_iso_or_equiv
+_atom_site_thermal_displace_type
+_atom_site_calc_flag
+_atom_site_refinement_flags
+_atom_site_type_symbol
+Pb(1) 0.2702(1) 0.8461(1) 0.7174(1) 30(1) Uani ? ? Pb
+Pb(2) 0.7533(1) 0.9492(1) 0.5787(1) 28(1) Uani ? ? Pb
+I(1) 0.0165(2) 0.0844(1) 0.5892(1) 33(1) Uani ? ? I
+I(2) 0.5064(2) 0.8184(1) 0.5419(1) 31(1) Uani ? ? I
+I(3) 0.5278(2) 0.9715(1) 0.7383(1) 37(1) Uani ? ? I
+I(4) 0.9935(2) 0.7187(1) 0.6878(1) 31(1) Uani ? ? I
+I(5) 0.0452(2) 0.8958(1) 0.8617(1) 47(1) Uani ? ? I
+I(6) 0.5049(2) 0.6065(1) 0.8097(1) 38(1) Uani ? ? I
+O(1) 0.5489(17) 0.4592(14) 0.6023(10) 64(9) Uani ? ? O
+O(2) 0.9488(17) 0.3430(11) 0.7750(8) 46(7) Uani ? ? O
+O(3) 0.5398(34) 0.7770(21) 0.9897(18) 54(8) Uiso ? ? O
+N(1) 0.7958(18) 0.5205(12) 0.6436(9) 31(7) Uani ? ? N
+N(2) 0.7875(18) 0.7047(13) 0.8897(11) 38(7) Uani ? ? N
+C(1) 0.9043(22) 0.5115(16) 0.5696(12) 29(9) Uani ? ? C
+C(2) 0.9654(23) 0.4046(15) 0.5593(12) 35(9) Uani ? ? C
+C(3) 0.0664(21) 0.3930(15) 0.4865(12) 32(9) Uani ? ? C
+C(4) 0.9010(23) 0.5965(14) 0.9474(10) 30(8) Uani ? ? C
+C(5) 0.8260(22) 0.5229(15) 0.0058(12) 33(8) Uani ? ? C
+C(6) 0.9263(22) 0.4228(15) 0.0594(11) 31(9) Uani ? ? C
+C(7) 0.3689(26) 0.5143(19) 0.6153(16) 61(11) Uani ? ? C
+C(8) 0.3165(28) 0.4281(19) 0.6817(17) 67(13) Uani ? ? C
+C(9) 0.4175(34) 0.3139(22) 0.6660(19) 87(16) Uani ? ? C
+C(10) 0.5805(34) 0.3346(21) 0.6277(23) 102(19) Uani ? ? C
+C(11) 0.9797(32) 0.3677(19) 0.8488(15) 69(13) Uani ? ? C
+C(12) 0.1196(37) 0.2682(20) 0.8951(16) 87(14) Uani ? ? C
+C(13) 0.1363(34) 0.1713(20) 0.8630(16) 80(15) Uani ? ? C
+C(14) 0.0403(28) 0.2256(17) 0.7803(14) 50(11) Uani ? ? C
+C(15) 0.4646(65) 0.8923(28) 0.9889(34) 116(8) Uiso ? ? C
+C(16) 0.3542(67) 0.8853(38) 0.0651(32) 116(8) Uiso ? ? C
+C(17) 0.3797(70) 0.7609(37) 0.1072(30) 116(8) Uiso ? ? C
+C(18) 0.4297(60) 0.7103(38) 0.0379(28) 116(8) Uiso ? ? C
+O(3A) 0.4922(74) 0.7712(44) 0.09694(34) 60 Uiso ? R O
+C(15A) 0.5068 0.8653 0.0820 116(8) Uiso calc R C
+C(16A) 0.4022 0.8611 0.0820 116(8) Uiso calc R C
+C(17A) 0.2684 0.8030 0.0708 116(8) Uiso calc R C
+C(18A) 0.3670 0.7219 0.0220 116(8) Uiso calc R C
+loop_
+_atom_site_aniso_label
+_atom_site_aniso_U_11
+_atom_site_aniso_U_22
+_atom_site_aniso_U_33
+_atom_site_aniso_U_23
+_atom_site_aniso_U_13
+_atom_site_aniso_U_12
+_atom_site_aniso_type_symbol
+Pb(1) 29(1) 30(1) 29(1) -6(1) 1(1) -7(1) Pb
+Pb(2) 26(1) 27(1) 29(1) -6(1) -1(1) -7(1) Pb
+I(1) 37(1) 27(1) 33(1) -9(1) 2(1) -10(1) I
+I(2) 31(1) 27(1) 32(1) -7(1) -3(1) -4(1) I
+I(3) 38(1) 39(1) 36(1) -16(1) 6(1) -14(1) I
+I(4) 33(1) 27(1) 31(1) -8(1) -4(1) -5(1) I
+I(5) 56(1) 45(1) 46(1) -23(1) 17(1) -21(1) I
+I(6) 35(1) 34(1) 37(1) -4(1) -5(1) -6(1) I
+O(1) 39(9) 85(13) 85(13) -38(11) 10(9) -31(9) O
+O(2) 55(10) 46(9) 37(9) -17(8) -5(7) -11(8) O
+N(1) 32(9) 37(10) 21(9) -12(8) 6(7) -3(8) N
+N(2) 26(9) 28(10) 51(12) -11(9) 3(9) 5(8) N
+C(1) 25(11) 32(12) 31(12) -12(10) -2(9) 7(9) C
+C(2) 32(11) 39(12) 35(13) -20(10) -4(10) 0(9) C
+C(3) 20(10) 32(12) 41(13) -11(10) -9(9) -1(9) C
+C(4) 44(13) 31(12) 9(10) 0(9) 5(9) -8(10) C
+C(5) 29(11) 36(12) 30(12) -2(10) -6(10) -10(9) C
+C(7) 35(13) 49(15) 75(19) 2(14) 18(13) -6(11) C
+C(8) 45(15) 52(16) 92(21) -27(15) -11(14) 8(12) C
+C(9) 69(18) 66(18) 124(27) -53(19) 3(18) 6(15) C
+C(10) 67(19) 40(17) 196(38) -41(21) 26(22) -18(15) C
+C(11) 104(21) 56(16) 45(16) -34(14) -24(15) 8(15) C
+C(12) 132(25) 49(16) 65(19) -22(14) -51(18) 17(16) C
+C(13) 125(26) 63(18) 56(18) -30(15) -34(17) -8(17) C
+C(14) 62(15) 36(13) 58(16) -25(12) -12(13) -5(11) C
+loop_
+_geom_bond_atom_site_label_1
+_geom_bond_atom_site_label_2
+_geom_bond_distance
+_geom_bond_publ_flag
+Pb(1) I(1) 3.378(1) Y
+Pb(1) I(2) 3.458(1) Y
+Pb(1) I(3) 3.178(2) Y
+Pb(1) I(4) 3.386(2) Y
+Pb(1) I(5) 3.052(2) Y
+Pb(1) I(6) 3.126(1) Y
+Pb(2) I(2) 3.264(2) Y
+Pb(2) I(3) 3.178(2) Y
+Pb(2) I(4) 3.154(1) Y
+Pb(2) I(1) 3.257(2) Y
+Pb(2) I(1) 3.346(2) Y
+Pb(2) I(2) 3.309(1) Y
+O(1) C(7) 1.481(24) N
+O(1) C(10) 1.486(32) N
+O(2) C(11) 1.464(33) N
+O(2) C(14) 1.469(25) N
+O(3) C(15) 1.442(46) N
+O(3) C(18) 1.457(58) N
+N(1) C(1) 1.485(24) N
+N(2) C(4) 1.525(19) N
+C(1) C(2) 1.398(29) N
+C(1) C(3) 1.371(26) N
+C(2) C(3) 1.445(28) N
+C(4) C(5) 1.379(25) N
+C(4) C(6) 1.380(26) N
+C(5) C(6) 1.397(21) N
+C(7) C(8) 1.445(32) N
+C(8) C(9) 1.569(38) N
+C(9) C(10) 1.502(41) N
+C(11) C(12) 1.506(31) N
+C(12) C(13) 1.503(43) N
+C(13) C(14) 1.537(35) N
+C(15) C(16) 1.501(74) N
+C(16) C(17) 1.502(63) N
+C(17) C(18) 1.499(76) N
+loop_
+_geom_angle_atom_site_label_1
+_geom_angle_atom_site_label_2
+_geom_angle_atom_site_label_3
+_geom_angle
+_geom_angle_publ_flag
+I(1) Pb(1) I(2) 86.4(1) Y
+I(1) Pb(1) I(3) 93.3(1) Y
+I(2) Pb(1) I(3) 84.7(1) Y
+I(1) Pb(1) I(5) 87.9(1) Y
+I(2) Pb(1) I(5) 174.1(1) Y
+I(3) Pb(1) I(5) 94.0(1) Y
+I(1) Pb(1) I(6) 169.3(1) Y
+I(2) Pb(1) I(6) 85.7(1) Y
+I(3) Pb(1) I(6) 93.1(1) Y
+I(5) Pb(1) I(6) 100.1(1) Y
+I(1) Pb(1) I(4) 85.0(1) Y
+I(2) Pb(1) I(4) 94.0(1) Y
+I(3) Pb(1) I(4) 177.9(1) Y
+I(5) Pb(1) I(4) 87.2(1) Y
+I(6) Pb(1) I(4) 88.4(1) Y
+I(2) Pb(2) I(3) 88.0(1) Y
+I(2) Pb(2) I(4) 91.4(1) Y
+I(3) Pb(2) I(4) 90.1(1) Y
+I(2) Pb(2) I(1) 172.2(1) Y
+I(3) Pb(2) I(1) 99.5(1) Y
+I(4) Pb(2) I(1) 90.9(1) Y
+I(2) Pb(2) I(1) 89.5(1) Y
+I(3) Pb(2) I(1) 177.3(1) Y
+I(4) Pb(2) I(1) 89.1(1) Y
+I(1) Pb(2) I(1) 83.1(1) Y
+I(2) Pb(2) I(2) 85.3(1) Y
+I(3) Pb(2) I(2) 91.3(1) Y
+I(4) Pb(2) I(2) 176.3(1) Y
+I(1) Pb(2) I(2) 92.2(1) Y
+I(1) Pb(2) I(2) 89.4(1) Y
+Pb(1) I(1) Pb(2) 91.1(1) N
+Pb(1) I(1) Pb(2) 92.5(1) N
+Pb(2) I(1) Pb(2) 96.9(1) N
+Pb(1) I(2) Pb(2) 90.2(1) N
+Pb(1) I(2) Pb(2) 91.7(1) N
+Pb(2) I(2) Pb(2) 94.7(1) N
+Pb(1) I(3) Pb(2) 97.1(1) N
+Pb(2) I(4) Pb(1) 92.8(1) N
+C(7) O(1) C(10) 110.0(18) N
+C(11) O(2) C(14) 110.6(15) N
+C(15) O(3) C(18) 107.9(32) N
+N(1) C(1) C(2) 117.2(16) N
+N(1) C(1) C(3) 119.5(18) N
+C(2) C(1) C(3) 123.2(18) N
+C(1) C(2) C(3) 118.9(16) N
+C(2) C(3) C(1) 117.8(18) N
+N(2) C(4) C(5) 118.3(15) N
+N(2) C(4) C(6) 119.0(15) N
+C(5) C(4) C(6) 122.6(14) N
+C(4) C(5) C(6) 119.7(16) N
+C(5) C(6) C(4) 117.6(16) N
+O(1) C(7) C(8) 103.7(15) N
+C(7) C(8) C(9) 104.7(21) N
+C(8) C(9) C(10) 103.9(23) N
+O(1) C(10) C(9) 105.1(19) N
+O(2) C(11) C(12) 105.9(20) N
+C(11) C(12) C(13) 108.7(25) N
+C(12) C(13) C(14) 104.7(18) N
+O(2) C(14) C(13) 107.3(21) N
+O(3) C(15) C(16) 105.5(32) N
+C(15) C(16) C(17) 104.7(38) N
+C(16) C(17) C(18) 104.2(38) N
+O(3) C(18) C(17) 100.2(43) N
+#==============================================================================

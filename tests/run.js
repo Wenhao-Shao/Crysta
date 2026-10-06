@@ -470,6 +470,50 @@ const formula = (info) => info.formula.map((e) => e.el + e.n).join(' ');
   check('csv of a simulated pattern: every point, no empty cell', table.length === sim.y.length + 1 && table.every((r) => !/,$/.test(r)) && table.some((r) => /,100\.0000$/.test(r)) && table[table.length - 1].startsWith('60.000,'));
 }
 
+// FHI-aims geometry.in, the structure format of the HybriD3 database. The file is data set 2008 of HybriD3
+// (4-fluorophenethylammonium lead iodide, Hu et al., Nat. Commun. 10, 1276, 2019; CC BY 4.0).
+{
+  const file = path.join(__dirname, 'files/hybrid3_2008_geometry.in');
+  const text = fs.readFileSync(file, 'utf8');
+  const s = X.readStructure(text, 'geometry.in');
+  const uc = X.buildCell(s, {});
+  const info = X.analyse(uc);
+  check('aims format and cell', s.meta.format === 'FHI-aims' && s.meta.symSource === 'p1' && near(s.cell.a, 16.723, 1e-4) && near(s.cell.b, 8.6332, 1e-4) && near(s.cell.c, 8.8, 1e-4) && near(s.cell.be, 98.781, 1e-3));
+  check('aims atoms and formula', s.sites.length === 94 && uc.atoms.length === 94 && info.formula.map((e) => e.el + e.n).join(' ') === 'C16 H22 F2 I4 N2 Pb1' && info.Z === 2);
+  check('aims layers', info.framework.dim === 2 && info.framework.hkl.join('') === '100' && info.layer.n === 1 && near(info.framework.spacing, 16.527, 0.002));
+  check('aims Pb coordination', info.metalSites.length === 2 && info.metalSites.every((m) => m.cn === 6 && near(m.mean, 3.187, 0.002)));
+  check('aims read by content when the name says nothing', X.readStructure(text, 'download').sites.length === 94);
+  // the same atoms written as cell fractions, with a comment and a keyword that the reader does not need
+  const iv = s.sites.map((a) => 'atom_frac ' + a.f.map((x) => x.toFixed(8)).join(' ') + ' ' + a.el + '\n    initial_moment 0.0');
+  const frac = X.readAims('# written for the test\n' + text.split('\n').filter((l) => /^lattice_vector/.test(l)).join('\n') + '\n' + iv.join('\n') + '\n');
+  check('aims atom_frac gives the same structure', frac.sites.length === 94 && frac.sites.every((a, i) => a.el === s.sites[i].el && a.f.every((x, k) => near(x, s.sites[i].f[k], 1e-6))));
+  const mol = X.readAims('atom 0 0 0 O\natom 0.96 0 0 H\natom -0.24 0.93 0 H\n');
+  check('aims without lattice vectors is a molecule', mol.meta.molecular === true && mol.sites.length === 3);
+  let threw = false;
+  try { X.readAims('lattice_vector 5 0 0\natom 0 0 0 C\n'); } catch (err) { threw = /three readable lattice_vector/.test(err.message); }
+  check('aims with a broken lattice is refused', threw);
+  check('aims: a POSCAR and an XYZ file still go to their own readers', load('tests/files/rutile.POSCAR').s.meta.format === 'POSCAR' && load('tests/files/water.xyz').s.meta.format === 'XYZ');
+}
+
+// Databases window: the formula and the names that the entry list shows (src/dbs.js, with a stand-in for the browser window)
+{
+  global.window = {};
+  require('../src/dbs.js');
+  const D = global.window.CrystaDatabases;
+  check('db formula in Hill order: C, H, then by letter', D.hillFormula('C:16,H:22,N:2,F:2,Pb:1,I:4') === 'C16H22F2I4N2Pb' && D.hillFormula('C:1,H:6,N:1,Pb:1,Cl:3') === 'CH6Cl3NPb');
+  check('db formula without carbon: by letter', D.hillFormula('Cs:1,Pb:1,Cl:3') === 'Cl3CsPb' && D.hillFormula('Ca:1,Ti:1,O:3') === 'CaO3Ti');
+  check('db formula with part numbers, and an empty field', D.hillFormula('Br:0.5,I:0.5,Pb:1') === 'Br0.5I0.5Pb' && D.hillFormula('') === '' && D.hillFormula(null) === '');
+  check('db names split at a comma with a space, not inside a chemical name', D.splitNames('(TMEDA)SbI5, TMEDASbI5').length === 2 && D.splitNames('N,N,N′-trimethylethane-1,2-diaminium; TMEDA').join('|') === 'N,N,N′-trimethylethane-1,2-diaminium|TMEDA');
+  check('db names: marks for "none" are left out', D.splitNames('*, N/A, -, (PEA)2PbI4').join('|') === '(PEA)2PbI4');
+  let n = D.namesOf({ name: '4-fluorophenethylammonium lead iodide', formula: 'C16H22N2F2PbI4', aliases: '4-fluorophenethanaminium tetraiodoplumbate(II), pF1PEA2PbI4', iupac: '4-fluorophenethanaminium lead (II) iodide', stoich: 'C:16,H:22,N:2,F:2,Pb:1,I:4' });
+  check('db names: the short form comes first, a plain sum formula is not a name', n.common.join('|') === 'pF1PEA2PbI4|4-fluorophenethanaminium tetraiodoplumbate(II)' && n.iupac === '4-fluorophenethanaminium lead (II) iodide' && n.hill === 'C16H22F2I4N2Pb');
+  n = D.namesOf({ name: 'Benzylammonium antimony bromide', formula: '(C7H10N)2SbBr5', aliases: '(C6H5CH2NH3)2SbBr5; benzylammonium bromoantimonate(III)', iupac: '-', stoich: 'C:14,H:20,N:2,Sb:1,Br:5' });
+  check('db names: a formula with brackets is a common name, "-" is no IUPAC name', n.common[0] === '(C7H10N)2SbBr5' && n.common.length === 3 && n.iupac === '' && n.hill === 'C14H20Br5N2Sb');
+  const list = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data/hybrid3/systems.json'), 'utf8'));
+  check('db copy of HybriD3: every material has a number, a name and a stoichiometry that reads', list.length > 600 && new Set(list.map((x) => x.pk)).size === list.length && list.every((x) => x.compound_name && D.hillFormula(x.stoichiometry)));
+  delete global.window;
+}
+
 // a CIF with several data blocks: every block that holds atoms is a structure of its own
 {
   const cifOf = (f) => fs.readFileSync(path.join(__dirname, 'cifs', f), 'utf8');
@@ -490,6 +534,24 @@ const formula = (info) => info.formula.map((e) => e.el + e.n).join(' ');
   let threw = false;
   try { X.readStructures('data_x\n_cell_length_a 5\n', 'empty.cif'); } catch (err) { threw = /No atom sites/.test(err.message); }
   check('CIF with no atoms in any block is refused', threw);
+}
+
+// The copy of HybriD3 (data/hybrid3): each structure file that the entry list names is there, and Crysta reads it
+{
+  const dir = path.join(__dirname, '../data/hybrid3');
+  const list = JSON.parse(fs.readFileSync(path.join(dir, 'structures.json'), 'utf8'));
+  const files = list.flatMap((e) => (e.parts || []).map((p) => p.file));
+  const bad = [];
+  for (const f of files) {
+    try {
+      const r = X.readStructures(fs.readFileSync(path.join(dir, 'structures', f), 'utf8'), f);
+      if (!r.structures.length || r.structures.some((st) => !st.sites.length)) bad.push(f + ': no atoms');
+    } catch (err) { bad.push(f + ': ' + err.message); }
+  }
+  if (bad.length) console.log(bad.slice(0, 30).join('\n'));
+  check('HybriD3 copy: Crysta reads each of the ' + files.length + ' structure files', files.length > 200 && !bad.length);
+  const onDisk = fs.readdirSync(path.join(dir, 'structures')).sort().join(' ');
+  check('HybriD3 copy: the folder holds the files of the list and no other file', onDisk === files.slice().sort().join(' '));
 }
 
 console.log(passed + ' passed, ' + failed + ' failed');

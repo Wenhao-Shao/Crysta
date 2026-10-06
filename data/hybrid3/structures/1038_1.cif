@@ -1,0 +1,2164 @@
+#=======================================================================
+data_global
+
+_audit_creation_method                   'Jana2006 Version : 19/07/2016'
+
+_journal_date_recd_electronic            ?
+_journal_date_to_coeditor                ?
+_journal_date_from_coeditor              ?
+_journal_date_accepted                   ?
+_journal_date_printers_first             ?
+_journal_date_printers_final             ?
+_journal_date_proofs_out                 ?
+_journal_date_proofs_in                  ?
+_journal_coeditor_name                   ?
+_journal_coeditor_code                   ?
+_journal_coeditor_notes
+; ?
+;
+_journal_techeditor_code                 ?
+_journal_paper_category                  ?
+_journal_techeditor_notes
+; ?
+;
+_journal_coden_ASTM                      ?
+_journal_name_full                       ?
+_journal_year                            ?
+_journal_volume                          ?
+_journal_issue                           ?
+_journal_page_first                      ?
+_journal_page_last                       ?
+_journal_suppl_publ_number               ?
+_journal_suppl_publ_pages                ?
+#=======================================================================
+# 2. SUBMISSION DETAILS
+_publ_contact_author_name                'Mercouri G. Kanatzidis'
+_publ_contact_author_address
+;
+   Department of Chemistry
+     2145 Sheridan Road
+   Northwestern University
+   Evanston, IL 60208-3113
+           USA
+;
+_publ_contact_author_email               m-kanatzidis@northwestern.edu
+_publ_contact_author_fax                 '847-491-5937'
+_publ_contact_author_phone               '847-467-1541'
+_publ_requested_journal                  ?
+_publ_requested_category                 ?
+_publ_contact_letter
+; ?
+;
+#=======================================================================
+# 3. TITLE AND AUTHOR LIST
+_publ_section_title
+; ?
+;
+_publ_section_title_footnote
+; ?
+;
+loop_
+ _publ_author_name
+ _publ_author_footnote
+ _publ_author_address
+; ?      # name
+;
+; ?      # footnote
+;
+; ?      # address
+;
+#=======================================================================
+# 4. TEXT
+_publ_section_synopsis
+; ?
+;
+_publ_section_abstract
+; ?
+;
+_publ_section_comment
+; ?
+;
+_publ_section_introduction
+; ?
+;
+_publ_section_experimental
+; ?
+;
+_publ_section_exptl_prep
+; ?
+;
+_publ_section_exptl_refinement
+; ?
+;
+_publ_section_exptl_solution
+; ?
+;
+_publ_section_discussion
+; ?
+;
+_publ_section_acknowledgements
+; ?
+;
+_publ_section_references
+;
+Petricek, V., Dusek, M. & Palatinus L. (2014). Z. Kristallogr. 229(5), 345-352.
+Palatinus L. & Chapuis G. (2007). J. Appl. Cryst. 40, 786-790.
+enable this reference if Diamond ver. 3 was used for visualization
+Brandenburg, K. & Putz, H. (2005). DIAMOND Version 3.
+Crystal Impact GbR, Postfach 1251, D-53002 Bonn, Germany.
+enable this reference if Xshape wase used for crystal shape refinement
+Stoe & Cie (1998). X-SHAPE. Stoe & Cie, Darmstadt, Germany.
+enable this reference if Flack coefficient was refined
+Flack, H. D. (1983). Acta Cryst. A39, 876-881.
+;
+_publ_section_figure_captions
+; ?
+;
+_publ_section_table_legends
+; ?
+;
+#=======================================================================
+data_GAMA2Pb2I7
+
+_chemical_name_systematic
+; ?
+;
+_chemical_name_common         'Guanidinium Methylammonium Lead Iodide'
+_chemical_formula_moiety                 'GAMA2Pb2I7'
+_chemical_formula_structural             ?
+_chemical_formula_analytical             ?
+_chemical_formula_iupac                  ?
+_chemical_formula_sum                    'C3 H18 I7 N5 Pb2'
+_chemical_formula_weight                 1426.9
+_chemical_melting_point                  ?
+_chemical_compound_source                ?
+_chemical_absolute_configuration         ?
+#=======================================================================
+# 6. CRYSTAL DATA
+_symmetry_cell_setting                   orthorhombic
+_symmetry_space_group_name_H-M           'B m m 2'
+_symmetry_space_group_name_Hall          'B -2x;-2y;2z'
+_symmetry_Int_Tables_number              38
+loop_
+ _space_group_symop_id
+ _space_group_symop_operation_xyz
+ 1   x,y,z
+ 2   -x,-y,z
+ 3   x,-y,z
+ 4   -x,y,z
+ 5   x+1/2,y,z+1/2
+ 6   -x+1/2,-y,z+1/2
+ 7   x+1/2,-y,z+1/2
+ 8   -x+1/2,y,z+1/2
+_cell_length_a                           6.3729(4)
+_cell_length_b                           12.5435(8)
+_cell_length_c                           31.376(2)
+_cell_angle_alpha                        90
+_cell_angle_beta                         90
+_cell_angle_gamma                        90
+_cell_volume                             2508.2(3)
+loop_
+ _twin_individual_id
+ _twin_individual_mass_fraction_refined
+ _twin_individual_twin_matrix_11
+ _twin_individual_twin_matrix_12
+ _twin_individual_twin_matrix_13
+ _twin_individual_twin_matrix_21
+ _twin_individual_twin_matrix_22
+ _twin_individual_twin_matrix_23
+ _twin_individual_twin_matrix_31
+ _twin_individual_twin_matrix_32
+ _twin_individual_twin_matrix_33
+1 0.51(3)
+1 0 0
+0 1 0
+0 0 1
+2 0.49(3)
+-1 0 0
+0 1 0
+0 0 -1
+_cell_formula_units_Z                    4
+_cell_measurement_reflns_used    6613
+_cell_measurement_theta_min      2.59
+_cell_measurement_theta_max      29.35
+_cell_measurement_temperature            293
+_cell_special_details
+; ?
+;
+_exptl_crystal_density_diffrn            3.7788
+_exptl_crystal_density_meas              ?
+_exptl_crystal_density_method            ?
+_exptl_crystal_F_000                     2424
+_exptl_absorpt_coefficient_mu            22.017
+_exptl_crystal_description               'rectangular needle'
+_exptl_crystal_size_max                  0.0511
+_exptl_crystal_size_mid                  0.0179
+_exptl_crystal_size_min                  0.0100
+_exptl_crystal_size_rad                  ?
+_exptl_crystal_colour                    'dark red'
+_exptl_absorpt_correction_type           'Integration'
+_exptl_absorpt_process_details           'X-SHAPE'
+_exptl_absorpt_correction_T_min  0.3202
+_exptl_absorpt_correction_T_max  0.6548
+loop_
+ _exptl_crystal_face_index_h
+ _exptl_crystal_face_index_k
+ _exptl_crystal_face_index_l
+ _exptl_crystal_face_perp_dist
+ ? ? ? ?
+#=======================================================================
+# 7. EXPERIMENTAL DATA
+_exptl_special_details                   ?
+_diffrn_ambient_temperature              293
+_diffrn_measurement_device         '2-circle goniometer'
+_diffrn_measurement_device_type    'STOE IPDS 2T'
+_diffrn_detector                   'image plate (34 cm diameter)'
+_diffrn_detector_type              'STOE'
+_diffrn_detector_area_resol_mean   6.67
+_diffrn_source           'sealed X-ray tube, 12 x 0.4 mm long-fine focus'
+_diffrn_source_voltage             40
+_diffrn_source_current             30
+_diffrn_source_power               1.20
+_diffrn_radiation_type             'Mo K\a'
+_diffrn_radiation_wavelength       0.71073
+_diffrn_radiation_monochromator    'plane graphite'
+_diffrn_radiation_polarisn_norm    0
+_diffrn_radiation_collimation      '0.5 mm diameter, monocapillary'
+_diffrn_measurement_method         'rotation method'
+_diffrn_measurement_details
+; 180 frames, detector distance = 100 mm
+;
+_diffrn_reflns_number                    11855
+_diffrn_reflns_theta_min                 2.6
+_diffrn_reflns_theta_max                 29.27
+_diffrn_reflns_theta_full                29.27
+_diffrn_measured_fraction_theta_max      0.99
+_diffrn_measured_fraction_theta_full     0.99
+_diffrn_reflns_av_R_equivalents          0.0563
+_diffrn_reflns_av_unetI/netI             0.0509
+_diffrn_reflns_limit_h_min               -8
+_diffrn_reflns_limit_h_max               8
+_diffrn_reflns_limit_k_min               -17
+_diffrn_reflns_limit_k_max               17
+_diffrn_reflns_limit_l_min               -42
+_diffrn_reflns_limit_l_max               42
+_diffrn_reflns_reduction_process         ?
+_diffrn_standards_number                 ?
+_diffrn_standards_interval_count         ?
+_diffrn_standards_interval_time          ?
+_diffrn_standards_decay_%                ?
+_diffrn_radiation_probe                  X-ray
+#=======================================================================
+# 8. REFINEMENT DATA
+_refine_special_details
+; ?
+;
+_reflns_number_total                     2595
+_reflns_number_gt                        1693
+_reflns_threshold_expression             'I>2\s(I)'
+_refine_ls_structure_factor_coef         Fsqd
+_refine_ls_R_factor_gt                   0.0555
+_refine_ls_wR_factor_gt                  0.1099
+_refine_ls_R_factor_all                  0.0898
+_refine_ls_wR_factor_ref                 0.1126
+_refine_ls_goodness_of_fit_ref           2.19
+_refine_ls_goodness_of_fit_gt            2.66
+_refine_ls_restrained_S_gt               ?
+_refine_ls_restrained_S_all              ?
+_refine_ls_number_reflns                 2595
+_refine_ls_number_parameters             82
+_refine_ls_number_restraints             9
+_refine_ls_number_constraints            129
+_refine_ls_weighting_scheme              sigma
+_refine_ls_weighting_details             'w=1/(\s^2^(I)+0.0004I^2^)'
+_refine_ls_hydrogen_treatment            'constr'
+_refine_ls_shift/su_max                  0.0150
+_refine_ls_shift/su_mean                 0.0011
+_refine_diff_density_max                 5.69
+_refine_diff_density_min                 -1.65
+_refine_ls_extinction_method             'none'
+_refine_ls_extinction_coef               ?
+_refine_ls_abs_structure_details
+;  1265 of Friedel pairs used in the refinement
+;
+_refine_ls_abs_structure_Flack           ?
+_refine_ls_abs_structure_Rogers          ?
+loop_
+ _atom_type_symbol
+ _atom_type_scat_dispersion_real
+ _atom_type_scat_dispersion_imag
+ _atom_type_scat_source
+ C    0.0033  0.0016
+ 'International Tables Vol C tables 4.2.6.8 and 6.1.1.1'
+ H    0.0000  0.0000
+ 'International Tables Vol C tables 4.2.6.8 and 6.1.1.1'
+ I   -0.4742  1.8119
+ 'International Tables Vol C tables 4.2.6.8 and 6.1.1.1'
+ N    0.0061  0.0033
+ 'International Tables Vol C tables 4.2.6.8 and 6.1.1.1'
+ Pb  -3.3944 10.1111
+ 'International Tables Vol C tables 4.2.6.8 and 6.1.1.1'
+_computing_data_collection       'STOE X-AREA'
+_computing_cell_refinement       'STOE X-AREA'
+_computing_data_reduction        'STOE X-RED'
+_computing_structure_solution            'Superflip'
+_computing_structure_refinement          'Jana2006'
+_computing_molecular_graphics            ?
+_computing_publication_material          ?
+loop_
+ _restr_distance_atom_site_label_1
+ _restr_distance_site_symmetry_1
+ _restr_distance_atom_site_label_2
+ _restr_distance_site_symmetry_2
+ _restr_distance_target
+ _restr_distance_target_weight_param
+C1 . N1 . 1.5 0.001
+C2 . N2 . 1.5 0.001
+C3 . N3 . 1.5 0.001
+C4 . N4 . 1.5 0.001
+C5 . N5 . 1.35 0.001
+C5 . N6 . 1.35 0.001
+C6 . N7 . 1.35 0.001
+C6 . N8 . 1.35 0.001
+loop_
+ _restr_angle_atom_site_label_1
+ _restr_angle_site_symmetry_1
+ _restr_angle_atom_site_label_2
+ _restr_angle_site_symmetry_2
+ _restr_angle_atom_site_label_3
+ _restr_angle_site_symmetry_3
+ _restr_angle_target
+ _restr_angle_target_weight_param
+N6 . C5 . N5 . 120 0.01
+loop_
+ _restr_torsion_atom_site_label_1
+ _restr_torsion_site_symmetry_1
+ _restr_torsion_atom_site_label_2
+ _restr_torsion_site_symmetry_2
+ _restr_torsion_atom_site_label_3
+ _restr_torsion_site_symmetry_3
+ _restr_torsion_atom_site_label_4
+ _restr_torsion_site_symmetry_4
+ _restr_torsion_angle_target
+ _restr_torsion_weight_param
+ ? ? ? ? ? ? ? ? ? ?
+loop_
+ _restr_equal_distance_atom_site_label_1
+ _restr_equal_distance_site_symmetry_1
+ _restr_equal_distance_atom_site_label_2
+ _restr_equal_distance_site_symmetry_2
+ _restr_equal_distance_class_class_id
+ _restr_equal_distance_class_target_weight_param
+ ? ? ? ? ? ?
+loop_
+ _restr_equal_angle_atom_site_label_1
+ _restr_equal_angle_site_symmetry_1
+ _restr_equal_angle_atom_site_label_2
+ _restr_equal_angle_site_symmetry_2
+ _restr_equal_angle_atom_site_label_3
+ _restr_equal_angle_site_symmetry_3
+ _restr_equal_angle_class_class_id
+ _restr_equal_angle_class_target_weight_param
+ ? ? ? ? ? ? ? ?
+loop_
+ _restr_equal_torsion_atom_site_label_1
+ _restr_equal_torsion_site_symmetry_1
+ _restr_equal_torsion_atom_site_label_2
+ _restr_equal_torsion_site_symmetry_2
+ _restr_equal_torsion_atom_site_label_3
+ _restr_equal_torsion_site_symmetry_3
+ _restr_equal_torsion_atom_site_label_4
+ _restr_equal_torsion_site_symmetry_4
+ _restr_equal_torsion_class_class_id
+ _restr_equal_torsion_class_target_weight_param
+ ? ? ? ? ? ? ? ? ? ?
+
+loop_
+ _atom_site_label
+ _atom_site_type_symbol
+ _atom_site_fract_x
+ _atom_site_fract_y
+ _atom_site_fract_z
+ _atom_site_adp_type
+ _atom_site_U_iso_or_equiv
+ _atom_site_site_symmetry_multiplicity
+ _atom_site_occupancy
+ _atom_site_calc_flag
+ _atom_site_refinement_flags
+ _atom_site_disorder_assembly
+ _atom_site_disorder_group
+  Pb1 Pb 0.5 0.2486(2) 0.38750(9) Uani 0.0322(13) 4 1 d . . .
+  Pb2 Pb 0.5 0.2486(2) 0.18260(9) Uani 0.0332(13) 4 1 d . . .
+  I1 I 0.5 0 0.4052(3) Uani 0.083(5) 2 1 d . . .
+  I2 I 0.5 0.5 0.2009(4) Uani 0.082(4) 2 1 d . . .
+  I3 I 0.5 0.2889(7) 0.08520(18) Uani 0.069(3) 4 1 d . . .
+  I4 I 0.5 0.2175(3) 0.2840(3) Uani 0.0839(13) 4 1 d . . .
+  I5 I 0.5 0.2900(6) 0.48559(19) Uani 0.067(3) 4 1 d . . .
+  I6 I 0 0.2516(10) 0.3822(3) Uani 0.072(3) 4 1 d . . .
+  I7 I 0 0.2473(10) 0.1825(3) Uani 0.075(3) 4 1 d . . .
+  I8 I 0.5 0.5 0.3742(4) Uani 0.119(7) 2 1 d . . .
+  I9 I 0.5 0 0.1696(3) Uani 0.109(7) 2 1 d . . .
+  N1 N 0 0 0.2786(17) Uiso 0.103(19) 2 1 d . . .
+  N2 N 0 0.5 0.25871(3) Uiso 0.50(10) 2 1 d . . .
+  N3 N 0 0.5 0.1276(13) Uiso 0.065(14) 2 1 d . . .
+  N4 N 0.5 0.5 -0.026(3) Uiso 0.19(4) 2 1 d . . .
+  N5 N 0.5 0.09320(7) -0.018(2) Uiso 0.14(3) 4 1 d . . .
+  N6 N 0.5 0 0.046(2) Uiso 0.14(3) 2 1 d . . .
+  N7 N 0.5 0.0986(12) 0.5810(11) Uiso 0.033(7) 4 1 d . . .
+  N8 N 0.5 0 0.5208(10) Uiso 0.033(7) 2 1 d . . .
+  C1 C 0 0 0.3264(17) Uiso 0.103(19) 2 1 d . . .
+  C2 C 0 0.5 0.306517(12) Uiso 0.50(10) 2 1 d . . .
+  C3 C 0 0.5 0.0798(13) Uiso 0.065(14) 2 1 d . . .
+  C4 C 0.5 0.5 0.022(3) Uiso 0.19(4) 2 1 d . . .
+  C5 C 0.5 0 0.003(2) Uiso 0.14(3) 2 1 d . . .
+  C6 C 0.5 0 0.5638(10) Uiso 0.033(7) 2 1 d . . .
+  H1n1 H 0.087354 0.048025 0.269379 Uiso 0.1233 8 0.25 d . . .
+  H2n1 H 0.038184 -0.062448 0.269379 Uiso 0.1233 8 0.25 d . . .
+  H3n1 H -0.125538 0.014423 0.269379 Uiso 0.1233 8 0.25 d . . .
+  H1n2 H 0.127774 0.492135 0.24947 Uiso 0.5964 8 0.25 d . . .
+  H2n2 H -0.077293 0.447713 0.24947 Uiso 0.5964 8 0.25 d . . .
+  H3n2 H -0.05048 0.560152 0.24947 Uiso 0.5964 8 0.25 d . . .
+  H1n3 H -0.101197 0.459594 0.136849 Uiso 0.0785 8 0.25 d . . .
+  H2n3 H 0.119473 0.475677 0.136849 Uiso 0.0785 8 0.25 d . . .
+  H3n3 H -0.018276 0.564729 0.136849 Uiso 0.0785 8 0.25 d . . .
+  H1n4 H 0.375824 0.4828 -0.035194 Uiso 0.2292 8 0.25 d . . .
+  H2n4 H 0.53277 0.563237 -0.035194 Uiso 0.2292 8 0.25 d . . .
+  H3n4 H 0.591406 0.453963 -0.035194 Uiso 0.2292 8 0.25 d . . .
+  H1n5 H 0.5 0.093201 -0.046106 Uiso 0.1676 4 1 d . . .
+  H2n5 H 0.5 0.153267 -0.004514 Uiso 0.1676 4 1 d . . .
+  H1n6 H 0.5 -0.060066 0.060024 Uiso 0.1676 4 0.5 d . . .
+  H2n6 H 0.5 0.060066 0.060024 Uiso 0.1676 4 0.5 d . . .
+  H1n7 H 0.5 0.106418 0.608552 Uiso 0.0398 4 1 d . . .
+  H2n7 H 0.5 0.15444 0.56453 Uiso 0.0398 4 1 d . . .
+  H1n8 H 0.5 -0.060066 0.506911 Uiso 0.0398 4 0.5 d . . .
+  H2n8 H 0.5 0.060066 0.506911 Uiso 0.0398 4 0.5 d . . .
+  H1c1 H 0.09664 -0.052876 0.336627 Uiso 0.1233 8 0.25 d . . .
+  H2c1 H 0.04181 0.068959 0.336627 Uiso 0.1233 8 0.25 d . . .
+  H3c1 H -0.13845 -0.016083 0.336627 Uiso 0.1233 8 0.25 d . . .
+  H1c2 H 0.141632 0.49465 0.316717 Uiso 0.5964 8 0.25 d . . .
+  H2c2 H -0.061697 0.564992 0.316717 Uiso 0.5964 8 0.25 d . . .
+  H3c2 H -0.079935 0.440358 0.316717 Uiso 0.5964 8 0.25 d . . .
+  H1c3 H 0.084604 0.557956 0.069602 Uiso 0.0785 8 0.25 d . . .
+  H2c3 H 0.056488 0.433796 0.069602 Uiso 0.0785 8 0.25 d . . .
+  H3c3 H -0.141092 0.508247 0.069602 Uiso 0.0785 8 0.25 d . . .
+  H1c4 H 0.470754 0.42939 0.032055 Uiso 0.2292 8 0.25 d . . .
+  H2c4 H 0.634982 0.522437 0.032055 Uiso 0.2292 8 0.25 d . . .
+  H3c4 H 0.394264 0.548173 0.032055 Uiso 0.2292 8 0.25 d . . .
+loop_
+ _atom_site_aniso_label
+ _atom_site_aniso_type_symbol
+ _atom_site_aniso_U_11
+ _atom_site_aniso_U_22
+ _atom_site_aniso_U_33
+ _atom_site_aniso_U_12
+ _atom_site_aniso_U_13
+ _atom_site_aniso_U_23
+ Pb1 Pb 0.0235(19) 0.026(3) 0.0468(19) 0 0 0.0013(15)
+ Pb2 Pb 0.037(2) 0.028(3) 0.0343(16) 0 0 -0.0001(14)
+ I1 I 0.139(12) 0.035(5) 0.074(6) 0 0 0
+ I2 I 0.102(9) 0.040(6) 0.103(7) 0 0 0
+ I3 I 0.097(7) 0.075(5) 0.036(3) 0 0 0.034(2)
+ I4 I 0.107(3) 0.119(3) 0.0258(16) 0 0 -0.020(4)
+ I5 I 0.091(7) 0.067(4) 0.043(3) 0 0 0.020(2)
+ I6 I 0.018(3) 0.128(8) 0.072(4) 0 0 0.012(4)
+ I7 I 0.026(3) 0.125(8) 0.072(3) 0 0 -0.025(4)
+ I8 I 0.233(17) 0.006(4) 0.119(8) 0 0 0
+ I9 I 0.248(19) 0.013(5) 0.065(5) 0 0 0
+loop_
+ _jana_atom_site_ADP_C_label
+ _jana_atom_site_ADP_C_type_symbol
+ _jana_atom_site_ADP_C_111
+ _jana_atom_site_ADP_C_112
+ _jana_atom_site_ADP_C_113
+ _jana_atom_site_ADP_C_122
+ _jana_atom_site_ADP_C_123
+ _jana_atom_site_ADP_C_133
+ _jana_atom_site_ADP_C_222
+ _jana_atom_site_ADP_C_223
+ _jana_atom_site_ADP_C_233
+ _jana_atom_site_ADP_C_333
+ ? ? ? ? ? ? ? ? ? ? ? ?
+loop_
+ _jana_atom_site_ADP_D_label
+ _jana_atom_site_ADP_D_type_symbol
+ _jana_atom_site_ADP_D_1111
+ _jana_atom_site_ADP_D_1112
+ _jana_atom_site_ADP_D_1113
+ _jana_atom_site_ADP_D_1122
+ _jana_atom_site_ADP_D_1123
+ _jana_atom_site_ADP_D_1133
+ _jana_atom_site_ADP_D_1222
+ _jana_atom_site_ADP_D_1223
+ _jana_atom_site_ADP_D_1233
+ _jana_atom_site_ADP_D_1333
+ _jana_atom_site_ADP_D_2222
+ _jana_atom_site_ADP_D_2223
+ _jana_atom_site_ADP_D_2233
+ _jana_atom_site_ADP_D_2333
+ _jana_atom_site_ADP_D_3333
+ ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ?
+loop_
+ _jana_atom_site_ADP_E_label
+ _jana_atom_site_ADP_E_type_symbol
+ _jana_atom_site_ADP_E_11111
+ _jana_atom_site_ADP_E_11112
+ _jana_atom_site_ADP_E_11113
+ _jana_atom_site_ADP_E_11122
+ _jana_atom_site_ADP_E_11123
+ _jana_atom_site_ADP_E_11133
+ _jana_atom_site_ADP_E_11222
+ _jana_atom_site_ADP_E_11223
+ _jana_atom_site_ADP_E_11233
+ _jana_atom_site_ADP_E_11333
+ _jana_atom_site_ADP_E_12222
+ _jana_atom_site_ADP_E_12223
+ _jana_atom_site_ADP_E_12233
+ _jana_atom_site_ADP_E_12333
+ _jana_atom_site_ADP_E_13333
+ _jana_atom_site_ADP_E_22222
+ _jana_atom_site_ADP_E_22223
+ _jana_atom_site_ADP_E_22233
+ _jana_atom_site_ADP_E_22333
+ _jana_atom_site_ADP_E_23333
+ _jana_atom_site_ADP_E_33333
+ ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ?
+loop_
+ _jana_atom_site_ADP_F_label
+ _jana_atom_site_ADP_F_type_symbol
+ _jana_atom_site_ADP_F_111111
+ _jana_atom_site_ADP_F_111112
+ _jana_atom_site_ADP_F_111113
+ _jana_atom_site_ADP_F_111122
+ _jana_atom_site_ADP_F_111123
+ _jana_atom_site_ADP_F_111133
+ _jana_atom_site_ADP_F_111222
+ _jana_atom_site_ADP_F_111223
+ _jana_atom_site_ADP_F_111233
+ _jana_atom_site_ADP_F_111333
+ _jana_atom_site_ADP_F_112222
+ _jana_atom_site_ADP_F_112223
+ _jana_atom_site_ADP_F_112233
+ _jana_atom_site_ADP_F_112333
+ _jana_atom_site_ADP_F_113333
+ _jana_atom_site_ADP_F_122222
+ _jana_atom_site_ADP_F_122223
+ _jana_atom_site_ADP_F_122233
+ _jana_atom_site_ADP_F_122333
+ _jana_atom_site_ADP_F_123333
+ _jana_atom_site_ADP_F_133333
+ _jana_atom_site_ADP_F_222222
+ _jana_atom_site_ADP_F_222223
+ _jana_atom_site_ADP_F_222233
+ _jana_atom_site_ADP_F_222333
+ _jana_atom_site_ADP_F_223333
+ _jana_atom_site_ADP_F_233333
+ _jana_atom_site_ADP_F_333333
+ ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ? ?
+
+loop_
+ _geom_bond_atom_site_label_1
+ _geom_bond_atom_site_label_2
+ _geom_bond_site_symmetry_1
+ _geom_bond_site_symmetry_2
+ _geom_bond_distance
+ _geom_bond_publ_flag
+  Pb1 I1 . . 3.168(3) ?
+  Pb1 I4 . . 3.271(9) ?
+  Pb1 I5 . . 3.121(7) ?
+  Pb1 I6 . . 3.1910(6) ?
+  Pb1 I6 . 1_655 3.1910(6) ?
+  Pb1 I8 . . 3.181(3) ?
+  Pb2 I2 . . 3.205(4) ?
+  Pb2 I3 . . 3.097(7) ?
+  Pb2 I4 . . 3.206(9) ?
+  Pb2 I7 . . 3.1865(4) ?
+  Pb2 I7 . 1_655 3.1865(4) ?
+  Pb2 I9 . . 3.145(3) ?
+  I1 N5 . 5_455 4.15(4) ?
+  I1 N5 . 5_555 4.15(4) ?
+  I1 N5 . 6_555 4.15(4) ?
+  I1 N5 . 6_655 4.15(4) ?
+  I1 N8 . . 3.62(3) ?
+  I2 N2 . . 3.667(6) ?
+  I2 N2 . 1_655 3.667(6) ?
+  I2 N3 . . 3.93(3) ?
+  I2 N3 . 1_655 3.93(3) ?
+  I3 N5 . . 4.07(5) ?
+  I3 N6 . . 3.83(2) ?
+  I3 N7 . 5_454 3.983(11) ?
+  I3 N7 . 5_554 3.983(11) ?
+  I4 N1 . . 4.198(3) ?
+  I4 N1 . 1_655 4.198(3) ?
+  I5 N4 . 5_455 4.150(10) ?
+  I5 N4 . 5_555 4.150(10) ?
+  I5 N5 . 5_455 4.033(5) ?
+  I5 N5 . 5_555 4.033(5) ?
+  I5 N7 . . 3.84(3) ?
+  I5 N8 . . 3.801(12) ?
+  I6 N5 . 5_455 3.70(5) ?
+  I7 N2 . . 3.971(11) ?
+  I7 N3 . . 3.61(2) ?
+  I7 N7 . 5_454 3.69(3) ?
+  I9 N6 . . 3.87(6) ?
+  N1 C1 . . 1.50(7) ?
+  N1 H1n1 . . 0.87 ?
+  N1 H1n1 . 2_555 0.87 ?
+  N1 H1n1 . 3_555 0.87 ?
+  N1 H1n1 . 4_555 0.87 ?
+  N1 H2n1 . . 0.87 ?
+  N1 H2n1 . 2_555 0.87 ?
+  N1 H2n1 . 3_555 0.87 ?
+  N1 H2n1 . 4_555 0.87 ?
+  N1 H3n1 . . 0.87 ?
+  N1 H3n1 . 2_555 0.87 ?
+  N1 H3n1 . 3_555 0.87 ?
+  N1 H3n1 . 4_555 0.87 ?
+  N2 C2 . . 1.5000(11) ?
+  N2 H1n2 . . 0.87 ?
+  N2 H1n2 . 2_565 0.87 ?
+  N2 H1n2 . 3_565 0.87 ?
+  N2 H1n2 . 4_555 0.87 ?
+  N2 H2n2 . . 0.87 ?
+  N2 H2n2 . 2_565 0.87 ?
+  N2 H2n2 . 3_565 0.87 ?
+  N2 H2n2 . 4_555 0.87 ?
+  N2 H3n2 . . 0.87 ?
+  N2 H3n2 . 2_565 0.87 ?
+  N2 H3n2 . 3_565 0.87 ?
+  N2 H3n2 . 4_555 0.87 ?
+  N3 C3 . . 1.50(6) ?
+  N3 H1n3 . . 0.87 ?
+  N3 H1n3 . 2_565 0.87 ?
+  N3 H1n3 . 3_565 0.87 ?
+  N3 H1n3 . 4_555 0.87 ?
+  N3 H2n3 . . 0.87 ?
+  N3 H2n3 . 2_565 0.87 ?
+  N3 H2n3 . 3_565 0.87 ?
+  N3 H2n3 . 4_555 0.87 ?
+  N3 H3n3 . . 0.87 ?
+  N3 H3n3 . 2_565 0.87 ?
+  N3 H3n3 . 3_565 0.87 ?
+  N3 H3n3 . 4_555 0.87 ?
+  N4 C4 . . 1.50(14) ?
+  N4 H1n4 . . 0.87 ?
+  N4 H1n4 . 2_665 0.87 ?
+  N4 H1n4 . 3_565 0.87 ?
+  N4 H1n4 . 4_655 0.87 ?
+  N4 H2n4 . . 0.87 ?
+  N4 H2n4 . 2_665 0.87 ?
+  N4 H2n4 . 3_565 0.87 ?
+  N4 H2n4 . 4_655 0.87 ?
+  N4 H3n4 . . 0.87 ?
+  N4 H3n4 . 2_665 0.87 ?
+  N4 H3n4 . 3_565 0.87 ?
+  N4 H3n4 . 4_655 0.87 ?
+  N5 C5 . . 1.35(4) ?
+  N5 H1n5 . . 0.87 ?
+  N5 H2n5 . . 0.87 ?
+  N6 C5 . . 1.35(9) ?
+  N6 H1n6 . . 0.87 ?
+  N6 H1n6 . 2_655 0.87 ?
+  N7 C6 . . 1.35(2) ?
+  N7 H1n7 . . 0.8701 ?
+  N7 H2n7 . . 0.87 ?
+  N8 C6 . . 1.35(4) ?
+  N8 H1n8 . . 0.87 ?
+  N8 H1n8 . 2_655 0.87 ?
+  C1 H1c1 . . 0.96 ?
+  C1 H1c1 . 2_555 0.96 ?
+  C1 H1c1 . 3_555 0.96 ?
+  C1 H1c1 . 4_555 0.96 ?
+  C1 H2c1 . . 0.96 ?
+  C1 H2c1 . 2_555 0.96 ?
+  C1 H2c1 . 3_555 0.96 ?
+  C1 H2c1 . 4_555 0.96 ?
+  C1 H3c1 . . 0.96 ?
+  C1 H3c1 . 2_555 0.96 ?
+  C1 H3c1 . 3_555 0.96 ?
+  C1 H3c1 . 4_555 0.96 ?
+  C2 H1c2 . . 0.96 ?
+  C2 H1c2 . 2_565 0.96 ?
+  C2 H1c2 . 3_565 0.96 ?
+  C2 H1c2 . 4_555 0.96 ?
+  C2 H2c2 . . 0.96 ?
+  C2 H2c2 . 2_565 0.96 ?
+  C2 H2c2 . 3_565 0.96 ?
+  C2 H2c2 . 4_555 0.96 ?
+  C2 H3c2 . . 0.96 ?
+  C2 H3c2 . 2_565 0.96 ?
+  C2 H3c2 . 3_565 0.96 ?
+  C2 H3c2 . 4_555 0.96 ?
+  C3 H1c3 . . 0.96 ?
+  C3 H1c3 . 2_565 0.96 ?
+  C3 H1c3 . 3_565 0.96 ?
+  C3 H1c3 . 4_555 0.96 ?
+  C3 H2c3 . . 0.96 ?
+  C3 H2c3 . 2_565 0.96 ?
+  C3 H2c3 . 3_565 0.96 ?
+  C3 H2c3 . 4_555 0.96 ?
+  C3 H3c3 . . 0.96 ?
+  C3 H3c3 . 2_565 0.96 ?
+  C3 H3c3 . 3_565 0.96 ?
+  C3 H3c3 . 4_555 0.96 ?
+  C4 H1c4 . . 0.96 ?
+  C4 H1c4 . 2_665 0.96 ?
+  C4 H1c4 . 3_565 0.96 ?
+  C4 H1c4 . 4_655 0.96 ?
+  C4 H2c4 . . 0.96 ?
+  C4 H2c4 . 2_665 0.96 ?
+  C4 H2c4 . 3_565 0.96 ?
+  C4 H2c4 . 4_655 0.96 ?
+  C4 H3c4 . . 0.96 ?
+  C4 H3c4 . 2_665 0.96 ?
+  C4 H3c4 . 3_565 0.96 ?
+  C4 H3c4 . 4_655 0.96 ?
+  H1n1 H2n1 . 2_555 0.8202 ?
+  H1n1 H2n1 . 3_555 0.3618 ?
+  H1n1 H3n1 . 2_555 0.8202 ?
+  H1n1 H3n1 . 4_555 0.4867 ?
+  H2n1 H2n1 . 4_555 0.4867 ?
+  H2n1 H3n1 . 2_555 0.8202 ?
+  H3n1 H3n1 . 3_555 0.3618 ?
+  H1n2 H1n2 . 3_565 0.1973 ?
+  H1n2 H2n2 . 2_565 0.8202 ?
+  H1n2 H2n2 . 4_555 0.6434 ?
+  H1n2 H3n2 . 2_565 0.8202 ?
+  H1n2 H3n2 . 4_555 0.9852 ?
+  H2n2 H2n2 . 4_555 0.9852 ?
+  H2n2 H3n2 . 2_565 0.8202 ?
+  H2n2 H3n2 . 3_565 0.1973 ?
+  H3n2 H3n2 . 4_555 0.6434 ?
+  H1n3 H1n3 . 3_565 1.0137 ?
+  H1n3 H2n3 . 2_565 0.8202 ?
+  H1n3 H2n3 . 4_555 0.2329 ?
+  H1n3 H3n3 . 2_565 0.8202 ?
+  H1n3 H3n3 . 3_565 0.6102 ?
+  H2n3 H2n3 . 3_565 0.6102 ?
+  H2n3 H3n3 . 2_565 0.8202 ?
+  H2n3 H3n3 . 3_565 1.0137 ?
+  H3n3 H3n3 . 4_555 0.2329 ?
+  H1n4 H1n4 . 3_565 0.4315 ?
+  H1n4 H2n4 . 2_665 0.8202 ?
+  H1n4 H3n4 . 2_665 0.8202 ?
+  H1n4 H3n4 . 4_655 0.4177 ?
+  H2n4 H2n4 . 4_655 0.4177 ?
+  H2n4 H3n4 . 2_665 0.8202 ?
+  H2n4 H3n4 . 3_565 0.4315 ?
+  H1c1 H2c1 . 2_555 0.9051 ?
+  H1c1 H2c1 . 3_555 0.4035 ?
+  H1c1 H3c1 . 2_555 0.9051 ?
+  H1c1 H3c1 . 4_555 0.5329 ?
+  H2c1 H2c1 . 4_555 0.5329 ?
+  H2c1 H3c1 . 2_555 0.9051 ?
+  H3c1 H3c1 . 3_555 0.4035 ?
+  H1c2 H1c2 . 3_565 0.1342 ?
+  H1c2 H2c2 . 2_565 0.9051 ?
+  H1c2 H2c2 . 4_555 1.0188 ?
+  H1c2 H3c2 . 2_565 0.9051 ?
+  H1c2 H3c2 . 4_555 0.7864 ?
+  H2c2 H2c2 . 4_555 0.7864 ?
+  H2c2 H3c2 . 2_565 0.9051 ?
+  H2c2 H3c2 . 3_565 0.1342 ?
+  H3c2 H3c2 . 4_555 1.0188 ?
+  H1c3 H2c3 . 2_565 0.9051 ?
+  H1c3 H2c3 . 3_565 0.2069 ?
+  H1c3 H3c3 . 2_565 0.9051 ?
+  H1c3 H3c3 . 4_555 0.72 ?
+  H2c3 H2c3 . 4_555 0.72 ?
+  H2c3 H3c3 . 2_565 0.9051 ?
+  H3c3 H3c3 . 3_565 0.2069 ?
+  H1c4 H1c4 . 4_655 0.3728 ?
+  H1c4 H2c4 . 2_665 0.9051 ?
+  H1c4 H3c4 . 2_665 0.9051 ?
+  H1c4 H3c4 . 3_565 0.5629 ?
+  H2c4 H2c4 . 3_565 0.5629 ?
+  H2c4 H3c4 . 2_665 0.9051 ?
+  H2c4 H3c4 . 4_655 0.3728 ?
+loop_
+ _geom_angle_atom_site_label_1
+ _geom_angle_atom_site_label_2
+ _geom_angle_atom_site_label_3
+ _geom_angle_site_symmetry_1
+ _geom_angle_site_symmetry_2
+ _geom_angle_site_symmetry_3
+ _geom_angle
+ _geom_angle_publ_flag
+  I1 Pb1 I4 . . . 93.3(2) ?
+  I1 Pb1 I5 . . . 89.4(3) ?
+  I1 Pb1 I6 . . . 91.2(2) ?
+  I1 Pb1 I6 . . 1_655 91.2(2) ?
+  I1 Pb1 I8 . . . 177.4(3) ?
+  I4 Pb1 I5 . . . 177.31(19) ?
+  I4 Pb1 I6 . . . 87.11(16) ?
+  I4 Pb1 I6 . . 1_655 87.11(16) ?
+  I4 Pb1 I8 . . . 89.3(2) ?
+  I5 Pb1 I6 . . . 92.84(16) ?
+  I5 Pb1 I6 . . 1_655 92.84(16) ?
+  I5 Pb1 I8 . . . 88.0(3) ?
+  I6 Pb1 I6 . . 1_655 173.9(2) ?
+  I6 Pb1 I8 . . . 88.9(2) ?
+  I6 Pb1 I8 1_655 . . 88.9(2) ?
+  I2 Pb2 I3 . . . 90.9(3) ?
+  I2 Pb2 I4 . . . 86.7(2) ?
+  I2 Pb2 I7 . . . 90.3(2) ?
+  I2 Pb2 I7 . . 1_655 90.3(2) ?
+  I2 Pb2 I9 . . . 177.2(3) ?
+  I3 Pb2 I4 . . . 177.6(2) ?
+  I3 Pb2 I7 . . . 89.99(16) ?
+  I3 Pb2 I7 . . 1_655 89.99(16) ?
+  I3 Pb2 I9 . . . 91.9(3) ?
+  I4 Pb2 I7 . . . 90.03(16) ?
+  I4 Pb2 I7 . . 1_655 90.03(16) ?
+  I4 Pb2 I9 . . . 90.5(2) ?
+  I7 Pb2 I7 . . 1_655 179.4(3) ?
+  I7 Pb2 I9 . . . 89.7(2) ?
+  I7 Pb2 I9 1_655 . . 89.7(2) ?
+  Pb1 I1 Pb1 . . 2_655 159.8(4) ?
+  Pb1 I1 N5 . . 5_455 79.9(3) ?
+  Pb1 I1 N5 . . 5_555 79.9(3) ?
+  Pb1 I1 N5 . . 6_555 112.23(13) ?
+  Pb1 I1 N5 . . 6_655 112.23(13) ?
+  Pb1 I1 N8 . . . 100.1(2) ?
+  Pb1 I1 N5 2_655 . 5_455 112.23(13) ?
+  Pb1 I1 N5 2_655 . 5_555 112.23(13) ?
+  Pb1 I1 N5 2_655 . 6_555 79.9(3) ?
+  Pb1 I1 N5 2_655 . 6_655 79.9(3) ?
+  Pb1 I1 N8 2_655 . . 100.1(2) ?
+  N5 I1 N5 5_455 . 5_555 100.2(9) ?
+  N5 I1 N5 5_455 . 6_555 32.7(2) ?
+  N5 I1 N5 5_455 . 6_655 109.6(10) ?
+  N5 I1 N8 5_455 . . 54.8(7) ?
+  N5 I1 N5 5_555 . 6_555 109.6(10) ?
+  N5 I1 N5 5_555 . 6_655 32.7(2) ?
+  N5 I1 N8 5_555 . . 54.8(7) ?
+  N5 I1 N5 6_555 . 6_655 100.2(9) ?
+  N5 I1 N8 6_555 . . 54.8(7) ?
+  N5 I1 N8 6_655 . . 54.8(7) ?
+  Pb2 I2 Pb2 . . 2_665 159.4(5) ?
+  Pb2 I2 N2 . . . 95.08(9) ?
+  Pb2 I2 N2 . . 1_655 95.08(9) ?
+  Pb2 I2 N3 . . . 83.99(17) ?
+  Pb2 I2 N3 . . 1_655 83.99(17) ?
+  Pb2 I2 N2 2_665 . . 95.08(9) ?
+  Pb2 I2 N2 2_665 . 1_655 95.08(9) ?
+  Pb2 I2 N3 2_665 . . 83.99(17) ?
+  Pb2 I2 N3 2_665 . 1_655 83.99(17) ?
+  N2 I2 N2 . . 1_655 120.7(3) ?
+  N2 I2 N3 . . . 65.5(5) ?
+  N2 I2 N3 . . 1_655 173.9(6) ?
+  N2 I2 N3 1_655 . . 173.9(6) ?
+  N2 I2 N3 1_655 . 1_655 65.5(5) ?
+  N3 I2 N3 . . 1_655 108.4(8) ?
+  Pb2 I3 N5 . . . 133.5(6) ?
+  Pb2 I3 N6 . . . 99.3(9) ?
+  Pb2 I3 N7 . . 5_454 86.3(5) ?
+  Pb2 I3 N7 . . 5_554 86.3(5) ?
+  N5 I3 N6 . . . 34.3(10) ?
+  N5 I3 N7 . . 5_454 67.2(5) ?
+  N5 I3 N7 . . 5_554 67.2(5) ?
+  N6 I3 N7 . . 5_454 54.7(3) ?
+  N6 I3 N7 . . 5_554 54.7(3) ?
+  N7 I3 N7 5_454 . 5_554 106.3(3) ?
+  Pb1 I4 Pb2 . . . 166.13(14) ?
+  Pb1 I4 N1 . . . 96.8(7) ?
+  Pb1 I4 N1 . . 1_655 96.8(7) ?
+  Pb2 I4 N1 . . . 92.2(7) ?
+  Pb2 I4 N1 . . 1_655 92.2(7) ?
+  N1 I4 N1 . . 1_655 98.76(8) ?
+  Pb1 I5 N4 . . 5_455 91.1(14) ?
+  Pb1 I5 N4 . . 5_555 91.1(14) ?
+  Pb1 I5 N5 . . 5_455 82.4(9) ?
+  Pb1 I5 N5 . . 5_555 82.4(9) ?
+  Pb1 I5 N7 . . . 131.7(4) ?
+  Pb1 I5 N8 . . . 97.3(5) ?
+  N4 I5 N4 5_455 . 5_555 100.3(3) ?
+  N4 I5 N5 5_455 . 5_455 77.24(8) ?
+  N4 I5 N5 5_455 . 5_555 173.0(16) ?
+  N4 I5 N7 5_455 . . 117.7(12) ?
+  N4 I5 N8 5_455 . . 129.3(4) ?
+  N4 I5 N5 5_555 . 5_455 173.0(16) ?
+  N4 I5 N5 5_555 . 5_555 77.24(8) ?
+  N4 I5 N7 5_555 . . 117.7(12) ?
+  N4 I5 N8 5_555 . . 129.3(4) ?
+  N5 I5 N5 5_455 . 5_555 104.41(19) ?
+  N5 I5 N7 5_455 . . 69.0(8) ?
+  N5 I5 N8 5_455 . . 54.8(4) ?
+  N5 I5 N7 5_555 . . 69.0(8) ?
+  N5 I5 N8 5_555 . . 54.8(4) ?
+  N7 I5 N8 . . . 34.4(6) ?
+  Pb1 I6 Pb1 1_455 . . 173.9(3) ?
+  Pb1 I6 N5 1_455 . 5_455 87.12(18) ?
+  Pb1 I6 N5 . . 5_455 87.12(18) ?
+  Pb2 I7 Pb2 1_455 . . 179.4(4) ?
+  Pb2 I7 N2 1_455 . . 89.7(2) ?
+  Pb2 I7 N3 1_455 . . 89.8(2) ?
+  Pb2 I7 N7 1_455 . 5_454 90.20(18) ?
+  Pb2 I7 N2 . . . 89.7(2) ?
+  Pb2 I7 N3 . . . 89.8(2) ?
+  Pb2 I7 N7 . . 5_454 90.20(18) ?
+  N2 I7 N3 . . . 65.5(6) ?
+  N2 I7 N7 . . 5_454 157.4(5) ?
+  N3 I7 N7 . . 5_454 91.8(7) ?
+  Pb1 I8 Pb1 . . 2_665 164.9(5) ?
+  Pb2 I9 Pb2 . . 2_655 165.1(4) ?
+  Pb2 I9 N6 . . . 97.46(19) ?
+  Pb2 I9 N6 2_655 . . 97.46(19) ?
+  I4 N1 I4 1_455 . . 98.76(8) ?
+  I4 N1 I4 1_455 . 2_555 81.05(7) ?
+  I4 N1 I4 1_455 . 2_655 175.4(14) ?
+  I4 N1 C1 1_455 . . 87.7(7) ?
+  I4 N1 H1n1 1_455 . . 92.82 ?
+  I4 N1 H1n1 1_455 . 2_555 88.72 ?
+  I4 N1 H1n1 1_455 . 3_555 161.63 ?
+  I4 N1 H1n1 1_455 . 4_555 22.75 ?
+  I4 N1 H2n1 1_455 . . 144.17 ?
+  I4 N1 H2n1 1_455 . 2_555 38.38 ?
+  I4 N1 H2n1 1_455 . 3_555 68.94 ?
+  I4 N1 H2n1 1_455 . 4_555 112.71 ?
+  I4 N1 H3n1 1_455 . . 34.94 ?
+  I4 N1 H3n1 1_455 . 2_555 147.84 ?
+  I4 N1 H3n1 1_455 . 3_555 56.67 ?
+  I4 N1 H3n1 1_455 . 4_555 125.19 ?
+  I4 N1 I4 . . 2_555 175.4(14) ?
+  I4 N1 I4 . . 2_655 81.05(7) ?
+  I4 N1 C1 . . . 87.7(7) ?
+  I4 N1 H1n1 . . . 22.75 ?
+  I4 N1 H1n1 . . 2_555 161.63 ?
+  I4 N1 H1n1 . . 3_555 88.72 ?
+  I4 N1 H1n1 . . 4_555 92.82 ?
+  I4 N1 H2n1 . . . 112.71 ?
+  I4 N1 H2n1 . . 2_555 68.94 ?
+  I4 N1 H2n1 . . 3_555 38.38 ?
+  I4 N1 H2n1 . . 4_555 144.17 ?
+  I4 N1 H3n1 . . . 125.19 ?
+  I4 N1 H3n1 . . 2_555 56.67 ?
+  I4 N1 H3n1 . . 3_555 147.84 ?
+  I4 N1 H3n1 . . 4_555 34.94 ?
+  I4 N1 I4 2_555 . 2_655 98.76(8) ?
+  I4 N1 C1 2_555 . . 87.7(7) ?
+  I4 N1 H1n1 2_555 . . 161.63 ?
+  I4 N1 H1n1 2_555 . 2_555 22.75 ?
+  I4 N1 H1n1 2_555 . 3_555 92.82 ?
+  I4 N1 H1n1 2_555 . 4_555 88.72 ?
+  I4 N1 H2n1 2_555 . . 68.94 ?
+  I4 N1 H2n1 2_555 . 2_555 112.71 ?
+  I4 N1 H2n1 2_555 . 3_555 144.17 ?
+  I4 N1 H2n1 2_555 . 4_555 38.38 ?
+  I4 N1 H3n1 2_555 . . 56.67 ?
+  I4 N1 H3n1 2_555 . 2_555 125.19 ?
+  I4 N1 H3n1 2_555 . 3_555 34.94 ?
+  I4 N1 H3n1 2_555 . 4_555 147.84 ?
+  I4 N1 C1 2_655 . . 87.7(7) ?
+  I4 N1 H1n1 2_655 . . 88.72 ?
+  I4 N1 H1n1 2_655 . 2_555 92.82 ?
+  I4 N1 H1n1 2_655 . 3_555 22.75 ?
+  I4 N1 H1n1 2_655 . 4_555 161.63 ?
+  I4 N1 H2n1 2_655 . . 38.38 ?
+  I4 N1 H2n1 2_655 . 2_555 144.17 ?
+  I4 N1 H2n1 2_655 . 3_555 112.71 ?
+  I4 N1 H2n1 2_655 . 4_555 68.94 ?
+  I4 N1 H3n1 2_655 . . 147.84 ?
+  I4 N1 H3n1 2_655 . 2_555 34.94 ?
+  I4 N1 H3n1 2_655 . 3_555 125.19 ?
+  I4 N1 H3n1 2_655 . 4_555 56.67 ?
+  C1 N1 H1n1 . . . 109.47 ?
+  C1 N1 H1n1 . . 2_555 109.47 ?
+  C1 N1 H1n1 . . 3_555 109.47 ?
+  C1 N1 H1n1 . . 4_555 109.47 ?
+  C1 N1 H2n1 . . . 109.47 ?
+  C1 N1 H2n1 . . 2_555 109.47 ?
+  C1 N1 H2n1 . . 3_555 109.47 ?
+  C1 N1 H2n1 . . 4_555 109.47 ?
+  C1 N1 H3n1 . . . 109.47 ?
+  C1 N1 H3n1 . . 2_555 109.47 ?
+  C1 N1 H3n1 . . 3_555 109.47 ?
+  C1 N1 H3n1 . . 4_555 109.47 ?
+  H1n1 N1 H1n1 . . 2_555 141.06 ?
+  H1n1 N1 H1n1 . . 3_555 87.64 ?
+  H1n1 N1 H1n1 . . 4_555 79.57 ?
+  H1n1 N1 H2n1 . . . 109.47 ?
+  H1n1 N1 H2n1 . . 2_555 56.25 ?
+  H1n1 N1 H2n1 . . 3_555 24 ?
+  H1n1 N1 H2n1 . . 4_555 133.73 ?
+  H1n1 N1 H3n1 . . . 109.47 ?
+  H1n1 N1 H3n1 . . 2_555 56.25 ?
+  H1n1 N1 H3n1 . . 3_555 128.41 ?
+  H1n1 N1 H3n1 . . 4_555 32.49 ?
+  H1n1 N1 H1n1 2_555 . 3_555 79.57 ?
+  H1n1 N1 H1n1 2_555 . 4_555 87.64 ?
+  H1n1 N1 H2n1 2_555 . . 56.25 ?
+  H1n1 N1 H2n1 2_555 . 2_555 109.47 ?
+  H1n1 N1 H2n1 2_555 . 3_555 133.73 ?
+  H1n1 N1 H2n1 2_555 . 4_555 24 ?
+  H1n1 N1 H3n1 2_555 . . 56.25 ?
+  H1n1 N1 H3n1 2_555 . 2_555 109.47 ?
+  H1n1 N1 H3n1 2_555 . 3_555 32.49 ?
+  H1n1 N1 H3n1 2_555 . 4_555 128.41 ?
+  H1n1 N1 H1n1 3_555 . 4_555 141.06 ?
+  H1n1 N1 H2n1 3_555 . . 24 ?
+  H1n1 N1 H2n1 3_555 . 2_555 133.73 ?
+  H1n1 N1 H2n1 3_555 . 3_555 109.47 ?
+  H1n1 N1 H2n1 3_555 . 4_555 56.25 ?
+  H1n1 N1 H3n1 3_555 . . 128.41 ?
+  H1n1 N1 H3n1 3_555 . 2_555 32.49 ?
+  H1n1 N1 H3n1 3_555 . 3_555 109.47 ?
+  H1n1 N1 H3n1 3_555 . 4_555 56.25 ?
+  H1n1 N1 H2n1 4_555 . . 133.73 ?
+  H1n1 N1 H2n1 4_555 . 2_555 24 ?
+  H1n1 N1 H2n1 4_555 . 3_555 56.25 ?
+  H1n1 N1 H2n1 4_555 . 4_555 109.47 ?
+  H1n1 N1 H3n1 4_555 . . 32.49 ?
+  H1n1 N1 H3n1 4_555 . 2_555 128.41 ?
+  H1n1 N1 H3n1 4_555 . 3_555 56.25 ?
+  H1n1 N1 H3n1 4_555 . 4_555 109.47 ?
+  H2n1 N1 H2n1 . . 2_555 141.06 ?
+  H2n1 N1 H2n1 . . 3_555 128.41 ?
+  H2n1 N1 H2n1 . . 4_555 32.49 ?
+  H2n1 N1 H3n1 . . . 109.47 ?
+  H2n1 N1 H3n1 . . 2_555 56.25 ?
+  H2n1 N1 H3n1 . . 3_555 87.64 ?
+  H2n1 N1 H3n1 . . 4_555 79.57 ?
+  H2n1 N1 H2n1 2_555 . 3_555 32.49 ?
+  H2n1 N1 H2n1 2_555 . 4_555 128.41 ?
+  H2n1 N1 H3n1 2_555 . . 56.25 ?
+  H2n1 N1 H3n1 2_555 . 2_555 109.47 ?
+  H2n1 N1 H3n1 2_555 . 3_555 79.57 ?
+  H2n1 N1 H3n1 2_555 . 4_555 87.64 ?
+  H2n1 N1 H2n1 3_555 . 4_555 141.06 ?
+  H2n1 N1 H3n1 3_555 . . 87.64 ?
+  H2n1 N1 H3n1 3_555 . 2_555 79.57 ?
+  H2n1 N1 H3n1 3_555 . 3_555 109.47 ?
+  H2n1 N1 H3n1 3_555 . 4_555 56.25 ?
+  H2n1 N1 H3n1 4_555 . . 79.57 ?
+  H2n1 N1 H3n1 4_555 . 2_555 87.64 ?
+  H2n1 N1 H3n1 4_555 . 3_555 56.25 ?
+  H2n1 N1 H3n1 4_555 . 4_555 109.47 ?
+  H3n1 N1 H3n1 . . 2_555 141.06 ?
+  H3n1 N1 H3n1 . . 3_555 24 ?
+  H3n1 N1 H3n1 . . 4_555 133.73 ?
+  H3n1 N1 H3n1 2_555 . 3_555 133.73 ?
+  H3n1 N1 H3n1 2_555 . 4_555 24 ?
+  H3n1 N1 H3n1 3_555 . 4_555 141.06 ?
+  I2 N2 I2 1_455 . . 120.7(2) ?
+  I2 N2 I7 1_455 . . 72.66(11) ?
+  I2 N2 I7 1_455 . 2_565 72.66(11) ?
+  I2 N2 C2 1_455 . . 119.66(17) ?
+  I2 N2 H1n2 1_455 . . 130.42 ?
+  I2 N2 H1n2 1_455 . 2_565 11.97 ?
+  I2 N2 H1n2 1_455 . 3_565 130.42 ?
+  I2 N2 H1n2 1_455 . 4_555 11.97 ?
+  I2 N2 H2n2 1_455 . . 48.93 ?
+  I2 N2 H2n2 1_455 . 2_565 109.09 ?
+  I2 N2 H2n2 1_455 . 3_565 48.93 ?
+  I2 N2 H2n2 1_455 . 4_555 109.09 ?
+  I2 N2 H3n2 1_455 . . 60.9 ?
+  I2 N2 H3n2 1_455 . 2_565 99 ?
+  I2 N2 H3n2 1_455 . 3_565 60.9 ?
+  I2 N2 H3n2 1_455 . 4_555 99 ?
+  I2 N2 I7 . . . 72.66(11) ?
+  I2 N2 I7 . . 2_565 72.66(11) ?
+  I2 N2 C2 . . . 119.66(17) ?
+  I2 N2 H1n2 . . . 11.97 ?
+  I2 N2 H1n2 . . 2_565 130.42 ?
+  I2 N2 H1n2 . . 3_565 11.97 ?
+  I2 N2 H1n2 . . 4_555 130.42 ?
+  I2 N2 H2n2 . . . 109.09 ?
+  I2 N2 H2n2 . . 2_565 48.93 ?
+  I2 N2 H2n2 . . 3_565 109.09 ?
+  I2 N2 H2n2 . . 4_555 48.93 ?
+  I2 N2 H3n2 . . . 99 ?
+  I2 N2 H3n2 . . 2_565 60.9 ?
+  I2 N2 H3n2 . . 3_565 99 ?
+  I2 N2 H3n2 . . 4_555 60.9 ?
+  I7 N2 I7 . . 2_565 105.9(2) ?
+  I7 N2 C2 . . . 127.03(15) ?
+  I7 N2 H1n2 . . . 73.07 ?
+  I7 N2 H1n2 . . 2_565 83.67 ?
+  I7 N2 H1n2 . . 3_565 83.67 ?
+  I7 N2 H1n2 . . 4_555 73.07 ?
+  I7 N2 H2n2 . . . 36.63 ?
+  I7 N2 H2n2 . . 2_565 113.65 ?
+  I7 N2 H2n2 . . 3_565 113.65 ?
+  I7 N2 H2n2 . . 4_555 36.63 ?
+  I7 N2 H3n2 . . . 119.45 ?
+  I7 N2 H3n2 . . 2_565 26.74 ?
+  I7 N2 H3n2 . . 3_565 26.74 ?
+  I7 N2 H3n2 . . 4_555 119.45 ?
+  I7 N2 C2 2_565 . . 127.03(15) ?
+  I7 N2 H1n2 2_565 . . 83.67 ?
+  I7 N2 H1n2 2_565 . 2_565 73.07 ?
+  I7 N2 H1n2 2_565 . 3_565 73.07 ?
+  I7 N2 H1n2 2_565 . 4_555 83.67 ?
+  I7 N2 H2n2 2_565 . . 113.65 ?
+  I7 N2 H2n2 2_565 . 2_565 36.63 ?
+  I7 N2 H2n2 2_565 . 3_565 36.63 ?
+  I7 N2 H2n2 2_565 . 4_555 113.65 ?
+  I7 N2 H3n2 2_565 . . 26.74 ?
+  I7 N2 H3n2 2_565 . 2_565 119.45 ?
+  I7 N2 H3n2 2_565 . 3_565 119.45 ?
+  I7 N2 H3n2 2_565 . 4_555 26.74 ?
+  C2 N2 H1n2 . . . 109.47 ?
+  C2 N2 H1n2 . . 2_565 109.47 ?
+  C2 N2 H1n2 . . 3_565 109.47 ?
+  C2 N2 H1n2 . . 4_555 109.47 ?
+  C2 N2 H2n2 . . . 109.47 ?
+  C2 N2 H2n2 . . 2_565 109.47 ?
+  C2 N2 H2n2 . . 3_565 109.47 ?
+  C2 N2 H2n2 . . 4_555 109.47 ?
+  C2 N2 H3n2 . . . 109.47 ?
+  C2 N2 H3n2 . . 2_565 109.47 ?
+  C2 N2 H3n2 . . 3_565 109.47 ?
+  C2 N2 H3n2 . . 4_555 109.47 ?
+  H1n2 N2 H1n2 . . 2_565 141.06 ?
+  H1n2 N2 H1n2 . . 3_565 13.02 ?
+  H1n2 N2 H1n2 . . 4_555 138.78 ?
+  H1n2 N2 H2n2 . . . 109.47 ?
+  H1n2 N2 H2n2 . . 2_565 56.25 ?
+  H1n2 N2 H2n2 . . 3_565 120.29 ?
+  H1n2 N2 H2n2 . . 4_555 43.4 ?
+  H1n2 N2 H3n2 . . . 109.47 ?
+  H1n2 N2 H3n2 . . 2_565 56.25 ?
+  H1n2 N2 H3n2 . . 3_565 97.86 ?
+  H1n2 N2 H3n2 . . 4_555 68.97 ?
+  H1n2 N2 H1n2 2_565 . 3_565 138.78 ?
+  H1n2 N2 H1n2 2_565 . 4_555 13.02 ?
+  H1n2 N2 H2n2 2_565 . . 56.25 ?
+  H1n2 N2 H2n2 2_565 . 2_565 109.47 ?
+  H1n2 N2 H2n2 2_565 . 3_565 43.4 ?
+  H1n2 N2 H2n2 2_565 . 4_555 120.29 ?
+  H1n2 N2 H3n2 2_565 . . 56.25 ?
+  H1n2 N2 H3n2 2_565 . 2_565 109.47 ?
+  H1n2 N2 H3n2 2_565 . 3_565 68.97 ?
+  H1n2 N2 H3n2 2_565 . 4_555 97.86 ?
+  H1n2 N2 H1n2 3_565 . 4_555 141.06 ?
+  H1n2 N2 H2n2 3_565 . . 120.29 ?
+  H1n2 N2 H2n2 3_565 . 2_565 43.4 ?
+  H1n2 N2 H2n2 3_565 . 3_565 109.47 ?
+  H1n2 N2 H2n2 3_565 . 4_555 56.25 ?
+  H1n2 N2 H3n2 3_565 . . 97.86 ?
+  H1n2 N2 H3n2 3_565 . 2_565 68.97 ?
+  H1n2 N2 H3n2 3_565 . 3_565 109.47 ?
+  H1n2 N2 H3n2 3_565 . 4_555 56.25 ?
+  H1n2 N2 H2n2 4_555 . . 43.4 ?
+  H1n2 N2 H2n2 4_555 . 2_565 120.29 ?
+  H1n2 N2 H2n2 4_555 . 3_565 56.25 ?
+  H1n2 N2 H2n2 4_555 . 4_555 109.47 ?
+  H1n2 N2 H3n2 4_555 . . 68.97 ?
+  H1n2 N2 H3n2 4_555 . 2_565 97.86 ?
+  H1n2 N2 H3n2 4_555 . 3_565 56.25 ?
+  H1n2 N2 H3n2 4_555 . 4_555 109.47 ?
+  H2n2 N2 H2n2 . . 2_565 141.06 ?
+  H2n2 N2 H2n2 . . 3_565 97.86 ?
+  H2n2 N2 H2n2 . . 4_555 68.97 ?
+  H2n2 N2 H3n2 . . . 109.47 ?
+  H2n2 N2 H3n2 . . 2_565 56.25 ?
+  H2n2 N2 H3n2 . . 3_565 13.02 ?
+  H2n2 N2 H3n2 . . 4_555 138.78 ?
+  H2n2 N2 H2n2 2_565 . 3_565 68.97 ?
+  H2n2 N2 H2n2 2_565 . 4_555 97.86 ?
+  H2n2 N2 H3n2 2_565 . . 56.25 ?
+  H2n2 N2 H3n2 2_565 . 2_565 109.47 ?
+  H2n2 N2 H3n2 2_565 . 3_565 138.78 ?
+  H2n2 N2 H3n2 2_565 . 4_555 13.02 ?
+  H2n2 N2 H2n2 3_565 . 4_555 141.06 ?
+  H2n2 N2 H3n2 3_565 . . 13.02 ?
+  H2n2 N2 H3n2 3_565 . 2_565 138.78 ?
+  H2n2 N2 H3n2 3_565 . 3_565 109.47 ?
+  H2n2 N2 H3n2 3_565 . 4_555 56.25 ?
+  H2n2 N2 H3n2 4_555 . . 138.78 ?
+  H2n2 N2 H3n2 4_555 . 2_565 13.02 ?
+  H2n2 N2 H3n2 4_555 . 3_565 56.25 ?
+  H2n2 N2 H3n2 4_555 . 4_555 109.47 ?
+  H3n2 N2 H3n2 . . 2_565 141.06 ?
+  H3n2 N2 H3n2 . . 3_565 120.29 ?
+  H3n2 N2 H3n2 . . 4_555 43.4 ?
+  H3n2 N2 H3n2 2_565 . 3_565 43.4 ?
+  H3n2 N2 H3n2 2_565 . 4_555 120.29 ?
+  H3n2 N2 H3n2 3_565 . 4_555 141.06 ?
+  I2 N3 I2 1_455 . . 108.4(10) ?
+  I2 N3 I7 1_455 . . 73.8(5) ?
+  I2 N3 I7 1_455 . 2_565 73.8(5) ?
+  I2 N3 C3 1_455 . . 125.8(5) ?
+  I2 N3 H1n3 1_455 . . 37.23 ?
+  I2 N3 H1n3 1_455 . 2_565 113.96 ?
+  I2 N3 H1n3 1_455 . 3_565 37.23 ?
+  I2 N3 H1n3 1_455 . 4_555 113.96 ?
+  I2 N3 H2n3 1_455 . . 120.98 ?
+  I2 N3 H2n3 1_455 . 2_565 25.21 ?
+  I2 N3 H2n3 1_455 . 3_565 120.98 ?
+  I2 N3 H2n3 1_455 . 4_555 25.21 ?
+  I2 N3 H3n3 1_455 . . 72.33 ?
+  I2 N3 H3n3 1_455 . 2_565 85.04 ?
+  I2 N3 H3n3 1_455 . 3_565 72.33 ?
+  I2 N3 H3n3 1_455 . 4_555 85.04 ?
+  I2 N3 I7 . . . 73.8(5) ?
+  I2 N3 I7 . . 2_565 73.8(5) ?
+  I2 N3 C3 . . . 125.8(5) ?
+  I2 N3 H1n3 . . . 113.96 ?
+  I2 N3 H1n3 . . 2_565 37.23 ?
+  I2 N3 H1n3 . . 3_565 113.96 ?
+  I2 N3 H1n3 . . 4_555 37.23 ?
+  I2 N3 H2n3 . . . 25.21 ?
+  I2 N3 H2n3 . . 2_565 120.98 ?
+  I2 N3 H2n3 . . 3_565 25.21 ?
+  I2 N3 H2n3 . . 4_555 120.98 ?
+  I2 N3 H3n3 . . . 85.04 ?
+  I2 N3 H3n3 . . 2_565 72.33 ?
+  I2 N3 H3n3 . . 3_565 85.04 ?
+  I2 N3 H3n3 . . 4_555 72.33 ?
+  I7 N3 I7 . . 2_565 123.0(12) ?
+  I7 N3 C3 . . . 118.5(6) ?
+  I7 N3 H1n3 . . . 47.85 ?
+  I7 N3 H1n3 . . 2_565 110.66 ?
+  I7 N3 H1n3 . . 3_565 110.66 ?
+  I7 N3 H1n3 . . 4_555 47.85 ?
+  I7 N3 H2n3 . . . 62.14 ?
+  I7 N3 H2n3 . . 2_565 98.57 ?
+  I7 N3 H2n3 . . 3_565 98.57 ?
+  I7 N3 H2n3 . . 4_555 62.14 ?
+  I7 N3 H3n3 . . . 131.37 ?
+  I7 N3 H3n3 . . 2_565 11.71 ?
+  I7 N3 H3n3 . . 3_565 11.71 ?
+  I7 N3 H3n3 . . 4_555 131.37 ?
+  I7 N3 C3 2_565 . . 118.5(6) ?
+  I7 N3 H1n3 2_565 . . 110.66 ?
+  I7 N3 H1n3 2_565 . 2_565 47.85 ?
+  I7 N3 H1n3 2_565 . 3_565 47.85 ?
+  I7 N3 H1n3 2_565 . 4_555 110.66 ?
+  I7 N3 H2n3 2_565 . . 98.57 ?
+  I7 N3 H2n3 2_565 . 2_565 62.14 ?
+  I7 N3 H2n3 2_565 . 3_565 62.14 ?
+  I7 N3 H2n3 2_565 . 4_555 98.57 ?
+  I7 N3 H3n3 2_565 . . 11.71 ?
+  I7 N3 H3n3 2_565 . 2_565 131.37 ?
+  I7 N3 H3n3 2_565 . 3_565 131.37 ?
+  I7 N3 H3n3 2_565 . 4_555 11.71 ?
+  C3 N3 H1n3 . . . 109.47 ?
+  C3 N3 H1n3 . . 2_565 109.47 ?
+  C3 N3 H1n3 . . 3_565 109.47 ?
+  C3 N3 H1n3 . . 4_555 109.47 ?
+  C3 N3 H2n3 . . . 109.47 ?
+  C3 N3 H2n3 . . 2_565 109.47 ?
+  C3 N3 H2n3 . . 3_565 109.47 ?
+  C3 N3 H2n3 . . 4_555 109.47 ?
+  C3 N3 H3n3 . . . 109.47 ?
+  C3 N3 H3n3 . . 2_565 109.47 ?
+  C3 N3 H3n3 . . 3_565 109.47 ?
+  C3 N3 H3n3 . . 4_555 109.47 ?
+  H1n3 N3 H1n3 . . 2_565 141.05 ?
+  H1n3 N3 H1n3 . . 3_565 71.26 ?
+  H1n3 N3 H1n3 . . 4_555 95.68 ?
+  H1n3 N3 H2n3 . . . 109.47 ?
+  H1n3 N3 H2n3 . . 2_565 56.25 ?
+  H1n3 N3 H2n3 . . 3_565 137.89 ?
+  H1n3 N3 H2n3 . . 4_555 15.39 ?
+  H1n3 N3 H3n3 . . . 109.47 ?
+  H1n3 N3 H3n3 . . 2_565 56.25 ?
+  H1n3 N3 H3n3 . . 3_565 41.06 ?
+  H1n3 N3 H3n3 . . 4_555 122.12 ?
+  H1n3 N3 H1n3 2_565 . 3_565 95.68 ?
+  H1n3 N3 H1n3 2_565 . 4_555 71.26 ?
+  H1n3 N3 H2n3 2_565 . . 56.25 ?
+  H1n3 N3 H2n3 2_565 . 2_565 109.47 ?
+  H1n3 N3 H2n3 2_565 . 3_565 15.39 ?
+  H1n3 N3 H2n3 2_565 . 4_555 137.89 ?
+  H1n3 N3 H3n3 2_565 . . 56.25 ?
+  H1n3 N3 H3n3 2_565 . 2_565 109.47 ?
+  H1n3 N3 H3n3 2_565 . 3_565 122.12 ?
+  H1n3 N3 H3n3 2_565 . 4_555 41.06 ?
+  H1n3 N3 H1n3 3_565 . 4_555 141.05 ?
+  H1n3 N3 H2n3 3_565 . . 137.89 ?
+  H1n3 N3 H2n3 3_565 . 2_565 15.39 ?
+  H1n3 N3 H2n3 3_565 . 3_565 109.47 ?
+  H1n3 N3 H2n3 3_565 . 4_555 56.25 ?
+  H1n3 N3 H3n3 3_565 . . 41.06 ?
+  H1n3 N3 H3n3 3_565 . 2_565 122.12 ?
+  H1n3 N3 H3n3 3_565 . 3_565 109.47 ?
+  H1n3 N3 H3n3 3_565 . 4_555 56.25 ?
+  H1n3 N3 H2n3 4_555 . . 15.39 ?
+  H1n3 N3 H2n3 4_555 . 2_565 137.89 ?
+  H1n3 N3 H2n3 4_555 . 3_565 56.25 ?
+  H1n3 N3 H2n3 4_555 . 4_555 109.47 ?
+  H1n3 N3 H3n3 4_555 . . 122.12 ?
+  H1n3 N3 H3n3 4_555 . 2_565 41.06 ?
+  H1n3 N3 H3n3 4_555 . 3_565 56.25 ?
+  H1n3 N3 H3n3 4_555 . 4_555 109.47 ?
+  H2n3 N3 H2n3 . . 2_565 141.05 ?
+  H2n3 N3 H2n3 . . 3_565 41.06 ?
+  H2n3 N3 H2n3 . . 4_555 122.13 ?
+  H2n3 N3 H3n3 . . . 109.47 ?
+  H2n3 N3 H3n3 . . 2_565 56.25 ?
+  H2n3 N3 H3n3 . . 3_565 71.26 ?
+  H2n3 N3 H3n3 . . 4_555 95.68 ?
+  H2n3 N3 H2n3 2_565 . 3_565 122.13 ?
+  H2n3 N3 H2n3 2_565 . 4_555 41.06 ?
+  H2n3 N3 H3n3 2_565 . . 56.25 ?
+  H2n3 N3 H3n3 2_565 . 2_565 109.47 ?
+  H2n3 N3 H3n3 2_565 . 3_565 95.68 ?
+  H2n3 N3 H3n3 2_565 . 4_555 71.26 ?
+  H2n3 N3 H2n3 3_565 . 4_555 141.05 ?
+  H2n3 N3 H3n3 3_565 . . 71.26 ?
+  H2n3 N3 H3n3 3_565 . 2_565 95.68 ?
+  H2n3 N3 H3n3 3_565 . 3_565 109.47 ?
+  H2n3 N3 H3n3 3_565 . 4_555 56.25 ?
+  H2n3 N3 H3n3 4_555 . . 95.68 ?
+  H2n3 N3 H3n3 4_555 . 2_565 71.26 ?
+  H2n3 N3 H3n3 4_555 . 3_565 56.25 ?
+  H2n3 N3 H3n3 4_555 . 4_555 109.47 ?
+  H3n3 N3 H3n3 . . 2_565 141.05 ?
+  H3n3 N3 H3n3 . . 3_565 137.89 ?
+  H3n3 N3 H3n3 . . 4_555 15.39 ?
+  H3n3 N3 H3n3 2_565 . 3_565 15.39 ?
+  H3n3 N3 H3n3 2_565 . 4_555 137.89 ?
+  H3n3 N3 H3n3 3_565 . 4_555 141.05 ?
+  I5 N4 I5 5_454 . 5_554 100.3(3) ?
+  I5 N4 I5 5_454 . 6_564 78.8(2) ?
+  I5 N4 I5 5_454 . 6_664 170(3) ?
+  I5 N4 C4 5_454 . . 85.0(14) ?
+  I5 N4 H1n4 5_454 . . 34.24 ?
+  I5 N4 H1n4 5_454 . 2_665 152.24 ?
+  I5 N4 H1n4 5_454 . 3_565 59.21 ?
+  I5 N4 H1n4 5_454 . 4_655 124.75 ?
+  I5 N4 H2n4 5_454 . . 142.38 ?
+  I5 N4 H2n4 5_454 . 2_665 42.78 ?
+  I5 N4 H2n4 5_454 . 3_565 68.57 ?
+  I5 N4 H2n4 5_454 . 4_655 115.06 ?
+  I5 N4 H3n4 5_454 . . 97 ?
+  I5 N4 H3n4 5_454 . 2_665 86.35 ?
+  I5 N4 H3n4 5_454 . 3_565 164.69 ?
+  I5 N4 H3n4 5_454 . 4_655 25 ?
+  I5 N4 I5 5_554 . 6_564 170(3) ?
+  I5 N4 I5 5_554 . 6_664 78.8(2) ?
+  I5 N4 C4 5_554 . . 85.0(14) ?
+  I5 N4 H1n4 5_554 . . 124.75 ?
+  I5 N4 H1n4 5_554 . 2_665 59.21 ?
+  I5 N4 H1n4 5_554 . 3_565 152.24 ?
+  I5 N4 H1n4 5_554 . 4_655 34.24 ?
+  I5 N4 H2n4 5_554 . . 115.06 ?
+  I5 N4 H2n4 5_554 . 2_665 68.57 ?
+  I5 N4 H2n4 5_554 . 3_565 42.78 ?
+  I5 N4 H2n4 5_554 . 4_655 142.38 ?
+  I5 N4 H3n4 5_554 . . 25 ?
+  I5 N4 H3n4 5_554 . 2_665 164.69 ?
+  I5 N4 H3n4 5_554 . 3_565 86.35 ?
+  I5 N4 H3n4 5_554 . 4_655 97 ?
+  I5 N4 I5 6_564 . 6_664 100.3(3) ?
+  I5 N4 C4 6_564 . . 85.0(14) ?
+  I5 N4 H1n4 6_564 . . 59.21 ?
+  I5 N4 H1n4 6_564 . 2_665 124.75 ?
+  I5 N4 H1n4 6_564 . 3_565 34.24 ?
+  I5 N4 H1n4 6_564 . 4_655 152.24 ?
+  I5 N4 H2n4 6_564 . . 68.57 ?
+  I5 N4 H2n4 6_564 . 2_665 115.06 ?
+  I5 N4 H2n4 6_564 . 3_565 142.38 ?
+  I5 N4 H2n4 6_564 . 4_655 42.78 ?
+  I5 N4 H3n4 6_564 . . 164.69 ?
+  I5 N4 H3n4 6_564 . 2_665 25 ?
+  I5 N4 H3n4 6_564 . 3_565 97 ?
+  I5 N4 H3n4 6_564 . 4_655 86.35 ?
+  I5 N4 C4 6_664 . . 85.0(14) ?
+  I5 N4 H1n4 6_664 . . 152.24 ?
+  I5 N4 H1n4 6_664 . 2_665 34.24 ?
+  I5 N4 H1n4 6_664 . 3_565 124.75 ?
+  I5 N4 H1n4 6_664 . 4_655 59.21 ?
+  I5 N4 H2n4 6_664 . . 42.78 ?
+  I5 N4 H2n4 6_664 . 2_665 142.38 ?
+  I5 N4 H2n4 6_664 . 3_565 115.06 ?
+  I5 N4 H2n4 6_664 . 4_655 68.57 ?
+  I5 N4 H3n4 6_664 . . 86.35 ?
+  I5 N4 H3n4 6_664 . 2_665 97 ?
+  I5 N4 H3n4 6_664 . 3_565 25 ?
+  I5 N4 H3n4 6_664 . 4_655 164.69 ?
+  C4 N4 H1n4 . . . 109.47 ?
+  C4 N4 H1n4 . . 2_665 109.47 ?
+  C4 N4 H1n4 . . 3_565 109.47 ?
+  C4 N4 H1n4 . . 4_655 109.47 ?
+  C4 N4 H2n4 . . . 109.47 ?
+  C4 N4 H2n4 . . 2_665 109.47 ?
+  C4 N4 H2n4 . . 3_565 109.47 ?
+  C4 N4 H2n4 . . 4_655 109.47 ?
+  C4 N4 H3n4 . . . 109.47 ?
+  C4 N4 H3n4 . . 2_665 109.47 ?
+  C4 N4 H3n4 . . 3_565 109.47 ?
+  C4 N4 H3n4 . . 4_655 109.47 ?
+  H1n4 N4 H1n4 . . 2_665 141.06 ?
+  H1n4 N4 H1n4 . . 3_565 28.72 ?
+  H1n4 N4 H1n4 . . 4_655 130.91 ?
+  H1n4 N4 H2n4 . . . 109.47 ?
+  H1n4 N4 H2n4 . . 2_665 56.25 ?
+  H1n4 N4 H2n4 . . 3_565 83.17 ?
+  H1n4 N4 H2n4 . . 4_655 84.07 ?
+  H1n4 N4 H3n4 . . . 109.47 ?
+  H1n4 N4 H3n4 . . 2_665 56.25 ?
+  H1n4 N4 H3n4 . . 3_565 131.5 ?
+  H1n4 N4 H3n4 . . 4_655 27.78 ?
+  H1n4 N4 H1n4 2_665 . 3_565 130.91 ?
+  H1n4 N4 H1n4 2_665 . 4_655 28.72 ?
+  H1n4 N4 H2n4 2_665 . . 56.25 ?
+  H1n4 N4 H2n4 2_665 . 2_665 109.47 ?
+  H1n4 N4 H2n4 2_665 . 3_565 84.07 ?
+  H1n4 N4 H2n4 2_665 . 4_655 83.17 ?
+  H1n4 N4 H3n4 2_665 . . 56.25 ?
+  H1n4 N4 H3n4 2_665 . 2_665 109.47 ?
+  H1n4 N4 H3n4 2_665 . 3_565 27.78 ?
+  H1n4 N4 H3n4 2_665 . 4_655 131.5 ?
+  H1n4 N4 H1n4 3_565 . 4_655 141.06 ?
+  H1n4 N4 H2n4 3_565 . . 83.17 ?
+  H1n4 N4 H2n4 3_565 . 2_665 84.07 ?
+  H1n4 N4 H2n4 3_565 . 3_565 109.47 ?
+  H1n4 N4 H2n4 3_565 . 4_655 56.25 ?
+  H1n4 N4 H3n4 3_565 . . 131.5 ?
+  H1n4 N4 H3n4 3_565 . 2_665 27.78 ?
+  H1n4 N4 H3n4 3_565 . 3_565 109.47 ?
+  H1n4 N4 H3n4 3_565 . 4_655 56.25 ?
+  H1n4 N4 H2n4 4_655 . . 84.07 ?
+  H1n4 N4 H2n4 4_655 . 2_665 83.17 ?
+  H1n4 N4 H2n4 4_655 . 3_565 56.25 ?
+  H1n4 N4 H2n4 4_655 . 4_655 109.47 ?
+  H1n4 N4 H3n4 4_655 . . 27.78 ?
+  H1n4 N4 H3n4 4_655 . 2_665 131.5 ?
+  H1n4 N4 H3n4 4_655 . 3_565 56.25 ?
+  H1n4 N4 H3n4 4_655 . 4_655 109.47 ?
+  H2n4 N4 H2n4 . . 2_665 141.06 ?
+  H2n4 N4 H2n4 . . 3_565 131.5 ?
+  H2n4 N4 H2n4 . . 4_655 27.78 ?
+  H2n4 N4 H3n4 . . . 109.47 ?
+  H2n4 N4 H3n4 . . 2_665 56.25 ?
+  H2n4 N4 H3n4 . . 3_565 28.72 ?
+  H2n4 N4 H3n4 . . 4_655 130.91 ?
+  H2n4 N4 H2n4 2_665 . 3_565 27.78 ?
+  H2n4 N4 H2n4 2_665 . 4_655 131.5 ?
+  H2n4 N4 H3n4 2_665 . . 56.25 ?
+  H2n4 N4 H3n4 2_665 . 2_665 109.47 ?
+  H2n4 N4 H3n4 2_665 . 3_565 130.91 ?
+  H2n4 N4 H3n4 2_665 . 4_655 28.72 ?
+  H2n4 N4 H2n4 3_565 . 4_655 141.06 ?
+  H2n4 N4 H3n4 3_565 . . 28.72 ?
+  H2n4 N4 H3n4 3_565 . 2_665 130.91 ?
+  H2n4 N4 H3n4 3_565 . 3_565 109.47 ?
+  H2n4 N4 H3n4 3_565 . 4_655 56.25 ?
+  H2n4 N4 H3n4 4_655 . . 130.91 ?
+  H2n4 N4 H3n4 4_655 . 2_665 28.72 ?
+  H2n4 N4 H3n4 4_655 . 3_565 56.25 ?
+  H2n4 N4 H3n4 4_655 . 4_655 109.47 ?
+  H3n4 N4 H3n4 . . 2_665 141.06 ?
+  H3n4 N4 H3n4 . . 3_565 83.17 ?
+  H3n4 N4 H3n4 . . 4_655 84.07 ?
+  H3n4 N4 H3n4 2_665 . 3_565 84.07 ?
+  H3n4 N4 H3n4 2_665 . 4_655 83.17 ?
+  H3n4 N4 H3n4 3_565 . 4_655 141.06 ?
+  I1 N5 I1 5_454 . 5_554 100.2(12) ?
+  I1 N5 I3 5_454 . . 129.0(4) ?
+  I1 N5 I5 5_454 . 5_454 65.4(3) ?
+  I1 N5 I5 5_454 . 5_554 142.8(14) ?
+  I1 N5 I6 5_454 . 5_554 70.4(9) ?
+  I1 N5 C5 5_454 . . 92.6(18) ?
+  I1 N5 H1n5 5_454 . . 54.78 ?
+  I1 N5 H2n5 5_454 . . 122.15 ?
+  I1 N5 I3 5_554 . . 129.0(4) ?
+  I1 N5 I5 5_554 . 5_454 142.8(14) ?
+  I1 N5 I5 5_554 . 5_554 65.4(3) ?
+  I1 N5 I6 5_554 . 5_554 70.4(9) ?
+  I1 N5 C5 5_554 . . 92.6(18) ?
+  I1 N5 H1n5 5_554 . . 54.78 ?
+  I1 N5 H2n5 5_554 . . 122.15 ?
+  I3 N5 I5 . . 5_454 66.8(5) ?
+  I3 N5 I5 . . 5_554 66.8(5) ?
+  I3 N5 I6 . . 5_554 110.5(2) ?
+  I3 N5 C5 . . . 97(4) ?
+  I3 N5 H1n5 . . . 142.94 ?
+  I3 N5 H2n5 . . . 22.94 ?
+  I5 N5 I5 5_454 . 5_554 104.41(15) ?
+  I5 N5 I6 5_454 . 5_554 72.4(5) ?
+  I5 N5 C5 5_454 . . 121.0(17) ?
+  I5 N5 H1n5 5_454 . . 91.77 ?
+  I5 N5 H2n5 5_454 . . 56.94 ?
+  I5 N5 I6 5_554 . 5_554 72.4(5) ?
+  I5 N5 C5 5_554 . . 121.0(17) ?
+  I5 N5 H1n5 5_554 . . 91.77 ?
+  I5 N5 H2n5 5_554 . . 56.94 ?
+  I6 N5 C5 5_554 . . 152(4) ?
+  I6 N5 H1n5 5_554 . . 32.49 ?
+  I6 N5 H2n5 5_554 . . 87.52 ?
+  C5 N5 H1n5 . . . 120 ?
+  C5 N5 H2n5 . . . 120 ?
+  H1n5 N5 H2n5 . . . 120 ?
+  I3 N6 I3 . . 2_655 142.6(18) ?
+  I3 N6 I9 . . . 71.3(9) ?
+  I3 N6 C5 . . . 108.7(9) ?
+  I3 N6 H1n6 . . . 131.32 ?
+  I3 N6 H1n6 . . 2_655 11.32 ?
+  I3 N6 I9 2_655 . . 71.3(9) ?
+  I3 N6 C5 2_655 . . 108.7(9) ?
+  I3 N6 H1n6 2_655 . . 11.32 ?
+  I3 N6 H1n6 2_655 . 2_655 131.32 ?
+  I9 N6 C5 . . . 180.0(5) ?
+  I9 N6 H1n6 . . . 60 ?
+  I9 N6 H1n6 . . 2_655 60 ?
+  C5 N6 H1n6 . . . 120 ?
+  C5 N6 H1n6 . . 2_655 120 ?
+  H1n6 N6 H1n6 . . 2_655 120 ?
+  I3 N7 I3 5_455 . 5_555 106.3(4) ?
+  I3 N7 I5 5_455 . . 69.6(3) ?
+  I3 N7 I7 5_455 . 5_555 70.7(4) ?
+  I3 N7 C6 5_455 . . 124.2(6) ?
+  I3 N7 H1n7 5_455 . . 84.26 ?
+  I3 N7 H2n7 5_455 . . 62.46 ?
+  I3 N7 I5 5_555 . . 69.6(3) ?
+  I3 N7 I7 5_555 . 5_555 70.7(4) ?
+  I3 N7 C6 5_555 . . 124.2(6) ?
+  I3 N7 H1n7 5_555 . . 84.26 ?
+  I3 N7 H2n7 5_555 . . 62.46 ?
+  I5 N7 I7 . . 5_555 110.9(4) ?
+  I5 N7 C6 . . . 105(2) ?
+  I5 N7 H1n7 . . . 134.84 ?
+  I5 N7 H2n7 . . . 14.84 ?
+  I7 N7 C6 5_555 . . 144(2) ?
+  I7 N7 H1n7 5_555 . . 23.91 ?
+  I7 N7 H2n7 5_555 . . 96.08 ?
+  C6 N7 H1n7 . . . 120 ?
+  C6 N7 H2n7 . . . 120 ?
+  H1n7 N7 H2n7 . . . 120 ?
+  I1 N8 I5 . . . 73.1(5) ?
+  I1 N8 I5 . . 2_655 73.1(5) ?
+  I1 N8 C6 . . . 180.0(5) ?
+  I1 N8 H1n8 . . . 60 ?
+  I1 N8 H1n8 . . 2_655 60 ?
+  I5 N8 I5 . . 2_655 146.2(9) ?
+  I5 N8 C6 . . . 106.9(5) ?
+  I5 N8 H1n8 . . . 133.12 ?
+  I5 N8 H1n8 . . 2_655 13.12 ?
+  I5 N8 C6 2_655 . . 106.9(5) ?
+  I5 N8 H1n8 2_655 . . 13.12 ?
+  I5 N8 H1n8 2_655 . 2_655 133.12 ?
+  C6 N8 H1n8 . . . 120 ?
+  C6 N8 H1n8 . . 2_655 120 ?
+  H1n8 N8 H1n8 . . 2_655 120 ?
+  N1 C1 H1c1 . . . 109.47 ?
+  N1 C1 H1c1 . . 2_555 109.47 ?
+  N1 C1 H1c1 . . 3_555 109.47 ?
+  N1 C1 H1c1 . . 4_555 109.47 ?
+  N1 C1 H2c1 . . . 109.47 ?
+  N1 C1 H2c1 . . 2_555 109.47 ?
+  N1 C1 H2c1 . . 3_555 109.47 ?
+  N1 C1 H2c1 . . 4_555 109.47 ?
+  N1 C1 H3c1 . . . 109.47 ?
+  N1 C1 H3c1 . . 2_555 109.47 ?
+  N1 C1 H3c1 . . 3_555 109.47 ?
+  N1 C1 H3c1 . . 4_555 109.47 ?
+  H1c1 C1 H1c1 . . 2_555 141.05 ?
+  H1c1 C1 H1c1 . . 3_555 87.4 ?
+  H1c1 C1 H1c1 . . 4_555 79.81 ?
+  H1c1 C1 H2c1 . . . 109.47 ?
+  H1c1 C1 H2c1 . . 2_555 56.25 ?
+  H1c1 C1 H2c1 . . 3_555 24.26 ?
+  H1c1 C1 H2c1 . . 4_555 133.58 ?
+  H1c1 C1 H3c1 . . . 109.47 ?
+  H1c1 C1 H3c1 . . 2_555 56.25 ?
+  H1c1 C1 H3c1 . . 3_555 128.58 ?
+  H1c1 C1 H3c1 . . 4_555 32.23 ?
+  H1c1 C1 H1c1 2_555 . 3_555 79.81 ?
+  H1c1 C1 H1c1 2_555 . 4_555 87.4 ?
+  H1c1 C1 H2c1 2_555 . . 56.25 ?
+  H1c1 C1 H2c1 2_555 . 2_555 109.47 ?
+  H1c1 C1 H2c1 2_555 . 3_555 133.58 ?
+  H1c1 C1 H2c1 2_555 . 4_555 24.26 ?
+  H1c1 C1 H3c1 2_555 . . 56.25 ?
+  H1c1 C1 H3c1 2_555 . 2_555 109.47 ?
+  H1c1 C1 H3c1 2_555 . 3_555 32.23 ?
+  H1c1 C1 H3c1 2_555 . 4_555 128.58 ?
+  H1c1 C1 H1c1 3_555 . 4_555 141.05 ?
+  H1c1 C1 H2c1 3_555 . . 24.26 ?
+  H1c1 C1 H2c1 3_555 . 2_555 133.58 ?
+  H1c1 C1 H2c1 3_555 . 3_555 109.47 ?
+  H1c1 C1 H2c1 3_555 . 4_555 56.25 ?
+  H1c1 C1 H3c1 3_555 . . 128.58 ?
+  H1c1 C1 H3c1 3_555 . 2_555 32.23 ?
+  H1c1 C1 H3c1 3_555 . 3_555 109.47 ?
+  H1c1 C1 H3c1 3_555 . 4_555 56.25 ?
+  H1c1 C1 H2c1 4_555 . . 133.58 ?
+  H1c1 C1 H2c1 4_555 . 2_555 24.26 ?
+  H1c1 C1 H2c1 4_555 . 3_555 56.25 ?
+  H1c1 C1 H2c1 4_555 . 4_555 109.47 ?
+  H1c1 C1 H3c1 4_555 . . 32.23 ?
+  H1c1 C1 H3c1 4_555 . 2_555 128.58 ?
+  H1c1 C1 H3c1 4_555 . 3_555 56.25 ?
+  H1c1 C1 H3c1 4_555 . 4_555 109.47 ?
+  H2c1 C1 H2c1 . . 2_555 141.05 ?
+  H2c1 C1 H2c1 . . 3_555 128.58 ?
+  H2c1 C1 H2c1 . . 4_555 32.23 ?
+  H2c1 C1 H3c1 . . . 109.47 ?
+  H2c1 C1 H3c1 . . 2_555 56.25 ?
+  H2c1 C1 H3c1 . . 3_555 87.4 ?
+  H2c1 C1 H3c1 . . 4_555 79.81 ?
+  H2c1 C1 H2c1 2_555 . 3_555 32.23 ?
+  H2c1 C1 H2c1 2_555 . 4_555 128.58 ?
+  H2c1 C1 H3c1 2_555 . . 56.25 ?
+  H2c1 C1 H3c1 2_555 . 2_555 109.47 ?
+  H2c1 C1 H3c1 2_555 . 3_555 79.81 ?
+  H2c1 C1 H3c1 2_555 . 4_555 87.4 ?
+  H2c1 C1 H2c1 3_555 . 4_555 141.05 ?
+  H2c1 C1 H3c1 3_555 . . 87.4 ?
+  H2c1 C1 H3c1 3_555 . 2_555 79.81 ?
+  H2c1 C1 H3c1 3_555 . 3_555 109.47 ?
+  H2c1 C1 H3c1 3_555 . 4_555 56.25 ?
+  H2c1 C1 H3c1 4_555 . . 79.81 ?
+  H2c1 C1 H3c1 4_555 . 2_555 87.4 ?
+  H2c1 C1 H3c1 4_555 . 3_555 56.25 ?
+  H2c1 C1 H3c1 4_555 . 4_555 109.47 ?
+  H3c1 C1 H3c1 . . 2_555 141.05 ?
+  H3c1 C1 H3c1 . . 3_555 24.26 ?
+  H3c1 C1 H3c1 . . 4_555 133.58 ?
+  H3c1 C1 H3c1 2_555 . 3_555 133.58 ?
+  H3c1 C1 H3c1 2_555 . 4_555 24.26 ?
+  H3c1 C1 H3c1 3_555 . 4_555 141.05 ?
+  N2 C2 H1c2 . . . 109.47 ?
+  N2 C2 H1c2 . . 2_565 109.47 ?
+  N2 C2 H1c2 . . 3_565 109.47 ?
+  N2 C2 H1c2 . . 4_555 109.47 ?
+  N2 C2 H2c2 . . . 109.47 ?
+  N2 C2 H2c2 . . 2_565 109.47 ?
+  N2 C2 H2c2 . . 3_565 109.47 ?
+  N2 C2 H2c2 . . 4_555 109.47 ?
+  N2 C2 H3c2 . . . 109.47 ?
+  N2 C2 H3c2 . . 2_565 109.47 ?
+  N2 C2 H3c2 . . 3_565 109.47 ?
+  N2 C2 H3c2 . . 4_555 109.47 ?
+  H1c2 C2 H1c2 . . 2_565 141.05 ?
+  H1c2 C2 H1c2 . . 3_565 8.02 ?
+  H1c2 C2 H1c2 . . 4_555 140.17 ?
+  H1c2 C2 H2c2 . . . 109.47 ?
+  H1c2 C2 H2c2 . . 2_565 56.25 ?
+  H1c2 C2 H2c2 . . 3_565 102.39 ?
+  H1c2 C2 H2c2 . . 4_555 64.1 ?
+  H1c2 C2 H3c2 . . . 109.47 ?
+  H1c2 C2 H3c2 . . 2_565 56.25 ?
+  H1c2 C2 H3c2 . . 3_565 116.25 ?
+  H1c2 C2 H3c2 . . 4_555 48.35 ?
+  H1c2 C2 H1c2 2_565 . 3_565 140.17 ?
+  H1c2 C2 H1c2 2_565 . 4_555 8.02 ?
+  H1c2 C2 H2c2 2_565 . . 56.25 ?
+  H1c2 C2 H2c2 2_565 . 2_565 109.47 ?
+  H1c2 C2 H2c2 2_565 . 3_565 64.1 ?
+  H1c2 C2 H2c2 2_565 . 4_555 102.39 ?
+  H1c2 C2 H3c2 2_565 . . 56.25 ?
+  H1c2 C2 H3c2 2_565 . 2_565 109.47 ?
+  H1c2 C2 H3c2 2_565 . 3_565 48.35 ?
+  H1c2 C2 H3c2 2_565 . 4_555 116.25 ?
+  H1c2 C2 H1c2 3_565 . 4_555 141.05 ?
+  H1c2 C2 H2c2 3_565 . . 102.39 ?
+  H1c2 C2 H2c2 3_565 . 2_565 64.1 ?
+  H1c2 C2 H2c2 3_565 . 3_565 109.47 ?
+  H1c2 C2 H2c2 3_565 . 4_555 56.25 ?
+  H1c2 C2 H3c2 3_565 . . 116.25 ?
+  H1c2 C2 H3c2 3_565 . 2_565 48.35 ?
+  H1c2 C2 H3c2 3_565 . 3_565 109.47 ?
+  H1c2 C2 H3c2 3_565 . 4_555 56.25 ?
+  H1c2 C2 H2c2 4_555 . . 64.1 ?
+  H1c2 C2 H2c2 4_555 . 2_565 102.39 ?
+  H1c2 C2 H2c2 4_555 . 3_565 56.25 ?
+  H1c2 C2 H2c2 4_555 . 4_555 109.47 ?
+  H1c2 C2 H3c2 4_555 . . 48.35 ?
+  H1c2 C2 H3c2 4_555 . 2_565 116.25 ?
+  H1c2 C2 H3c2 4_555 . 3_565 56.25 ?
+  H1c2 C2 H3c2 4_555 . 4_555 109.47 ?
+  H2c2 C2 H2c2 . . 2_565 141.05 ?
+  H2c2 C2 H2c2 . . 3_565 116.25 ?
+  H2c2 C2 H2c2 . . 4_555 48.36 ?
+  H2c2 C2 H3c2 . . . 109.47 ?
+  H2c2 C2 H3c2 . . 2_565 56.25 ?
+  H2c2 C2 H3c2 . . 3_565 8.02 ?
+  H2c2 C2 H3c2 . . 4_555 140.17 ?
+  H2c2 C2 H2c2 2_565 . 3_565 48.36 ?
+  H2c2 C2 H2c2 2_565 . 4_555 116.25 ?
+  H2c2 C2 H3c2 2_565 . . 56.25 ?
+  H2c2 C2 H3c2 2_565 . 2_565 109.47 ?
+  H2c2 C2 H3c2 2_565 . 3_565 140.17 ?
+  H2c2 C2 H3c2 2_565 . 4_555 8.02 ?
+  H2c2 C2 H2c2 3_565 . 4_555 141.05 ?
+  H2c2 C2 H3c2 3_565 . . 8.02 ?
+  H2c2 C2 H3c2 3_565 . 2_565 140.17 ?
+  H2c2 C2 H3c2 3_565 . 3_565 109.47 ?
+  H2c2 C2 H3c2 3_565 . 4_555 56.25 ?
+  H2c2 C2 H3c2 4_555 . . 140.17 ?
+  H2c2 C2 H3c2 4_555 . 2_565 8.02 ?
+  H2c2 C2 H3c2 4_555 . 3_565 56.25 ?
+  H2c2 C2 H3c2 4_555 . 4_555 109.47 ?
+  H3c2 C2 H3c2 . . 2_565 141.05 ?
+  H3c2 C2 H3c2 . . 3_565 102.39 ?
+  H3c2 C2 H3c2 . . 4_555 64.1 ?
+  H3c2 C2 H3c2 2_565 . 3_565 64.1 ?
+  H3c2 C2 H3c2 2_565 . 4_555 102.39 ?
+  H3c2 C2 H3c2 3_565 . 4_555 141.05 ?
+  N3 C3 H1c3 . . . 109.47 ?
+  N3 C3 H1c3 . . 2_565 109.47 ?
+  N3 C3 H1c3 . . 3_565 109.47 ?
+  N3 C3 H1c3 . . 4_555 109.47 ?
+  N3 C3 H2c3 . . . 109.47 ?
+  N3 C3 H2c3 . . 2_565 109.47 ?
+  N3 C3 H2c3 . . 3_565 109.47 ?
+  N3 C3 H2c3 . . 4_555 109.47 ?
+  N3 C3 H3c3 . . . 109.47 ?
+  N3 C3 H3c3 . . 2_565 109.47 ?
+  N3 C3 H3c3 . . 3_565 109.47 ?
+  N3 C3 H3c3 . . 4_555 109.47 ?
+  H1c3 C3 H1c3 . . 2_565 141.06 ?
+  H1c3 C3 H1c3 . . 3_565 98.45 ?
+  H1c3 C3 H1c3 . . 4_555 68.34 ?
+  H1c3 C3 H2c3 . . . 109.47 ?
+  H1c3 C3 H2c3 . . 2_565 56.25 ?
+  H1c3 C3 H2c3 . . 3_565 12.37 ?
+  H1c3 C3 H2c3 . . 4_555 138.99 ?
+  H1c3 C3 H3c3 . . . 109.47 ?
+  H1c3 C3 H3c3 . . 2_565 56.25 ?
+  H1c3 C3 H3c3 . . 3_565 119.77 ?
+  H1c3 C3 H3c3 . . 4_555 44.05 ?
+  H1c3 C3 H1c3 2_565 . 3_565 68.34 ?
+  H1c3 C3 H1c3 2_565 . 4_555 98.45 ?
+  H1c3 C3 H2c3 2_565 . . 56.25 ?
+  H1c3 C3 H2c3 2_565 . 2_565 109.47 ?
+  H1c3 C3 H2c3 2_565 . 3_565 138.99 ?
+  H1c3 C3 H2c3 2_565 . 4_555 12.37 ?
+  H1c3 C3 H3c3 2_565 . . 56.25 ?
+  H1c3 C3 H3c3 2_565 . 2_565 109.47 ?
+  H1c3 C3 H3c3 2_565 . 3_565 44.05 ?
+  H1c3 C3 H3c3 2_565 . 4_555 119.77 ?
+  H1c3 C3 H1c3 3_565 . 4_555 141.06 ?
+  H1c3 C3 H2c3 3_565 . . 12.37 ?
+  H1c3 C3 H2c3 3_565 . 2_565 138.99 ?
+  H1c3 C3 H2c3 3_565 . 3_565 109.47 ?
+  H1c3 C3 H2c3 3_565 . 4_555 56.25 ?
+  H1c3 C3 H3c3 3_565 . . 119.77 ?
+  H1c3 C3 H3c3 3_565 . 2_565 44.05 ?
+  H1c3 C3 H3c3 3_565 . 3_565 109.47 ?
+  H1c3 C3 H3c3 3_565 . 4_555 56.25 ?
+  H1c3 C3 H2c3 4_555 . . 138.99 ?
+  H1c3 C3 H2c3 4_555 . 2_565 12.37 ?
+  H1c3 C3 H2c3 4_555 . 3_565 56.25 ?
+  H1c3 C3 H2c3 4_555 . 4_555 109.47 ?
+  H1c3 C3 H3c3 4_555 . . 44.05 ?
+  H1c3 C3 H3c3 4_555 . 2_565 119.77 ?
+  H1c3 C3 H3c3 4_555 . 3_565 56.25 ?
+  H1c3 C3 H3c3 4_555 . 4_555 109.47 ?
+  H2c3 C3 H2c3 . . 2_565 141.06 ?
+  H2c3 C3 H2c3 . . 3_565 119.77 ?
+  H2c3 C3 H2c3 . . 4_555 44.05 ?
+  H2c3 C3 H3c3 . . . 109.47 ?
+  H2c3 C3 H3c3 . . 2_565 56.25 ?
+  H2c3 C3 H3c3 . . 3_565 98.45 ?
+  H2c3 C3 H3c3 . . 4_555 68.34 ?
+  H2c3 C3 H2c3 2_565 . 3_565 44.05 ?
+  H2c3 C3 H2c3 2_565 . 4_555 119.77 ?
+  H2c3 C3 H3c3 2_565 . . 56.25 ?
+  H2c3 C3 H3c3 2_565 . 2_565 109.47 ?
+  H2c3 C3 H3c3 2_565 . 3_565 68.34 ?
+  H2c3 C3 H3c3 2_565 . 4_555 98.45 ?
+  H2c3 C3 H2c3 3_565 . 4_555 141.06 ?
+  H2c3 C3 H3c3 3_565 . . 98.45 ?
+  H2c3 C3 H3c3 3_565 . 2_565 68.34 ?
+  H2c3 C3 H3c3 3_565 . 3_565 109.47 ?
+  H2c3 C3 H3c3 3_565 . 4_555 56.25 ?
+  H2c3 C3 H3c3 4_555 . . 68.34 ?
+  H2c3 C3 H3c3 4_555 . 2_565 98.45 ?
+  H2c3 C3 H3c3 4_555 . 3_565 56.25 ?
+  H2c3 C3 H3c3 4_555 . 4_555 109.47 ?
+  H3c3 C3 H3c3 . . 2_565 141.06 ?
+  H3c3 C3 H3c3 . . 3_565 12.37 ?
+  H3c3 C3 H3c3 . . 4_555 138.99 ?
+  H3c3 C3 H3c3 2_565 . 3_565 138.99 ?
+  H3c3 C3 H3c3 2_565 . 4_555 12.37 ?
+  H3c3 C3 H3c3 3_565 . 4_555 141.06 ?
+  N4 C4 H1c4 . . . 109.47 ?
+  N4 C4 H1c4 . . 2_665 109.47 ?
+  N4 C4 H1c4 . . 3_565 109.47 ?
+  N4 C4 H1c4 . . 4_655 109.47 ?
+  N4 C4 H2c4 . . . 109.47 ?
+  N4 C4 H2c4 . . 2_665 109.47 ?
+  N4 C4 H2c4 . . 3_565 109.47 ?
+  N4 C4 H2c4 . . 4_655 109.47 ?
+  N4 C4 H3c4 . . . 109.47 ?
+  N4 C4 H3c4 . . 2_665 109.47 ?
+  N4 C4 H3c4 . . 3_565 109.47 ?
+  N4 C4 H3c4 . . 4_655 109.47 ?
+  H1c4 C4 H1c4 . . 2_665 141.05 ?
+  H1c4 C4 H1c4 . . 3_565 134.62 ?
+  H1c4 C4 H1c4 . . 4_655 22.39 ?
+  H1c4 C4 H2c4 . . . 109.47 ?
+  H1c4 C4 H2c4 . . 2_665 56.25 ?
+  H1c4 C4 H2c4 . . 3_565 78.02 ?
+  H1c4 C4 H2c4 . . 4_655 89.16 ?
+  H1c4 C4 H3c4 . . . 109.47 ?
+  H1c4 C4 H3c4 . . 2_665 56.25 ?
+  H1c4 C4 H3c4 . . 3_565 34.09 ?
+  H1c4 C4 H3c4 . . 4_655 127.29 ?
+  H1c4 C4 H1c4 2_665 . 3_565 22.39 ?
+  H1c4 C4 H1c4 2_665 . 4_655 134.62 ?
+  H1c4 C4 H2c4 2_665 . . 56.25 ?
+  H1c4 C4 H2c4 2_665 . 2_665 109.47 ?
+  H1c4 C4 H2c4 2_665 . 3_565 89.16 ?
+  H1c4 C4 H2c4 2_665 . 4_655 78.02 ?
+  H1c4 C4 H3c4 2_665 . . 56.25 ?
+  H1c4 C4 H3c4 2_665 . 2_665 109.47 ?
+  H1c4 C4 H3c4 2_665 . 3_565 127.29 ?
+  H1c4 C4 H3c4 2_665 . 4_655 34.09 ?
+  H1c4 C4 H1c4 3_565 . 4_655 141.05 ?
+  H1c4 C4 H2c4 3_565 . . 78.02 ?
+  H1c4 C4 H2c4 3_565 . 2_665 89.16 ?
+  H1c4 C4 H2c4 3_565 . 3_565 109.47 ?
+  H1c4 C4 H2c4 3_565 . 4_655 56.25 ?
+  H1c4 C4 H3c4 3_565 . . 34.09 ?
+  H1c4 C4 H3c4 3_565 . 2_665 127.29 ?
+  H1c4 C4 H3c4 3_565 . 3_565 109.47 ?
+  H1c4 C4 H3c4 3_565 . 4_655 56.25 ?
+  H1c4 C4 H2c4 4_655 . . 89.16 ?
+  H1c4 C4 H2c4 4_655 . 2_665 78.02 ?
+  H1c4 C4 H2c4 4_655 . 3_565 56.25 ?
+  H1c4 C4 H2c4 4_655 . 4_655 109.47 ?
+  H1c4 C4 H3c4 4_655 . . 127.29 ?
+  H1c4 C4 H3c4 4_655 . 2_665 34.09 ?
+  H1c4 C4 H3c4 4_655 . 3_565 56.25 ?
+  H1c4 C4 H3c4 4_655 . 4_655 109.47 ?
+  H2c4 C4 H2c4 . . 2_665 141.05 ?
+  H2c4 C4 H2c4 . . 3_565 34.09 ?
+  H2c4 C4 H2c4 . . 4_655 127.29 ?
+  H2c4 C4 H3c4 . . . 109.47 ?
+  H2c4 C4 H3c4 . . 2_665 56.25 ?
+  H2c4 C4 H3c4 . . 3_565 134.62 ?
+  H2c4 C4 H3c4 . . 4_655 22.39 ?
+  H2c4 C4 H2c4 2_665 . 3_565 127.29 ?
+  H2c4 C4 H2c4 2_665 . 4_655 34.09 ?
+  H2c4 C4 H3c4 2_665 . . 56.25 ?
+  H2c4 C4 H3c4 2_665 . 2_665 109.47 ?
+  H2c4 C4 H3c4 2_665 . 3_565 22.39 ?
+  H2c4 C4 H3c4 2_665 . 4_655 134.62 ?
+  H2c4 C4 H2c4 3_565 . 4_655 141.05 ?
+  H2c4 C4 H3c4 3_565 . . 134.62 ?
+  H2c4 C4 H3c4 3_565 . 2_665 22.39 ?
+  H2c4 C4 H3c4 3_565 . 3_565 109.47 ?
+  H2c4 C4 H3c4 3_565 . 4_655 56.25 ?
+  H2c4 C4 H3c4 4_655 . . 22.39 ?
+  H2c4 C4 H3c4 4_655 . 2_665 134.62 ?
+  H2c4 C4 H3c4 4_655 . 3_565 56.25 ?
+  H2c4 C4 H3c4 4_655 . 4_655 109.47 ?
+  H3c4 C4 H3c4 . . 2_665 141.05 ?
+  H3c4 C4 H3c4 . . 3_565 78.02 ?
+  H3c4 C4 H3c4 . . 4_655 89.16 ?
+  H3c4 C4 H3c4 2_665 . 3_565 89.16 ?
+  H3c4 C4 H3c4 2_665 . 4_655 78.02 ?
+  H3c4 C4 H3c4 3_565 . 4_655 141.05 ?
+  N5 C5 N5 . . 2_655 120(6) ?
+  N5 C5 N6 . . . 120(3) ?
+  N5 C5 N6 2_655 . . 120(3) ?
+  N7 C6 N7 . . 2_655 133(3) ?
+  N7 C6 N8 . . . 113.6(18) ?
+  N7 C6 N8 2_655 . . 113.6(18) ?
+  N1 H1n1 H2n1 . . 2_555 61.87 ?
+  N1 H1n1 H2n1 . . 3_555 78 ?
+  N1 H1n1 H3n1 . . 2_555 61.87 ?
+  N1 H1n1 H3n1 . . 4_555 73.76 ?
+  H2n1 H1n1 H2n1 2_555 . 3_555 17.26 ?
+  H2n1 H1n1 H3n1 2_555 . 2_555 120 ?
+  H2n1 H1n1 H3n1 2_555 . 4_555 132.74 ?
+  H2n1 H1n1 H3n1 3_555 . 2_555 137.26 ?
+  H2n1 H1n1 H3n1 3_555 . 4_555 150 ?
+  H3n1 H1n1 H3n1 2_555 . 4_555 12.74 ?
+  N1 H2n1 H1n1 . . 2_555 61.87 ?
+  N1 H2n1 H1n1 . . 3_555 78 ?
+  N1 H2n1 H2n1 . . 4_555 73.76 ?
+  N1 H2n1 H3n1 . . 2_555 61.87 ?
+  H1n1 H2n1 H1n1 2_555 . 3_555 137.26 ?
+  H1n1 H2n1 H2n1 2_555 . 4_555 12.74 ?
+  H1n1 H2n1 H3n1 2_555 . 2_555 120 ?
+  H1n1 H2n1 H2n1 3_555 . 4_555 150 ?
+  H1n1 H2n1 H3n1 3_555 . 2_555 17.26 ?
+  H2n1 H2n1 H3n1 4_555 . 2_555 132.74 ?
+  N1 H3n1 H1n1 . . 2_555 61.87 ?
+  N1 H3n1 H1n1 . . 4_555 73.76 ?
+  N1 H3n1 H2n1 . . 2_555 61.87 ?
+  N1 H3n1 H3n1 . . 3_555 78 ?
+  H1n1 H3n1 H1n1 2_555 . 4_555 132.74 ?
+  H1n1 H3n1 H2n1 2_555 . 2_555 120 ?
+  H1n1 H3n1 H3n1 2_555 . 3_555 17.26 ?
+  H1n1 H3n1 H2n1 4_555 . 2_555 12.74 ?
+  H1n1 H3n1 H3n1 4_555 . 3_555 150 ?
+  H2n1 H3n1 H3n1 2_555 . 3_555 137.26 ?
+  N2 H1n2 H1n2 . . 3_565 83.49 ?
+  N2 H1n2 H2n2 . . 2_565 61.87 ?
+  N2 H1n2 H2n2 . . 4_555 68.3 ?
+  N2 H1n2 H3n2 . . 2_565 61.87 ?
+  N2 H1n2 H3n2 . . 4_555 55.51 ?
+  H1n2 H1n2 H2n2 3_565 . 2_565 23.09 ?
+  H1n2 H1n2 H2n2 3_565 . 4_555 150 ?
+  H1n2 H1n2 H3n2 3_565 . 2_565 143.09 ?
+  H1n2 H1n2 H3n2 3_565 . 4_555 30 ?
+  H2n2 H1n2 H2n2 2_565 . 4_555 126.91 ?
+  H2n2 H1n2 H3n2 2_565 . 2_565 120 ?
+  H2n2 H1n2 H3n2 2_565 . 4_555 6.91 ?
+  H2n2 H1n2 H3n2 4_555 . 2_565 6.91 ?
+  H2n2 H1n2 H3n2 4_555 . 4_555 120 ?
+  H3n2 H1n2 H3n2 2_565 . 4_555 113.09 ?
+  N2 H2n2 H1n2 . . 2_565 61.87 ?
+  N2 H2n2 H1n2 . . 4_555 68.3 ?
+  N2 H2n2 H2n2 . . 4_555 55.51 ?
+  N2 H2n2 H3n2 . . 2_565 61.87 ?
+  N2 H2n2 H3n2 . . 3_565 83.49 ?
+  H1n2 H2n2 H1n2 2_565 . 4_555 6.91 ?
+  H1n2 H2n2 H2n2 2_565 . 4_555 113.09 ?
+  H1n2 H2n2 H3n2 2_565 . 2_565 120 ?
+  H1n2 H2n2 H3n2 2_565 . 3_565 143.09 ?
+  H1n2 H2n2 H2n2 4_555 . 4_555 120 ?
+  H1n2 H2n2 H3n2 4_555 . 2_565 126.91 ?
+  H1n2 H2n2 H3n2 4_555 . 3_565 150 ?
+  H2n2 H2n2 H3n2 4_555 . 2_565 6.91 ?
+  H2n2 H2n2 H3n2 4_555 . 3_565 30 ?
+  H3n2 H2n2 H3n2 2_565 . 3_565 23.09 ?
+  N2 H3n2 H1n2 . . 2_565 61.87 ?
+  N2 H3n2 H1n2 . . 4_555 55.51 ?
+  N2 H3n2 H2n2 . . 2_565 61.87 ?
+  N2 H3n2 H2n2 . . 3_565 83.49 ?
+  N2 H3n2 H3n2 . . 4_555 68.3 ?
+  H1n2 H3n2 H1n2 2_565 . 4_555 6.91 ?
+  H1n2 H3n2 H2n2 2_565 . 2_565 120 ?
+  H1n2 H3n2 H2n2 2_565 . 3_565 23.09 ?
+  H1n2 H3n2 H3n2 2_565 . 4_555 126.91 ?
+  H1n2 H3n2 H2n2 4_555 . 2_565 113.09 ?
+  H1n2 H3n2 H2n2 4_555 . 3_565 30 ?
+  H1n2 H3n2 H3n2 4_555 . 4_555 120 ?
+  H2n2 H3n2 H2n2 2_565 . 3_565 143.09 ?
+  H2n2 H3n2 H3n2 2_565 . 4_555 6.91 ?
+  H2n2 H3n2 H3n2 3_565 . 4_555 150 ?
+  N3 H1n3 H1n3 . . 3_565 54.37 ?
+  N3 H1n3 H2n3 . . 2_565 61.88 ?
+  N3 H1n3 H2n3 . . 4_555 82.31 ?
+  N3 H1n3 H3n3 . . 2_565 61.87 ?
+  N3 H1n3 H3n3 . . 3_565 69.47 ?
+  H1n3 H1n3 H2n3 3_565 . 2_565 8.16 ?
+  H1n3 H1n3 H2n3 3_565 . 4_555 30 ?
+  H1n3 H1n3 H3n3 3_565 . 2_565 111.84 ?
+  H1n3 H1n3 H3n3 3_565 . 3_565 120 ?
+  H2n3 H1n3 H2n3 2_565 . 4_555 21.84 ?
+  H2n3 H1n3 H3n3 2_565 . 2_565 120 ?
+  H2n3 H1n3 H3n3 2_565 . 3_565 128.16 ?
+  H2n3 H1n3 H3n3 4_555 . 2_565 141.84 ?
+  H2n3 H1n3 H3n3 4_555 . 3_565 150 ?
+  H3n3 H1n3 H3n3 2_565 . 3_565 8.16 ?
+  N3 H2n3 H1n3 . . 2_565 61.88 ?
+  N3 H2n3 H1n3 . . 4_555 82.31 ?
+  N3 H2n3 H2n3 . . 3_565 69.47 ?
+  N3 H2n3 H3n3 . . 2_565 61.87 ?
+  N3 H2n3 H3n3 . . 3_565 54.37 ?
+  H1n3 H2n3 H1n3 2_565 . 4_555 141.84 ?
+  H1n3 H2n3 H2n3 2_565 . 3_565 8.16 ?
+  H1n3 H2n3 H3n3 2_565 . 2_565 120 ?
+  H1n3 H2n3 H3n3 2_565 . 3_565 111.84 ?
+  H1n3 H2n3 H2n3 4_555 . 3_565 150 ?
+  H1n3 H2n3 H3n3 4_555 . 2_565 21.84 ?
+  H1n3 H2n3 H3n3 4_555 . 3_565 30 ?
+  H2n3 H2n3 H3n3 3_565 . 2_565 128.16 ?
+  H2n3 H2n3 H3n3 3_565 . 3_565 120 ?
+  H3n3 H2n3 H3n3 2_565 . 3_565 8.16 ?
+  N3 H3n3 H1n3 . . 2_565 61.88 ?
+  N3 H3n3 H1n3 . . 3_565 69.47 ?
+  N3 H3n3 H2n3 . . 2_565 61.88 ?
+  N3 H3n3 H2n3 . . 3_565 54.37 ?
+  N3 H3n3 H3n3 . . 4_555 82.31 ?
+  H1n3 H3n3 H1n3 2_565 . 3_565 128.16 ?
+  H1n3 H3n3 H2n3 2_565 . 2_565 120 ?
+  H1n3 H3n3 H2n3 2_565 . 3_565 8.16 ?
+  H1n3 H3n3 H3n3 2_565 . 4_555 21.84 ?
+  H1n3 H3n3 H2n3 3_565 . 2_565 8.16 ?
+  H1n3 H3n3 H2n3 3_565 . 3_565 120 ?
+  H1n3 H3n3 H3n3 3_565 . 4_555 150 ?
+  H2n3 H3n3 H2n3 2_565 . 3_565 111.84 ?
+  H2n3 H3n3 H3n3 2_565 . 4_555 141.84 ?
+  H2n3 H3n3 H3n3 3_565 . 4_555 30 ?
+  N4 H1n4 H1n4 . . 3_565 75.64 ?
+  N4 H1n4 H2n4 . . 2_665 61.87 ?
+  N4 H1n4 H3n4 . . 2_665 61.87 ?
+  N4 H1n4 H3n4 . . 4_655 76.11 ?
+  H1n4 H1n4 H2n4 3_565 . 2_665 134.75 ?
+  H1n4 H1n4 H3n4 3_565 . 2_665 14.75 ?
+  H1n4 H1n4 H3n4 3_565 . 4_655 150 ?
+  H2n4 H1n4 H3n4 2_665 . 2_665 120 ?
+  H2n4 H1n4 H3n4 2_665 . 4_655 15.25 ?
+  H3n4 H1n4 H3n4 2_665 . 4_655 135.25 ?
+  N4 H2n4 H1n4 . . 2_665 61.87 ?
+  N4 H2n4 H2n4 . . 4_655 76.11 ?
+  N4 H2n4 H3n4 . . 2_665 61.87 ?
+  N4 H2n4 H3n4 . . 3_565 75.64 ?
+  H1n4 H2n4 H2n4 2_665 . 4_655 135.25 ?
+  H1n4 H2n4 H3n4 2_665 . 2_665 120 ?
+  H1n4 H2n4 H3n4 2_665 . 3_565 14.75 ?
+  H2n4 H2n4 H3n4 4_655 . 2_665 15.25 ?
+  H2n4 H2n4 H3n4 4_655 . 3_565 150 ?
+  H3n4 H2n4 H3n4 2_665 . 3_565 134.75 ?
+  N4 H3n4 H1n4 . . 2_665 61.87 ?
+  N4 H3n4 H1n4 . . 4_655 76.11 ?
+  N4 H3n4 H2n4 . . 2_665 61.87 ?
+  N4 H3n4 H2n4 . . 3_565 75.64 ?
+  H1n4 H3n4 H1n4 2_665 . 4_655 15.25 ?
+  H1n4 H3n4 H2n4 2_665 . 2_665 120 ?
+  H1n4 H3n4 H2n4 2_665 . 3_565 134.75 ?
+  H1n4 H3n4 H2n4 4_655 . 2_665 135.25 ?
+  H1n4 H3n4 H2n4 4_655 . 3_565 150 ?
+  H2n4 H3n4 H2n4 2_665 . 3_565 14.75 ?
+  C1 H1c1 H2c1 . . 2_555 61.87 ?
+  C1 H1c1 H2c1 . . 3_555 77.87 ?
+  C1 H1c1 H3c1 . . 2_555 61.87 ?
+  C1 H1c1 H3c1 . . 4_555 73.89 ?
+  H2c1 H1c1 H2c1 2_555 . 3_555 17.12 ?
+  H2c1 H1c1 H3c1 2_555 . 2_555 120 ?
+  H2c1 H1c1 H3c1 2_555 . 4_555 132.88 ?
+  H2c1 H1c1 H3c1 3_555 . 2_555 137.12 ?
+  H2c1 H1c1 H3c1 3_555 . 4_555 150 ?
+  H3c1 H1c1 H3c1 2_555 . 4_555 12.88 ?
+  C1 H2c1 H1c1 . . 2_555 61.88 ?
+  C1 H2c1 H1c1 . . 3_555 77.87 ?
+  C1 H2c1 H2c1 . . 4_555 73.89 ?
+  C1 H2c1 H3c1 . . 2_555 61.87 ?
+  H1c1 H2c1 H1c1 2_555 . 3_555 137.12 ?
+  H1c1 H2c1 H2c1 2_555 . 4_555 12.88 ?
+  H1c1 H2c1 H3c1 2_555 . 2_555 120 ?
+  H1c1 H2c1 H2c1 3_555 . 4_555 150 ?
+  H1c1 H2c1 H3c1 3_555 . 2_555 17.12 ?
+  H2c1 H2c1 H3c1 4_555 . 2_555 132.88 ?
+  C1 H3c1 H1c1 . . 2_555 61.88 ?
+  C1 H3c1 H1c1 . . 4_555 73.89 ?
+  C1 H3c1 H2c1 . . 2_555 61.87 ?
+  C1 H3c1 H3c1 . . 3_555 77.87 ?
+  H1c1 H3c1 H1c1 2_555 . 4_555 132.88 ?
+  H1c1 H3c1 H2c1 2_555 . 2_555 120 ?
+  H1c1 H3c1 H3c1 2_555 . 3_555 17.12 ?
+  H1c1 H3c1 H2c1 4_555 . 2_555 12.88 ?
+  H1c1 H3c1 H3c1 4_555 . 3_555 150 ?
+  H2c1 H3c1 H3c1 2_555 . 3_555 137.12 ?
+  C2 H1c2 H1c2 . . 3_565 85.99 ?
+  C2 H1c2 H2c2 . . 2_565 61.87 ?
+  C2 H1c2 H2c2 . . 4_555 57.95 ?
+  C2 H1c2 H3c2 . . 2_565 61.87 ?
+  C2 H1c2 H3c2 . . 4_555 65.82 ?
+  H1c2 H1c2 H2c2 3_565 . 2_565 145.75 ?
+  H1c2 H1c2 H2c2 3_565 . 4_555 30 ?
+  H1c2 H1c2 H3c2 3_565 . 2_565 25.75 ?
+  H1c2 H1c2 H3c2 3_565 . 4_555 150 ?
+  H2c2 H1c2 H2c2 2_565 . 4_555 115.75 ?
+  H2c2 H1c2 H3c2 2_565 . 2_565 120 ?
+  H2c2 H1c2 H3c2 2_565 . 4_555 4.25 ?
+  H2c2 H1c2 H3c2 4_555 . 2_565 4.25 ?
+  H2c2 H1c2 H3c2 4_555 . 4_555 120 ?
+  H3c2 H1c2 H3c2 2_565 . 4_555 124.25 ?
+  C2 H2c2 H1c2 . . 2_565 61.88 ?
+  C2 H2c2 H1c2 . . 4_555 57.95 ?
+  C2 H2c2 H2c2 . . 4_555 65.82 ?
+  C2 H2c2 H3c2 . . 2_565 61.87 ?
+  C2 H2c2 H3c2 . . 3_565 85.99 ?
+  H1c2 H2c2 H1c2 2_565 . 4_555 4.25 ?
+  H1c2 H2c2 H2c2 2_565 . 4_555 124.25 ?
+  H1c2 H2c2 H3c2 2_565 . 2_565 120 ?
+  H1c2 H2c2 H3c2 2_565 . 3_565 25.75 ?
+  H1c2 H2c2 H2c2 4_555 . 4_555 120 ?
+  H1c2 H2c2 H3c2 4_555 . 2_565 115.75 ?
+  H1c2 H2c2 H3c2 4_555 . 3_565 30 ?
+  H2c2 H2c2 H3c2 4_555 . 2_565 4.25 ?
+  H2c2 H2c2 H3c2 4_555 . 3_565 150 ?
+  H3c2 H2c2 H3c2 2_565 . 3_565 145.75 ?
+  C2 H3c2 H1c2 . . 2_565 61.88 ?
+  C2 H3c2 H1c2 . . 4_555 65.82 ?
+  C2 H3c2 H2c2 . . 2_565 61.87 ?
+  C2 H3c2 H2c2 . . 3_565 85.99 ?
+  C2 H3c2 H3c2 . . 4_555 57.95 ?
+  H1c2 H3c2 H1c2 2_565 . 4_555 4.25 ?
+  H1c2 H3c2 H2c2 2_565 . 2_565 120 ?
+  H1c2 H3c2 H2c2 2_565 . 3_565 145.75 ?
+  H1c2 H3c2 H3c2 2_565 . 4_555 115.75 ?
+  H1c2 H3c2 H2c2 4_555 . 2_565 124.25 ?
+  H1c2 H3c2 H2c2 4_555 . 3_565 150 ?
+  H1c2 H3c2 H3c2 4_555 . 4_555 120 ?
+  H2c2 H3c2 H2c2 2_565 . 3_565 25.75 ?
+  H2c2 H3c2 H3c2 2_565 . 4_555 4.25 ?
+  H2c2 H3c2 H3c2 3_565 . 4_555 30 ?
+  C3 H1c3 H2c3 . . 2_565 61.87 ?
+  C3 H1c3 H2c3 . . 3_565 83.82 ?
+  C3 H1c3 H3c3 . . 2_565 61.87 ?
+  C3 H1c3 H3c3 . . 4_555 67.98 ?
+  H2c3 H1c3 H2c3 2_565 . 3_565 23.44 ?
+  H2c3 H1c3 H3c3 2_565 . 2_565 120 ?
+  H2c3 H1c3 H3c3 2_565 . 4_555 126.56 ?
+  H2c3 H1c3 H3c3 3_565 . 2_565 143.44 ?
+  H2c3 H1c3 H3c3 3_565 . 4_555 150 ?
+  H3c3 H1c3 H3c3 2_565 . 4_555 6.56 ?
+  C3 H2c3 H1c3 . . 2_565 61.87 ?
+  C3 H2c3 H1c3 . . 3_565 83.81 ?
+  C3 H2c3 H2c3 . . 4_555 67.98 ?
+  C3 H2c3 H3c3 . . 2_565 61.87 ?
+  H1c3 H2c3 H1c3 2_565 . 3_565 143.43 ?
+  H1c3 H2c3 H2c3 2_565 . 4_555 6.56 ?
+  H1c3 H2c3 H3c3 2_565 . 2_565 120 ?
+  H1c3 H2c3 H2c3 3_565 . 4_555 150 ?
+  H1c3 H2c3 H3c3 3_565 . 2_565 23.44 ?
+  H2c3 H2c3 H3c3 4_555 . 2_565 126.56 ?
+  C3 H3c3 H1c3 . . 2_565 61.87 ?
+  C3 H3c3 H1c3 . . 4_555 67.98 ?
+  C3 H3c3 H2c3 . . 2_565 61.87 ?
+  C3 H3c3 H3c3 . . 3_565 83.81 ?
+  H1c3 H3c3 H1c3 2_565 . 4_555 126.56 ?
+  H1c3 H3c3 H2c3 2_565 . 2_565 120 ?
+  H1c3 H3c3 H3c3 2_565 . 3_565 23.44 ?
+  H1c3 H3c3 H2c3 4_555 . 2_565 6.56 ?
+  H1c3 H3c3 H3c3 4_555 . 3_565 150 ?
+  H2c3 H3c3 H3c3 2_565 . 3_565 143.44 ?
+  C4 H1c4 H1c4 . . 4_655 78.81 ?
+  C4 H1c4 H2c4 . . 2_665 61.87 ?
+  C4 H1c4 H3c4 . . 2_665 61.87 ?
+  C4 H1c4 H3c4 . . 3_565 72.95 ?
+  H1c4 H1c4 H2c4 4_655 . 2_665 138.12 ?
+  H1c4 H1c4 H3c4 4_655 . 2_665 18.12 ?
+  H1c4 H1c4 H3c4 4_655 . 3_565 150 ?
+  H2c4 H1c4 H3c4 2_665 . 2_665 120 ?
+  H2c4 H1c4 H3c4 2_665 . 3_565 11.88 ?
+  H3c4 H1c4 H3c4 2_665 . 3_565 131.88 ?
+  C4 H2c4 H1c4 . . 2_665 61.87 ?
+  C4 H2c4 H2c4 . . 3_565 72.95 ?
+  C4 H2c4 H3c4 . . 2_665 61.87 ?
+  C4 H2c4 H3c4 . . 4_655 78.81 ?
+  H1c4 H2c4 H2c4 2_665 . 3_565 131.88 ?
+  H1c4 H2c4 H3c4 2_665 . 2_665 120 ?
+  H1c4 H2c4 H3c4 2_665 . 4_655 18.12 ?
+  H2c4 H2c4 H3c4 3_565 . 2_665 11.88 ?
+  H2c4 H2c4 H3c4 3_565 . 4_655 150 ?
+  H3c4 H2c4 H3c4 2_665 . 4_655 138.12 ?
+  C4 H3c4 H1c4 . . 2_665 61.87 ?
+  C4 H3c4 H1c4 . . 3_565 72.95 ?
+  C4 H3c4 H2c4 . . 2_665 61.87 ?
+  C4 H3c4 H2c4 . . 4_655 78.81 ?
+  H1c4 H3c4 H1c4 2_665 . 3_565 11.88 ?
+  H1c4 H3c4 H2c4 2_665 . 2_665 120 ?
+  H1c4 H3c4 H2c4 2_665 . 4_655 138.12 ?
+  H1c4 H3c4 H2c4 3_565 . 2_665 131.88 ?
+  H1c4 H3c4 H2c4 3_565 . 4_655 150 ?
+  H2c4 H3c4 H2c4 2_665 . 4_655 18.12 ?
+loop_
+ _geom_torsion_atom_site_label_1
+ _geom_torsion_atom_site_label_2
+ _geom_torsion_atom_site_label_3
+ _geom_torsion_atom_site_label_4
+ _geom_torsion_site_symmetry_1
+ _geom_torsion_site_symmetry_2
+ _geom_torsion_site_symmetry_3
+ _geom_torsion_site_symmetry_4
+ _geom_torsion
+ _geom_torsion_publ_flag
+ ? ? ? ? ? ? ? ? ? ?
+loop_
+ _geom_hbond_atom_site_label_D
+ _geom_hbond_atom_site_label_H
+ _geom_hbond_atom_site_label_A
+ _geom_hbond_site_symmetry_D
+ _geom_hbond_site_symmetry_H
+ _geom_hbond_site_symmetry_A
+ _geom_hbond_distance_DH
+ _geom_hbond_distance_HA
+ _geom_hbond_distance_DA
+ _geom_hbond_angle_DHA
+ _geom_hbond_publ_flag
+ ? ? ? ? ? ? ? ? ? ? ?

@@ -658,6 +658,53 @@
     return { cell: tmp.cell, ops: full, sites, meta };
   }
 
+  /* FHI-aims geometry.in, the format of the structure files of the HybriD3 database: three lattice_vector lines
+     and one line for each atom, "atom x y z El" in angstrom or "atom_frac u v w El" in cell fractions. The file
+     lists every atom of the cell, so it has no symmetry, no occupancy and no displacement parameters.
+     Without lattice vectors the file is a molecule, which gets a box of its own as an XYZ file does. */
+  function readAims(text) {
+    const vec = [];
+    const raw = [];
+    const skipped = [];
+    for (const ln of text.split(/\r?\n/)) {
+      const t = ln.replace(/#.*$/, '').trim().split(/\s+/);
+      const key = t[0];
+      if (key === 'lattice_vector') { vec.push(t.slice(1, 4).map(parseFloat)); continue; }
+      if (key !== 'atom' && key !== 'atom_frac') continue;       // initial_moment, constrain_relaxation and the like
+      const v = t.slice(1, 4).map(parseFloat);
+      const el = elementOf(t[4] || null, null);
+      if (v.length < 3 || v.some((x) => !isFinite(x))) { skipped.push({ label: t[4] || '?', why: 'no coordinates' }); continue; }
+      if (!el) { skipped.push({ label: t[4] || '?', why: 'element not recognised' }); continue; }
+      raw.push({ el, v, frac: key === 'atom_frac' });
+    }
+    if (!raw.length) throw new Error('No atoms were found in this geometry.in file.');
+    if (vec.length && (vec.length !== 3 || vec.some((u) => u.length < 3 || u.some((x) => !isFinite(x))))) throw new Error('This geometry.in file does not have three readable lattice_vector lines.');
+    const molecular = !vec.length;
+    let cellVec = vec;
+    let origin = [0, 0, 0];
+    if (molecular) {
+      if (raw.some((a) => a.frac)) throw new Error('This geometry.in file has atom_frac lines but no lattice_vector lines.');
+      const lo = [0, 1, 2].map((k) => Math.min(...raw.map((a) => a.v[k])));
+      const hi = [0, 1, 2].map((k) => Math.max(...raw.map((a) => a.v[k])));
+      const side = hi.map((x, k) => x - lo[k] + 12);
+      cellVec = [[side[0], 0, 0], [0, side[1], 0], [0, 0, side[2]]];
+      origin = lo.map((x) => x - 6);
+    }
+    const cellNum = cellFromVectors(cellVec[0], cellVec[1], cellVec[2]);
+    const cell = makeCell(...cellNum);
+    const iv = inv3(cellVec);
+    const count = {};
+    const sites = raw.map((a) => {
+      count[a.el] = (count[a.el] || 0) + 1;
+      const c = sub(a.v, origin);
+      const f = a.frac ? a.v : [0, 1, 2].map((j) => c[0] * iv[0][j] + c[1] * iv[1][j] + c[2] * iv[2][j]);
+      return plainSite(a.el + count[a.el], a.el, f);
+    });
+    const meta = plainMeta('geometry.in', cellNum, 'FHI-aims', { molecular });
+    meta.skipped = skipped;
+    return { cell, ops: [parseSymop('x,y,z')], sites, meta };
+  }
+
   /* pick the reader from the file name, falling back on the content */
   function readStructure(text, name) {
     const ext = (String(name || '').match(/\.([A-Za-z0-9]+)$/) || [])[1];
@@ -665,6 +712,8 @@
     const base = String(name || '').replace(/^.*[\\/]/, '').toUpperCase();
     if (e === 'res' || e === 'ins') return readShelx(text);
     if (e === 'xyz' || e === 'extxyz') return readXyz(text);
+    // a geometry.in file is known by its lines, not by its name: some databases give a CIF under that name
+    if (/^\s*(lattice_vector|atom(_frac)?)\s+-?[\d.]/m.test(text) && !/_atom_site_fract_x/.test(text)) return readAims(text);
     if (e === 'vasp' || e === 'poscar' || /^(POSCAR|CONTCAR)/.test(base)) return readPoscar(text);
     if (/^\s*(#|data_)/m.test(text) && /_atom_site_fract_x/.test(text)) return readCif(text);
     if (/^\s*CELL\s+[\d.]+/m.test(text) && /^\s*SFAC\s/m.test(text)) return readShelx(text);
@@ -2327,7 +2376,7 @@
     return rows.join('\n') + '\n';
   }
 
-  root.XtalCore = { readStructure, readStructures, readCif, readCifAll, readPoscar, readXyz, readShelx, buildCell, analyse, assemble, hullFaces, planePolys, tetrazineDefs, chromoInstances, stateDir, orientReport, hallOps, symbolOps, setSgTable, isMetal, isCenter, isDonor, HALIDE, RC, MASS, parseSymop, MAX_POLY_CN, distance, bondAngle, torsion, toMol2, toSvg, visibleParts, hullPolygons, bondTubes, polyhedraFor, polyhedraStats, suggestPolyMax,
+  root.XtalCore = { readStructure, readStructures, readCif, readCifAll, readPoscar, readXyz, readShelx, readAims, buildCell, analyse, assemble, hullFaces, planePolys, tetrazineDefs, chromoInstances, stateDir, orientReport, hallOps, symbolOps, setSgTable, isMetal, isCenter, isDonor, HALIDE, RC, MASS, parseSymop, MAX_POLY_CN, distance, bondAngle, torsion, toMol2, toSvg, visibleParts, hullPolygons, bondTubes, polyhedraFor, polyhedraStats, suggestPolyMax,
     powderAtoms, powderPattern, powderProfile, readXY, toXY, patternsCsv, ANODES, anodeOf, XRAY_F0, uEquiv };
   if (typeof module !== 'undefined' && module.exports) module.exports = root.XtalCore;
 })(typeof window !== 'undefined' ? window : globalThis);

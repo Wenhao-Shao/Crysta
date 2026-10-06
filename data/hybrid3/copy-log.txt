@@ -1,0 +1,26 @@
+  materials 100 of 642
+  materials 200 of 642
+  materials 300 of 642
+  materials 400 of 642
+  materials 500 of 642
+  materials 600 of 642
+  materials 642 of 642
+materials written: 642
+  list: 50 of 786 | 19 s
+  try 1 RemoteDisconnected Remote end closed connection without response https://materials.hybrid3.duke.edu/materials/datasets/?primary_property__name=atomic+structure&page=15&page_size=5
+  list: 100 of 786 | 148 s
+  list: 150 of 786 | 185 s
+  list: 200 of 786 | 204 s
+  list: 250 of 786 | 233 s
+  list: 300 of 786 | 268 s
+  list: 350 of 786 | 280 s
+  list: 400 of 786 | 292 s
+  list: 450 of 786 | 300 s
+  list: 500 of 786 | 308 s
+  list: 550 of 786 | 324 s
+  list: 600 of 786 | 339 s
+  list: 650 of 786 | 374 s
+  list: 700 of 786 | 389 s
+  list: 750 of 786 | 440 s
+structure data sets in the list: 786 of 786
+structures: {"structures": 786, "structures_with_file": 616, "structure_files": 657, "cif_files": 435, "geometry_files": 222, "structures_whole": true, "read_now": 1, "kept": 785, "without_file": 0, "not_read": 0}
