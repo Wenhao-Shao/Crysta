@@ -2,6 +2,14 @@
  "source": "https://materials.hybrid3.duke.edu/materials/",
  "licence": "CC BY 4.0",
  "read": "2026-10-06",
- "complete": false,
- "seconds": 579
+ "systems": 642,
+ "structures_stated": 786,
+ "structures": 786,
+ "structures_with_file": 241,
+ "structures_whole": true,
+ "read_now": 241,
+ "kept": 0,
+ "without_geometry": 545,
+ "complete": true,
+ "seconds": 1158
 }
