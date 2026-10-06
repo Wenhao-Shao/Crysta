@@ -6,7 +6,7 @@ title: "Crysta: a crystal structure workbench in the browser"
 authors:
   - family-names: "Shao"
     given-names: "Wenhao"
-version: "0.5.0"
+version: "0.5.1"
 date-released: 2026-10-06
 url: "https://wenhao-shao.github.io/Crysta/"
 repository-code: "https://github.com/Wenhao-Shao/Crysta"

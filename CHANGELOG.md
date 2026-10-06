@@ -2,6 +2,12 @@
 
 Any change to how a number is defined gets a new version and a line here.
 
+## v0.5.1
+
+- **The picture keeps its height.** In v0.5.0 the strip under the picture became higher when it showed the definition of a row, and the picture became smaller. Now the strip keeps its one row. The definition is a panel that starts at the strip and goes down over the Structures table. Close the definition to see the table again.
+
+No definition changed: every number is identical to v0.5.0.
+
 ## v0.5.0
 
 - **Planes in the Measure card.** Make a plane, then measure against it.

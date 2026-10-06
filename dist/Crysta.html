@@ -164,8 +164,14 @@ dd.lit, tr.lit td { color: var(--accent); }
 .readout .pickbar > span + span { flex: none; max-width: 45%; }
 .readout .alert { color: var(--warn); font-family: var(--font-ui); font-size: 13px; }
 /* the definition of a row of the framework card: the strip grows to hold the text */
-.readout.def { height: auto; min-height: 34px; white-space: normal; flex-wrap: wrap; padding: 7px 12px; gap: 4px 16px; overflow: visible; }
-.readout .defbar { flex: 1 1 100%; display: flex; gap: 12px; align-items: flex-start; font-family: var(--font-ui); font-size: 13px; line-height: 1.45; }
+/* The strip keeps its one row, so the picture above keeps its height. The definition is a panel that starts at
+   the top of the strip and grows down, over the card below. */
+.readout { position: relative; }
+.readout.def { overflow: visible; }
+.readout .defbar { position: absolute; left: -1px; right: -1px; top: -1px; z-index: 6; min-height: 36px; box-sizing: border-box; overflow: visible;
+  display: flex; gap: 12px; align-items: flex-start; white-space: normal; padding: 7px 12px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 6px; box-shadow: 0 8px 22px rgba(20, 16, 24, 0.18);
+  font-family: var(--font-ui); font-size: 13px; line-height: 1.45; }
 .readout .defbar > span { flex: 1 1 auto; white-space: normal; overflow: visible; }
 .readout .defbar b { font-weight: 600; }
 .readout .defbar .none { color: var(--warn); }
@@ -397,6 +403,8 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
   .readout .pickbar > span + span { max-width: none; }
   .readout .meas .old { display: inline; }
   .readout .meas .more, .readout .hint.spare { display: none; }
+  /* here the strip is below a picture of fixed height: the definition is in the flow of the page */
+  .readout .defbar { position: static; min-height: 0; padding: 0; border: 0; box-shadow: none; background: none; }
   .rail { overflow: visible; }
   h1 { font-size: 24px; }
 }
@@ -635,7 +643,7 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
         <div class="small" id="hbNote"></div>
       </section>
 
-      <div class="foot">Crysta v0.5.0. Drawn with 3Dmol.js. Symmetry expansion, bonding, molecule assembly and every distance and angle are computed in this page from the file. Nothing is uploaded.</div>
+      <div class="foot">Crysta v0.5.1. Drawn with 3Dmol.js. Symmetry expansion, bonding, molecule assembly and every distance and angle are computed in this page from the file. Nothing is uploaded.</div>
     </aside>
   </div>
 </div>
@@ -646,11 +654,11 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
   <div class="citebody">
     <h2 id="citeTitle">How to cite Crysta</h2>
     <p>Use this citation. Give the version: the definition of a number can change between versions, and the changelog lists each change.</p>
-    <div class="citebox" id="citeText">W. Shao, Crysta: a crystal structure workbench in the browser, version 0.5.0 (2026). https://wenhao-shao.github.io/Crysta/</div>
+    <div class="citebox" id="citeText">W. Shao, Crysta: a crystal structure workbench in the browser, version 0.5.1 (2026). https://wenhao-shao.github.io/Crysta/</div>
     <pre class="citebox" id="citeBib" hidden>@software{crysta,
   author  = {Shao, Wenhao},
   title   = {Crysta: a crystal structure workbench in the browser},
-  version = {0.5.0},
+  version = {0.5.1},
   year    = {2026},
   url     = {https://wenhao-shao.github.io/Crysta/}
 }</pre>
@@ -4699,11 +4707,11 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
   let hoverLabel = null;
   const D = () => st.docs[st.cur] || null;
   /* the PXRD window: simulated powder patterns of the open structures, and measured data (src/pxrd.js) */
-  const pxrd = window.CrystaPxrd ? window.CrystaPxrd.create({ docs: () => st.docs, current: () => D(), addFiles: (list) => addFiles(list), name: NAME, version: 'v0.5.0' }) : null;
+  const pxrd = window.CrystaPxrd ? window.CrystaPxrd.create({ docs: () => st.docs, current: () => D(), addFiles: (list) => addFiles(list), name: NAME, version: 'v0.5.1' }) : null;
   /* the Databases window: find a structure in an outside database and open it here (src/dbs.js) */
   let dbCopy = null;
   try { dbCopy = JSON.parse($('db-hybrid3').textContent); } catch (err) { /* no database copy in this page */ }
-  const dbs = window.CrystaDatabases ? window.CrystaDatabases.create({ data: dbCopy, name: NAME, version: 'v0.5.0' }) : null;
+  const dbs = window.CrystaDatabases ? window.CrystaDatabases.create({ data: dbCopy, name: NAME, version: 'v0.5.1' }) : null;
   const safeUrl = (u) => (/^https?:\/\//i.test(String(u || '')) ? String(u) : '#');
   /* a file that is not a structure but holds two columns of numbers is taken as measured powder data */
   const isPowderData = (text) => { try { return C.readXY(text).x.length >= 20; } catch (err) { return false; } };
@@ -5402,7 +5410,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
       ['Axial tilt (°)', L && L.axialTilt ? num(L.axialTilt.mean, 1) : ''],
       ['N penetration (Å)', L && L.penetration.length ? num(mean(L.penetration.map((p) => p.depth)), 3) : ''],
       ['Stacking offset', L && L.offset ? '(' + fmt(L.offset.s1, 2) + ', ' + fmt(L.offset.s2, 2) + ')' : ''],
-      ['Crysta version', 'v0.5.0']
+      ['Crysta version', 'v0.5.1']
     ];
   }
   /* columns of the table that hold a mean over the independent sites of a structure */
@@ -6901,7 +6909,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     const ISSUES = 'https://github.com/Wenhao-Shao/Crysta/issues/new';
     const fbUrl = () => {
       const title = '[' + $('fbKind').value + '] ' + $('fbSummary').value.trim();
-      const tail = '\n\n---\nSent from the Crysta feedback box\nCrysta v0.5.0\nBrowser: ' + navigator.userAgent;
+      const tail = '\n\n---\nSent from the Crysta feedback box\nCrysta v0.5.1\nBrowser: ' + navigator.userAgent;
       let details = $('fbDetails').value.trim() || '(no details given)';
       const make = (d) => ISSUES + '?title=' + encodeURIComponent(title) + '&body=' + encodeURIComponent(d + tail);
       let url = make(details);
@@ -6950,7 +6958,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
       data.append('summary', summary);
       data.append('details', $('fbDetails').value.trim() || '(no details given)');
       if (email) data.append('email', email);
-      data.append('workbench', 'v0.5.0');
+      data.append('workbench', 'v0.5.1');
       data.append('browser', navigator.userAgent);
       const buttons = [$('fbDirect'), $('fbGithub')];
       buttons.forEach((b) => { b.disabled = true; });
