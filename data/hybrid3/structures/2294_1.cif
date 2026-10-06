@@ -1,0 +1,642 @@
+data_sg221_res65
+_audit_creation_date               2023-01-24
+_audit_creation_method
+;
+Olex2 1.3
+(compiled 2020.11.12 svn.r5f609507 for OlexSys, GUI svn.r6408)
+;
+_shelx_SHELXL_version_number       '2014/7'
+_audit_contact_author_address      ?
+_audit_contact_author_email        ?
+_audit_contact_author_name         ''
+_audit_contact_author_phone        ?
+_publ_contact_author_id_orcid      ?
+_publ_section_references
+;
+Dolomanov, O.V., Bourhis, L.J., Gildea, R.J, Howard, J.A.K. & Puschmann, H.
+ (2009), J. Appl. Cryst. 42, 339-341.
+
+Sheldrick, G.M. (2008). Acta Cryst. A64, 112-122.
+
+Sheldrick, G.M. (2015). Acta Cryst. A71, 3-8.
+;
+_chemical_name_common              ?
+_chemical_name_systematic          MAPbBr3
+_chemical_formula_moiety           'Br3 Pb1, 0.083(C12), 0.083(N12)'
+_chemical_formula_sum              'C Br3 N Pb'
+_chemical_formula_weight           472.94
+_chemical_melting_point            ?
+loop_
+  _atom_type_symbol
+  _atom_type_description
+  _atom_type_scat_dispersion_real
+  _atom_type_scat_dispersion_imag
+  _atom_type_scat_source
+ 'Br' 'Br' -0.2901 2.4595
+ 'International Tables Vol C Tables 4.2.6.8 and 6.1.1.4'
+ 'C' 'C' 0.0033 0.0016 'International Tables Vol C Tables 4.2.6.8 and 6.1.1.4'
+ 'N' 'N' 0.0061 0.0033 'International Tables Vol C Tables 4.2.6.8 and 6.1.1.4'
+ 'Pb' 'Pb' -3.3944 10.1111
+ 'International Tables Vol C Tables 4.2.6.8 and 6.1.1.4'
+
+_shelx_space_group_comment
+;
+The symmetry employed for this shelxl refinement is uniquely defined
+by the following loop, which should always be used as a source of
+symmetry information in preference to the above space-group names.
+They are only intended as comments.
+;
+_space_group_crystal_system        'cubic'
+_space_group_IT_number             221
+_space_group_name_H-M_alt          'P m -3 m'
+_space_group_name_Hall             '-P 4 2 3'
+loop_
+  _space_group_symop_operation_xyz
+ 'x, y, z'
+ '-x, -y, z'
+ '-x, y, -z'
+ 'x, -y, -z'
+ 'z, x, y'
+ 'z, -x, -y'
+ '-z, -x, y'
+ '-z, x, -y'
+ 'y, z, x'
+ '-y, z, -x'
+ 'y, -z, -x'
+ '-y, -z, x'
+ 'y, x, -z'
+ '-y, -x, -z'
+ 'y, -x, z'
+ '-y, x, z'
+ 'x, z, -y'
+ '-x, z, y'
+ '-x, -z, -y'
+ 'x, -z, y'
+ 'z, y, -x'
+ 'z, -y, x'
+ '-z, y, x'
+ '-z, -y, -x'
+ '-x, -y, -z'
+ 'x, y, -z'
+ 'x, -y, z'
+ '-x, y, z'
+ '-z, -x, -y'
+ '-z, x, y'
+ 'z, x, -y'
+ 'z, -x, y'
+ '-y, -z, -x'
+ 'y, -z, x'
+ '-y, z, x'
+ 'y, z, -x'
+ '-y, -x, z'
+ 'y, x, z'
+ '-y, x, -z'
+ 'y, -x, -z'
+ '-x, -z, y'
+ 'x, -z, -y'
+ 'x, z, y'
+ '-x, z, -y'
+ '-z, -y, x'
+ '-z, y, -x'
+ 'z, -y, -x'
+ 'z, y, x'
+
+_cell_length_a                     5.9204(2)
+_cell_length_b                     5.9204(2)
+_cell_length_c                     5.9204(2)
+_cell_angle_alpha                  90
+_cell_angle_beta                   90
+_cell_angle_gamma                  90
+_cell_volume                       207.52(2)
+_cell_formula_units_Z              1
+_cell_measurement_reflns_used      1788
+_cell_measurement_temperature      260.15
+_cell_measurement_theta_max        32.70
+_cell_measurement_theta_min        4.87
+_shelx_estimated_absorpt_T_max     ?
+_shelx_estimated_absorpt_T_min     ?
+_exptl_absorpt_coefficient_mu      34.663
+_exptl_absorpt_correction_T_max    0.2192
+_exptl_absorpt_correction_T_min    0.1177
+_exptl_absorpt_correction_type     multi-scan
+_exptl_absorpt_process_details
+;
+SADABS-2016/2 (Bruker,2016/2) was used for absorption correction.
+wR2(int) was 0.1196 before and 0.0372 after correction.
+The Ratio of minimum to maximum transmission is 0.5370.
+The \l/2 correction factor is Not present.
+;
+_exptl_absorpt_special_details     ?
+_exptl_crystal_colour              'clear light orange'
+_exptl_crystal_colour_lustre       clear
+_exptl_crystal_colour_modifier     light
+_exptl_crystal_colour_primary      orange
+_exptl_crystal_density_diffrn      3.784
+_exptl_crystal_density_meas        ?
+_exptl_crystal_density_method      ?
+_exptl_crystal_description         plate
+_exptl_crystal_F_000               200
+_exptl_crystal_size_max            0.07
+_exptl_crystal_size_mid            0.03
+_exptl_crystal_size_min            0.01
+_exptl_transmission_factor_max     ?
+_exptl_transmission_factor_min     ?
+_diffrn_reflns_av_R_equivalents    0.0248
+_diffrn_reflns_av_unetI/netI       0.0092
+_diffrn_reflns_Laue_measured_fraction_full  0.950
+_diffrn_reflns_Laue_measured_fraction_max  0.964
+_diffrn_reflns_limit_h_max         8
+_diffrn_reflns_limit_h_min         -8
+_diffrn_reflns_limit_k_max         9
+_diffrn_reflns_limit_k_min         -8
+_diffrn_reflns_limit_l_max         8
+_diffrn_reflns_limit_l_min         -8
+_diffrn_reflns_number              2070
+_diffrn_reflns_point_group_measured_fraction_full  0.950
+_diffrn_reflns_point_group_measured_fraction_max  0.964
+_diffrn_reflns_theta_full          25.242
+_diffrn_reflns_theta_max           32.925
+_diffrn_reflns_theta_min           4.869
+_diffrn_ambient_temperature        260.15
+_diffrn_detector_area_resol_mean   ?
+_diffrn_measured_fraction_theta_full  0.950
+_diffrn_measured_fraction_theta_max  0.964
+_diffrn_measurement_device_type    'Bruker APEX-II CCD'
+_diffrn_measurement_method         '\f and \w scans'
+_diffrn_radiation_type             MoK\a
+_diffrn_radiation_wavelength       0.71073
+_diffrn_source                     ?
+_diffrn_source_current             1.0
+_diffrn_source_power               0.05
+_diffrn_source_voltage             50.0
+_diffrn_standards_number           0
+_reflns_Friedel_coverage           0.000
+_reflns_Friedel_fraction_full      .
+_reflns_Friedel_fraction_max       .
+_reflns_number_gt                  106
+_reflns_number_total               107
+_reflns_special_details
+;
+ Reflections were merged by SHELXL according to the crystal
+ class for the calculation of statistics and refinement.
+ 
+ _reflns_Friedel_fraction is defined as the number of unique
+ Friedel pairs measured divided by the number that would be
+ possible theoretically, ignoring centric projections and
+ systematic absences.
+;
+_reflns_threshold_expression       'I > 2\s(I)'
+_computing_cell_refinement         'SAINT V8.38A (Bruker, 2018)'
+_computing_data_collection         ?
+_computing_data_reduction          'SAINT V8.38A (Bruker, 2018)'
+_computing_molecular_graphics      'Olex2 1.3 (Dolomanov et al., 2009)'
+_computing_publication_material    'Olex2 1.3 (Dolomanov et al., 2009)'
+_computing_structure_refinement    'XL  (Sheldrick, 2008)'
+_computing_structure_solution      'SHELXT 2014/4 (Sheldrick, 2014)'
+_refine_diff_density_max           0.745
+_refine_diff_density_min           -0.552
+_refine_diff_density_rms           0.089
+_refine_ls_extinction_coef         0.018(4)
+_refine_ls_extinction_expression
+ 'Fc^*^=kFc[1+0.001xFc^2^\l^3^/sin(2\q)]^-1/4^'
+_refine_ls_extinction_method       'SHELXL-2014/7 (Sheldrick 2014'
+_refine_ls_goodness_of_fit_ref     1.206
+_refine_ls_hydrogen_treatment      undef
+_refine_ls_matrix_type             full
+_refine_ls_number_parameters       8
+_refine_ls_number_reflns           107
+_refine_ls_number_restraints       0
+_refine_ls_R_factor_all            0.0150
+_refine_ls_R_factor_gt             0.0141
+_refine_ls_restrained_S_all        1.206
+_refine_ls_shift/su_max            0.000
+_refine_ls_shift/su_mean           0.000
+_refine_ls_structure_factor_coef   Fsqd
+_refine_ls_weighting_details
+ 'w=1/[\s^2^(Fo^2^)+(0.0079P)^2^+0.3605P] where P=(Fo^2^+2Fc^2^)/3'
+_refine_ls_weighting_scheme        calc
+_refine_ls_wR_factor_gt            0.0293
+_refine_ls_wR_factor_ref           0.0302
+_refine_special_details            ?
+_olex2_refinement_description
+;
+1. Shared sites
+{N1, C1}
+{C2, N2}
+{C3, N3}
+2. Uiso/Uaniso restraints and constraints
+Uiso(N1) = Uiso(C1)
+Uiso(C2) = Uiso(N2)
+Uiso(C3) = Uiso(N3)
+3. Others
+ Fixed Sof: C1(0.00688) N1(0.00688) C2(0.007) N3(0.00687) N2(0.007) C3(0.00687)
+ Fixed X: C1(-0.5) N1(-0.5) C2(-0.5) N3(-0.428) N2(-0.5) C3(-0.428)
+ Fixed Y: C1(-0.5) N1(-0.5) C2(-0.412) N3(-0.428) N2(-0.412) C3(-0.428)
+ Fixed Z: C1(-0.374999) N1(-0.374999) C2(-0.412) N3(-0.428) N2(-0.412) C3(-
+ 0.428)
+;
+_atom_sites_solution_hydrogens     .
+_atom_sites_solution_primary       dual
+_atom_sites_solution_secondary     ?
+loop_
+  _atom_site_label
+  _atom_site_type_symbol
+  _atom_site_fract_x
+  _atom_site_fract_y
+  _atom_site_fract_z
+  _atom_site_U_iso_or_equiv
+  _atom_site_adp_type
+  _atom_site_occupancy
+  _atom_site_site_symmetry_order
+  _atom_site_calc_flag
+  _atom_site_refinement_flags_posn
+  _atom_site_refinement_flags_adp
+  _atom_site_refinement_flags_occupancy
+  _atom_site_disorder_assembly
+  _atom_site_disorder_group
+ Pb01 Pb 0.0000 0.0000 0.0000 0.0269(2) Uani 1 48 d S T P . .
+ Br02 Br 0.0000 -0.5000 0.0000 0.1024(6) Uani 1 16 d S T P . .
+ C1 C -0.5000 -0.5000 -0.3750 0.053(15) Uiso 0.055 8 d S . P . 4
+ N1 N -0.5000 -0.5000 -0.3750 0.053(15) Uiso 0.055 8 d S . P . 3
+ C2 C -0.5000 -0.4120 -0.4120 0.04(2) Uiso 0.028 4 d S . P . 5
+ N3 N -0.4280 -0.4280 -0.4280 0.09(5) Uiso 0.0412 6 d S . P A 8
+ N2 N -0.5000 -0.4120 -0.4120 0.04(2) Uiso 0.028 4 d S . P . 6
+ C3 C -0.4280 -0.4280 -0.4280 0.09(5) Uiso 0.0412 6 d S . P B 7
+
+loop_
+  _atom_site_aniso_label
+  _atom_site_aniso_U_11
+  _atom_site_aniso_U_22
+  _atom_site_aniso_U_33
+  _atom_site_aniso_U_23
+  _atom_site_aniso_U_13
+  _atom_site_aniso_U_12
+ Pb01 0.0269(2) 0.0269(2) 0.0269(2) 0.000 0.000 0.000
+ Br02 0.1418(10) 0.0234(5) 0.1418(10) 0.000 0.000 0.000
+
+_geom_special_details
+;
+ All esds (except the esd in the dihedral angle between two l.s. planes)
+ are estimated using the full covariance matrix.  The cell esds are taken
+ into account individually in the estimation of esds in distances, angles
+ and torsion angles; correlations between esds in cell parameters are only
+ used when they are defined by crystal symmetry.  An approximate (isotropic)
+ treatment of cell esds is used for estimating esds involving l.s. planes.
+;
+loop_
+  _geom_bond_atom_site_label_1
+  _geom_bond_atom_site_label_2
+  _geom_bond_distance
+  _geom_bond_site_symmetry_2
+  _geom_bond_publ_flag
+ Pb01 Br02 2.96020(10) 9_655 ?
+ Pb01 Br02 2.96020(10) 5_556 ?
+ Pb01 Br02 2.96020(10) 5 ?
+ Pb01 Br02 2.96020(10) . ?
+ Pb01 Br02 2.96020(10) 1_565 ?
+ Pb01 Br02 2.96020(10) 9 ?
+ Br02 Pb01 2.96020(10) 1_545 ?
+ C1 C1 1.48011(5) 25_444 ?
+ C1 C1 1.04659(3) 5 ?
+ C1 C1 1.04659(3) 29_444 ?
+ C1 C1 1.04659(4) 9 ?
+ C1 C1 1.04659(4) 33_444 ?
+ N1 N1 1.04659(4) 33_444 ?
+ N1 N1 1.04659(3) 5 ?
+ N1 N1 1.48011(5) 25_444 ?
+ N1 N1 1.04659(4) 9 ?
+ N1 N1 1.04659(3) 29_444 ?
+ C2 C2 0.73679(2) 10_454 ?
+ C2 C2 1.27616(4) 6_544 ?
+ C2 C2 1.27616(4) 33_444 ?
+ C2 C2 0.73679(2) 30_455 ?
+ C2 C2 1.04198(3) 2_445 ?
+ C2 C2 0.73679(2) 9 ?
+ C2 C2 1.27616(4) 29_444 ?
+ C2 C2 0.73679(2) 5 ?
+ C2 C2 1.47358(4) 25_444 ?
+ C2 C2 1.04198(3) 26_554 ?
+ C2 C2 1.27616(4) 34_545 ?
+ N3 N3 0.85253(3) 28_455 ?
+ N3 N3 1.20565(5) 3_454 ?
+ N3 N3 1.20565(5) 4_544 ?
+ N3 N3 0.85253(3) 27_545 ?
+ N3 N3 1.20565(5) 2_445 ?
+ N3 N3 0.85253(3) 26_554 ?
+ N3 N3 1.47662(5) 25_444 ?
+ N2 N2 1.27616(4) 6_544 ?
+ N2 N2 1.04198(3) 26_554 ?
+ N2 N2 1.27616(4) 29_444 ?
+ N2 N2 1.47358(4) 25_444 ?
+ N2 N2 1.27616(4) 33_444 ?
+ N2 N2 0.73679(2) 9 ?
+ N2 N2 0.73679(2) 5 ?
+ N2 N2 1.27616(4) 34_545 ?
+ N2 N2 0.73679(2) 10_454 ?
+ N2 N2 0.73679(2) 30_455 ?
+ N2 N2 1.04198(3) 2_445 ?
+ C3 C3 0.85253(3) 28_455 ?
+ C3 C3 1.20565(5) 3_454 ?
+ C3 C3 1.47662(5) 25_444 ?
+ C3 C3 0.85253(3) 27_545 ?
+ C3 C3 1.20565(5) 2_445 ?
+ C3 C3 0.85253(3) 26_554 ?
+ C3 C3 1.20565(5) 4_544 ?
+
+loop_
+  _geom_angle_atom_site_label_1
+  _geom_angle_atom_site_label_2
+  _geom_angle_atom_site_label_3
+  _geom_angle
+  _geom_angle_site_symmetry_1
+  _geom_angle_site_symmetry_3
+  _geom_angle_publ_flag
+ Br02 Pb01 Br02 90.0 9_655 . ?
+ Br02 Pb01 Br02 90.0 1_565 5_556 ?
+ Br02 Pb01 Br02 90.0 5 9 ?
+ Br02 Pb01 Br02 90.0 9_655 1_565 ?
+ Br02 Pb01 Br02 180.0 9_655 9 ?
+ Br02 Pb01 Br02 180.0 . 1_565 ?
+ Br02 Pb01 Br02 90.0 . 5_556 ?
+ Br02 Pb01 Br02 90.0 9_655 5 ?
+ Br02 Pb01 Br02 180.0 5 5_556 ?
+ Br02 Pb01 Br02 90.0 . 5 ?
+ Br02 Pb01 Br02 90.0 . 9 ?
+ Br02 Pb01 Br02 90.0 1_565 5 ?
+ Br02 Pb01 Br02 90.0 5_556 9 ?
+ Br02 Pb01 Br02 90.0 9_655 5_556 ?
+ Br02 Pb01 Br02 90.0 1_565 9 ?
+ Pb01 Br02 Pb01 180.0 1_545 . ?
+ C1 C1 C1 45.000(1) 9 25_444 ?
+ C1 C1 C1 45.0 33_444 25_444 ?
+ C1 C1 C1 60.0 33_444 29_444 ?
+ C1 C1 C1 60.0 9 5 ?
+ C1 C1 C1 60.0 29_444 9 ?
+ C1 C1 C1 45.000(1) 29_444 25_444 ?
+ C1 C1 C1 60.0 33_444 5 ?
+ C1 C1 C1 45.0 5 25_444 ?
+ C1 C1 C1 90.0 29_444 5 ?
+ C1 C1 C1 90.0 33_444 9 ?
+ N1 N1 N1 60.0 33_444 29_444 ?
+ N1 N1 N1 45.000(1) 9 25_444 ?
+ N1 N1 N1 45.0 33_444 25_444 ?
+ N1 N1 N1 90.0 33_444 9 ?
+ N1 N1 N1 60.0 9 5 ?
+ N1 N1 N1 60.0 29_444 9 ?
+ N1 N1 N1 45.000(1) 29_444 25_444 ?
+ N1 N1 N1 60.0 33_444 5 ?
+ N1 N1 N1 90.0 29_444 5 ?
+ N1 N1 N1 45.0 5 25_444 ?
+ C2 C2 C2 73.2 30_455 34_545 ?
+ C2 C2 C2 65.9 2_445 6_544 ?
+ C2 C2 C2 35.3 26_554 29_444 ?
+ C2 C2 C2 30.0 5 34_545 ?
+ C2 C2 C2 30.0 10_454 29_444 ?
+ C2 C2 C2 35.3 2_445 34_545 ?
+ C2 C2 C2 89.998(1) 30_455 6_544 ?
+ C2 C2 C2 60.0 29_444 34_545 ?
+ C2 C2 C2 73.2 5 33_444 ?
+ C2 C2 C2 60.0 10_454 25_444 ?
+ C2 C2 C2 73.2 9 29_444 ?
+ C2 C2 C2 60.0 9 25_444 ?
+ C2 C2 C2 33.6 33_444 29_444 ?
+ C2 C2 C2 45.0 26_554 25_444 ?
+ C2 C2 C2 54.7 5 6_544 ?
+ C2 C2 C2 30.0 33_444 25_444 ?
+ C2 C2 C2 48.2 29_444 6_544 ?
+ C2 C2 C2 30.0 6_544 25_444 ?
+ C2 C2 C2 35.3 2_445 33_444 ?
+ C2 C2 C2 90.0 5 26_554 ?
+ C2 C2 C2 54.7 30_455 29_444 ?
+ C2 C2 C2 90.0 10_454 2_445 ?
+ C2 C2 C2 90.0 5 29_444 ?
+ C2 C2 C2 45.0 30_455 2_445 ?
+ C2 C2 C2 65.9 2_445 29_444 ?
+ C2 C2 C2 90.0 9 2_445 ?
+ C2 C2 C2 73.2 10_454 6_544 ?
+ C2 C2 C2 45.0 5 2_445 ?
+ C2 C2 C2 30.0 9 6_544 ?
+ C2 C2 C2 90.0 26_554 2_445 ?
+ C2 C2 C2 35.3 26_554 6_544 ?
+ C2 C2 C2 54.734(1) 10_454 33_444 ?
+ C2 C2 C2 60.0 33_444 6_544 ?
+ C2 C2 C2 30.0 30_455 33_444 ?
+ C2 C2 C2 90.0 10_454 34_545 ?
+ C2 C2 C2 90.0 9 33_444 ?
+ C2 C2 C2 54.7 9 34_545 ?
+ C2 C2 C2 60.0 10_454 30_455 ?
+ C2 C2 C2 65.9 26_554 34_545 ?
+ C2 C2 C2 90.0 10_454 9 ?
+ C2 C2 C2 48.2 33_444 34_545 ?
+ C2 C2 C2 120.0 30_455 9 ?
+ C2 C2 C2 33.6 6_544 34_545 ?
+ C2 C2 C2 120.0 10_454 5 ?
+ C2 C2 C2 60.0 30_455 25_444 ?
+ C2 C2 C2 90.0 30_455 5 ?
+ C2 C2 C2 60.0 5 25_444 ?
+ C2 C2 C2 60.0 9 5 ?
+ C2 C2 C2 45.0 2_445 25_444 ?
+ C2 C2 C2 45.0 10_454 26_554 ?
+ C2 C2 C2 30.0 29_444 25_444 ?
+ C2 C2 C2 90.0 30_455 26_554 ?
+ C2 C2 C2 30.0 34_545 25_444 ?
+ C2 C2 C2 45.0 9 26_554 ?
+ C2 C2 C2 65.9 26_554 33_444 ?
+ N3 N3 N3 90.0 28_455 27_545 ?
+ N3 N3 N3 54.7 26_554 25_444 ?
+ N3 N3 N3 60.0 4_544 2_445 ?
+ N3 N3 N3 90.0 28_455 26_554 ?
+ N3 N3 N3 45.0 27_545 2_445 ?
+ N3 N3 N3 90.0 28_455 4_544 ?
+ N3 N3 N3 54.7 28_455 25_444 ?
+ N3 N3 N3 45.0 27_545 4_544 ?
+ N3 N3 N3 35.3 3_454 25_444 ?
+ N3 N3 N3 45.0 26_554 4_544 ?
+ N3 N3 N3 90.0 26_554 2_445 ?
+ N3 N3 N3 45.0 28_455 3_454 ?
+ N3 N3 N3 60.0 3_454 2_445 ?
+ N3 N3 N3 90.0 27_545 3_454 ?
+ N3 N3 N3 54.7 27_545 25_444 ?
+ N3 N3 N3 45.0 26_554 3_454 ?
+ N3 N3 N3 35.3 4_544 25_444 ?
+ N3 N3 N3 60.0 4_544 3_454 ?
+ N3 N3 N3 35.3 2_445 25_444 ?
+ N3 N3 N3 45.0 28_455 2_445 ?
+ N3 N3 N3 90.0 27_545 26_554 ?
+ N2 N2 N2 60.0 10_454 30_455 ?
+ N2 N2 N2 35.3 26_554 6_544 ?
+ N2 N2 N2 45.0 26_554 25_444 ?
+ N2 N2 N2 90.0 10_454 9 ?
+ N2 N2 N2 35.3 2_445 34_545 ?
+ N2 N2 N2 120.0 30_455 9 ?
+ N2 N2 N2 73.2 10_454 6_544 ?
+ N2 N2 N2 120.0 10_454 5 ?
+ N2 N2 N2 90.0 10_454 34_545 ?
+ N2 N2 N2 90.0 30_455 5 ?
+ N2 N2 N2 60.0 10_454 25_444 ?
+ N2 N2 N2 60.0 9 5 ?
+ N2 N2 N2 30.0 6_544 25_444 ?
+ N2 N2 N2 45.0 10_454 26_554 ?
+ N2 N2 N2 30.0 9 6_544 ?
+ N2 N2 N2 90.0 30_455 26_554 ?
+ N2 N2 N2 60.0 33_444 6_544 ?
+ N2 N2 N2 45.0 9 26_554 ?
+ N2 N2 N2 30.0 5 34_545 ?
+ N2 N2 N2 90.0 5 26_554 ?
+ N2 N2 N2 60.0 29_444 34_545 ?
+ N2 N2 N2 90.0 10_454 2_445 ?
+ N2 N2 N2 60.0 9 25_444 ?
+ N2 N2 N2 45.0 30_455 2_445 ?
+ N2 N2 N2 30.0 33_444 25_444 ?
+ N2 N2 N2 90.0 9 2_445 ?
+ N2 N2 N2 33.6 33_444 29_444 ?
+ N2 N2 N2 45.0 5 2_445 ?
+ N2 N2 N2 89.998(1) 30_455 6_544 ?
+ N2 N2 N2 90.0 26_554 2_445 ?
+ N2 N2 N2 54.7 5 6_544 ?
+ N2 N2 N2 54.734(1) 10_454 33_444 ?
+ N2 N2 N2 65.9 2_445 6_544 ?
+ N2 N2 N2 30.0 30_455 33_444 ?
+ N2 N2 N2 48.2 29_444 6_544 ?
+ N2 N2 N2 90.0 9 33_444 ?
+ N2 N2 N2 54.7 9 34_545 ?
+ N2 N2 N2 73.2 5 33_444 ?
+ N2 N2 N2 65.9 26_554 34_545 ?
+ N2 N2 N2 65.9 26_554 33_444 ?
+ N2 N2 N2 48.2 33_444 34_545 ?
+ N2 N2 N2 35.3 2_445 33_444 ?
+ N2 N2 N2 33.6 6_544 34_545 ?
+ N2 N2 N2 30.0 10_454 29_444 ?
+ N2 N2 N2 60.0 30_455 25_444 ?
+ N2 N2 N2 54.7 30_455 29_444 ?
+ N2 N2 N2 60.0 5 25_444 ?
+ N2 N2 N2 73.2 9 29_444 ?
+ N2 N2 N2 45.0 2_445 25_444 ?
+ N2 N2 N2 90.0 5 29_444 ?
+ N2 N2 N2 30.0 29_444 25_444 ?
+ N2 N2 N2 35.3 26_554 29_444 ?
+ N2 N2 N2 30.0 34_545 25_444 ?
+ N2 N2 N2 65.9 2_445 29_444 ?
+ N2 N2 N2 73.2 30_455 34_545 ?
+ C3 C3 C3 90.0 28_455 27_545 ?
+ C3 C3 C3 54.7 27_545 25_444 ?
+ C3 C3 C3 90.0 26_554 2_445 ?
+ C3 C3 C3 90.0 28_455 26_554 ?
+ C3 C3 C3 35.3 2_445 25_444 ?
+ C3 C3 C3 90.0 27_545 26_554 ?
+ C3 C3 C3 60.0 3_454 2_445 ?
+ C3 C3 C3 90.0 28_455 4_544 ?
+ C3 C3 C3 35.3 4_544 25_444 ?
+ C3 C3 C3 45.0 27_545 4_544 ?
+ C3 C3 C3 45.0 27_545 2_445 ?
+ C3 C3 C3 45.0 26_554 4_544 ?
+ C3 C3 C3 60.0 4_544 2_445 ?
+ C3 C3 C3 45.0 28_455 3_454 ?
+ C3 C3 C3 54.7 28_455 25_444 ?
+ C3 C3 C3 90.0 27_545 3_454 ?
+ C3 C3 C3 54.7 26_554 25_444 ?
+ C3 C3 C3 45.0 26_554 3_454 ?
+ C3 C3 C3 35.3 3_454 25_444 ?
+ C3 C3 C3 60.0 4_544 3_454 ?
+ C3 C3 C3 45.0 28_455 2_445 ?
+
+_shelx_res_file
+;
+    sg221_res65.res created by SHELXL-2014/7
+
+TITL sg221_res65_a.res in Pm-3m
+REM Old TITL sg221_res65 in Pm-3m
+REM SHELXT solution in Pm-3m
+REM R1 0.447, Rweak 0.527, Alpha 0.055, Orientation as input
+REM Formula found by SHELXT: N Br3 Pb
+CELL 0.71073 5.9204 5.9204 5.9204 90 90 90
+ZERR 1 0.0002 0.0002 0.0002 0 0 0
+LATT 1
+SYMM -X,-Y,+Z
+SYMM -X,+Y,-Z
+SYMM +X,-Y,-Z
+SYMM +Z,+X,+Y
+SYMM +Z,-X,-Y
+SYMM -Z,-X,+Y
+SYMM -Z,+X,-Y
+SYMM +Y,+Z,+X
+SYMM -Y,+Z,-X
+SYMM +Y,-Z,-X
+SYMM -Y,-Z,+X
+SYMM +Y,+X,-Z
+SYMM -Y,-X,-Z
+SYMM +Y,-X,+Z
+SYMM -Y,+X,+Z
+SYMM +X,+Z,-Y
+SYMM -X,+Z,+Y
+SYMM -X,-Z,-Y
+SYMM +X,-Z,+Y
+SYMM +Z,+Y,-X
+SYMM +Z,-Y,+X
+SYMM -Z,+Y,+X
+SYMM -Z,-Y,-X
+SFAC Br C N Pb
+UNIT 3 1 1 1
+EADP N1 C1
+EADP C2 N2
+EADP C3 N3
+EXYZ N1 C1
+EXYZ C2 N2
+EXYZ C3 N3
+
+L.S. 10
+PLAN  5
+TEMP -13
+CONF
+list 4
+MORE -1
+fmap 2 53
+acta
+REM <olex2.extras>
+REM <HklSrc "%.\\sg221_res65.hkl">
+REM </olex2.extras>
+
+WGHT    0.007900    0.360500
+EXTI    0.018335
+FVAR       1.18736
+PB01  4    0.000000    0.000000    0.000000    10.02083    0.02693    0.02693 =
+         0.02693    0.00000    0.00000    0.00000
+BR02  1    0.000000   -0.500000    0.000000    10.06250    0.14184    0.02345 =
+         0.14184    0.00000    0.00000    0.00000
+PART 4
+C1    2    9.500000    9.500000    9.625001    10.00688    0.05275
+
+PART 3
+N1    3    9.500000    9.500000    9.625001    10.00688    0.05275
+
+PART 5
+C2    2    9.500000    9.588000    9.588000    10.00700    0.04176
+
+PART 8
+N3    3    9.572000    9.572000    9.572000    10.00687    0.09311
+
+PART 6
+N2    3    9.500000    9.588000    9.588000    10.00700    0.04176
+
+PART 7
+C3    2    9.572000    9.572000    9.572000    10.00687    0.09311
+HKLF 4
+
+REM  sg221_res65_a.res in Pm-3m
+REM R1 =  0.0141 for     106 Fo > 4sig(Fo)  and  0.0150 for all     107 data
+REM      8 parameters refined using      0 restraints
+
+END
+
+WGHT      0.0079      0.3605
+
+REM Highest difference peak  0.745,  deepest hole -0.552,  1-sigma level  0.089
+Q1    1   0.0000 -0.5000  0.1383  10.25000  0.05    0.75
+Q2    1  -0.5000 -0.5000 -0.2724  10.12500  0.05    0.23
+Q3    1  -0.5844 -0.5000  0.0000  10.25000  0.05    0.23
+Q4    1   0.0000  0.0000  0.1745  10.12500  0.05    0.23
+Q5    1   0.1271 -0.7219  0.1271  10.50000  0.05    0.23
+;
+_shelx_res_checksum                98309
+_shelx_hkl_checksum                16570
+_olex2_submission_special_instructions  'No special instructions were received'

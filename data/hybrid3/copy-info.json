@@ -5,11 +5,15 @@
  "systems": 642,
  "structures_stated": 786,
  "structures": 786,
- "structures_with_file": 241,
+ "structures_with_file": 615,
+ "structure_files": 656,
+ "cif_files": 434,
+ "geometry_files": 222,
  "structures_whole": true,
- "read_now": 241,
- "kept": 0,
- "without_geometry": 545,
+ "read_now": 395,
+ "kept": 390,
+ "without_file": 1,
+ "not_read": 0,
  "complete": true,
- "seconds": 1158
+ "seconds": 881
 }

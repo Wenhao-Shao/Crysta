@@ -1,0 +1,291 @@
+data_a
+_diffrn_radiation_probe  x-ray
+_diffrn_measurement_device_type
+;
+D8 ADVANCE Bruker
+;
+_pd_spec_mount_mode reflection
+_pd_meas_scan_method step
+ loop_
+_diffrn_radiation_wavelength
+_diffrn_radiation_wavelength_wt
+ 1.5406    1.0000
+ 1.5443    0.5000
+_diffrn_radiation_type
+;
+ Cu K\a~1~~2~
+;
+_diffrn_radiation_monochromator none
+_chemical_name_mineral
+;
+;
+_symmetry_space_group_name_H-M Fm-3m
+_symmetry_cell_setting cubic
+_symmetry_space_group_name_hall
+;
+-F 4 2 3
+;
+_cell_length_a  10.480593(54)
+_cell_length_b  10.480593(54)
+_cell_length_c  10.480593(54)
+_cell_angle_alpha 90
+_cell_angle_beta  90
+_cell_angle_gamma 90
+_cell_volume 1151.218(18)
+_chemical_formula_moiety
+;
+Ag2 Cl12 In2, 4(Cs)
+;
+_chemical_formula_sum
+;
+Ag2 Cl12 Cs4 In2
+;
+_chemical_formula_weight  1402.42
+_cell_formula_units_Z 2
+_exptl_crystal_density_diffrn  4.047173(58)
+_exptl_absorpt_coefficient_mu  90.285
+_cell_measurement_temperature  300
+_diffrn_ambient_temperature  300
+
+_pd_char_colour
+;
+colourless
+;
+_cell_measurement_reflns_used 104
+_cell_measurement_theta_min 2.50578257
+_cell_measurement_theta_max 59.9967253
+_pd_proc_number_of_points 8844.76042
+_pd_meas_2theta_range_min 5.01156514
+_pd_meas_2theta_range_max 119.993451
+_pd_meas_2theta_range_inc 0.013
+_pd_proc_ls_profile_function PearsonVII
+_pd_proc_ls_pref_orient_corr
+;
+no preferred orientation
+;
+_refine_ls_shift/su_max  0.01000
+_refine_ls_R_I_factor 4.30
+_pd_proc_ls_prof_wR_factor 11.381
+_pd_proc_ls_prof_R_factor 8.310
+_pd_proc_ls_prof_wR_expected 8.574
+_refine_ls_goodness_of_fit_all 1.327
+loop_
+_symmetry_equiv_pos_as_xyz
+ 'x, y, z'
+ '-y, x, z'
+ '-x, -y, z'
+ 'y, -x, z'
+ 'x, -z, y'
+ 'x, -y, -z'
+ 'x, z, -y'
+ 'z, y, -x'
+ '-x, y, -z'
+ '-z, y, x'
+ 'z, x, y'
+ 'y, z, x'
+ '-y, -z, x'
+ 'z, -x, -y'
+ '-y, z, -x'
+ '-z, -x, y'
+ '-z, x, -y'
+ 'y, -z, -x'
+ 'y, x, -z'
+ '-y, -x, -z'
+ '-x, z, y'
+ '-x, -z, -y'
+ 'z, -y, x'
+ '-z, -y, -x'
+ '-x, -y, -z'
+ 'y, -x, -z'
+ 'x, y, -z'
+ '-y, x, -z'
+ '-x, z, -y'
+ '-x, y, z'
+ '-x, -z, y'
+ '-z, -y, x'
+ 'x, -y, z'
+ 'z, -y, -x'
+ '-z, -x, -y'
+ '-y, -z, -x'
+ 'y, z, -x'
+ '-z, x, y'
+ 'y, -z, x'
+ 'z, x, -y'
+ 'z, -x, y'
+ '-y, z, x'
+ '-y, -x, z'
+ 'y, x, z'
+ 'x, -z, -y'
+ 'x, z, y'
+ '-z, y, -x'
+ 'z, y, x'
+ 'x, 1/2+y, 1/2+z'
+ '-y, 1/2+x, 1/2+z'
+ '-x, 1/2-y, 1/2+z'
+ 'y, 1/2-x, 1/2+z'
+ 'x, 1/2-z, 1/2+y'
+ 'x, 1/2-y, 1/2-z'
+ 'x, 1/2+z, 1/2-y'
+ 'z, 1/2+y, 1/2-x'
+ '-x, 1/2+y, 1/2-z'
+ '-z, 1/2+y, 1/2+x'
+ 'z, 1/2+x, 1/2+y'
+ 'y, 1/2+z, 1/2+x'
+ '-y, 1/2-z, 1/2+x'
+ 'z, 1/2-x, 1/2-y'
+ '-y, 1/2+z, 1/2-x'
+ '-z, 1/2-x, 1/2+y'
+ '-z, 1/2+x, 1/2-y'
+ 'y, 1/2-z, 1/2-x'
+ 'y, 1/2+x, 1/2-z'
+ '-y, 1/2-x, 1/2-z'
+ '-x, 1/2+z, 1/2+y'
+ '-x, 1/2-z, 1/2-y'
+ 'z, 1/2-y, 1/2+x'
+ '-z, 1/2-y, 1/2-x'
+ '-x, 1/2-y, 1/2-z'
+ 'y, 1/2-x, 1/2-z'
+ 'x, 1/2+y, 1/2-z'
+ '-y, 1/2+x, 1/2-z'
+ '-x, 1/2+z, 1/2-y'
+ '-x, 1/2+y, 1/2+z'
+ '-x, 1/2-z, 1/2+y'
+ '-z, 1/2-y, 1/2+x'
+ 'x, 1/2-y, 1/2+z'
+ 'z, 1/2-y, 1/2-x'
+ '-z, 1/2-x, 1/2-y'
+ '-y, 1/2-z, 1/2-x'
+ 'y, 1/2+z, 1/2-x'
+ '-z, 1/2+x, 1/2+y'
+ 'y, 1/2-z, 1/2+x'
+ 'z, 1/2+x, 1/2-y'
+ 'z, 1/2-x, 1/2+y'
+ '-y, 1/2+z, 1/2+x'
+ '-y, 1/2-x, 1/2+z'
+ 'y, 1/2+x, 1/2+z'
+ 'x, 1/2-z, 1/2-y'
+ 'x, 1/2+z, 1/2+y'
+ '-z, 1/2+y, 1/2-x'
+ 'z, 1/2+y, 1/2+x'
+ '1/2+x, y, 1/2+z'
+ '1/2-y, x, 1/2+z'
+ '1/2-x, -y, 1/2+z'
+ '1/2+y, -x, 1/2+z'
+ '1/2+x, -z, 1/2+y'
+ '1/2+x, -y, 1/2-z'
+ '1/2+x, z, 1/2-y'
+ '1/2+z, y, 1/2-x'
+ '1/2-x, y, 1/2-z'
+ '1/2-z, y, 1/2+x'
+ '1/2+z, x, 1/2+y'
+ '1/2+y, z, 1/2+x'
+ '1/2-y, -z, 1/2+x'
+ '1/2+z, -x, 1/2-y'
+ '1/2-y, z, 1/2-x'
+ '1/2-z, -x, 1/2+y'
+ '1/2-z, x, 1/2-y'
+ '1/2+y, -z, 1/2-x'
+ '1/2+y, x, 1/2-z'
+ '1/2-y, -x, 1/2-z'
+ '1/2-x, z, 1/2+y'
+ '1/2-x, -z, 1/2-y'
+ '1/2+z, -y, 1/2+x'
+ '1/2-z, -y, 1/2-x'
+ '1/2-x, -y, 1/2-z'
+ '1/2+y, -x, 1/2-z'
+ '1/2+x, y, 1/2-z'
+ '1/2-y, x, 1/2-z'
+ '1/2-x, z, 1/2-y'
+ '1/2-x, y, 1/2+z'
+ '1/2-x, -z, 1/2+y'
+ '1/2-z, -y, 1/2+x'
+ '1/2+x, -y, 1/2+z'
+ '1/2+z, -y, 1/2-x'
+ '1/2-z, -x, 1/2-y'
+ '1/2-y, -z, 1/2-x'
+ '1/2+y, z, 1/2-x'
+ '1/2-z, x, 1/2+y'
+ '1/2+y, -z, 1/2+x'
+ '1/2+z, x, 1/2-y'
+ '1/2+z, -x, 1/2+y'
+ '1/2-y, z, 1/2+x'
+ '1/2-y, -x, 1/2+z'
+ '1/2+y, x, 1/2+z'
+ '1/2+x, -z, 1/2-y'
+ '1/2+x, z, 1/2+y'
+ '1/2-z, y, 1/2-x'
+ '1/2+z, y, 1/2+x'
+ '1/2+x, 1/2+y, z'
+ '1/2-y, 1/2+x, z'
+ '1/2-x, 1/2-y, z'
+ '1/2+y, 1/2-x, z'
+ '1/2+x, 1/2-z, y'
+ '1/2+x, 1/2-y, -z'
+ '1/2+x, 1/2+z, -y'
+ '1/2+z, 1/2+y, -x'
+ '1/2-x, 1/2+y, -z'
+ '1/2-z, 1/2+y, x'
+ '1/2+z, 1/2+x, y'
+ '1/2+y, 1/2+z, x'
+ '1/2-y, 1/2-z, x'
+ '1/2+z, 1/2-x, -y'
+ '1/2-y, 1/2+z, -x'
+ '1/2-z, 1/2-x, y'
+ '1/2-z, 1/2+x, -y'
+ '1/2+y, 1/2-z, -x'
+ '1/2+y, 1/2+x, -z'
+ '1/2-y, 1/2-x, -z'
+ '1/2-x, 1/2+z, y'
+ '1/2-x, 1/2-z, -y'
+ '1/2+z, 1/2-y, x'
+ '1/2-z, 1/2-y, -x'
+ '1/2-x, 1/2-y, -z'
+ '1/2+y, 1/2-x, -z'
+ '1/2+x, 1/2+y, -z'
+ '1/2-y, 1/2+x, -z'
+ '1/2-x, 1/2+z, -y'
+ '1/2-x, 1/2+y, z'
+ '1/2-x, 1/2-z, y'
+ '1/2-z, 1/2-y, x'
+ '1/2+x, 1/2-y, z'
+ '1/2+z, 1/2-y, -x'
+ '1/2-z, 1/2-x, -y'
+ '1/2-y, 1/2-z, -x'
+ '1/2+y, 1/2+z, -x'
+ '1/2-z, 1/2+x, y'
+ '1/2+y, 1/2-z, x'
+ '1/2+z, 1/2+x, -y'
+ '1/2+z, 1/2-x, y'
+ '1/2-y, 1/2+z, x'
+ '1/2-y, 1/2-x, z'
+ '1/2+y, 1/2+x, z'
+ '1/2+x, 1/2-z, -y'
+ '1/2+x, 1/2+z, y'
+ '1/2-z, 1/2+y, -x'
+ '1/2+z, 1/2+y, x'
+loop_
+_atom_site_label
+_atom_site_type_symbol
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+_atom_site_occupancy
+_atom_site_B_iso_or_equiv
+Cs Cs 0.25 0.25 0.25 1 1.793(98)
+Ag Ag 0.5 0.5 0.5 1 2.07(16)
+In In 0 0 0 1 0.87(13)
+Cl Cl 0.23922(68) 0 0 1 2.33(13)
+loop_
+ _geom_bond_atom_site_label_1
+ _geom_bond_atom_site_label_2
+ _geom_bond_distance
+ _geom_bond_site_symmetry_2
+In Cl 2.507(7)  .
+loop_
+ _geom_angle_atom_site_label_1
+ _geom_angle_atom_site_label_2
+ _geom_angle_atom_site_label_3
+ _geom_angle
+ _geom_angle_site_symmetry_1
+ _geom_angle_site_symmetry_3
+Cl In Cl 90 1_555 10_555
