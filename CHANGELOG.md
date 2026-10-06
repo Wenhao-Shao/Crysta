@@ -14,7 +14,7 @@ Any change to how a number is defined gets a new version and a line here.
   - The rows are: each bond length, each metal site, each M–X–M bridge, the axial bonds, the N penetration, the slab, the gallery and the layers.
   - The strip under the picture gives the number of atoms and bonds that glow. If the packing box cuts a bridge, the part inside the box glows.
   - A saved PNG shows the glow at one fixed strength. If the system asks for less motion, the glow does not move.
-- **Powder XRD:** the "Reflection table" box hides or shows the table of reflections. Without the table, the plot has the full height of the window.
+- **Powder XRD:** an arrow at the top right of the reflection table minimizes or maximizes it, as on the side panels. With the table minimized, the plot has the height.
 
 New definitions (see the README): plane through atoms, lattice plane through an atom, atom to plane, bond to plane, plane to plane. No other definition changed: every other number is identical to v0.4.0.
 

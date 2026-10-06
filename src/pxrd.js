@@ -171,13 +171,12 @@
         '<div class="seg" role="group" aria-label="How the patterns are arranged"><button type="button" data-a="overlay">Overlay</button><button type="button" data-a="stack">Stacked</button></div>' +
         '<div class="seg" role="group" aria-label="Intensity scale"><button type="button" data-a="lin">Linear</button><button type="button" data-a="sqrt">Square root</button></div>' +
         '<label class="chk"><input type="checkbox" id="pxMarks" data-k="marks">Reflection marks</label>' +
-        '<label class="chk" title="Show or hide the table of reflections. Without the table, the plot has the full height."><input type="checkbox" id="pxTable" data-k="table">Reflection table</label>' +
         '<span style="flex:1"></span>' +
         '<button type="button" data-a="reset">Reset zoom</button><button type="button" data-a="png">Save PNG</button><button type="button" data-a="svg">Save SVG</button>' +
         '<button type="button" data-a="csv" title="The shown patterns as a table: one 2θ column, then one intensity column for each pattern, for the full 2θ range. Measured data are put on the 2θ grid of the Pattern settings by linear interpolation.">Save CSV</button></div>' +
         '<div class="px-plot" id="pxPlot"></div>' +
         '<div class="small" id="pxNote" aria-live="polite"></div></section>' +
-        '<section class="card px-tablecard"><div class="row">' +
+        '<section class="card px-tablecard"><button type="button" class="fold" data-a="foldtbl" aria-labelledby="pxTblTitle"></button><div class="row">' +
         '<h2 id="pxTblTitle">Reflections of</h2><select id="pxTableDoc" data-k="tableDoc" aria-labelledby="pxTblTitle"></select>' +
         '<label class="small" for="pxMinRel" title="Reflections weaker than this are not listed and get no mark. They stay in the pattern. Set 0 to list all.">Weakest <i>I</i> listed</label><input type="number" id="pxMinRel" data-k="minRel" step="0.1" min="0" max="100">' +
         '<label class="small" for="pxOrder">Order</label><select id="pxOrder" data-k="order"><option value="tth">2θ</option><option value="rel">Intensity</option></select>' +
@@ -308,9 +307,12 @@
       set('#pxOrder', px.order);
       q('#pxKa2').checked = px.ka2;
       q('#pxMarks').checked = px.marks;
-      q('#pxTable').checked = px.table;
-      // without the table, the plot has the full height of the window
-      q('.px-work').classList.toggle('notable', !px.table);
+      // the arrow at the top right of the table card: a minimized card is one line, and the plot has the room
+      q('.px-tablecard').classList.toggle('shut', !px.table);
+      q('.px-work').classList.toggle('tblshut', !px.table);
+      const fold = q('button[data-a="foldtbl"]');
+      fold.setAttribute('aria-expanded', String(px.table));
+      fold.title = px.table ? 'Minimize the reflection table' : 'Maximize the reflection table';
       px.root.querySelectorAll('.k2').forEach((e) => { e.hidden = !px.ka2; });
       const press = (a, on) => { const b = q('button[data-a="' + a + '"]'); if (b) b.setAttribute('aria-pressed', String(on)); };
       press('overlay', !px.stack); press('stack', px.stack); press('lin', !px.sqrt); press('sqrt', px.sqrt);
@@ -781,12 +783,15 @@
       const row = e.target.closest('#pxTbl tbody tr');
       if (row) { const r = px.rows[+row.dataset.row]; if (r) selectReflection(r, false); return; }
       if (e.target.id === 'pxClose') { unmount(); return; }
+      // the title of the table card minimizes or maximizes it, as its arrow does
+      if (e.target.closest('#pxTblTitle')) { px.table = !px.table; fillForm(); draw(); return; }
       const b = e.target.closest('button[data-a]');
       if (!b) return;
       const a = b.dataset.a;
       if (a === 'overlay' || a === 'stack') { px.stack = a === 'stack'; fillForm(); draw(); }
       else if (a === 'lin' || a === 'sqrt') { px.sqrt = a === 'sqrt'; fillForm(); draw(); }
       else if (a === 'reset') { px.view = null; draw(); }
+      else if (a === 'foldtbl') { px.table = !px.table; fillForm(); draw(); }
       else if (a === 'svg') { const t = svgText(); if (t) save([t], 'image/svg+xml', pictureName() + '.svg'); }
       else if (a === 'png') savePng(b);
       else if (a === 'csv') {
@@ -849,7 +854,6 @@
       else if (k === 'step') px.step = num(0.005, 0.05, px.step);
       else if (k === 'bDefault') px.bDefault = num(0, 20, px.bDefault);
       else if (k === 'marks') px.marks = t.checked;
-      else if (k === 'table') px.table = t.checked;
       else if (k === 'minRel') px.minRel = num(0, 100, px.minRel);
       else if (k === 'order') px.order = t.value;
       else if (k === 'tableDoc') { const x = sims().find((y) => y.s.id === t.value); px.tableDoc = x ? x.d : null; px.mark = null; }

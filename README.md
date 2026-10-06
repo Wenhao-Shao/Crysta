@@ -60,7 +60,7 @@ Press "Load the sample structures" to load the four built-in samples: (PEA)2PbBr
   Add measured data to compare them with the references, as an overlay or as a stack. Cu Kα1 is the default
   radiation. Other anodes, a typed wavelength and Kα2 are options. The top axis of the plot gives *d* in Å.
   The plot saves as PNG or SVG, the shown patterns as one CSV table, the reflection table as text and the
-  simulated pattern as an .xy file. The "Reflection table" box hides the table, and the plot then has the full height.
+  simulated pattern as an .xy file. The arrow at the top right of the reflection table minimizes it, and the plot then has the height.
 - **Background:** the Background menu in the page header sets the whole page to the browser default, to white
   or to black. The 3D picture, the saved pictures and the PXRD window follow.
 - **Panels:** the arrow at the top right of each card in the rail minimizes or maximizes the card.
