@@ -23,11 +23,33 @@ pxrd = (root / "src/pxrd.js").read_text()
 dbs = (root / "src/dbs.js").read_text()
 # Copy of a database entry list for the Databases window (demo: a part of HybriD3). The structure files that the
 # list names are put into it as text, so the page needs no other file.
-dbcopy = json.loads((root / "data/hybrid3-demo.json").read_text())
-for mat in dbcopy["materials"]:
-    for st in mat["structures"]:
-        st["text"] = (root / "data" / st.pop("file")).read_text()
-databases = json.dumps(dbcopy, ensure_ascii=False)
+h3 = root / "data/hybrid3"
+h3info = json.loads((h3 / "copy-info.json").read_text())
+h3structures = json.loads((h3 / "demo-structures.json").read_text())["structures"]
+# number of "atomic structure" data sets of each material, when the copy has the list of data sets
+h3count = {}
+if (h3 / "datasets.json").exists():
+    for ds in json.loads((h3 / "datasets.json").read_text()):
+        if ds.get("property") == "atomic structure":
+            h3count[ds.get("system")] = h3count.get(ds.get("system"), 0) + 1
+h3materials = []
+for sy in json.loads((h3 / "systems.json").read_text()):
+    mine = []
+    for st in h3structures:
+        if st["system"] == sy["pk"]:
+            one = {k: v for k, v in st.items() if k not in ("file", "system")}
+            one["text"] = (h3 / st["file"]).read_text()
+            mine.append(one)
+    h3materials.append({
+        "pk": sy["pk"], "name": sy.get("compound_name") or "", "iupac": sy.get("iupac") or "", "aliases": sy.get("group") or "",
+        "formula": sy.get("formula") or "", "stoich": sy.get("stoichiometry") or "",
+        "organic": "" if (sy.get("organic") or "") == "None" else (sy.get("organic") or ""), "inorganic": sy.get("inorganic") or "",
+        "dim": sy.get("dimensionality"), "n": sy.get("n") or "", "updated": sy.get("last_update") or "",
+        "onSite": h3count.get(sy["pk"]) if h3count else None, "structures": mine})
+databases = json.dumps({
+    "id": "hybrid3", "name": "HybriD3 materials database", "home": "https://materials.hybrid3.duke.edu/", "licence": "CC BY 4.0",
+    "licenceUrl": "https://creativecommons.org/licenses/by/4.0/", "read": h3info["read"], "total": len(h3materials), "demo": True,
+    "materials": h3materials}, ensure_ascii=False)
 table = (root / "src/sg-table.json").read_text()
 # built-in samples: file in examples/, name shown in the page
 SAMPLES = [

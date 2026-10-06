@@ -495,5 +495,24 @@ const formula = (info) => info.formula.map((e) => e.el + e.n).join(' ');
   check('aims: a POSCAR and an XYZ file still go to their own readers', load('tests/files/rutile.POSCAR').s.meta.format === 'POSCAR' && load('tests/files/water.xyz').s.meta.format === 'XYZ');
 }
 
+// Databases window: the formula and the names that the entry list shows (src/dbs.js, with a stand-in for the browser window)
+{
+  global.window = {};
+  require('../src/dbs.js');
+  const D = global.window.CrystaDatabases;
+  check('db formula in Hill order: C, H, then by letter', D.hillFormula('C:16,H:22,N:2,F:2,Pb:1,I:4') === 'C16H22F2I4N2Pb' && D.hillFormula('C:1,H:6,N:1,Pb:1,Cl:3') === 'CH6Cl3NPb');
+  check('db formula without carbon: by letter', D.hillFormula('Cs:1,Pb:1,Cl:3') === 'Cl3CsPb' && D.hillFormula('Ca:1,Ti:1,O:3') === 'CaO3Ti');
+  check('db formula with part numbers, and an empty field', D.hillFormula('Br:0.5,I:0.5,Pb:1') === 'Br0.5I0.5Pb' && D.hillFormula('') === '' && D.hillFormula(null) === '');
+  check('db names split at a comma with a space, not inside a chemical name', D.splitNames('(TMEDA)SbI5, TMEDASbI5').length === 2 && D.splitNames('N,N,N′-trimethylethane-1,2-diaminium; TMEDA').join('|') === 'N,N,N′-trimethylethane-1,2-diaminium|TMEDA');
+  check('db names: marks for "none" are left out', D.splitNames('*, N/A, -, (PEA)2PbI4').join('|') === '(PEA)2PbI4');
+  let n = D.namesOf({ name: '4-fluorophenethylammonium lead iodide', formula: 'C16H22N2F2PbI4', aliases: '4-fluorophenethanaminium tetraiodoplumbate(II), pF1PEA2PbI4', iupac: '4-fluorophenethanaminium lead (II) iodide', stoich: 'C:16,H:22,N:2,F:2,Pb:1,I:4' });
+  check('db names: the short form comes first, a plain sum formula is not a name', n.common.join('|') === 'pF1PEA2PbI4|4-fluorophenethanaminium tetraiodoplumbate(II)' && n.iupac === '4-fluorophenethanaminium lead (II) iodide' && n.hill === 'C16H22F2I4N2Pb');
+  n = D.namesOf({ name: 'Benzylammonium antimony bromide', formula: '(C7H10N)2SbBr5', aliases: '(C6H5CH2NH3)2SbBr5; benzylammonium bromoantimonate(III)', iupac: '-', stoich: 'C:14,H:20,N:2,Sb:1,Br:5' });
+  check('db names: a formula with brackets is a common name, "-" is no IUPAC name', n.common[0] === '(C7H10N)2SbBr5' && n.common.length === 3 && n.iupac === '' && n.hill === 'C14H20Br5N2Sb');
+  const list = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'data/hybrid3/systems.json'), 'utf8'));
+  check('db copy of HybriD3: every material has a number, a name and a stoichiometry that reads', list.length > 600 && new Set(list.map((x) => x.pk)).size === list.length && list.every((x) => x.compound_name && D.hillFormula(x.stoichiometry)));
+  delete global.window;
+}
+
 console.log(passed + ' passed, ' + failed + ' failed');
 process.exit(failed ? 1 : 0);

@@ -1,8 +1,8 @@
 /* Databases window: find a structure in an outside database and open it in Crysta.
-   DEMO. One database has a copy inside the page: a part of the HybriD3 entry list, with the structure of one
-   entry. The other databases are links: the user downloads the file there and drops it on Crysta.
+   DEMO. One database has a copy inside the page: the entry list of HybriD3, with the structure of one entry.
+   The other databases are links: the user downloads the file there and drops it on Crysta.
    Crysta cannot read these databases directly from a browser (they do not allow requests from other sites),
-   so the full version needs a copy of the entry list that is made on a schedule and stored with the page.
+   so the entry list is a copy. tools/hybrid3_copy.py makes it from the HybriD3 API, and build.py puts it in the page.
    Use: const dbs = CrystaDatabases.create({ data, addFiles, name, version }); dbs.open(); */
 (function () {
   'use strict';
@@ -14,7 +14,36 @@
   const sgSpaced = (s) => String(s || '').trim().replace(/^([PABCIFR])(?=\S)/, '$1 ');
   /* the dimensionality values as HybriD3 gives them */
   const DIMS = [['', 'All'], ['2', '2D'], ['2.5', '2.5D'], ['3', '3D'], ['1', '1D'], ['0', '0D']];
-  const dimText = (d) => d + 'D';
+  const dimText = (d) => (d === null || d === undefined || d === '' ? '' : d + 'D');
+  /* The formula unit from the stoichiometry field of HybriD3, "C:16,H:22,N:2,F:2,Pb:1,I:4", in Hill order:
+     C, then H, then the other elements by letter. Without carbon, every element by letter. */
+  function hillFormula(stoich) {
+    const parts = String(stoich || '').split(',').map((p) => p.trim().split(':')).filter((p) => p.length === 2 && /^[A-Z][a-z]?$/.test(p[0].trim()) && parseFloat(p[1]) > 0)
+      .map((p) => [p[0].trim(), parseFloat(p[1])]);
+    if (!parts.length) return '';
+    const hasC = parts.some((p) => p[0] === 'C');
+    const rank = (el) => (hasC && el === 'C' ? '0' : hasC && el === 'H' ? '1' : '2' + el);
+    parts.sort((a, b) => (rank(a[0]) < rank(b[0]) ? -1 : rank(a[0]) > rank(b[0]) ? 1 : 0));
+    return parts.map((p) => p[0] + (p[1] === 1 ? '' : String(+p[1].toFixed(3)))).join('');
+  }
+  /* a field that holds a name, not a mark such as "/" or "-" for "none" */
+  const isName = (x) => /[A-Za-z]{2}/.test(x || '') && !/^(none|n\/a|na|null)$/i.test(String(x).trim());
+  /* other names in one text field: split at a semicolon, or at a comma that has a space after it
+     (a comma inside a chemical name, as in "N,N,N′-trimethyl", has no space) */
+  const splitNames = (text) => String(text || '').split(/\s*[;；]\s*|,\s+/).map((x) => x.trim()).filter(isName);
+  /* The names of an entry. Official: the compound name and the IUPAC name. Common: the other names that the
+     database lists, and the formula as the database writes it when that is a short form such as (PEA)2PbI4. */
+  function namesOf(m) {
+    const hill = hillFormula(m.stoich);
+    const same = (a, b) => a.replace(/\s+/g, '').toLowerCase() === b.replace(/\s+/g, '').toLowerCase();
+    const common = [];
+    if (m.formula && (!hill || /[()\[\]·\-]/.test(m.formula)) && !same(m.formula, m.name)) common.push(m.formula);
+    for (const a of splitNames(m.aliases)) if (!common.some((c) => same(c, a)) && !same(a, m.name)) common.push(a);
+    // short forms such as (PEA)2PbI4 come before names in words
+    common.sort((a, b) => (/\s/.test(a) ? 1 : 0) - (/\s/.test(b) ? 1 : 0));
+    const iupac = isName(m.iupac) && !same(m.iupac, m.name) && !common.some((c) => same(c, m.iupac)) ? m.iupac.trim() : '';
+    return { hill, common, iupac };
+  }
   /* Databases that Crysta links to. The user finds the structure there, downloads the file and drops it on Crysta. */
   const LINKS = [
     {
@@ -34,26 +63,37 @@
       file: 'CIF'
     }
   ];
+  const MAX_NAMES = 3;
 
   function create(host) {
     const db = host.data && host.data.materials ? host.data : null;
     const ui = { box: null, tab: db ? 'hybrid3' : LINKS[0].id, text: '', dim: '', only: false };
     const q = (sel) => (ui.box ? ui.box.querySelector(sel) : null);
+    if (db) {
+      // what the table shows and what the search reads, worked out once for each entry
+      for (const m of db.materials) {
+        m.names = namesOf(m);
+        m.hay = [m.name, m.iupac, m.aliases, m.formula, m.names.hill, m.organic, m.inorganic].join(' ').toLowerCase();
+        // the order is by the first word of the name, without the numbers and letters in front of it: "4-fluoro..." under f
+        m.key = ((m.name.match(/[A-Za-z]{2,}.*/) || [m.name])[0]).toLowerCase();
+      }
+      // the entries that open in Crysta come first, then by name
+      db.materials.sort((a, b) => (b.structures.length ? 1 : 0) - (a.structures.length ? 1 : 0) || (a.key < b.key ? -1 : a.key > b.key ? 1 : a.pk - b.pk));
+    }
 
     function rows() {
       const words = ui.text.toLowerCase().split(/\s+/).filter(Boolean);
       return db.materials.filter((m) => {
         if (ui.dim !== '' && String(m.dim) !== ui.dim) return false;
         if (ui.only && !m.structures.length) return false;
-        if (!words.length) return true;
-        const hay = [m.name, m.formula, m.aliases, m.organic, m.inorganic].join(' ').toLowerCase();
-        return words.every((w) => hay.includes(w));
+        return words.every((w) => m.hay.includes(w));
       });
     }
     const pageOf = (m) => db.home + 'materials/' + m.pk;
     const withFile = () => db.materials.filter((m) => m.structures.length).length;
 
     function hybridPanel() {
+      const n = withFile();
       return '<div class="db-bar">' +
         '<input type="search" id="dbText" placeholder="Name, formula, cation, metal or halide" aria-label="Search the entry list" value="' + esc(ui.text) + '">' +
         '<label class="small" for="dbDim">Dimensionality</label><select id="dbDim">' + DIMS.map((d) => '<option value="' + d[0] + '"' + (ui.dim === d[0] ? ' selected' : '') + '>' + d[1] + '</option>').join('') + '</select>' +
@@ -61,22 +101,30 @@
         '<span class="small" id="dbCount" aria-live="polite"></span></div>' +
         '<div class="tbl-wrap db-table"><table id="dbTbl"></table></div>' +
         '<div class="small">Data: <a href="' + esc(db.home) + '" target="_blank" rel="noopener">' + esc(db.name) + '</a>, Duke University. Licence: <a href="' + esc(db.licenceUrl) + '" target="_blank" rel="noopener">' + esc(db.licence) + '</a>. ' +
-        '<strong>Demo copy:</strong> ' + db.materials.length + ' of ' + db.total + ' materials, read on ' + esc(db.read) + '. ' + withFile() + ' of them ' + (withFile() === 1 ? 'has its' : 'have their') + ' structure in this page. ' +
+        'The list is a copy of all ' + db.total + ' materials, read on ' + esc(db.read) + '. <strong>Demo:</strong> ' + n + (n === 1 ? ' entry has its' : ' entries have their') + ' structure in this page. ' +
         'For each other entry, the link opens its HybriD3 page. Download the files there and drop <code>geometry.in</code> on ' + esc(host.name) + '.</div>';
+    }
+    function nameCell(m) {
+      const c = m.names.common;
+      const more = c.length > MAX_NAMES ? ' <span title="' + esc(c.slice(MAX_NAMES).join(' · ')) + '">+' + (c.length - MAX_NAMES) + ' more</span>' : '';
+      return '<b>' + esc(m.name) + '</b>' +
+        (c.length ? '<span class="small"><i class="db-tag">Also</i>' + c.slice(0, MAX_NAMES).map(esc).join(' · ') + more + '</span>' : '') +
+        (m.names.iupac ? '<span class="small"><i class="db-tag">IUPAC</i>' + esc(m.names.iupac) + '</span>' : '');
     }
     function drawTable() {
       const tbl = q('#dbTbl');
       if (!tbl) return;
       const list = rows();
       q('#dbCount').textContent = list.length + (list.length === 1 ? ' entry' : ' entries');
-      tbl.innerHTML = '<thead><tr><th>Material</th><th>Formula</th><th>Dim.</th><th><i>n</i></th><th>Structure</th></tr></thead><tbody>' +
+      tbl.innerHTML = '<thead><tr><th>Material</th><th title="The formula unit: the elements and their numbers as HybriD3 gives them, C and H first">Formula</th><th>Dim.</th><th><i>n</i></th><th>Structure</th></tr></thead><tbody>' +
         (list.length ? list.map((m) => {
           const open = m.structures.map((s, i) => '<button type="button" class="mini primary" data-open="' + m.pk + ':' + i + '" title="Open this structure in ' + esc(host.name) + '">Open</button>' +
             '<span class="small">' + esc([sgSpaced(s.spaceGroup).replace(' ', ''), s.temperature ? s.temperature + ' K' : '', s.experimental ? 'experiment' : 'calculation'].filter(Boolean).join(', ')) + '</span>').join('');
-          return '<tr><td><b>' + esc(m.name) + '</b>' + (m.aliases ? '<span class="small">' + esc(m.aliases) + '</span>' : '') + '</td>' +
-            '<td>' + formulaHtml(m.formula) + '</td><td>' + esc(dimText(m.dim)) + '</td><td>' + esc(m.n || '') + '</td>' +
-            '<td><div class="db-act">' + open + '<a href="' + esc(pageOf(m)) + '" target="_blank" rel="noopener" title="The page of this material in the HybriD3 database">HybriD3 page ↗</a></div></td></tr>';
-        }).join('') : '<tr><td colspan="5" class="small">No entry of the demo copy has these words. The full database has ' + db.total + ' materials.</td></tr>') + '</tbody>';
+          const on = typeof m.onSite === 'number' ? '<span class="small">' + (m.onSite ? m.onSite + (m.onSite === 1 ? ' structure' : ' structures') : 'no structure') + ' on HybriD3</span>' : '';
+          return '<tr><td>' + nameCell(m) + '</td>' +
+            '<td>' + formulaHtml(m.names.hill || m.formula) + '</td><td>' + esc(dimText(m.dim)) + '</td><td>' + esc(m.n || '') + '</td>' +
+            '<td><div class="db-act">' + open + '<a href="' + esc(pageOf(m)) + '" target="_blank" rel="noopener" title="The page of this material in the HybriD3 database">HybriD3 page ↗</a>' + on + '</div></td></tr>';
+        }).join('') : '<tr><td colspan="5" class="small">No entry has these words.</td></tr>') + '</tbody>';
     }
     function linkPanel(L) {
       return '<div class="db-link"><h2>' + esc(L.title) + '</h2><p>' + esc(L.who) + '.</p><p>' + esc(L.what) + '</p>' +
@@ -100,7 +148,7 @@
       const m = db.materials.find((x) => String(x.pk) === pk);
       const s = m && m.structures[+i];
       if (!s || !s.text) return;
-      const short = (m.aliases || m.name).split(/[,;]/)[0].trim();
+      const short = m.names.common[0] || m.name;
       host.addFiles([{
         name: short + ', HybriD3 ' + s.dataset + '.in', text: s.text,
         // where the structure comes from: shown with the structure, so that the credit goes with it
@@ -163,5 +211,5 @@
     return { open, close, isOpen: () => !!ui.box, state: ui };
   }
 
-  window.CrystaDatabases = { create };
+  window.CrystaDatabases = { create, hillFormula, splitNames, namesOf };
 })();

@@ -30,15 +30,23 @@ The demo shows the window and the flow. It does not have the job and it does not
 
 - `src/dbs.js`: the Databases window. Tabs: HybriD3, NMSE, COD.
 - `src/core.js`: `readAims` reads `geometry.in` (`lattice_vector`, `atom`, `atom_frac`).
-- `data/hybrid3-demo.json`: 81 of the 642 materials. 80 are the newest entries of the API. They were read through a web-reading tool and were not checked line by line.
-- `data/hybrid3/2008-geometry.in`: the structure of data set 2008, the one entry of the demo that opens in Crysta.
-- `build.py` puts the demo copy into the page, so the offline file works too.
+- `tools/hybrid3_copy.py` and the job `.github/workflows/hybrid3-copy.yml`: read the list of materials from the API and commit it. The job runs on GitHub because this is where the network is open.
+- `data/hybrid3/systems.json`: all 642 materials, exactly as the API gave them on 2026-10-06.
+- `data/hybrid3/2008-geometry.in` and `demo-structures.json`: the structure of data set 2008, the one entry of the demo that opens in Crysta.
+- `build.py` puts the copy into the page, so the offline file works too. The copy adds about 250 kB to the page.
+- Each entry shows the compound name, the common names and the IUPAC name. The formula is the formula unit from the stoichiometry field, with C and H first.
+
+### What the first run of the job showed
+
+- The list of materials needs 7 requests and some seconds.
+- The list of data sets is slow. With 20 data sets for each page, page 12 did not answer in 180 s, three times. The job read 220 of 2,093 data sets before that.
+- The full version must read the data sets in a different way: one data set for each request, or the file link of each data set, with a long wait and a record of where it stopped.
 
 ## The full version
 
 ### Job
 
-- A script calls `/materials/systems/` and `/materials/datasets/` page by page. It keeps the data sets whose property is "atomic structure".
+- The script calls `/materials/systems/` page by page (done). It then reads the data sets and keeps those whose property is "atomic structure" (not done: see the note on the first run).
 - For each such data set it stores the data set number, the material number, the space group and the temperature. It also stores the origin (experiment or calculation), the sample type, the reference with its DOI, and the structure as `geometry.in` text.
 - A GitHub Action runs the script once a week and commits the result. A run that fails changes nothing.
 - The script stops if the number of materials falls by more than 10 % against the last copy. This protects the copy from a broken answer of the server.

@@ -5,7 +5,9 @@ HybriD3 (https://materials.hybrid3.duke.edu/) gives its data under CC BY 4.0. A 
 (the server allows no requests from other sites), so this script makes the copy that the Databases window of
 Crysta uses. Run it where the network is open, for example in a GitHub Action:
 
-    python3 tools/hybrid3_copy.py data/hybrid3
+    python3 tools/hybrid3_copy.py data/hybrid3              the list of materials
+    python3 tools/hybrid3_copy.py data/hybrid3 --datasets   also the list of data sets (slow: the server needs
+                                                            minutes for some pages, and a page can time out)
 
 It writes into the given folder:
     systems.json    every material: number, names, formula, stoichiometry, organic and inorganic part, dimensionality
@@ -84,7 +86,9 @@ def small_dataset(d):
 
 
 def main():
-    out = pathlib.Path(sys.argv[1] if len(sys.argv) > 1 else "data/hybrid3")
+    args = [a for a in sys.argv[1:] if not a.startswith("--")]
+    with_datasets = "--datasets" in sys.argv
+    out = pathlib.Path(args[0] if args else "data/hybrid3")
     out.mkdir(parents=True, exist_ok=True)
     info = {"source": BASE, "licence": "CC BY 4.0", "read": datetime.date.today().isoformat()}
     failed = False
@@ -96,6 +100,8 @@ def main():
         (out / "systems.json").write_text(json.dumps(systems, ensure_ascii=False, indent=0) + "\n")
         info.update(systems=len(systems), systems_stated=n_systems)
         say("materials written:", len(systems))
+        if not with_datasets:
+            raise StopIteration
 
         # the data sets are large, so a small page; one bad data set does not stop the copy
         datasets, n_datasets = pages("datasets", 20)
@@ -115,6 +121,8 @@ def main():
         info.update(datasets=len(small), datasets_stated=n_datasets, datasets_not_read=bad,
                     structure_datasets=sum(1 for s in small if s["property"] == "atomic structure"))
         say("data sets written:", len(small))
+    except StopIteration:
+        pass
     except Exception as err:
         failed = True
         say("FAILED:", repr(err))
