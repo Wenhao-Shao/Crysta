@@ -11,7 +11,8 @@ Databases window of Crysta uses. Run it where the network is open, for example i
 It writes into the given folder:
     systems.json          every material: number, names, formula, stoichiometry, organic and inorganic part
     structures.json       every structure data set: number, material, space group, temperature, origin, reference
-    structures/<n>.in     the structure of data set n: the FHI-aims geometry file from the download of HybriD3
+    structures/<n>_<i>.cif   structure file i of data set n, from the download of HybriD3: a CIF (.cif) or an
+    structures/<n>_<i>.in    FHI-aims geometry file (.in). The CIFs are used when a data set has the two kinds.
     copy-info.json        the date of the copy and the counts
     copy-log.txt          what the script did, for a run whose console cannot be read
 
@@ -153,8 +154,79 @@ def structure_list():
     return out, count, missed == 0
 
 
+LARGE_TEXT = 3000      # characters: a CIF text field above this size is reflection data or a refinement file
+LARGE_FILE = 1500000   # characters: a structure file above this size is not put in the copy
+
+
+def text_of(raw):
+    try:
+        return raw.decode("utf-8")
+    except UnicodeDecodeError:
+        return raw.decode("latin-1")
+
+
+def kind_of(text):
+    """"cif" or "in" (FHI-aims geometry), from the lines of the file. HybriD3 has CIFs with the name geometry.in."""
+    if re.search(r"^\s*data_", text, re.M) and "_cell_length_a" in text:
+        return "cif"
+    return "in"
+
+
+def has_atoms(text, kind):
+    if kind == "cif":
+        return "_atom_site_fract_x" in text
+    return len(re.findall(r"^\s*lattice_vector\s", text, re.M)) >= 3 and bool(re.search(r"^\s*atom(_frac)?\s", text, re.M))
+
+
+def slim_cif(text):
+    """A CIF without its reflection data: the large text fields (the hkl and res files that SHELX puts in a CIF)
+    and the _refln_ loops. The cell, the symmetry, the atoms and the other items stay as they are."""
+    lines = text.replace("\r\n", "\n").replace("\r", "\n").split("\n")
+    out, i = [], 0
+    while i < len(lines):
+        ln = lines[i]
+        if ln.startswith(";"):                        # a text field goes to the next line that starts with ";"
+            j = i + 1
+            while j < len(lines) and not lines[j].startswith(";"):
+                j += 1
+            field = lines[i:j + 1]
+            k = len(out) - 1
+            while k >= 0 and not out[k].strip():
+                k -= 1
+            if sum(len(x) + 1 for x in field) > LARGE_TEXT and k >= 0 and re.fullmatch(r"_\S+", out[k].strip()):
+                del out[k:]                           # the item name goes with its text
+            else:
+                out.extend(field)
+            i = j + 1
+            continue
+        if ln.strip().lower() == "loop_":
+            j, tags = i + 1, []
+            while j < len(lines) and lines[j].strip().startswith("_"):
+                tags.append(lines[j].split()[0].lower())
+                j += 1
+            if tags and all(t.startswith(("_refln_", "_diffrn_refln_")) for t in tags):
+                while j < len(lines) and not re.match(r"\s*(_|loop_|data_|save_)", lines[j], re.I):
+                    j += 1
+                i = j
+                continue
+        out.append(ln.rstrip())
+        i += 1
+    return re.sub(r"\n{3,}", "\n\n", "\n".join(out)).strip() + "\n"
+
+
+def chosen(names):
+    """The structure files of one download, in two groups: the CIFs and the geometry files. A file in the folder
+    "additional" is used only when the top folder has no file of that kind."""
+    def group(ext):
+        mine = [n for n in names if n.lower().endswith(ext)]
+        top = [n for n in mine if n.count("/") <= 1]
+        return top or mine
+    return group(".cif"), group(".in")
+
+
 def download(pk):
-    """The geometry file and the info text of one data set, from its download. None when there is no geometry."""
+    """The structure files and the info text of one data set, from its download. None when the download did not come.
+    The CIFs are used when they hold atoms. If there is no such CIF, the geometry files are used."""
     raw = fetch(BASE + "datasets/%d/files/" % pk, timeout=60)
     if raw is None:
         return None
@@ -163,12 +235,23 @@ def download(pk):
     except zipfile.BadZipFile:
         return None
     names = [i.filename for i in z.infolist() if not i.is_dir()]
-    geo = [n for n in names if n.lower().endswith(".in")]
-    geo.sort(key=lambda n: (0 if "geometry" in n.lower() else 1, n))
+    parts = []
+    for group in chosen(names):
+        for n in group:
+            text = text_of(z.read(n))
+            kind = kind_of(text)
+            if kind == "cif":
+                text = slim_cif(text)
+            if not has_atoms(text, kind):
+                say("  data set", pk, "file without atoms:", n)
+            elif len(text) > LARGE_FILE:
+                say("  data set", pk, "file too large:", n, len(text))
+            elif not any(p["text"] == text for p in parts):
+                parts.append({"name": n.split("/")[-1], "kind": kind, "text": text})
+        if parts:
+            break
     info = next((n for n in names if n.lower().endswith("info.txt")), None)
-    text = z.read(geo[0]).decode("utf-8", "replace") if geo else None
-    return {"names": names, "geometry": text, "file": geo[0] if geo else None,
-            "info": z.read(info).decode("utf-8", "replace") if info else ""}
+    return {"names": names, "parts": parts, "info": text_of(z.read(info)) if info else ""}
 
 
 def from_info(info):
@@ -217,12 +300,14 @@ def main():
             say("structure data sets in the list:", len(listed), "of", stated)
             # a list that is not whole keeps the entries of the last copy
             index = dict(old) if not whole else {}
-            got = kept = none = 0
+            folder = out / "structures"
+            got = kept = none = lost = 0
             for n, (pk, e) in enumerate(sorted(listed.items())):
-                target = out / "structures" / ("%d.in" % pk)
                 before = old.get(pk)
-                if before and before.get("updated") == e["updated"] and before.get("has_file") and target.exists():
-                    e.update({k: before[k] for k in ("has_file", "file", "citation", "temperature", "files") if k in before})
+                # a data set that did not change, and whose download was read, is not read again
+                if (before and before.get("read") and before.get("updated") == e["updated"]
+                        and all((folder / p["file"]).exists() for p in before.get("parts", []))):
+                    e.update({k: before[k] for k in ("read", "has_file", "parts", "citation", "temperature", "files") if k in before})
                     index[pk] = e
                     kept += 1
                     continue
@@ -233,32 +318,50 @@ def main():
                         index[pk] = before
                     continue
                 d = download(pk)
-                if d is None or not d["geometry"]:
-                    none += 1
-                    e.update(has_file=False, files=(d or {}).get("names", []))
-                    say("  no geometry file for data set", pk, (d or {}).get("names"))
+                if d is None:
+                    lost += 1
+                    say("  the download of data set", pk, "did not come")
+                    if before and before.get("read"):
+                        index[pk] = before            # the earlier copy of this data set stays
+                        continue
+                    e.update(read=False, has_file=False, parts=[], files=[])
                 else:
-                    target.write_text(d["geometry"])
+                    for f in list(folder.glob("%d.in" % pk)) + list(folder.glob("%d_*.*" % pk)):
+                        f.unlink()                    # the files of an earlier copy of this data set
+                    parts = []
+                    for i, p in enumerate(d["parts"], 1):
+                        name = "%d_%d.%s" % (pk, i, p["kind"])
+                        (folder / name).write_text(p["text"])
+                        parts.append({"file": name, "name": p["name"], "kind": p["kind"]})
                     citation, temp = from_info(d["info"])
-                    e.update(has_file=True, file=d["file"], citation=citation, temperature=temp, files=d["names"])
-                    got += 1
+                    e.update(read=True, has_file=bool(parts), parts=parts, citation=citation, temperature=temp, files=d["names"])
+                    if parts:
+                        got += 1
+                    else:
+                        none += 1
+                        say("  no structure file for data set", pk, d["names"])
                 index[pk] = e
-                if (got + none) % 50 == 0:
-                    say("  downloads:", got, "read,", none, "without geometry,", kept, "kept | %d s" % (time.time() - START))
+                if (got + none + lost) % 50 == 0:
+                    say("  downloads:", got, "read,", none, "without structure file,", lost, "not read,", kept, "kept | %d s" % (time.time() - START))
                     index_file.write_text(json.dumps([index[k] for k in sorted(index)], ensure_ascii=False, indent=0) + "\n")
                 time.sleep(0.3)
             index_file.write_text(json.dumps([index[k] for k in sorted(index)], ensure_ascii=False, indent=0) + "\n")
             # a file of a data set that HybriD3 no longer lists goes away, but only when the list is whole
             if whole:
-                for f in (out / "structures").glob("*.in"):
-                    if not (f.stem.isdigit() and int(f.stem) in index and index[int(f.stem)].get("has_file")):
+                used = {p["file"] for e in index.values() for p in e.get("parts", [])}
+                for f in folder.iterdir():
+                    if f.is_file() and f.name not in used:
                         f.unlink()
+            every = [p for e in index.values() for p in e.get("parts", [])]
             info.update(structures_stated=stated, structures=len(index), structures_with_file=sum(1 for e in index.values() if e.get("has_file")),
-                        structures_whole=whole, read_now=got, kept=kept, without_geometry=none)
-            say("structures:", json.dumps({k: info[k] for k in ("structures", "structures_with_file", "structures_whole", "read_now", "kept", "without_geometry")}))
+                        structure_files=len(every), cif_files=sum(1 for p in every if p["kind"] == "cif"),
+                        geometry_files=sum(1 for p in every if p["kind"] == "in"),
+                        structures_whole=whole and lost == 0, read_now=got, kept=kept, without_file=none, not_read=lost)
+            say("structures:", json.dumps({k: info[k] for k in ("structures", "structures_with_file", "structure_files", "cif_files", "geometry_files",
+                                                                "structures_whole", "read_now", "kept", "without_file", "not_read")}))
         else:
             # a run without the structures keeps what the last run with them wrote
-            for k in ("structures_stated", "structures", "structures_with_file", "structures_whole"):
+            for k in ("structures_stated", "structures", "structures_with_file", "structure_files", "cif_files", "geometry_files", "structures_whole"):
                 if k in old_info:
                     info[k] = old_info[k]
     except Exception as err:
