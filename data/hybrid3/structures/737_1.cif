@@ -117,11 +117,6 @@ _diffrn_standards_number                 ?
 _diffrn_standards_interval_count         ?
 _diffrn_standards_interval_time          ?
 _diffrn_standards_decay_%                ?
-loop_
-_diffrn_standard_refln_index_h
-_diffrn_standard_refln_index_k
-_diffrn_standard_refln_index_l
-  ? ? ?
 _diffrn_radiation_probe                  X-ray
 #=======================================================================
 # 8. REFINEMENT DATA
@@ -840,15 +835,3 @@ loop_
   C2 H3c2 I5 . . 2_545   0.96   1.88   2.70(10)   140.58 ?
   C8 H1c8 N3 . . .   0.96   2.33   2.71(5)   103.14 ?
   C3 H2c3 I10 . . .   0.96   2.31   3.26(4)   175.15 ?
-
-loop_
- _twin_refln_datum_id
- _twin_refln_individual_id
- _twin_refln_index_h
- _twin_refln_index_k
- _twin_refln_index_l
- _twin_refln_F_squared_calc
- _twin_refln_F_squared_meas
- _twin_refln_F_squared_sigma
- _twin_refln_include_status
- ? ? ? ? ? ? ? ? ?

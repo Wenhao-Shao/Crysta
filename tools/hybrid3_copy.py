@@ -180,7 +180,7 @@ def has_atoms(text, kind):
 
 def slim_cif(text):
     """A CIF without its reflection data: the large text fields (the hkl and res files that SHELX puts in a CIF)
-    and the _refln_ loops. The cell, the symmetry, the atoms and the other items stay as they are."""
+    and the loops of reflections. The cell, the symmetry, the atoms and the other items stay as they are."""
     lines = text.replace("\r\n", "\n").replace("\r", "\n").split("\n")
     out, i = [], 0
     while i < len(lines):
@@ -204,7 +204,7 @@ def slim_cif(text):
             while j < len(lines) and lines[j].strip().startswith("_"):
                 tags.append(lines[j].split()[0].lower())
                 j += 1
-            if tags and all(t.startswith(("_refln_", "_diffrn_refln_")) for t in tags):
+            if tags and all("refln_" in t for t in tags):   # _refln_, _diffrn_refln_, _twin_refln_ (Jana)
                 while j < len(lines) and not re.match(r"\s*(_|loop_|data_|save_)", lines[j], re.I):
                     j += 1
                 i = j

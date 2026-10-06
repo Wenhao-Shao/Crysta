@@ -235,11 +235,6 @@ _diffrn_standards_number          .
 _diffrn_standards_interval_count  .
 _diffrn_standards_interval_time   .
 _diffrn_standards_decay_%                ?
-loop_
-_diffrn_standard_refln_index_h
-_diffrn_standard_refln_index_k
-_diffrn_standard_refln_index_l
-  ? ? ?
 _diffrn_radiation_probe                  X-ray
 #=======================================================================
 # 8. REFINEMENT DATA
@@ -904,15 +899,3 @@ loop_
  _geom_hbond_publ_flag
   N1 H1n1 I5 . . 2_675   0.87   2.00   2.56(2)   121.20 ?
   N1 H2n1 I7 . . 2_665   0.87   2.43   3.08(2)   132.00 ?
-
-loop_
- _twin_refln_datum_id
- _twin_refln_individual_id
- _twin_refln_index_h
- _twin_refln_index_k
- _twin_refln_index_l
- _twin_refln_F_squared_calc
- _twin_refln_F_squared_meas
- _twin_refln_F_squared_sigma
- _twin_refln_include_status
- ? ? ? ? ? ? ? ? ?

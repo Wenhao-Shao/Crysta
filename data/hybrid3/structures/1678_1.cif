@@ -307,12 +307,6 @@ _diffrn_standards_number             0
 _diffrn_standards_interval_count     .
 _diffrn_standards_interval_time      .
 _diffrn_standards_decay_%            0
-loop_
-_diffrn_standard_refln_index_h
-_diffrn_standard_refln_index_k
-_diffrn_standard_refln_index_l
- ? ? ?
-# number of measured reflections (redundant set)
 _diffrn_reflns_number             7895
 _diffrn_reflns_av_R_equivalents   0.0313
 _diffrn_reflns_av_sigmaI/netI     0.0218
@@ -974,12 +968,6 @@ _diffrn_standards_number             0
 _diffrn_standards_interval_count     .
 _diffrn_standards_interval_time      .
 _diffrn_standards_decay_%            0
-loop_
-_diffrn_standard_refln_index_h
-_diffrn_standard_refln_index_k
-_diffrn_standard_refln_index_l
- ? ? ?
-# number of measured reflections (redundant set)
 _diffrn_reflns_number             14376
 _diffrn_reflns_av_R_equivalents   0.0344
 _diffrn_reflns_av_sigmaI/netI     0.0251

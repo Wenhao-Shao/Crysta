@@ -174,14 +174,6 @@ _diffrn_measurement_method              'non-profiled omega/2theta scans'
 _diffrn_standards_number                3
 _diffrn_standards_interval_time         120
 _diffrn_standards_decay_%               1
-loop_
-    _diffrn_standard_refln_index_h
-    _diffrn_standard_refln_index_k
-    _diffrn_standard_refln_index_l
--5 -3 -1
--3 4 -2
--2 0 10
-
 _diffrn_reflns_number                   4728
 _diffrn_reflns_av_R_equivalents         0.0238
 _diffrn_reflns_limit_h_min              -10
@@ -720,14 +712,6 @@ _diffrn_measurement_method              'non-profiled omega scans'
 _diffrn_standards_number                3
 _diffrn_standards_interval_time         120
 _diffrn_standards_decay_%               0
-loop_
-    _diffrn_standard_refln_index_h
-    _diffrn_standard_refln_index_k
-    _diffrn_standard_refln_index_l
-2 7 -10
-3 -9 -5
--3 -3 -13
-
 _diffrn_reflns_number                   6850
 _diffrn_reflns_av_R_equivalents         0
 _diffrn_reflns_limit_h_min              -45
@@ -1385,14 +1369,6 @@ _diffrn_measurement_method              'non-profiled omega scans'
 _diffrn_standards_number                3
 _diffrn_standards_interval_time         120
 _diffrn_standards_decay_%               41
-loop_
-    _diffrn_standard_refln_index_h
-    _diffrn_standard_refln_index_k
-    _diffrn_standard_refln_index_l
-0 -3 17
--4 -6 -7
--4 6 7
-
 _diffrn_reflns_number                   34904
 _diffrn_reflns_av_R_equivalents         0.1085
 _diffrn_reflns_limit_h_min              -9

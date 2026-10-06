@@ -41,7 +41,14 @@ The demo shows the window and the flow. It does not have the job and it does not
 - The list of materials needs 7 requests and some seconds.
 - The list of all data sets is slow. With 20 data sets for each page, page 12 did not answer in 180 s, three times.
 - The list takes a filter: `?primary_property__name=atomic+structure` gives the 786 structure data sets. `?system=<material>` gives the data sets of one material.
-- The download of a data set, `/materials/datasets/<n>/files/`, is a zip with `info.txt` and one FHI-aims geometry file. The name of the geometry file is not fixed. There is no CIF in it.
+- The download of a data set, `/materials/datasets/<n>/files/`, is a zip with `info.txt` and the structure files. The names are not fixed. Of the 786 structure data sets:
+  - 393 have a CIF (`files/structure.cif`, a name of the authors, or `files/additional/<name>.cif`). 13 of them have 2 to 9 CIFs: a temperature series, or the R and S forms.
+  - 241 have an FHI-aims geometry file. 18 of these also have the CIF.
+  - 170 have no structure file. HybriD3 holds only the cell parameters for them.
+  - One "geometry.in" is a CIF. The job finds the kind of a file from its lines, not from its name.
+- The job takes the CIFs when they hold atoms, and the geometry files if they do not. The job takes a file from `additional/` only when the top folder has no file of that kind.
+- Many CIFs hold the reflection data (the hkl text of SHELX, the `_twin_refln_` loops of Jana). One CIF had 4.6 MB. The job removes this data: the 434 CIFs then have 11 MB.
+- Crysta reads and analyses all 749 structures of the 656 files (28 CIFs have more than one data block) in 11 s.
 - The download sends no `Access-Control-Allow-Origin` header. A browser page can start the download, but it cannot read the file. So the job reads the downloads, and the page gets the copy.
 - The server stops for a time now and then: a request that needs 0.2 s can need 20 s to 120 s. The script tries again, goes on after a failure, and a second run reads only what is missing.
 
@@ -50,13 +57,13 @@ The demo shows the window and the flow. It does not have the job and it does not
 ### Job
 
 - The script calls `/materials/systems/` page by page. It then lists the "atomic structure" data sets in small pages and reads each structure from the download of its data set. Done in `tools/hybrid3_copy.py`.
-- For each such data set it stores the data set number, the material number, the space group and the temperature. It also stores the origin (experiment or calculation), the sample type, the reference with its DOI, and the structure as `geometry.in` text.
+- For each such data set it stores the data set number, the material number, the space group and the temperature. It also stores the origin (experiment or calculation), the sample type, the reference with its DOI, and the structure files (`structures/<data set>_<i>.cif` or `.in`).
 - A GitHub Action runs the script and commits the result. To do: a weekly schedule, on the main branch.
 - The script stops if the number of materials falls by more than 10 % against the last copy. This protects the copy from a broken answer of the server.
 
 ### Files
 
-- The demo puts the entry list and every structure file into the page. This makes the page larger for each visitor.
+- The demo puts the entry list and every structure file into the page. This makes the page larger for each visitor: the 656 files add 2.9 MB (packed with gzip and written as base64). Without the packing they are 10 MB. The page unpacks them when the user opens the first structure (0.3 s).
 - To decide for the full version: keep them in the page, or store them next to the page (`docs/data/hybrid3/`) and load one structure when the user presses Open. The second way keeps the page small, but the offline file then needs a connection.
 
 ### Window
@@ -67,8 +74,10 @@ The demo shows the window and the flow. It does not have the job and it does not
 
 ### Limits to tell the user
 
-- A HybriD3 structure has no symmetry in its file. Crysta shows the space group that HybriD3 gives, marked "as given by HybriD3". Sites that are the same by symmetry show as separate sites. The PXRD table lists reflections that are the same by symmetry as separate rows.
-- The file has no displacement parameters. The PXRD simulation uses *B* = 1 Å² for each atom.
+- A geometry file from HybriD3 has no symmetry. Crysta shows the space group that HybriD3 gives, marked "as given by HybriD3". Sites that are the same by symmetry show as separate sites. The PXRD table lists reflections that are the same by symmetry as separate rows.
+- A geometry file has no displacement parameters. The PXRD simulation uses *B* = 1 Å² for each atom.
+- A CIF from HybriD3 has the two. The window shows the kind of file for each data set.
+- The space group and the temperature in the window are those that HybriD3 states for the data set. A CIF can state other values, and a data set with several CIFs has one value in HybriD3. Crysta shows the values of the file after it opens.
 
 ### Tests
 
@@ -83,3 +92,4 @@ The demo shows the window and the flow. It does not have the job and it does not
 3. Test COD for requests from other sites.
 4. Read the `info.txt` of a HybriD3 download, so that a dropped file also gets its reference.
 5. Decide where the copy lives: in the Crysta repository or in a repository of its own.
+6. Ask the HybriD3 group about the CIFs. HybriD3 gives all its data under CC BY 4.0. But 87 of the 434 CIFs have a CCDC deposition number, and 58 have the access notice of the CCDC. Other CIFs come from the supporting information of a paper. Get the answer of the group before a release that holds the CIFs.

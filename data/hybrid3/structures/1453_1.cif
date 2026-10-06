@@ -86,11 +86,6 @@ _diffrn_standards_number         ?
 _diffrn_standards_interval_count ?
 _diffrn_standards_interval_time  ?
 _diffrn_standards_decay_%        ?
-loop_
-      _diffrn_standard_refln_index_h
-      _diffrn_standard_refln_index_k
-      _diffrn_standard_refln_index_l
-     ?   ?   ?
 _diffrn_reflns_number            15662
 _diffrn_reflns_av_R_equivalents  0.014
 _diffrn_reflns_av_sigmaI/netI    ?

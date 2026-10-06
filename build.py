@@ -10,7 +10,7 @@ served from the host of "homepage"). The offline file carries no such code.
 The name shown in the page comes from "displayName" in package.json.
 The address in the canonical link and the link-preview tags comes from "homepage".
 """
-import json, pathlib, urllib.parse
+import base64, gzip, json, pathlib, re, urllib.parse
 
 root = pathlib.Path(__file__).parent
 pkg = json.loads((root / "package.json").read_text())
@@ -45,19 +45,59 @@ def h3temperature(e):
     return t[:-2] if t.endswith(".0") else t
 
 
-# the structure data sets of each material, and the text of each structure file
+def h3cif(text):
+    """A CIF of the copy as the page holds it: without the loops that Crysta does not read (the lists of distances
+    and angles, the restraints, the crystal faces). Crysta calculates the geometry from the cell, the symmetry and
+    the atoms, and these stay as they are."""
+    lines, out, i = text.split("\n"), [], 0
+    while i < len(lines):
+        ln = lines[i]
+        if ln.startswith(";"):                        # a text field: no loop starts in it
+            j = i + 1
+            while j < len(lines) and not lines[j].startswith(";"):
+                j += 1
+            out.extend(lines[i:j + 1])
+            i = j + 1
+            continue
+        if ln.strip().lower() == "loop_":
+            j, tags = i + 1, []
+            while j < len(lines) and lines[j].strip().startswith("_"):
+                tags.append(lines[j].split()[0].lower())
+                j += 1
+            if tags and all(t.startswith(("_geom_", "_restr_", "_exptl_crystal_face_")) for t in tags):
+                while j < len(lines) and not re.match(r"\s*(_|loop_|data_|save_)", lines[j], re.I):
+                    j += 1
+                i = j
+                continue
+        out.append(ln)
+        i += 1
+    return "\n".join(out)
+
+
+# the structure data sets of each material, and the text of each structure file (a CIF or an FHI-aims geometry file)
 h3by, h3texts = {}, {}
 for e in (json.loads((h3 / "structures.json").read_text()) if (h3 / "structures.json").exists() else []):
-    f = h3 / "structures" / ("%d.in" % e["pk"])
-    if not (e.get("has_file") and f.exists()):
+    files = []
+    for part in e.get("parts") or []:
+        f = h3 / "structures" / part["file"]
+        if not f.exists():
+            continue
+        text = f.read_text()
+        if part["kind"] == "in":
+            # the file without comment lines and spare spaces: the numbers are not changed
+            lines = [" ".join(ln.split("#")[0].split()) for ln in text.splitlines()]
+            text = "\n".join(ln for ln in lines if ln) + "\n"
+        else:
+            text = h3cif(text)
+        h3texts[f.stem] = text
+        files.append({"key": f.stem, "name": part["name"], "kind": part["kind"]})
+    if not files:
         continue
-    # the file without comment lines and spare spaces: the numbers are not changed
-    lines = [" ".join(ln.split("#")[0].split()) for ln in f.read_text().splitlines()]
-    h3texts[str(e["pk"])] = "\n".join(ln for ln in lines if ln) + "\n"
     ref, doi = h3reference(e)
     h3by.setdefault(e.get("system"), []).append({
         "dataset": e["pk"], "spaceGroup": e.get("space_group") or "", "temperature": h3temperature(e), "experimental": bool(e.get("is_experimental")),
-        "sample": e.get("sample_type") or "", "caption": e.get("caption") or "", "main": bool(e.get("representative")), "reference": ref, "doi": doi})
+        "sample": e.get("sample_type") or "", "caption": e.get("caption") or "", "main": bool(e.get("representative")), "reference": ref, "doi": doi,
+        "files": files})
 h3materials = []
 for sy in json.loads((h3 / "systems.json").read_text()):
     mine = sorted(h3by.get(sy["pk"], []), key=lambda x: (not x["main"], not x["experimental"], x["dataset"]))
@@ -70,7 +110,8 @@ databases = json.dumps({
     "id": "hybrid3", "name": "HybriD3 materials database", "home": "https://materials.hybrid3.duke.edu/", "licence": "CC BY 4.0",
     "licenceUrl": "https://creativecommons.org/licenses/by/4.0/", "read": h3info["read"], "total": len(h3materials), "demo": True,
     "structuresOnSite": h3info.get("structures_stated"), "materials": h3materials}, ensure_ascii=False, separators=(",", ":"))
-dbstructures = json.dumps(h3texts, ensure_ascii=False, separators=(",", ":"))
+# the structure files as one packed text (gzip, then base64): the page unpacks it when the user opens a structure
+dbstructures = base64.b64encode(gzip.compress(json.dumps(h3texts, ensure_ascii=False, separators=(",", ":")).encode("utf-8"), 9, mtime=0)).decode("ascii")
 table = (root / "src/sg-table.json").read_text()
 # built-in samples: file in examples/, name shown in the page
 SAMPLES = [

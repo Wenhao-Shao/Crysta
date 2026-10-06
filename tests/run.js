@@ -536,5 +536,23 @@ const formula = (info) => info.formula.map((e) => e.el + e.n).join(' ');
   check('CIF with no atoms in any block is refused', threw);
 }
 
+// The copy of HybriD3 (data/hybrid3): each structure file that the entry list names is there, and Crysta reads it
+{
+  const dir = path.join(__dirname, '../data/hybrid3');
+  const list = JSON.parse(fs.readFileSync(path.join(dir, 'structures.json'), 'utf8'));
+  const files = list.flatMap((e) => (e.parts || []).map((p) => p.file));
+  const bad = [];
+  for (const f of files) {
+    try {
+      const r = X.readStructures(fs.readFileSync(path.join(dir, 'structures', f), 'utf8'), f);
+      if (!r.structures.length || r.structures.some((st) => !st.sites.length)) bad.push(f + ': no atoms');
+    } catch (err) { bad.push(f + ': ' + err.message); }
+  }
+  if (bad.length) console.log(bad.slice(0, 30).join('\n'));
+  check('HybriD3 copy: Crysta reads each of the ' + files.length + ' structure files', files.length > 200 && !bad.length);
+  const onDisk = fs.readdirSync(path.join(dir, 'structures')).sort().join(' ');
+  check('HybriD3 copy: the folder holds the files of the list and no other file', onDisk === files.slice().sort().join(' '));
+}
+
 console.log(passed + ' passed, ' + failed + ' failed');
 process.exit(failed ? 1 : 0);

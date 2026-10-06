@@ -611,7 +611,7 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
 
 <script type="application/json" id="samples">__SAMPLES__</script>
 <script type="application/json" id="db-hybrid3">__DATABASES__</script>
-<script type="application/json" id="db-hybrid3-structures">__DBSTRUCTURES__</script>
+<script type="text/plain" id="db-hybrid3-structures">__DBSTRUCTURES__</script>
 <script type="application/json" id="sg-table">__SGTABLE__</script>
 <!--LIB-->
 <script>
@@ -665,11 +665,15 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
   try { dbCopy = JSON.parse($('db-hybrid3').textContent); } catch (err) { /* no database copy in this page */ }
   /* the structure files of the copy: a large text, read only when the user opens the first structure */
   let dbTexts = null;
-  const dbText = (dataset) => {
-    if (!dbTexts) { try { dbTexts = JSON.parse($('db-hybrid3-structures').textContent); } catch (err) { dbTexts = {}; } }
-    return dbTexts[dataset] || null;
+  const dbText = async (keys) => {
+    if (!dbTexts) {
+      // gzip, then base64: unpack once, when the user opens the first structure
+      const packed = Uint8Array.from(atob($('db-hybrid3-structures').textContent.trim()), (ch) => ch.charCodeAt(0));
+      dbTexts = JSON.parse(await new Response(new Blob([packed]).stream().pipeThrough(new DecompressionStream('gzip'))).text());
+    }
+    return keys.map((k) => dbTexts[k] || null);
   };
-  const dbs = window.CrystaDatabases ? window.CrystaDatabases.create({ data: dbCopy, structureText: dbText, addFiles: (list) => addFiles(list), name: NAME, version: '__VERSION__' }) : null;
+  const dbs = window.CrystaDatabases ? window.CrystaDatabases.create({ data: dbCopy, structureTexts: dbText, addFiles: (list) => addFiles(list), name: NAME, version: '__VERSION__' }) : null;
   const safeUrl = (u) => (/^https?:\/\//i.test(String(u || '')) ? String(u) : '#');
   /* a file that is not a structure but holds two columns of numbers is taken as measured powder data */
   const isPowderData = (text) => { try { return C.readXY(text).x.length >= 20; } catch (err) { return false; } };

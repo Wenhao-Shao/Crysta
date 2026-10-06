@@ -1,9 +1,10 @@
 /* Databases window: find a structure in an outside database and open it in Crysta.
-   DEMO. One database has a copy inside the page: the entry list of HybriD3 and the structure files of its data sets.
+   DEMO. One database has a copy inside the page: the entry list of HybriD3 and the structure files of its data sets
+   (CIFs and FHI-aims geometry files, as the download of each data set gives them).
    The other databases are links: the user downloads the file there and drops it on Crysta.
    Crysta cannot read these databases directly from a browser (they do not allow requests from other sites),
    so the entry list is a copy. tools/hybrid3_copy.py makes it from the HybriD3 API, and build.py puts it in the page.
-   Use: const dbs = CrystaDatabases.create({ data, addFiles, name, version }); dbs.open(); */
+   Use: const dbs = CrystaDatabases.create({ data, structureTexts, addFiles, name, version }); dbs.open(); */
 (function () {
   'use strict';
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -91,9 +92,19 @@
     }
     const pageOf = (m) => db.home + 'materials/' + m.pk;
     const withFile = () => db.materials.filter((m) => m.structures.length).length;
-    const nStructures = () => db.materials.reduce((t, m) => t + m.structures.length, 0);
-    /* one structure of an entry in words: P21/c, 300 K, experiment */
-    const structureText = (s) => [sgSpaced(s.spaceGroup).replace(' ', ''), s.temperature ? s.temperature + ' K' : '', s.experimental ? 'experiment' : 'calculation', s.caption].filter(Boolean).join(', ');
+    /* the number of structure files of one kind ("cif" or "in") in the page */
+    const nFiles = (kind) => db.materials.reduce((t, m) => t + m.structures.reduce((u, s) => u + s.files.filter((f) => f.kind === kind).length, 0), 0);
+    /* the files of one data set in words: CIF, 7 CIFs, geometry file */
+    function filesText(s) {
+      const n = s.files.length;
+      if (s.files.every((f) => f.kind === 'cif')) return n === 1 ? 'CIF' : n + ' CIFs';
+      if (s.files.every((f) => f.kind === 'in')) return n === 1 ? 'geometry file' : n + ' geometry files';
+      return n + ' files';
+    }
+    /* one data set of an entry in words: P21/c, 300 K, experiment, CIF. A data set with several files does not have
+       one temperature, so the temperature is not shown for it. */
+    const structureText = (s) => [sgSpaced(s.spaceGroup).replace(' ', ''), s.temperature && s.files.length === 1 ? s.temperature + ' K' : '',
+      s.experimental ? 'experiment' : 'calculation', s.caption, filesText(s)].filter(Boolean).join(', ');
 
     function hybridPanel() {
       const n = withFile();
@@ -104,8 +115,9 @@
         '<span class="small" id="dbCount" aria-live="polite"></span></div>' +
         '<div class="tbl-wrap db-table"><table id="dbTbl"></table></div>' +
         '<div class="small">Data: <a href="' + esc(db.home) + '" target="_blank" rel="noopener">' + esc(db.name) + '</a>, Duke University. Licence: <a href="' + esc(db.licenceUrl) + '" target="_blank" rel="noopener">' + esc(db.licence) + '</a>. ' +
-        'The list is a copy of all ' + db.total + ' materials, read on ' + esc(db.read) + '. ' + n + ' of them have ' + nStructures() + ' structures in this page' +
-        (db.structuresOnSite ? ' (HybriD3 lists ' + db.structuresOnSite + ')' : '') + '. An entry with no structure here has a link to its HybriD3 page. ' +
+        'The list is a copy of all ' + db.total + ' materials, read on ' + esc(db.read) + '. ' + n + ' of them have structure files in this page: ' +
+        nFiles('cif') + ' CIFs and ' + nFiles('in') + ' geometry files. A geometry file holds the cell and the atoms, but no symmetry. ' +
+        'An entry with no structure file here has a link to its HybriD3 page. ' +
         'If you use a structure, cite the reference that ' + esc(host.name) + ' shows with it.</div>';
     }
     function nameCell(m) {
@@ -122,7 +134,9 @@
       q('#dbCount').textContent = list.length + (list.length === 1 ? ' entry' : ' entries');
       tbl.innerHTML = '<thead><tr><th>Material</th><th title="The formula unit: the elements and their numbers as HybriD3 gives them, C and H first">Formula</th><th>Dim.</th><th><i>n</i></th><th>Structure</th></tr></thead><tbody>' +
         (list.length ? list.map((m) => {
-          const open = m.structures.map((s, i) => '<div class="db-one"><button type="button" class="mini primary" data-open="' + m.pk + ':' + i + '" title="Open data set ' + s.dataset + ' in ' + esc(host.name) + '">Open</button>' +
+          const open = m.structures.map((s, i) => '<div class="db-one"><button type="button" class="mini primary" data-open="' + m.pk + ':' + i + '" title="' +
+            (s.files.length > 1 ? 'Open the ' + s.files.length + ' structure files of data set ' + s.dataset : 'Open data set ' + s.dataset) + ' in ' + esc(host.name) + '">' +
+            (s.files.length > 1 ? 'Open ' + s.files.length : 'Open') + '</button>' +
             '<span class="small">' + esc(structureText(s)) + '</span></div>').join('');
           const on = '';
           return '<tr><td>' + nameCell(m) + '</td>' +
@@ -147,21 +161,32 @@
       if (ui.tab === 'hybrid3') drawTable();
     }
 
-    function openEntry(key) {
+    async function openEntry(key, button) {
       const [pk, i] = key.split(':');
       const m = db.materials.find((x) => String(x.pk) === pk);
       const s = m && m.structures[+i];
-      const text = s ? host.structureText(String(s.dataset)) : null;
-      if (!text) return;
+      if (!s) return;
+      let texts;
+      try {
+        texts = await host.structureTexts(s.files.map((f) => f.key));
+      } catch (err) {
+        // an old browser cannot unpack the structure files of the page
+        if (button) { button.disabled = true; button.textContent = 'Not available'; button.title = 'This browser cannot unpack the structure files. Use the HybriD3 page.'; }
+        return;
+      }
       const short = m.names.common[0] || m.name;
-      host.addFiles([{
-        name: short + ', HybriD3 ' + s.dataset + '.in', text,
+      const one = s.files.length === 1;
+      const list = s.files.map((f, k) => ({
+        // the name in the Structures table: the short name, the data set and, if the data set has several files, the file
+        name: short + ', HybriD3 ' + s.dataset + (one ? '' : ', ' + f.name.replace(/\.(cif|in)$/i, '')) + '.' + f.kind, text: texts[k],
         // where the structure comes from: shown with the structure, so that the credit goes with it
         origin: {
           database: 'HybriD3', entry: 'data set ' + s.dataset, url: db.home + 'materials/dataset/' + s.dataset, licence: db.licence, licenceUrl: db.licenceUrl,
-          reference: s.reference || '', doi: s.doi || '', spaceGroup: sgSpaced(s.spaceGroup), temperature: s.temperature || ''
+          reference: s.reference || '', doi: s.doi || '', spaceGroup: sgSpaced(s.spaceGroup), temperature: one ? s.temperature || '' : ''
         }
-      }]);
+      })).filter((f) => f.text);
+      if (!list.length) return;
+      host.addFiles(list);
       close();
     }
 
@@ -184,7 +209,7 @@
         const tab = e.target.closest('button[data-tab]');
         if (tab) { ui.tab = tab.dataset.tab; draw(); return; }
         const b = e.target.closest('button[data-open]');
-        if (b) openEntry(b.dataset.open);
+        if (b) openEntry(b.dataset.open, b);
       });
       box.addEventListener('input', (e) => {
         if (e.target.id === 'dbText') { ui.text = e.target.value; drawTable(); }
@@ -213,7 +238,7 @@
       if (first) first.focus();
     }
 
-    return { open, close, isOpen: () => !!ui.box, state: ui };
+    return { open, close, isOpen: () => !!ui.box, state: ui, data: () => db };
   }
 
   window.CrystaDatabases = { create, hillFormula, splitNames, namesOf };
