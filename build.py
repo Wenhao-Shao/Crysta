@@ -10,7 +10,7 @@ served from the host of "homepage"). The offline file carries no such code.
 The name shown in the page comes from "displayName" in package.json.
 The address in the canonical link and the link-preview tags comes from "homepage".
 """
-import html, json, pathlib, urllib.parse
+import html, json, pathlib, re, urllib.parse
 
 root = pathlib.Path(__file__).parent
 pkg = json.loads((root / "package.json").read_text())
@@ -87,6 +87,12 @@ cff += ['version: "%s"' % version, "date-released: %s" % cite["released"], 'url:
         "license: MIT", 'abstract: "%s"' % pkg["description"].replace('"', "'"), "keywords:", "  - crystallography", "  - crystal structure", "  - CIF",
         "  - powder X-ray diffraction", "  - 2D perovskite"]
 (root / "CITATION.cff").write_text("\n".join(cff) + "\n")
+# the citation example in the README has the same text
+readme = root / "README.md"
+rtext = readme.read_text()
+rnew = re.sub(r"^> .*?, version [0-9.]+ \([0-9]{4}\)\. \S+$", "> " + cite_text, rtext, flags=re.M)
+if rnew != rtext:
+    readme.write_text(rnew)
 table = (root / "src/sg-table.json").read_text()
 # built-in samples: file in examples/, name shown in the page
 SAMPLES = [

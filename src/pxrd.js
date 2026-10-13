@@ -7,6 +7,8 @@
   'use strict';
   const C = window.XtalCore;
   const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  // a negative index with a minus sign (U+2212), not a hyphen
+  const neg = (v) => (v < 0 ? '\u2212' + (-v) : String(v));
   /* Line colours of the patterns, in a fixed order: eight hues that stay apart for the common forms of colour
      blindness, with separate steps for the light and the dark page. The first measured data set is drawn in ink. */
   const SERIES = {
@@ -264,6 +266,8 @@
       box.setAttribute('aria-label', 'Powder X-ray diffraction');
       document.body.appendChild(box);
       px.float = box;
+      // Escape closes the floating window, as it closes the Databases window
+      box.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !e.target.closest('input, select, textarea')) unmount(); });
       px.notice = 'Your browser did not open a new window. This page shows the PXRD window instead.';
       mount(box);
       const head = q('.px-head');
@@ -348,7 +352,7 @@
         const e = q('[data-info="' + s.id + '"]');
         if (!e) continue;
         const n = s.on && s.pat ? s.pat.reflections.filter((r) => r.tth >= px.tmin && r.tth <= s.pat.tthMax).length : 0;
-        e.textContent = s.on && s.pat ? n + ' reflections, ' + s.pat.nAtoms + ' atoms per cell' : '';
+        e.textContent = s.on && s.pat ? n + ' reflections, ' + s.pat.nAtoms + ' atom positions per cell (every disorder part)' : '';
       }
     }
     function refresh() {
@@ -367,10 +371,11 @@
       if (px.notice) notes.push(px.notice);
       const anode = C.anodeOf(px.lambda);
       const shown = shownSims().filter((x) => x.s.pat);
-      if (shown.length && !anode) notes.push('The corrections f′ and f″ are tabulated for the Kα lines of Cu, Mo, Co, Fe, Cr and Ag only. At this wavelength the simulation uses f′ = f″ = 0.');
+      if (shown.length && !anode) notes.push('The corrections f′ and f″ are tabulated for the Kα lines of Cu, Mo, Co, Fe, Cr and Ag only (from 0.4 % below Kα1 to 0.4 % above Kα2, with the values of Kα1). At this wavelength the simulation uses f′ = f″ = 0.');
       for (const { d, s } of shown) {
         if (s.pat.cut) notes.push(short(d.name, 40) + ': the simulation stops at 2θ = ' + s.pat.tthMax.toFixed(0) + '° because this structure has too many reflections for a larger range.');
         if (s.pat.noU) notes.push(short(d.name, 40) + ': ' + s.pat.noU + (s.pat.noU === 1 ? ' site has' : ' sites have') + ' no displacement parameter in the file. The simulation uses B = ' + px.bDefault + ' Å² for ' + (s.pat.noU === 1 ? 'it.' : 'them.'));
+        if (s.pat.noDisp && s.pat.noDisp.length) notes.push(short(d.name, 40) + ': the tables of f′ and f″ stop at U, so the simulation uses f′ = f″ = 0 for ' + s.pat.noDisp.join(', ') + '.');
         if (s.pat.missing.length) notes.push(short(d.name, 40) + ': ' + host.name + ' has no scattering factor for ' + s.pat.missing.join(', ') + '.');
       }
       for (const it of px.data) {
@@ -554,7 +559,7 @@
       }
       return best;
     }
-    const hklText = (r) => '(' + r.h + ' ' + r.k + ' ' + r.l + ')';
+    const hklText = (r) => '(' + neg(r.h) + ' ' + neg(r.k) + ' ' + neg(r.l) + ')';
     function hideHover() {
       const c = q('#pxCross'), t = q('#pxTip');
       if (c) c.setAttribute('visibility', 'hidden');
@@ -680,7 +685,7 @@
       }
       const shown = t.rows.slice(0, MAX_ROWS);
       tbl.innerHTML = '<colgroup><col style="width:6%"><col style="width:6%"><col style="width:6%"><col><col><col><col><col><col><col style="width:7%"></colgroup><thead><tr><th><i>h</i></th><th><i>k</i></th><th><i>l</i></th><th><i>d</i> (Å)</th><th><i>F</i> (real)</th><th><i>F</i> (imag.)</th><th>|<i>F</i>|</th><th>2θ (°)</th><th><i>I</i></th><th><i>M</i></th></tr></thead><tbody>' +
-        shown.map((r, i) => '<tr data-row="' + i + '"' + (px.mark && px.mark.r === r ? ' class="on"' : '') + '><td>' + r.h + '</td><td>' + r.k + '</td><td>' + r.l + '</td><td>' + r.d.toFixed(4) + '</td><td>' + r.fre.toFixed(3) + '</td><td>' + r.fim.toFixed(3) + '</td><td>' + r.f.toFixed(3) + '</td><td>' + r.tth.toFixed(3) + '</td><td>' + r.rel.toFixed(2) + '</td><td>' + r.m + '</td></tr>').join('') + '</tbody>';
+        shown.map((r, i) => '<tr data-row="' + i + '"' + (px.mark && px.mark.r === r ? ' class="on"' : '') + '><td>' + neg(r.h) + '</td><td>' + neg(r.k) + '</td><td>' + neg(r.l) + '</td><td>' + r.d.toFixed(4) + '</td><td>' + r.fre.toFixed(3) + '</td><td>' + r.fim.toFixed(3) + '</td><td>' + r.f.toFixed(3) + '</td><td>' + r.tth.toFixed(3) + '</td><td>' + r.rel.toFixed(2) + '</td><td>' + r.m + '</td></tr>').join('') + '</tbody>';
       const bits = [t.rows.length === t.total ? t.total + ' reflections.' : 'The table lists ' + t.rows.length + ' of ' + t.total + ' reflections: those with I of ' + px.minRel + ' or more. Set 0 to list all.'];
       if (t.rows.length > MAX_ROWS) bits.push('The table shows the first ' + MAX_ROWS + '. The copied and the saved table hold all of them.');
       bits.push('I is on a scale where the strongest reflection in the range is 100. M is the multiplicity. |F| is the root of the mean |F|² of the M reflections of the set; F(real) and F(imag) are for the reflection that the row names. Press a row to mark that reflection in the plot.');
@@ -710,7 +715,7 @@
     }
 
     /* ---------- save and copy ---------- */
-    const stem = (name) => String(name).replace(/\.[^.]+$/, '').replace(/[^A-Za-z0-9._()+-]+/g, '_') || 'pattern';
+    const stem = (name) => String(name).replace(/\.[^.]+$/, '').replace(/[^\p{L}\p{N}._()+-]+/gu, '_').replace(/^_+$/, '') || 'pattern';
     function save(parts, type, filename) {
       const doc = px.root.ownerDocument;
       const w = doc.defaultView || window;

@@ -481,7 +481,8 @@ const formula = (info) => info.formula.map((e) => e.el + e.n).join(' ');
   check('aims format and cell', s.meta.format === 'FHI-aims' && s.meta.symSource === 'p1' && near(s.cell.a, 16.723, 1e-4) && near(s.cell.b, 8.6332, 1e-4) && near(s.cell.c, 8.8, 1e-4) && near(s.cell.be, 98.781, 1e-3));
   check('aims atoms and formula', s.sites.length === 94 && uc.atoms.length === 94 && info.formula.map((e) => e.el + e.n).join(' ') === 'C16 H22 F2 I4 N2 Pb1' && info.Z === 2);
   check('aims layers', info.framework.dim === 2 && info.framework.hkl.join('') === '100' && info.layer.n === 1 && near(info.framework.spacing, 16.527, 0.002));
-  check('aims Pb coordination', info.metalSites.length === 2 && info.metalSites.every((m) => m.cn === 6 && near(m.mean, 3.187, 0.002)));
+  // a file without symmetry: the two Pb have the same values and share one entry (DA-b06)
+  check('aims Pb coordination', info.metalSites.length === 1 && info.metalSites[0].alike === 2 && info.metalSites.every((m) => m.cn === 6 && near(m.mean, 3.187, 0.002)));
   check('aims read by content when the name says nothing', X.readStructure(text, 'download').sites.length === 94);
   // the same atoms written as cell fractions, with a comment and a keyword that the reader does not need
   const iv = s.sites.map((a) => 'atom_frac ' + a.f.map((x) => x.toFixed(8)).join(' ') + ' ' + a.el + '\n    initial_moment 0.0');
@@ -1261,6 +1262,60 @@ const formula = (info) => info.formula.map((e) => e.el + e.n).join(' ');
     const b = X.readXY('1.54056\n10,00;100,5\n10,02;101,25\n10,04;99,0\n10.06;98\n');
     check('audit A4-02: decimal commas with a header that holds a point', a.x.join() === '10,10.02,10.04' && a.y.join() === '100.5,101.25,99' && b.x.join() === '10,10.02,10.04,10.06');
   }
+}
+
+// Audit of v0.5.2, S4 findings (v0.6.1)
+{
+  const head = (sg, cell) => 'data_t\n' + ['a', 'b', 'c'].map((k, i) => '_cell_length_' + k + ' ' + cell[i]).join('\n') + '\n' +
+    ['alpha', 'beta', 'gamma'].map((k, i) => '_cell_angle_' + k + ' ' + cell[3 + i]).join('\n') + '\n' + sg + '\n';
+  const P1 = "_symmetry_space_group_name_H-M 'P 1'";
+  const read = (t, n) => X.readStructure(t, n || 't.cif');
+  const throwsWith = (f, re) => { try { f(); return false; } catch (e) { return re.test(e.message); } };
+  // A1-08: a dummy site (calc_flag dum) is not an atom
+  let s = read(head(P1, [10, 10, 10, 90, 90, 90]) + 'loop_\n_atom_site_label\n_atom_site_type_symbol\n_atom_site_fract_x\n_atom_site_fract_y\n_atom_site_fract_z\n_atom_site_calc_flag\n' +
+    'Na1 Na 0 0 0 d\nCg1 . 0.5 0.5 0.5 dum\n');
+  check('audit A1-08: a dummy site is skipped', s.sites.length === 1 && s.meta.skipped.some((x) => x.label === 'Cg1'));
+  // A1-09: coordinates as fractions
+  s = read(head(P1, [10, 10, 10, 90, 90, 90]) + 'loop_\n_atom_site_label\n_atom_site_type_symbol\n_atom_site_fract_x\n_atom_site_fract_y\n_atom_site_fract_z\nNa1 Na 1/3 2/3 1/4\n');
+  check('audit A1-09: fractions 1/3 2/3 1/4', near(s.sites[0].f[0], 1 / 3, 1e-12) && near(s.sites[0].f[1], 2 / 3, 1e-12) && near(s.sites[0].f[2], 0.25, 1e-12));
+  // A1-11: a space-group name with spaces and no quotes
+  s = read(head('_symmetry_space_group_name_H-M P 21/c', [6, 7, 8, 90, 100, 90]) + 'loop_\n_atom_site_label\n_atom_site_type_symbol\n_atom_site_fract_x\n_atom_site_fract_y\n_atom_site_fract_z\nNa1 Na 0.1 0.2 0.3\n');
+  check('audit A1-11: an unquoted symbol with spaces is read whole', s.ops.length === 4 && s.meta.spaceGroup === 'P 21/c', s.meta.spaceGroup);
+  // A1-12, A1-15: three scaling factors; labels without the POTCAR suffix
+  s = read('test\n1.0 2.0 1.0\n6 0 0\n0 6 0\n0 0 6\nNa_pv Cl\n1 1\nDirect\n0 0 0\n0.5 0.5 0.5\n', 'POSCAR');
+  check('audit A1-12: three POSCAR scaling factors scale x, y and z', near(s.cell.a, 6, 1e-9) && near(s.cell.b, 12, 1e-9) && near(s.cell.c, 6, 1e-9));
+  check('audit A1-15: POSCAR labels without the POTCAR suffix', s.sites.map((x) => x.label).join() === 'Na1,Cl1');
+  // A1-16: a POSCAR whose comment starts with "atom 1"
+  s = read('atom 1 relaxed\n1.0\n6 0 0\n0 6 0\n0 0 6\nNa Cl\n1 1\nDirect\n0 0 0\n0.5 0.5 0.5\n', 'POSCAR');
+  check('audit A1-16: a file named POSCAR is a POSCAR', s.meta.format === 'POSCAR' && s.sites.length === 2);
+  // A1-13: control.in is not a structure
+  check('audit A1-13: control.in is refused with its own message, and a zip skips it', throwsWith(() => read('xc pbe\n', 'control.in'), /control file/) &&
+    X.zipStructureNames(['run/control.in', 'run/geometry.in'], false).join() === 'run/geometry.in');
+  // A1-14: XYZ with atomic numbers; extended XYZ whose Properties start with pos
+  s = read('3\nwater\n8 0 0 0\n1 0.96 0 0\n1 -0.24 0.93 0\n', 'w.xyz');
+  const s2 = read('2\nLattice="5 0 0 0 5 0 0 0 5" Properties=pos:R:3:species:S:1 pbc="T T T"\n0 0 0 Na\n2.5 2.5 2.5 Cl\n', 'x.xyz');
+  check('audit A1-14: XYZ atomic numbers and Properties columns', s.sites.map((x) => x.el).join() === 'O,H,H' && s2.sites.map((x) => x.el).join() === 'Na,Cl' && near(s2.sites[1].f[0], 0.5, 1e-9));
+  // A2-07: B2 is B 1 1 2 (unique axis c)
+  const b2 = X.symbolOps('B 2', null);
+  check('audit A2-07: B2 is B 1 1 2', b2 && b2.ops.length === 4 && b2.ops.some((o) => o.R[0][0] === -1 && o.R[1][1] === -1 && o.R[2][2] === 1));
+  // A3-08: three atoms on a line give no torsion
+  check('audit A3-08: a torsion with three atoms on a line has no value', isNaN(X.torsion([0, 0, 0], [1, 0, 0], [2, 0, 0], [2, 1, 0])) && near(Math.abs(X.torsion([0, 1, 0], [0, 0, 0], [1, 0, 0], [1, 0, 1])), 90, 1e-9));
+  // A4-03: Mo K-alpha 2 as lambda 1 keeps the dispersion of Mo
+  check('audit A4-03: Mo K-alpha 2 is a Mo line', X.anodeOf(0.71361) && X.anodeOf(0.71361).key === 'Mo' && !X.anodeOf(0.8));
+  // A4-05: no f' and f'' for Np: the pattern says so
+  const np = read(head("_symmetry_space_group_name_H-M 'F m -3 m'", [5.4, 5.4, 5.4, 90, 90, 90]) + 'loop_\n_atom_site_label\n_atom_site_type_symbol\n_atom_site_fract_x\n_atom_site_fract_y\n_atom_site_fract_z\nNp1 Np 0 0 0\nO1 O 0.25 0.25 0.25\n');
+  const pat = X.powderPattern(np, { lambda: 1.54059, tthMax: 40 });
+  check('audit A4-05: Np has no dispersion, and the pattern lists it', pat.noDisp.join() === 'Np', pat.noDisp.join());
+  // A6-07: a set of angles that gives no cell
+  check('audit A6-07: impossible cell angles are refused', throwsWith(() => read(head(P1, [5, 5, 5, 30, 30, 120]) + 'loop_\n_atom_site_label\n_atom_site_fract_x\n_atom_site_fract_y\n_atom_site_fract_z\nNa1 0 0 0\n'), /describe no cell/));
+  // DA-a04: Hall symbols with a change of basis in (x,y,z) form
+  const keyOf = (o) => o.R.map((r) => r.join(',')).join(';') + '|' + o.T.map((t) => Math.round((((t % 1) + 1) % 1) * 12)).join(',');
+  const want = new Set(['x,y,z', '-x,-y,z+1/2'].map((t) => keyOf(X.parseSymop(t))));
+  const got = X.hallOps('P 2yb (z,x,y)');
+  check('audit DA-a04: Hall P 2yb (z,x,y) gives x,y,z and -x,-y,z+1/2', got && got.length === 2 && got.every((o) => want.has(keyOf(o))));
+  // DA-b03: the README cites the version of package.json
+  const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, '../package.json'), 'utf8'));
+  check('audit DA-b03: the README citation has the version of package.json', fs.readFileSync(path.join(__dirname, '../README.md'), 'utf8').includes('version ' + pkg.version + ' ('));
 }
 
 // How to cite: CITATION.cff and the built page have the version of package.json

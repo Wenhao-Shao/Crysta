@@ -165,6 +165,10 @@ dd.lit, tr.lit td { color: var(--accent); }
   box-shadow: 0 6px 18px rgba(20, 16, 24, 0.18); font-family: var(--font-ui); font-size: 12px; line-height: 1.4; color: var(--ink);
   cursor: move; touch-action: none; user-select: none; -webkit-user-select: none; }
 .defnote.drag { box-shadow: 0 10px 26px rgba(20, 16, 24, 0.3); }
+/* a narrow window: the note opens at the foot of the picture, clear of the view buttons at the top */
+@media (max-width: 640px) { .defnote { top: auto; bottom: 10px; max-height: 45%; } }
+/* a touch screen: the small buttons get a target of 24 px or more */
+@media (pointer: coarse) { .xbtn, .defnote-head .xbtn { min-width: 24px; min-height: 24px; } .glowbtn { display: inline-block; min-height: 24px; line-height: 24px; } }
 .defnote-head { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 2px; }
 .defnote-head b { flex: 1 1 auto; font-weight: 600; font-size: 12.5px; }
 .defnote-head .xbtn { margin: 0; padding: 0 2px; flex: none; cursor: pointer; }
@@ -549,7 +553,7 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
         <div class="row">
           <button type="button" id="btnPng">Save PNG image</button>
           <label class="small">size <select id="pngScale" aria-label="Image size">
-            <option value="1">1× (as shown)</option>
+            <option value="1">1× (screen pixels)</option>
             <option value="2" selected>2×</option>
             <option value="4">4×</option>
           </select></label>
@@ -731,6 +735,13 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
   const MAX_MEASURES = 20;
   const MAX_MPLANES = 6;         // planes for measurements in one structure
   const MPLANE_COLORS = ['#0077b6', '#d95f00', '#1a9a5a', '#7a3fb5', '#c2185b', '#8a6d00'];
+  /* the letter on a plane colour: white, or black where white has a contrast below 4.5:1 (WCAG AA) */
+  const letterOn = (hex) => {
+    const lin = (c) => (c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4));
+    const L = [1, 3, 5].map((i) => lin(parseInt(hex.slice(i, i + 2), 16) / 255));
+    const y = 0.2126 * L[0] + 0.7152 * L[1] + 0.0722 * L[2];
+    return 1.05 / (y + 0.05) >= 4.5 ? '#ffffff' : '#000000';
+  };
   const GLOW_PERIOD = 1400;      // milliseconds for one glow in and out
   const GLOW_MAX_ATOMS = 4000;
   const MAX_HB_ROWS = 60, MAX_SITE_ROWS = 24;    // rows listed before a "Show all" button
@@ -982,6 +993,12 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
       return;
     }
     $('chkMinor').checked = d.minor;
+    // a measurement against a plane needs a plane: a structure with none goes back to Distance
+    if (!d.mplanes.length && (st.measure === 'aplane' || st.measure === 'bplane' || st.measure === 'pangle')) {
+      st.measure = 'dist';
+      ['measDist', 'measAngle', 'measTors', 'measAPlane', 'measBPlane', 'measPAngle'].forEach((id) => $(id).setAttribute('aria-pressed', String(id === 'measDist')));
+      $('measHint').textContent = MEASURE.dist.hint;
+    }
     // the h, k, l boxes of the Planes part start at the lattice plane of the layers, if the structure has layers
     if (d.info.framework && d.info.framework.dim === 2) ['mpH', 'mpK', 'mpL'].forEach((id, k) => { $(id).value = d.info.framework.hkl[k]; });
     drawHeader();
@@ -997,14 +1014,54 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
   }
 
   /* ---------- text panels ---------- */
+  /* A Hermann-Mauguin symbol as HTML: the lattice letter and the glide and mirror letters in italics, -3 with a bar,
+     21 with a subscript. A symbol with spaces is formatted word by word. A symbol without spaces (P21/c, Pm-3m) is
+     cut into its parts first: of the possible cuts, the one with three parts, else one, else two, then the one with
+     the fewest parts "1", then the one with the longer part first, wins (P4212 = P 4 21 2, P31c = P 3 1 c,
+     P3121 = P 31 2 1). Text that is not a symbol is only escaped. */
+  function sgPart(tok, lattice) {
+    if (!/^(-?[1-6][1-6]?(\/[a-z])?|[a-z])$/.test(tok)) return esc(tok);
+    return tok.replace(/[a-z]/g, '<i>$&</i>').replace(/^-(\d)/, '<span class="bar">$1</span>')
+      .replace(/^([2346])([1-5])(?=\/|$)/, (m, n, k) => (+k < +n && lattice !== 'R' ? n + '<sub>' + k + '</sub>' : m));
+  }
+  function sgCut(rest, lattice) {
+    const cuts = [];
+    const walk = (i, parts) => {
+      if (i === rest.length) { cuts.push(parts); return; }
+      if (parts.length > 3) return;
+      const t = rest.slice(i);
+      const opts = [];
+      let m = /^-[1-6]/.exec(t); if (m) opts.push(m[0]);
+      m = /^[1-6]/.exec(t); if (m) opts.push(m[0]);
+      m = /^([2346])([1-5])/.exec(t); if (m && +m[2] < +m[1] && lattice !== 'R') opts.push(m[0]);
+      m = /^[a-z]/.exec(t); if (m) opts.push(m[0]);
+      for (const o of opts) {
+        const g = /^\/[a-z]/.exec(t.slice(o.length));
+        walk(i + o.length + (g && /\d$/.test(o) ? 2 : 0), parts.concat(o + (g && /\d$/.test(o) ? g[0] : '')));
+      }
+    };
+    walk(0, []);
+    // a 3 or -3 after the first part is the second part of a cubic symbol (P213 = P 21 3); a trigonal or hexagonal
+    // symbol has no screw axis after its first part (P3212 = P 32 1 2)
+    const valid = (c) => c.every((x, i) => i === 0 || !/^-?3$/.test(x) || i === 1) &&
+      !(/^-?[36]/.test(c[0]) && !(c.length > 1 && /^-?3$/.test(c[1])) && c.slice(1).some((x) => /^\d\d/.test(x)));
+    for (let i = cuts.length - 1; i >= 0; i--) if (!valid(cuts[i])) cuts.splice(i, 1);
+    // three parts, else one, else two; then the fewest parts "1"; then the longer part first (P3121 = P 31 2 1)
+    const rank = (c) => [c.length === 3 ? 0 : c.length === 1 ? 1 : c.length === 2 ? 2 : 3, c.filter((x) => x === '1').length].concat(c.map((x) => -x.length));
+    cuts.sort((p, q) => { const a = rank(p), b = rank(q); for (let i = 0; i < Math.max(a.length, b.length); i++) if ((a[i] || 0) !== (b[i] || 0)) return (a[i] || 0) - (b[i] || 0); return 0; });
+    return cuts[0] || null;
+  }
   function sgHtml(s) {
     if (!s) return null;
-    return s.trim().split(/\s+/).map((tok, i) => {
-      if (i === 0) return '<i>' + esc(tok) + '</i>';
-      return esc(tok).replace(/[a-z]/g, '<i>$&</i>')
-        .replace(/^-(\d)/, '<span class="bar">$1</span>')
-        .replace(/^([2346])([1-5])(?=\/|$)/, '$1<sub>$2</sub>');
-    }).join('');
+    const words = s.trim().split(/\s+/);
+    const lattice = words[0].charAt(0);
+    if (words.length === 1) {
+      const m = /^([A-Z])([-0-9a-z/]+)(:.*)?$/.exec(words[0]);
+      const cut = m ? sgCut(m[2], m[1]) : null;
+      if (!cut) return esc(words[0]);
+      return '<i>' + m[1] + '</i>' + cut.map((t) => sgPart(t, m[1])).join('') + (m[3] ? esc(m[3]) : '');
+    }
+    return words.map((tok, i) => (i === 0 ? (/^[A-Z]$/.test(tok) ? '<i>' + tok + '</i>' : esc(tok)) : sgPart(tok, lattice))).join('');
   }
   const formulaHtml = (f) => f.map((e) => esc(e.el) + (e.n === 1 ? '' : '<sub>' + e.n + '</sub>')).join('');
   const formulaText = (f) => f.map((e) => e.el + (e.n === 1 ? '' : e.n)).join(' ');
@@ -1060,7 +1117,8 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
       if (og.reference) add('Reference', esc(og.reference) + (og.doi ? ' <a href="https://doi.org/' + esc(encodeURI(og.doi)) + '" target="_blank" rel="noopener">doi ↗</a>' : ''), true);
       if (og.licence) add('Licence', '<a href="' + esc(safeUrl(og.licenceUrl)) + '" target="_blank" rel="noopener">' + esc(og.licence) + '</a>', true);
     }
-    add(m.molecular ? 'Atoms' : 'Atoms per cell', String(info.nAtoms));
+    // the atoms that the picture draws in one cell; the powder pattern uses every copy of every disorder part
+    add(m.molecular ? 'Atoms' : 'Atoms per cell, drawn', String(info.nAtoms));
     if (m.format !== 'CIF') add('File format', esc(m.format), true);
     if (m.leftHanded) add('Lattice', 'the lattice vectors of the file are left-handed; they are read as −<i>a</i>, −<i>b</i>, −<i>c</i>, the same lattice and the same atoms', true);
     const nOps = struct.ops.length + (struct.ops.length === 1 ? ' operator' : ' operators');
@@ -1086,7 +1144,7 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
     $('dlCrystal').innerHTML = rows.join('');
 
     // framework, coordination and (for layered metal halides) the 2D perovskite descriptors
-    // Each row is a button. It puts the definition of the row under the picture. A row with a type (see
+    // Each row is a button. It puts the definition of the row in a note in the picture. A row with a type (see
     // C.highlightSet) also glows in the picture: its atoms, its bonds, and the planes and lines of its definition.
     // A row with quiet: true has the definition only.
     const fwRows = [];
@@ -1158,6 +1216,7 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
         const shows = ' The picture shows ' + s.label + ' and its ' + s.cn + (s.cn === 1 ? ' bond.' : ' bonds.');
         addF('Mean ' + M + '–X', fmt(s.mean, 3) + ' Å' + (s.cn > 1 ? ', CN ' + s.cn : ''), false, { type: 'site', m: s.label,
           def: 'The mean of the ' + s.cn + ' distances from ' + s.label + ' to its bonded atoms. CN is the coordination number: the number of these bonds.' + shows });
+        if (s.alike > 1) addF('', s.alike + ' metal atoms of this file have these values; the rows are for ' + M, true);
         if (s.overlap) addF('', 'two disorder orientations overlap around ' + M + ': no octahedron values', true);
         if (s.octahedral) {
           addF(M + ' cis X–M–X', fmt(s.cisMin, 1) + '–' + fmt(s.cisMax, 1) + '°', false, { type: 'cis', m: s.label,
@@ -1207,7 +1266,7 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
         }).join('') + '</tbody>';
       notes.push('Angles in degrees, distances in Å.' + (brAll.length > br.length ? ' The first ' + br.length + ' of ' + brAll.length + ' distinct bridges are listed. <button type="button" class="linkbtn" id="brMore">Show all ' + brAll.length + '</button>' : ''));
     }
-    if (st.glowItems.length) notes.unshift('Press a row to read its definition under the picture. For most rows, the atoms and the planes of the definition also glow in the picture. Press the row again to close it.');
+    if (st.glowItems.length) notes.unshift('Press a row to read its definition in a note in the picture. For most rows, the atoms and the planes of the definition also glow in the picture. Press the row again to close it.');
     if (info.metalSites.some((s) => s.cn > C.MAX_POLY_CN)) notes.push('Sites with more than ' + C.MAX_POLY_CN + ' neighbours are drawn with bonds but without a polyhedron.');
     $('fwNote').innerHTML = notes.join(' ');
     if ($('brMore')) $('brMore').onclick = () => { d.allBridges = true; drawSheet(); };
@@ -1217,7 +1276,7 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
     $('polyName').textContent = allOct ? 'Octahedra' : 'Polyhedra';
 
     // hydrogen bonds: a row has a box that shows or hides that bond in the picture, and it is a button as the
-    // rows of the framework card are (its definition under the picture, and its atoms glow)
+    // rows of the framework card are (its definition in a note in the picture, and its atoms glow)
     // a large cell can have thousands of contacts: the first MAX_HB_ROWS are listed, and a button lists them all
     const hbAll = d.hbRows;
     const hb = d.allHB ? hbAll : hbAll.slice(0, MAX_HB_ROWS);
@@ -1588,7 +1647,13 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
   }
   function tsv() {
     const rows = compareRows();
-    return [rows[0].map((c) => c[0]).join('\t')].concat(rows.map((r) => r.map((c) => c[1]).join('\t'))).join('\n');
+    // a text cell that starts like a formula (=, +, -, @) gets an apostrophe, so that a spreadsheet keeps it as text;
+    // numbers stay numbers. Tabs and line breaks inside a cell become spaces.
+    const cell = (v) => {
+      const t = String(v === null || v === undefined ? '' : v).replace(/[\t\r\n]+/g, ' ');
+      return /^[=+\-@]/.test(t) && !/^[-+]?\d*\.?\d+(e[-+]?\d+)?$/i.test(t) ? "'" + t : t;
+    };
+    return [rows[0].map((c) => cell(c[0])).join('\t')].concat(rows.map((r) => r.map((c) => cell(c[1])).join('\t'))).join('\n');
   }
 
   /* one measurement as text: A···B 3.012 Å, A–B–C 109.5°, A–B–C–D −60.2°, A to plane P +0.123 Å, A–B to plane P 12.34°,
@@ -1598,7 +1663,7 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
     if (m.type === 'dist') return fmt(m.value, 3) + ' Å';
     if (m.type === 'aplane') return signedText(m.value, 3) + ' Å';
     if (m.type === 'bplane' || m.type === 'pangle') return fmt(m.value, 2) + '°';
-    return (m.value < 0 ? '−' : '') + fmt(Math.abs(m.value), m.type === 'angle' ? 2 : 1) + '°';
+    return (m.value < 0 ? '−' : '') + fmt(Math.abs(m.value), 2) + '°';
   }
   function measureText(m) {
     if (m.type === 'dist') return m.labels.join('···') + ' ' + measureValueText(m);
@@ -1616,7 +1681,14 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
      A plane goes through three or more atoms that the user clicks (least squares), or it is a lattice plane (hkl)
      through one atom. "Atom to plane" and "Bond to plane" measure against the chosen plane. */
   const mplaneOf = (d, id) => d.mplanes.find((p) => p.id === id) || null;
-  const mplaneText = (p) => (p.kind === 'atoms' ? 'through ' + p.labels.join(' ') : '(' + p.hkl.join(' ') + ') through ' + p.labels[0]);
+  /* (hkl) as text: (h k l) and (-h -k -l) are one plane, so the first index that is not 0 is positive; a negative
+     index has a minus sign */
+  const hklSign = (v, keep) => {
+    const s = !keep && (v.find((x) => x !== 0) || 1) < 0 ? -1 : 1;
+    return v.map((x) => (x * s < 0 ? '−' + Math.abs(x) : String(x * s))).join(' ');
+  };
+  // a lattice plane that the user typed keeps its signs: its normal sets the + side of a distance
+  const mplaneText = (p) => (p.kind === 'atoms' ? 'through ' + p.labels.join(' ') : '(' + hklSign(p.hkl, true) + ') through ' + p.labels[0]);
   /* the full text of a plane, for its tooltip: with the rms distance of the atoms from a plane through atoms */
   const mplaneTip = (p) => 'Plane ' + p.id + ' ' + mplaneText(p) + (p.kind === 'atoms' ? '. The rms distance of these atoms from the plane is ' + fmt(p.plane.rms, 3) + ' Å.' : '');
   const mplaneFull = () => 'A structure can have ' + MAX_MPLANES + ' planes. Remove one first.';
@@ -1695,7 +1767,7 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
     const rows = planes.map((p) => '<div class="mrow"><label title="Measure against plane ' + p.id + '"><input type="radio" name="mpSel" value="' + p.id + '"' + (p.id === d.mplaneSel ? ' checked' : '') + '>' +
       '<i class="sw" style="background:' + p.color + '"></i><b>' + p.id + '</b></label><span title="' + esc(mplaneTip(p)) + '">' + esc(mplaneText(p)) + '</span>' + cross('data-mprm="' + p.id + '"', 'plane ' + p.id) + '</div>' +
       (p.near ? '<div class="mrow"><span title="The lattice plane with the smallest indexes that is within 1° of plane ' + p.id + '. If no plane is that near, the nearest plane with indexes up to 6.">Plane ' + p.id + ' is ' +
-        fmt(p.near.angle, 2) + '° from (' + p.near.hkl.join(' ') + ')</span></div>' : ''));
+        fmt(p.near.angle, 2) + '° from (' + hklSign(p.near.hkl) + ')</span></div>' : ''));
     for (let i = 0; i < planes.length; i++) for (let j = i + 1; j < planes.length; j++) {
       rows.push('<div class="mrow"><span>Plane ' + planes[i].id + ' to plane ' + planes[j].id + ' ' + fmt(C.planePlaneAngle(planes[i].plane, planes[j].plane), 2) + '°</span></div>');
     }
@@ -1710,10 +1782,10 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
     if (i === 'all') { d.measures = []; d.picks = []; } else d.measures.splice(i, 1);
     render(true);
   }
-  /* the measurement under a point of the page, if any: near one of its dashed lines or its value label */
+  /* the measurements under a point of the page: near one of their dashed lines. Returns their indexes. */
   function measureAt(pageX, pageY) {
     const d = D();
-    if (!viewer || !d) return -1;
+    if (!viewer || !d) return [];
     const S = (q) => { const s = viewer.modelToScreen({ x: q[0], y: q[1], z: q[2] }); return [s.x, s.y]; };
     const seg = (a, b) => {
       const vx = b[0] - a[0], vy = b[1] - a[1];
@@ -1721,12 +1793,15 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
       const t = L ? Math.max(0, Math.min(1, ((pageX - a[0]) * vx + (pageY - a[1]) * vy) / L)) : 0;
       return Math.hypot(pageX - a[0] - t * vx, pageY - a[1] - t * vy);
     };
-    let best = -1, bd = 14;
-    d.measures.forEach((m, i) => {
+    // every measurement whose line is within 1 px of the nearest line (two measurements can share a line)
+    const dist = d.measures.map((m) => {
       const pts = m.pts.map(S);
-      for (let k = 0; k + 1 < pts.length; k++) { const dd = seg(pts[k], pts[k + 1]); if (dd < bd) { bd = dd; best = i; } }
+      let dd = Infinity;
+      for (let k = 0; k + 1 < pts.length; k++) dd = Math.min(dd, seg(pts[k], pts[k + 1]));
+      return dd;
     });
-    return best;
+    const bd = Math.min(14, ...dist);
+    return bd >= 14 ? [] : dist.map((x, i) => (x <= bd + 1 ? i : -1)).filter((i) => i >= 0);
   }
   function closeMenu() { $('ctxMenu').hidden = true; }
   /* The definition of the chosen row of the framework card or of the Hydrogen bonds card: a small note inside the
@@ -1743,6 +1818,7 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
     note.style.left = x + 'px';
     note.style.top = y + 'px';
     note.style.right = 'auto';
+    note.style.bottom = 'auto';
   }
   function drawDef() {
     const note = $('defNote');
@@ -1899,7 +1975,7 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
     }
     glowTimer = setTimeout(glowStep, Math.max(70, 2 * cost));
   }
-  /* A row of the framework card was pressed: its definition goes under the picture. A row with atoms, bonds or
+  /* A row of the framework card was pressed: its definition goes into a note in the picture. A row with atoms, bonds or
      planes to show also glows in the picture. A row with quiet: true has the definition only. */
   function toggleGlow(i) {
     const item = st.glowItems[i];
@@ -2134,7 +2210,7 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
       for (let k = 0; k < disc.pts.length; k++) viewer.addCylinder({ start: V3(disc.pts[k]), end: V3(disc.pts[(k + 1) % disc.pts.length]), radius: 0.025, color: P.color, fromCap: 1, toCap: 1 });
       const tip = [0, 1, 2].map((k) => disc.c[k] + 0.9 * P.plane.n[k]);
       viewer.addCylinder({ start: V3(disc.c), end: V3(tip), radius: 0.04, color: P.color, fromCap: 1, toCap: 1 });
-      addText(P.id, { position: V3([0, 1, 2].map((k) => disc.c[k] + 1.15 * P.plane.n[k])), font: 'IBM Plex Mono, monospace', fontSize: 13 * px, fontColor: '#ffffff',
+      addText(P.id, { position: V3([0, 1, 2].map((k) => disc.c[k] + 1.15 * P.plane.n[k])), font: 'IBM Plex Mono, monospace', fontSize: 13 * px, fontColor: letterOn(P.color),
         backgroundColor: P.color, backgroundOpacity: 0.95, borderThickness: 0, inFront: true, alignment: 'center' });
     }
 
@@ -2289,7 +2365,10 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
         const P = mplaneOf(d, d.mplaneSel);
         if (st.measure === 'dist') entry.value = C.distance(pts[0], pts[1]);
         else if (st.measure === 'angle') entry.value = C.bondAngle(pts[0], pts[1], pts[2]);
-        else if (st.measure === 'tors') entry.value = C.torsion(pts[0], pts[1], pts[2], pts[3]);
+        else if (st.measure === 'tors') {
+          entry.value = C.torsion(pts[0], pts[1], pts[2], pts[3]);
+          if (!isFinite(entry.value)) st.notice = 'Three of these atoms are on a line (within 2°), so the torsion has no value.';
+        }
         else if (P && st.measure === 'aplane') {
           // the dashed line goes from the atom to the nearest point of the plane
           entry.value = C.planeDistance(P.plane, pts[0]);
@@ -2312,7 +2391,7 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
         }
         if (isFinite(entry.value)) {
           d.measures.push(entry);
-          if (d.measures.length > MAX_MEASURES) d.measures.shift();
+          if (d.measures.length > MAX_MEASURES) { d.measures.shift(); st.notice = NAME + ' keeps ' + MAX_MEASURES + ' measurements: the first one was removed.'; }
         }
         d.picks = [];
       }
@@ -2442,20 +2521,23 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
     a.click();
     a.remove();
   }
-  const fileStem = (d) => d.name.replace(/[^A-Za-z0-9._()+-]+/g, '_') || 'structure';
+  // letters and digits of any script stay in a saved file name; other characters become _
+  const fileStem = (d) => d.name.replace(/[^\p{L}\p{N}._()+-]+/gu, '_').replace(/^_+$/, '') || 'structure';
   /* the picture as shown, redrawn on a larger canvas for the 2x and 4x sizes */
   function exportPng() {
     const d = D();
     if (!viewer || !d) return;
     const gl = $('gl');
     const w = gl.clientWidth, h = gl.clientHeight;
-    // keep the canvas inside what the graphics card can draw, or the picture comes out cut or stretched
-    let k = Math.max(1, parseInt($('pngScale').value, 10) || 1);
-    const asked = k;
-    try {
-      const cv = viewer.getCanvas();
-      k = Math.max(1, Math.min(k, Math.floor(10 * MAX_IMAGE_SIDE / (Math.max(w, h) * (cv.width / w))) / 10));
-    } catch (err) { /* canvas size unknown: try the size that was asked for */ }
+    // 1x is the picture in the pixels of the screen (the window size times the pixel ratio of the display). 3Dmol
+    // draws its canvas at a ratio of its own (2 for smooth edges), so the canvas is resized by k * dpr / ratio.
+    // Keep the canvas inside what the graphics card can draw, or the picture comes out cut or stretched.
+    const asked = Math.max(1, parseInt($('pngScale').value, 10) || 1);
+    const dpr = window.devicePixelRatio || 1;
+    let ratio = 1;
+    try { const cv = viewer.getCanvas(); if (cv.width > 0 && w > 0) ratio = cv.width / w; } catch (err) { /* canvas size unknown */ }
+    let k = asked * dpr / ratio;
+    k = Math.min(k, Math.floor(10 * MAX_IMAGE_SIDE / (Math.max(w, h) * ratio)) / 10);
     const view = viewer.getView();
     let uri = null;
     // the drawing buffer that the browser gives can be smaller than the canvas (a limit of the graphics card); the
@@ -2473,17 +2555,18 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
       return ctx.drawingBufferWidth < W - 1 || ctx.drawingBufferHeight < H - 1 ? Math.min(ctx.drawingBufferWidth / W, ctx.drawingBufferHeight / H) : 0;
     };
     const setSize = (kk) => {
-      if (kk > 1) { gl.style.inset = 'auto'; gl.style.left = '0'; gl.style.top = '0'; gl.style.width = (w * kk) + 'px'; gl.style.height = (h * kk) + 'px'; }
+      if (Math.abs(kk - 1) > 1e-3) { gl.style.inset = 'auto'; gl.style.left = '0'; gl.style.top = '0'; gl.style.width = (w * kk) + 'px'; gl.style.height = (h * kk) + 'px'; }
       else { gl.style.inset = ''; gl.style.left = ''; gl.style.top = ''; gl.style.width = ''; gl.style.height = ''; }
       viewer.resize();
     };
+    const resized = Math.abs(k - 1) > 1e-3;
     try {
-      if (k > 1) {
+      if (resized) {
         setSize(k);
         for (let tries = 0; tries < 4; tries++) {
           const r = bufferShort();
           if (!r) break;
-          k = Math.max(1, Math.floor(10 * k * r * 0.98) / 10);
+          k = Math.floor(10 * k * r * 0.98) / 10;
           setSize(k);
         }
       }
@@ -2498,12 +2581,13 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
     st.px = 1;
     st.clear = false;
     st.still = false;
-    if (k > 1) { gl.style.inset = ''; gl.style.left = ''; gl.style.top = ''; gl.style.width = ''; gl.style.height = ''; viewer.resize(); }
+    if (resized) { gl.style.inset = ''; gl.style.left = ''; gl.style.top = ''; gl.style.width = ''; gl.style.height = ''; viewer.resize(); }
     render(true);
     viewer.setView(view);
     viewer.render();
+    const got = k * ratio / dpr;
     if (uri) {
-      st.notice = k < asked ? 'Saved at ' + k + '×, the largest picture this browser can draw at this window size.' : '';
+      st.notice = got < asked - 0.05 ? 'Saved at ' + got.toFixed(1) + '×, the largest picture this browser can draw at this window size.' : '';
       saveAs(uri, fileStem(d) + '.png');
     } else { st.notice = 'The image could not be made in this browser. Try the 1× size.'; }
     drawReadout();
@@ -2665,7 +2749,7 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
     }
     for (const P of d.mplanes) {
       const disc = C.planeDisc(P.plane, P.pts, P.kind === 'atoms' ? 1.2 : 4, 36);
-      text([0, 1, 2].map((k) => disc.c[k] + 1.15 * P.plane.n[k]), P.id, 13, '#ffffff', P.color, 0.95, 'measure-plane');
+      text([0, 1, 2].map((k) => disc.c[k] + 1.15 * P.plane.n[k]), P.id, 13, letterOn(P.color), P.color, 0.95, 'measure-plane');
     }
     for (const m of d.measures) text(measureAnchor(m), measureValueText(m), 13, panel, ink, 0.9, 'measure');
     const svg = C.toSvg({ width: rect.width, height: rect.height, M, b: o, items, title: d.name, shaded: $('svgShade').value === 'shaded',
@@ -2693,12 +2777,33 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
       const part = bytes.subarray(e.start, e.start + e.packed);
       if (e.method === 0) return part;
       if (typeof DecompressionStream === 'undefined') throw new Error('This browser cannot unpack a zip file. Unpack it and drop the files.');
-      return new Uint8Array(await new Response(new Blob([part]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer());
+      // read the stream in pieces and stop at 50 MB, whatever size the zip header gives
+      const chunks = [];
+      let total = 0;
+      try {
+        const reader = new Blob([part]).stream().pipeThrough(new DecompressionStream('deflate-raw')).getReader();
+        for (;;) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          total += value.length;
+          if (total > 5e7) { try { reader.cancel(); } catch (err) { /* stopped */ } throw new Error(NAME + ' cannot unpack the file ' + e.name + ': it is larger than 50 MB.'); }
+          chunks.push(value);
+        }
+      } catch (err) {
+        if (/larger than 50 MB/.test(err.message || '')) throw err;
+        throw new Error('The file ' + e.name + ' in this zip archive is damaged: it does not unpack.');
+      }
+      const out = new Uint8Array(total);
+      let at = 0;
+      for (const c of chunks) { out.set(c, at); at += c.length; }
+      return out;
     };
     const infoFile = entries.find((e) => /(^|\/)info\.txt$/i.test(e.name));
     const info = infoFile ? C.hybridInfo(textOf(await unpack(infoFile))) : null;
     const names = C.zipStructureNames(entries.map((e) => e.name), !!info);
-    if (!names.length) throw new Error(info ? 'This HybriD3 data set has no structure file: HybriD3 holds only its cell parameters.' : 'It holds no structure file that ' + NAME + ' reads.');
+    const inner = entries.filter((e) => /\.zip$/i.test(e.name)).map((e) => e.name);
+    if (!entries.length) throw new Error('This zip archive is empty.');
+    if (!names.length) throw new Error(info ? 'This HybriD3 data set has no structure file: HybriD3 holds only its cell parameters.' : 'It holds no structure file that ' + NAME + ' reads.' + (inner.length ? ' It holds a zip archive (' + inner[0] + '): ' + NAME + ' does not unpack a zip inside a zip. Unpack it first.' : ''));
     const from = info && window.CrystaDatabases ? window.CrystaDatabases.hybridOrigin(dbCopy, info, names.length) : null;
     const out = [];
     for (const name of names) {
@@ -2726,7 +2831,8 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
       try {
         // a zip archive is known by its first bytes, PK 03 04
         const head = new Uint8Array(await file.slice(0, 4).arrayBuffer());
-        if (head.length === 4 && head[0] === 0x50 && head[1] === 0x4b && head[2] === 3 && head[3] === 4) out.push(...await filesOfZip(new Uint8Array(await file.arrayBuffer())));
+        // a zip archive: PK 03 04 (a file first), PK 05 06 (an empty archive), or the name ends in .zip
+        if ((head.length === 4 && head[0] === 0x50 && head[1] === 0x4b && ((head[2] === 3 && head[3] === 4) || (head[2] === 5 && head[3] === 6))) || /\.zip$/i.test(file.name)) out.push(...await filesOfZip(new Uint8Array(await file.arrayBuffer())));
         else out.push({ text: await file.text(), name: file.name });
       } catch (err) {
         problems.push('Could not read ' + file.name + '. ' + (err && err.message ? err.message : ''));
@@ -2837,12 +2943,12 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
     $('measList').onclick = (e) => { const b = e.target.closest('button[data-mrm]'); if (b) removeMeasure(+b.dataset.mrm); };
     // right-click on a measurement in the picture: a small menu to remove it
     $('gl').addEventListener('contextmenu', (e) => {
-      const i = measureAt(e.pageX, e.pageY);
-      if (i < 0) return;
+      const hits = measureAt(e.pageX, e.pageY);
+      if (!hits.length) return;
       e.preventDefault();
       e.stopPropagation();
       const menu = $('ctxMenu');
-      menu.innerHTML = '<button type="button" role="menuitem" data-mrm="' + i + '">Remove ' + esc(measureText(D().measures[i])) + '</button>' +
+      menu.innerHTML = hits.map((i) => '<button type="button" role="menuitem" data-mrm="' + i + '">Remove ' + esc(measureText(D().measures[i])) + '</button>').join('') +
         (D().measures.length > 1 ? '<button type="button" role="menuitem" data-mrm="all">Remove all measurements</button>' : '');
       menu.hidden = false;
       menu.style.left = Math.min(e.clientX, window.innerWidth - menu.offsetWidth - 8) + 'px';
@@ -2860,6 +2966,10 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
       if (e.key !== 'Escape') return;
       closeMenu();
       if (st.editEl) closeElPop();
+      // Escape cancels a pick (a plane through atoms, an (hkl) plane, a chromophore, a polyhedron)
+      if ((st.picking || st.planePick || st.polyPick) && !e.target.closest('.pxfloat, input, select, textarea')) {
+        st.picking = null; st.planePick = null; st.polyPick = null; st.notice = ''; render(true);
+      }
       // Escape also stops the glow, but not while the key belongs to an open window or a text field
       if (st.glow && !e.target.closest('.pxfloat, input, select, textarea')) stopGlow();
     });
@@ -3018,12 +3128,15 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
     };
     $('arrowLen').onchange = (e) => { const v = parseFloat(e.target.value); if (isFinite(v) && v > 0) { st.arrow = v; render(true); } };
 
+    // the atoms of a block, about: the cell contents times the volume of the block plus a margin for the units that
+    // are drawn whole. A block no larger than the default block is always allowed (a cell of many atoms).
+    const blockAtoms = (d, lo, hi) => d.uc.atoms.length * [0, 1, 2].reduce((p, i) => p * (hi[i] - lo[i] + 0.1), 1);
     const applyRanges = (lo, hi) => {
       const d = D();
       const span = [0, 1, 2].map((i) => hi[i] - lo[i]);
       if (lo.concat(hi).some((x) => !isFinite(x)) || span.some((x) => x <= 0)) {
         st.notice = 'Each upper packing limit has to be above its lower limit.';
-      } else if (d.uc.atoms.length * (span[0] + 0.5) * (span[1] + 0.5) * (span[2] + 0.5) > MAX_ATOMS) {
+      } else if (blockAtoms(d, lo, hi) > Math.max(MAX_ATOMS, blockAtoms(d, d.defLo, d.defHi) + 1)) {
         st.notice = 'That block would hold more than about ' + MAX_ATOMS + ' atoms, so the limits were not changed.';
       } else {
         st.notice = '';

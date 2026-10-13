@@ -2,6 +2,30 @@
 
 Any change to how a number is defined gets a new version and a line here.
 
+## v0.6.1
+
+Fixes for the S4 findings of the independent audit of v0.5.2 (`design/2026-10-12-audit-design.md`): small errors, notation and messages. No number of a right file changes. Only a file without symmetry now has one row for metal atoms with the same values.
+
+- **Readers.**
+  - A dummy site (`_atom_site_calc_flag dum`, a ring centroid) is not an atom. (A1-08)
+  - Coordinates written as fractions (1/3) are read. (A1-09)
+  - A space-group name with spaces and no quotes is read whole (P 21/c). (A1-11)
+  - A POSCAR with three scaling factors scales the x, y and z components. Labels lose the POTCAR suffix (Pb_d1 is Pb1). A file named POSCAR is read as a POSCAR, also when its comment starts with "atom". (A1-12, A1-15, A1-16)
+  - An XYZ file can give atomic numbers, and the Properties of an extended XYZ file set the columns. (A1-14)
+  - control.in is refused with its own message, and a zip archive skips it. An empty zip, a zip inside a zip and a damaged zip have clear messages. A zip member stops at 50 MB, whatever its header says. (A1-13, A6-11, A6-12)
+  - Cell parameters that describe no cell stop the load with a message. (A6-07)
+  - Hall symbols with a change of basis in the form (z,x,y) are read. (DA-a04)
+- **Symmetry.** The short symbol B2 is B 1 1 2, as in the International Tables. Symbols without spaces (P21/c, Pm-3m) now have their subscripts and bars, and a symbol with &, < or > shows as text. (A2-07, A2-11, A6-16)
+- **Measure.** A torsion with three atoms on a line has no value, and a note says why. Torsions have two decimals. The nearest lattice plane has the sign of the plane of the layers (0 0 1, not 0 0 −1), and negative indices have a minus sign. A right-click on a line that two measurements share offers both. The 21st measurement removes the first, with a note. A plane measurement mode goes back to Distance when the structure has no plane. Escape stops a pick. (A3-08, A5-08, A5-09, A6-06, A6-09, A6-15)
+- **PXRD.** f′ and f″ are used from 0.4 % below Kα1 to 0.4 % above Kα2 of each anode (Mo Kα2 included). The window says when an element (Np, Pu, Am, Cm) has no f′ and f″. Reflection indices have a minus sign. Escape closes the floating PXRD window. (A4-03, A4-05, A5-09, A6-15)
+- **Picture and files.** The definition of a row opens in a note in the picture, and the texts now say so. At narrow widths it opens at the foot of the picture. The letters of the plane colours have a contrast of 4.5:1 or more. Buttons on a touch screen are 24 px or more. The 1× PNG is the picture in screen pixels. Reset of the packing block always works, and a block up to the size of the default block is allowed. Saved file names keep letters of any script. "Copy table" keeps a text that starts with =, +, - or @ as text. (A5-06, A5-07, A5-10, A5-11, A5-12, A6-08, A6-13, A6-14)
+- **Framework card.** In a file without symmetry, metal atoms with the same element, ligands and distances share one set of rows, and a line says how many they are. "Atoms per cell, drawn" in the Crystal card and "atom positions per cell (every disorder part)" in the PXRD window say what each counts. (DA-b06, DA-a05)
+- **README.** The citation example has the version of package.json. build.py keeps it so. (DA-b03)
+
+A2-06 and DA-a03 were fixed in v0.6.0. A2-10 was fixed in v0.6.0: the Disorder row always says what it hid.
+
+Changed definitions (see the README): torsion (no value for three atoms on a line), dispersion (the range of wavelengths), PNG size.
+
 ## v0.6.0
 
 Fixes for the 26 S2 and the 3 S3 findings of the independent audit of v0.5.2 (`design/2026-10-12-audit-design.md`). S2 findings are numbers that are right only for some structures, or rules that the README did not state. S3 findings are errors with no message.

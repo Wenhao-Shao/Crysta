@@ -32,7 +32,7 @@ Press "Load the sample structures" to load the four built-in samples: (PEA)2PbBr
 | Powder pattern `.xy` | write | the simulated pattern on its 2θ grid |
 | Powder patterns `.csv` | write | One 2θ column, then one intensity column for each pattern that the plot shows. |
 | Tripos mol2 | write | the shown block, with the cell |
-| PNG | write | 1×, 2× or 4× the screen size, optional transparent background |
+| PNG | write | 1×, 2× or 4× the picture in screen pixels (the window size times the pixel ratio of the display), optional transparent background. A note gives a smaller scale when the graphics card cannot draw the larger one. |
 | SVG | write | vector drawing of the view; every atom, bond and face is a separate editable object |
 
 ## What it does
@@ -40,7 +40,7 @@ Press "Load the sample structures" to load the four built-in samples: (PEA)2PbBr
 - **Viewer:** ball and stick, space-filling or sticks; atom size and bond width sliders; five element colour schemes; two-tone or gradient bonds; coordination polyhedra; hydrogen bonds; molecule
   and framework toggles; atom labels; packing limits in cell fractions; views down a cell axis, a [uvw]
   direction or an (hkl) normal; lattice planes with an offset.
-- **Measure:** click atoms for a distance (two), an angle (three, at the second) or a torsion (four). The picture marks the measured atoms. Remove a measurement with its × in the Measure card or by a right-click on it in the picture.
+- **Measure:** click atoms for a distance (two), an angle (three, at the second) or a torsion (four). The picture marks the measured atoms. Remove a measurement with its × in the Measure card or by a right-click on it in the picture. A structure keeps 20 measurements: the 21st removes the first, and a note says so. Escape stops a pick (a plane, a chromophore, a polyhedron).
 - **Planes:** make a plane through three or more atoms, or a lattice plane (*hkl*) through one atom. Then click one atom for its distance from the plane, two atoms for the angle between their line and the plane, or three atoms for their angle projected onto the plane (Angle in plane). Crysta gives the angle between each two planes, and the lattice plane (*hkl*) that is nearest to a plane through atoms.
 - **Polyhedra:** automatic around metal centres, and your own: choose a centre element, the corner elements and a distance in the Polyhedra card, or click a centre and a corner in the picture. Press a row to set colour, opacity and edges.
 - **Element appearance:** press an element in the legend to set its colour, size and opacity.
@@ -48,7 +48,7 @@ Press "Load the sample structures" to load the four built-in samples: (PEA)2PbBr
   molecular linkers, covalent networks, molecular crystals, molecular complexes and salts.
 - **2D perovskite module:** layer thickness n, spacing, slab and gallery height, in-plane and out-of-plane
   M-X-M angles, axial tilt, ammonium N penetration, stacking offset. Shown when a layered,
-  halide-bridged framework is found. Press a row of the framework card: its definition shows under the picture, and the atoms and planes of the definition glow in the picture.
+  halide-bridged framework is found. Press a row of the framework card: its definition shows in a note in the picture, and the atoms and planes of the definition glow in the picture.
 - **Chromophores:** pick three or more atoms on one molecule for a plane and two for an in-plane axis.
   The definition is copied to every symmetry-equivalent molecule. Each chromophore holds any number of
   transition-dipole states, drawn as double-headed arrows. 1,2,4,5-tetrazine rings are found
@@ -117,7 +117,7 @@ These choices decide the numbers, so they are stated here. Changing any of them 
 | Element from a label | with no type symbol: Pb1, PB1 and pb1 are lead. An upper-case pair is the two-letter element when there is one (CL1, SN1). HO is an exception: it is H. |
 | Deuterium | D is H for the picture and every bond rule, and D (2.014 g/mol) in the formula and the density. |
 | Space-group symbol | Crysta reads spaces, the choices ":1", ":2", ":H", ":R" and the ICSD suffixes " Z" (origin 2), " S" (origin 1), " H", " R". It also reads the glide e (Cmce = Cmca, Aem2 = Abm2) and the old cubic form (Fm3m = Fm-3m). An R group with no choice gets its axes from the cell, also for a number alone: rhombohedral axes when a = b = c and α = β = γ (also near 90°), else hexagonal axes. A group with two origin choices and no choice gets the origin with fewer impossible contacts (closer than 0.6 × the sum of covalent radii). Next, Crysta prefers fewer atoms, else origin 2. The Crystal card tells you which. |
-| Torsion | −180° to 180°, positive when the far bond is clockwise from the near bond looking down the central bond |
+| Torsion | −180° to 180°, positive when the far bond is clockwise from the near bond looking down the central bond. No value when three atoms in a row are within 2° of a line. |
 | Plane through atoms | The least-squares plane through the clicked atoms: it goes through their centroid, and its normal is the direction of least spread. The rms is the root-mean-square distance of these atoms from the plane. |
 | Lattice plane through an atom | The plane through the clicked atom with its normal along the reciprocal vector *h* **a**\* + *k* **b**\* + *l* **c**\*. For a layered structure, the *h*, *k*, *l* boxes start at the (*hkl*) of the layers. |
 | Atom to plane | The distance of the atom from the plane along the normal, in Å. It is + on the side that the normal points to. For a plane through atoms, the normal follows the order of the clicks. |
@@ -127,7 +127,7 @@ These choices decide the numbers, so they are stated here. Changing any of them 
 | Nearest lattice plane | For a plane through atoms: the (*hkl*) with the smallest largest index that is within 1° of the plane. If no plane is that near, the nearest plane with indexes up to 6. Crysta gives the angle between the two planes. |
 | Powder pattern: atoms | The same cell contents as the formula (see Disorder): every copy of every site and every disorder part, each with its share. |
 | Scattering factor | Neutral atoms. *f*0(*s*) = Σ *a*i exp(−*b*i *s*²) + *c* with *s* = sin θ / λ. The coefficients are from International Tables C, table 6.1.1.4. Charges in the file are not used. |
-| Dispersion | *f*′ and *f*″ (Cromer–Liberman, as computed by gemmi) for the Kα lines of Cu, Mo, Co, Fe, Cr and Ag. They are zero at any other wavelength. |
+| Dispersion | *f*′ and *f*″ (Cromer–Liberman, as computed by gemmi) for the Kα1 lines of Cu, Mo, Co, Fe, Cr and Ag. Crysta uses them from 0.4 % below Kα1 to 0.4 % above Kα2 of each anode. They are zero at any other wavelength, and for Np, Pu, Am and Cm (the window says so). |
 | Displacement | Isotropic: exp(−*B* *s*²) with *B* = 8π²*U*. The file gives *U*iso, *B*iso or *U*eq. Anisotropic values enter as *U*eq. An atom with no value gets *B* = 1 Å², and you can change that value. |
 | Structure factor | *F*(*hkl*) = Σ occupancy × (*f*0 + *f*′ + i*f*″) × exp(−*B* *s*²) × exp(2πi(*hx* + *ky* + *lz*)), summed over the atoms of the cell. |
 | Reflection set, *M* | The rotation parts of the space-group operators and Friedel's law make reflections equivalent. *M* is the number of reflections in the set. Sets with the same *d* that are not equivalent are separate rows. |
@@ -256,7 +256,7 @@ The name and version live in `package.json` (`displayName`, `version`) and are p
 
 Crysta has no paper and no DOI yet. Cite it as software, with the version:
 
-> W. Shao, Crysta: a crystal structure workbench in the browser, version 0.5.0 (2026). https://wenhao-shao.github.io/Crysta/
+> W. Shao, Crysta: a crystal structure workbench in the browser, version 0.6.1 (2026). https://wenhao-shao.github.io/Crysta/
 
 - The "How to cite" button in the page gives this citation for the version that you use, also as BibTeX.
 - `CITATION.cff` has the same data for GitHub and for reference managers. `build.py` makes it from the "citation" part of `package.json`: change the authors, the title and the release date there.

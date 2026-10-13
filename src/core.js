@@ -35,6 +35,10 @@
   const VDW = { H: 1.20, N: 1.55, O: 1.52, F: 1.47, S: 1.80, Cl: 1.75, Br: 1.85, I: 1.98 };
   const NONMETAL = new Set(['H', 'D', 'He', 'B', 'C', 'N', 'O', 'F', 'Ne', 'Si', 'P', 'S', 'Cl', 'Ar', 'As', 'Se', 'Br', 'Kr', 'Te', 'I', 'Xe', 'At', 'Rn']);
   const HALIDE = new Set(['F', 'Cl', 'Br', 'I']);
+  // the elements in the order of their atomic numbers (an XYZ file can give the number instead of the symbol)
+  const ELEMENTS = ('H He Li Be B C N O F Ne Na Mg Al Si P S Cl Ar K Ca Sc Ti V Cr Mn Fe Co Ni Cu Zn Ga Ge As Se Br Kr Rb Sr Y Zr Nb Mo Tc Ru Rh ' +
+    'Pd Ag Cd In Sn Sb Te I Xe Cs Ba La Ce Pr Nd Pm Sm Eu Gd Tb Dy Ho Er Tm Yb Lu Hf Ta W Re Os Ir Pt Au Hg Tl Pb Bi Po At Rn Fr Ra Ac Th ' +
+    'Pa U Np Pu Am Cm Bk Cf Es Fm Md No Lr').split(' ');
   const ALKALI = new Set(['Li', 'Na', 'K', 'Rb', 'Cs', 'Fr']);
   const NOBLE = new Set(['He', 'Ne', 'Ar', 'Kr', 'Xe', 'Rn']);
   const isMetal = (el) => !NONMETAL.has(el);
@@ -80,8 +84,22 @@
   function hallOps(symbol) {
     let s = String(symbol).trim().replace(/_/g, ' ');
     let shift = [0, 0, 0];
+    // the change of basis V: an origin shift in twelfths, (0 0 1), or an operator, (z,x,y) or (x-y,x+y,z).
+    // Each operator S of the group becomes V S V^-1.
+    let cob = null;
     const sm = s.match(/\(\s*(-?\d+)\s+(-?\d+)\s+(-?\d+)\s*\)/);
+    const cm = s.match(/\(([^()]*,[^()]*,[^()]*)\)/);
     if (sm) { shift = [+sm[1] / 12, +sm[2] / 12, +sm[3] / 12]; s = s.replace(sm[0], '').trim(); }
+    else if (cm) {
+      const V = parseSymop(cm[1]);
+      if (!V) return null;
+      const det = V.R[0][0] * (V.R[1][1] * V.R[2][2] - V.R[1][2] * V.R[2][1]) - V.R[0][1] * (V.R[1][0] * V.R[2][2] - V.R[1][2] * V.R[2][0]) + V.R[0][2] * (V.R[1][0] * V.R[2][1] - V.R[1][1] * V.R[2][0]);
+      if (Math.abs(det) < 1e-9) return null;
+      const Ri = inv3(V.R).map((r) => r.map((x) => Math.round(x * 1e6) / 1e6));
+      const Ti = [0, 1, 2].map((i) => -(Ri[i][0] * V.T[0] + Ri[i][1] * V.T[1] + Ri[i][2] * V.T[2]));
+      cob = { V: { R: V.R, T: V.T }, Vi: { R: Ri, T: Ti } };
+      s = s.replace(cm[0], '').trim();
+    }
     const parts = s.split(/\s+/);
     let L = parts.shift();
     if (!L) return null;
@@ -126,11 +144,23 @@
       prevN = N;
       if ('xyz'.includes(axis)) prevAxis = axis;
     }
-    // origin shift: op' = (I, v) op (I, -v)
-    const moved = gens.map((g) => ({
+    // origin shift: op' = (I, v) op (I, -v); a change of basis: op' = V op V^-1. A rotation part that is not whole
+    // numbers (a basis that the operator does not map onto itself) has no meaning: no operators.
+    const comp = (p, q) => ({ R: [0, 1, 2].map((i) => [0, 1, 2].map((j) => p.R[i][0] * q.R[0][j] + p.R[i][1] * q.R[1][j] + p.R[i][2] * q.R[2][j])),
+      T: [0, 1, 2].map((i) => p.R[i][0] * q.T[0] + p.R[i][1] * q.T[1] + p.R[i][2] * q.T[2] + p.T[i]) });
+    let moved = gens.map((g) => ({
       R: g.R,
       T: [0, 1, 2].map((i) => mod1(g.T[i] + shift[i] - (g.R[i][0] * shift[0] + g.R[i][1] * shift[1] + g.R[i][2] * shift[2])))
     }));
+    if (cob) {
+      moved = moved.map((g) => { const o = comp(cob.V, comp(g, cob.Vi)); return { R: o.R.map((r) => r.map((x) => Math.round(x * 1e6) / 1e6)), T: o.T.map(mod1) }; });
+      if (moved.some((g) => g.R.some((r) => r.some((x) => Math.abs(x - Math.round(x)) > 1e-6)))) return null;
+      // a centring of the new basis: the lattice translations of the old cell, seen in the new basis
+      for (const t of [[1, 0, 0], [0, 1, 0], [0, 0, 1]]) {
+        const u = [0, 1, 2].map((i) => mod1(cob.V.R[i][0] * t[0] + cob.V.R[i][1] * t[1] + cob.V.R[i][2] * t[2]));
+        if (u.some((x) => Math.abs(x) > 1e-9 && Math.abs(x - 1) > 1e-9)) moved.push({ R: I3, T: u });
+      }
+    }
     const group = [{ R: I3, T: [0, 0, 0] }];
     const seen = new Set([opKey(group[0])]);
     for (let q = 0; q < group.length; q++) {
@@ -236,7 +266,7 @@
         const buf = [line.slice(1)];
         i++;
         while (i < lines.length && lines[i][0] !== ';') { buf.push(lines[i]); i++; }
-        toks.push({ v: buf.join('\n').trim(), q: true });
+        toks.push({ v: buf.join('\n').trim(), q: true, line: i });
         line = i < lines.length ? lines[i].slice(1) : '';
       }
       let p = 0;
@@ -248,13 +278,13 @@
         if (ch === "'" || ch === '"') {
           let e = p + 1;
           while (e < n && !(line[e] === ch && (e + 1 === n || line[e + 1] === ' ' || line[e + 1] === '\t'))) e++;
-          toks.push({ v: line.slice(p + 1, e), q: true });
+          toks.push({ v: line.slice(p + 1, e), q: true, line: i });
           p = e + 1;
           continue;
         }
         let e = p;
         while (e < n && line[e] !== ' ' && line[e] !== '\t') e++;
-        toks.push({ v: line.slice(p, e), q: false });
+        toks.push({ v: line.slice(p, e), q: false, line: i });
         p = e;
       }
     }
@@ -292,7 +322,13 @@
       }
       if (isTag(k)) {
         const nx = t[i + 1];
-        if (nx && !isTag(nx) && !isKw(nx)) { cur.items[k.v.toLowerCase()] = nx.v; i += 2; } else i++;
+        if (nx && !isTag(nx) && !isKw(nx)) {
+          // a value with spaces and no quotes (not valid CIF, but written by some programs: P 21/c): the bare words
+          // that follow on the same line belong to it
+          let v = nx.v, j = i + 2;
+          if (!nx.q) while (j < t.length && !t[j].q && t[j].line === nx.line && !isTag(t[j]) && !isKw(t[j])) { v += ' ' + t[j].v; j++; }
+          cur.items[k.v.toLowerCase()] = v; i = j;
+        } else i++;
         continue;
       }
       i++;
@@ -368,6 +404,12 @@
   function makeCell(a, b, c, al, be, ga) {
     const rad = Math.PI / 180;
     const ca = Math.cos(al * rad), cb = Math.cos(be * rad), cg = Math.cos(ga * rad), sg = Math.sin(ga * rad);
+    // a, b, c above zero, angles between 0 and 180 degrees, and a volume above zero (each angle smaller than the
+    // sum of the other two, and the sum of all three below 360 degrees)
+    const vol2 = 1 - ca * ca - cb * cb - cg * cg + 2 * ca * cb * cg;
+    if (!(a > 0 && b > 0 && c > 0 && al > 0 && al < 180 && be > 0 && be < 180 && ga > 0 && ga < 180) || !(vol2 > 1e-8)) {
+      throw new Error('The cell parameters (a ' + a + ', b ' + b + ', c ' + c + ', α ' + al + ', β ' + be + ', γ ' + ga + ') describe no cell: its volume is not above zero.');
+    }
     const A = [a, 0, 0];
     const B = [b * cg, b * sg, 0];
     const cx = c * cb;
@@ -478,9 +520,14 @@
     }
     const sites = [];
     const skipped = [];
+    const cF = col('_atom_site_calc_flag');
+    // a coordinate: a number with or without its s.u. (0.1234(5)), or a fraction (1/3)
+    const coord = (v) => { const m = /^([-+]?\d+)\/(\d+)$/.exec(v || ''); return m ? parseInt(m[1], 10) / parseInt(m[2], 10) : parseFloat(v); };
     for (const r of siteLoop.rows) {
-      const f = [parseFloat(r[cX]), parseFloat(r[cY]), parseFloat(r[cZ])];
+      const f = [coord(r[cX]), coord(r[cY]), coord(r[cZ])];
       const label = cL >= 0 ? r[cL] : (cT >= 0 ? r[cT] : '?');
+      // a dummy site (a ring centroid Cg1, calc_flag dum) is not an atom
+      if (cF >= 0 && /^dum$/i.test(r[cF])) { skipped.push({ label, why: 'a dummy site' }); continue; }
       if (f.some((x) => !isFinite(x))) { skipped.push({ label, why: 'no coordinates' }); continue; }
       const el = elementOf(cT >= 0 ? r[cT] : null, label);
       if (!el) { skipped.push({ label, why: 'element not recognised' }); continue; }
@@ -569,11 +616,16 @@
   function readPoscar(text) {
     const L = text.split(/\r?\n/);
     const nums = (line) => line.trim().split(/\s+/).map(parseFloat);
-    let scale = parseFloat(L[1]);
+    // one scaling factor (a negative one is the volume), or three: one for each Cartesian component
+    const sc = nums(L[1]).filter(isFinite);
+    let scale = sc[0];
     let vec = [nums(L[2]), nums(L[3]), nums(L[4])].map((v) => v.slice(0, 3));
     if (!isFinite(scale) || vec.some((v) => v.length < 3 || v.some((x) => !isFinite(x)))) throw new Error('The lattice vectors of this POSCAR file are unreadable.');
-    if (scale < 0) scale = Math.cbrt(-scale / Math.abs(dot(vec[0], cross(vec[1], vec[2]))));
-    vec = vec.map((v) => v.map((x) => x * scale));
+    const s3 = sc.length >= 3 ? sc.slice(0, 3) : null;
+    if (s3 && s3.some((x) => !(x > 0))) throw new Error('The three scaling factors of this POSCAR file have to be above zero.');
+    if (!s3 && scale < 0) scale = Math.cbrt(-scale / Math.abs(dot(vec[0], cross(vec[1], vec[2]))));
+    const scaleV = (v) => (s3 ? v.map((x, k) => x * s3[k]) : v.map((x) => x * scale));
+    vec = vec.map(scaleV);
     const names = L[5].trim().split(/\s+/);
     if (names.every((t) => /^\d+$/.test(t))) throw new Error('This POSCAR file has no line of element symbols (VASP 4 format). Add the symbols above the atom counts.');
     const counts = L[6].trim().split(/\s+/).map((t) => parseInt(t, 10));
@@ -586,17 +638,19 @@
     const iv = inv3(vec);
     const sites = [];
     const skipped = [];
-    names.forEach((nm, k) => {
-      const el = elementOf(nm.replace(/[_/].*$/, ''), null);
+    names.forEach((nm0, k) => {
+      // the species name without the POTCAR suffix (Pb_d, Sn_sv_GW, H/...)
+      const nm = nm0.replace(/[_/].*$/, '');
+      const el = elementOf(nm, null);
       for (let n = 0; n < (counts[k] || 0); n++, row++) {
         const v = nums(L[row] || '').slice(0, 3);
         const label = nm + (n + 1);
         if (v.length < 3 || v.some((x) => !isFinite(x))) { skipped.push({ label, why: 'no coordinates' }); continue; }
         if (!el) { skipped.push({ label, why: 'element not recognised' }); continue; }
-        const c = cart ? v.map((x) => x * scale) : null;
+        const c = cart ? scaleV(v) : null;
         const f = cart ? [0, 1, 2].map((j) => c[0] * iv[0][j] + c[1] * iv[1][j] + c[2] * iv[2][j]) : v;
         const st = plainSite(label, el, f);
-        st.iso = isotopeOf(nm.replace(/[_/].*$/, ''), null);
+        st.iso = isotopeOf(nm, null);
         sites.push(st);
       }
     });
@@ -615,13 +669,28 @@
     if (!(n > 0)) throw new Error('The first line of an XYZ file has to be the number of atoms.');
     const raw = [];
     const skipped = [];
+    // extended XYZ: Properties=species:S:1:pos:R:3:... gives the columns of the species and of the positions
+    let cS = 0, cP = 1;
+    const pm = (L[1] || '').match(/properties\s*=\s*"?([^"\s]+)/i);
+    if (pm) {
+      const f = pm[1].split(':');
+      let col = 0;
+      for (let q = 0; q + 2 < f.length; q += 3) {
+        const nm = f[q].toLowerCase(), w = parseInt(f[q + 2], 10) || 1;
+        if (nm === 'species' || nm === 'element' || nm === 'symbols') cS = col;
+        if (nm === 'pos' || nm === 'positions') cP = col;
+        col += w;
+      }
+    }
     for (let k = 0; k < n; k++) {
       const t = (L[2 + k] || '').trim().split(/\s+/);
-      const xyz = t.slice(1, 4).map(parseFloat);
-      const el = elementOf(t[0], null);
-      if (xyz.length < 3 || xyz.some((x) => !isFinite(x))) { skipped.push({ label: t[0] || '?', why: 'no coordinates' }); continue; }
-      if (!el) { skipped.push({ label: t[0], why: 'element not recognised' }); continue; }
-      raw.push({ el, xyz, iso: isotopeOf(t[0], null) });
+      const xyz = t.slice(cP, cP + 3).map(parseFloat);
+      // the species as a symbol, or as an atomic number
+      const sp = /^\d+$/.test(t[cS] || '') ? (ELEMENTS[parseInt(t[cS], 10) - 1] || t[cS]) : t[cS];
+      const el = elementOf(sp, null);
+      if (xyz.length < 3 || xyz.some((x) => !isFinite(x))) { skipped.push({ label: sp || '?', why: 'no coordinates' }); continue; }
+      if (!el) { skipped.push({ label: sp, why: 'element not recognised' }); continue; }
+      raw.push({ el, xyz, iso: isotopeOf(sp, null) });
     }
     if (!raw.length) throw new Error('No atoms were found in this XYZ file.');
     const lm = (L[1] || '').match(/lattice\s*=\s*"([^"]+)"/i);
@@ -865,9 +934,11 @@
     const base = String(name || '').replace(/^.*[\\/]/, '').toUpperCase();
     if (e === 'res' || e === 'ins') return readShelx(text);
     if (e === 'xyz' || e === 'extxyz') return readXyz(text);
-    // a geometry.in file is known by its lines, not by its name: some databases give a CIF under that name
-    if (/^\s*(lattice_vector|atom(_frac)?)\s+-?[\d.]/m.test(text) && !/_atom_site_fract_x/.test(text)) return readAims(text);
+    if (base === 'CONTROL.IN') throw new Error('control.in is the control file of an FHI-aims run, not a structure. Open geometry.in.');
     if (e === 'vasp' || e === 'poscar' || /^(POSCAR|CONTCAR)/.test(base)) return readPoscar(text);
+    // a geometry.in file is known by its lines, not by its name: some databases give a CIF under that name. A line
+    // is "lattice_vector x y z" or "atom x y z El" ("atom_frac" for fractional coordinates).
+    if (/^\s*(lattice_vector\s+-?[\d.]+\s+-?[\d.]+\s+-?[\d.]+|atom(_frac)?\s+-?[\d.]+\s+-?[\d.]+\s+-?[\d.]+\s+[A-Za-z])/m.test(text) && !/_atom_site_fract_x/.test(text)) return readAims(text);
     if (/^\s*(#|data_)/m.test(text) && /_atom_site_fract_x/.test(text)) return readCif(text);
     if (/^\s*CELL\s+[\d.]+/m.test(text) && /^\s*SFAC\s/m.test(text)) return readShelx(text);
     const first = text.split(/\r?\n/);
@@ -925,7 +996,7 @@
      if there is no CIF. A file in a folder such as "additional" is used only when the top folder has no file
      of that kind. For other archives: each file with a known ending. */
   function zipStructureNames(names, hybrid) {
-    const all = names.filter((x) => STRUCTURE_NAME.test(x) && !/(^|\/)(\.|__MACOSX\/)/.test(x));
+    const all = names.filter((x) => STRUCTURE_NAME.test(x) && !/(^|\/)(\.|__MACOSX\/)/.test(x) && !/(^|\/)control\.in$/i.test(x));
     if (!hybrid) return all;
     const group = (re) => {
       const mine = all.filter((x) => re.test(x));
@@ -2046,20 +2117,28 @@
     out.nAtoms = atoms.length;
     out.hasH = atoms.some((a) => a.el === 'H');
 
-    // metal coordination, one entry per crystallographic site
+    // metal coordination, one entry per crystallographic site. In a file without symmetry (every atom its own
+    // site), metals with the same element, ligands and distances (to 0.001 A) share one entry; alike counts them.
     const seenSite = new Set();
+    const byValue = new Map();
+    const p1 = !(uc.ops && uc.ops.length > 1);
     for (const i of metals) {
       const key = atoms[i].site;
       if (seenSite.has(key) || !ligs[i].length) continue;
       seenSite.add(key);
       const L = ligs[i].slice().sort((p, q) => p.d - q.d);
+      if (p1) {
+        const vk = atoms[i].el + '|' + L.map((l) => atoms[l.j].el + l.d.toFixed(3)).join(',');
+        if (byValue.has(vk)) { byValue.get(vk).alike++; continue; }
+      }
       const ds = L.map((l) => l.d);
       const mean = ds.reduce((s, x) => s + x, 0) / ds.length;
       const entry = {
         label: atoms[i].label, el: atoms[i].el, cn: L.length,
         bonds: L.map((l) => ({ label: atoms[l.j].label, el: atoms[l.j].el, d: l.d })),
-        mean, min: ds[0], max: ds[ds.length - 1]
+        mean, min: ds[0], max: ds[ds.length - 1], alike: 1
       };
+      if (p1) byValue.set(atoms[i].el + '|' + L.map((l) => atoms[l.j].el + l.d.toFixed(3)).join(','), entry);
       // two ligands that cannot both be there (closer than 0.75 x the sum of their covalent radii): the
       // polyhedron mixes two disorder orientations, and the octahedron values have no meaning
       for (let p = 0; p < L.length && !entry.overlap; p++) for (let q = p + 1; q < L.length; q++) {
@@ -2503,9 +2582,13 @@
   /* angle p-q-r at q, in degrees */
   const bondAngle = (p, q, r) => angleDeg(sub(p, q), sub(r, q));
   /* torsion p-q-r-s about q-r, in degrees, -180 to 180; positive is clockwise looking from q to r (IUPAC) */
+  /* the torsion p-q-r-s in degrees, or NaN when p, q, r or q, r, s are within 2 degrees of a line (the torsion
+     then has no value) */
   function torsion(p, q, r, s) {
     const b1 = sub(q, p), b2 = sub(r, q), b3 = sub(s, r);
     const n1 = cross(b1, b2), n2 = cross(b2, b3);
+    const lim = Math.sin(2 * Math.PI / 180);
+    if (norm(n1) < lim * norm(b1) * norm(b2) || norm(n2) < lim * norm(b2) * norm(b3)) return NaN;
     const y = norm(b2) * dot(b1, n2);
     const x = dot(n1, n2);
     return Math.atan2(y, x) * 180 / Math.PI;
@@ -3226,8 +3309,9 @@
     { key: 'Cu', l1: 1.54059, l2: 1.54443 }, { key: 'Mo', l1: 0.70932, l2: 0.71361 }, { key: 'Co', l1: 1.78900, l2: 1.79284 },
     { key: 'Fe', l1: 1.93604, l2: 1.93997 }, { key: 'Cr', l1: 2.28973, l2: 2.29365 }, { key: 'Ag', l1: 0.55942, l2: 0.56381 }
   ];
-  /* the anode whose K-alpha lines hold this wavelength (K-alpha 1, K-alpha 2 or their mean), or null */
-  const anodeOf = (lambda) => ANODES.find((a) => Math.abs(lambda - a.l1) / a.l1 < 0.004) || null;
+  /* the anode whose K-alpha lines hold this wavelength: from 0.4 % below K-alpha 1 to 0.4 % above K-alpha 2 (K-alpha 1,
+     K-alpha 2 or their mean), or null. f' and f'' of that anode are for K-alpha 1. */
+  const anodeOf = (lambda) => ANODES.find((a) => lambda >= a.l1 * 0.996 && lambda <= a.l2 * 1.004) || null;
   const scatF0 = (el, s2) => {
     const c = XRAY_F0[el];
     if (!c) return 0;
@@ -3285,7 +3369,7 @@
     const atoms = pa.atoms;
     const anode = o.dispersion === false ? null : anodeOf(lambda);
     const disp = anode ? XRAY_DISP[anode.key] : null;
-    const missing = [];
+    const missing = [], noDisp = [];
     // atoms that share an element and a B value share one scattering factor per reflection
     const kinds = [];
     const kindOf = new Map();
@@ -3298,6 +3382,8 @@
       if (!kindOf.has(key)) {
         if (!XRAY_F0[a.el] && !missing.includes(a.el)) missing.push(a.el);
         const dp = (disp && disp[a.el]) || [0, 0];
+        // no f' and f'' (Np, Pu, Am, Cm: the tables stop at U)
+        if (disp && !dp[0] && !dp[1] && (XRAY_F0[a.el] && (ELEMENTS.indexOf(a.el) > 91 || !disp[a.el])) && !noDisp.includes(a.el)) noDisp.push(a.el);
         kindOf.set(key, kinds.length);
         kinds.push({ el: a.el, B: a.B, fp: dp[0], fpp: dp[1] });
       }
@@ -3370,7 +3456,7 @@
     let top = 0;
     for (const r of refl) if (r.tth >= tthMin && r.tth <= tthMax && r.I > top) top = r.I;
     for (const r of refl) r.rel = top > 0 ? 100 * r.I / top : 0;
-    return { reflections: refl, lambda, anode: anode ? anode.key : null, nAtoms: N, noU: pa.noU, missing, f000, tthMin, tthMax, cut };
+    return { reflections: refl, lambda, anode: anode ? anode.key : null, nAtoms: N, noU: pa.noU, missing, noDisp, f000, tthMin, tthMax, cut };
   }
 
   /* The pattern on a 2-theta grid. Every reflection is a pseudo-Voigt peak of one width with the area of its
