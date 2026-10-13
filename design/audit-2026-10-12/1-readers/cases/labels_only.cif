@@ -1,0 +1,33 @@
+data_labels
+_cell_length_a 10.000(2)
+_cell_length_b 11.000(3)
+_cell_length_c 12.000
+_cell_angle_alpha 90
+_cell_angle_beta 101.5(1)
+_cell_angle_gamma 90.00
+_symmetry_space_group_name_H-M 'P 1'
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Pb1A 0.01 0.01 0.01
+Br1_a 0.11 0.11 0.11
+CL1 0.21 0.21 0.21
+D1 0.31 0.31 0.31
+N1+ 0.41 0.41 0.41
+PB2 0.51 0.51 0.51
+BR2 0.61 0.61 0.61
+SN1 0.71 0.71 0.71
+CU1 0.81 0.81 0.81
+NA1 0.91 0.91 0.91
+Cl2 0.01 0.21 0.41
+HG1 0.01 0.31 0.61
+CA1 0.01 0.41 0.81
+OW1 0.01 0.51 0.11
+H1N 0.01 0.61 0.31
+Hg2 0.01 0.71 0.51
+C1A 0.01 0.81 0.71
+Cs1 0.01 0.91 0.91
+BI1 0.31 0.01 0.51
+I1 0.51 0.01 0.91

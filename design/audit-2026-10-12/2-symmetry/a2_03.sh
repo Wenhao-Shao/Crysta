@@ -1,0 +1,3 @@
+#!/bin/sh
+# A2-03: a non-integer _cell_formula_units_Z is truncated by parseInt
+cd /tmp/claude-0/-home-claude-crysta/91526d4c-a104-5cc3-9816-99087d3f4c17/scratchpad/audit/work/2-symmetry && python3 -I repro_formula.py t5_files/nacl_Znonint.cif /tmp/claude-0/-home-claude-crysta/91526d4c-a104-5cc3-9816-99087d3f4c17/scratchpad/audit/corpus/hybrid3/structures/1006_1.cif /tmp/claude-0/-home-claude-crysta/91526d4c-a104-5cc3-9816-99087d3f4c17/scratchpad/audit/corpus/hybrid3/structures/1122_1.cif /tmp/claude-0/-home-claude-crysta/91526d4c-a104-5cc3-9816-99087d3f4c17/scratchpad/audit/corpus/hybrid3/structures/903_1.cif

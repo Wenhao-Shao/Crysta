@@ -1,0 +1,283 @@
+##############################################################################
+###                                                                        ###
+###        Electronic paper (Acta Crystallographica Section E)             ###
+###                                                                        ###
+##############################################################################
+#                                                                            #
+# This CIF contains the data in a paper accepted for publication in Acta     #
+# Crystallographica Section E. It conforms to the requirements of Notes      #
+# for Authors for Section E, and has been peer reviewed under the auspices   #
+# of the IUCr Commission on Journals.                                        #
+#                                                                            #
+# Full details of the Crystallographic Information File format               #
+# are given in the paper "The Crystallographic Information File (CIF):       #
+# a New Standard Archive File for Crystallography" by S. R. Hall, F. H.      #
+# Allen and I. D. Brown [Acta Cryst. (1991), A47, 655-685].                  #
+#                                                                            #
+# The current version of the core CIF dictionary is obtainable from          #
+# ftp://ftp.iucr.org/pub/cif_core.dic. The current version number is 2.4.    #
+#                                                                            #
+# Software is freely available for graphical display of the structure(s) in  #
+# this CIF.  For information consult the CIF home page http://www.iucr.org/  #
+# cif/home.html                                                              #
+#                                                                            #
+# This file may be used for bona fide research purposes within the           #
+# scientific community so long as proper attribution is given to the journal # 
+# article from which it was obtained.                                        #
+#                                                                            #
+##############################################################################
+                                             
+data_global
+_audit_creation_method     'by CrystalStructure 4.0'
+_journal_date_recd_electronic     2009-08-12
+_journal_date_accepted     2009-09-14
+_journal_name_full     'Acta Crystallographica, Section E'
+_journal_year     2009
+_journal_volume     65
+_journal_issue     11
+_journal_page_first     m1323
+_journal_page_last     m1324
+_journal_paper_category     QM
+_journal_coeditor_code     ZQ2004
+_publ_contact_author_name     'Dr Kengo Shibuya'
+_publ_contact_author_address
+;
+Graduate School of Arts and Sciences
+University of Tokyo
+Komaba 3-8-1, Meguro-ku
+Tokyo 153-8902
+Japan
+;
+_publ_contact_author_email     shibuken@gakushikai.jp
+_publ_contact_author_fax     '+81-3-5454-6708'
+_publ_contact_author_phone     '+81-3-5454-6540'
+_publ_section_title
+;
+Poly[bis(phenethylammonium) [[dibromidoplumbate(II)]-di-\m-bromido]]
+;
+loop_
+    _publ_author_name
+    _publ_author_footnote
+    _publ_author_address
+    'Shibuya, Kengo'
+;
+Also at: CREST, Japan Science and Technology Agency, 5 Sanbancho, Chiyoda-ku,
+Tokyo 102-0075, Japan.
+;
+;
+Institute of Physics
+Graduate School of Arts and Sciences
+University of Tokyo
+3-8-1 Komaba, Meguro-ku
+Tokyo 153-8902
+Japan
+;
+    'Koshimizu, Masanori'
+;
+Also at: CREST, Japan Science and Technology Agency, 5 Sanbancho, Chiyoda-ku,
+Tokyo 102-0075, Japan.
+;
+;
+Department of Applied Chemistry
+Tohoku University
+Graduate School of Engineering
+6-6-07 Aoba, Aramaki, Aoba-ku
+Sendai 980-8579
+Japan
+;
+    'Nishikido, Fumihiko'
+;
+Also at: CREST, Japan Science and Technology Agency, 5 Sanbancho, Chiyoda-ku,
+Tokyo 102-0075, Japan.
+;
+;
+Molecular Imaging Center,
+National Institute of Radiological Sciences,
+4-9-1 Anagawa, Inage-ku,
+Chiba 263-8555,
+Japan
+;
+    'Saito, Haruo' .
+;
+Institute of Physics
+Graduate School of Arts and Sciences
+University of Tokyo
+3-8-1 Komaba, Meguro-ku
+Tokyo 153-8902
+Japan
+;
+    'Kishimoto, Shunji'
+;
+Also at: CREST, Japan Science and Technology Agency, 5 Sanbancho, Chiyoda-ku,
+Tokyo 102-0075, Japan.
+;
+;
+Institute of Materials Structure Science
+High Energy Accelerator Research Organization
+1-1 Oho
+Tukuba 305-0801
+Japan
+;
+data_I
+_chemical_name_systematic
+;
+Poly[bis(phenethylammonium) [[dibromidoplumbate(II)]-di-\m-bromido]]
+;
+_chemical_formula_moiety     '2C8 H12 N + , Br4 Pb 2-'
+_chemical_formula_sum     'C16 H24 Br4 N2 Pb'
+_chemical_formula_iupac     '(C8 H12 N)2 [Pb Br4]'
+_chemical_formula_weight     771.20
+_chemical_melting_point     ?
+_symmetry_cell_setting     triclinic
+_symmetry_space_group_name_H-M     'P -1'
+_symmetry_space_group_name_Hall     '-P 1'
+loop_
+    _symmetry_equiv_pos_site_id
+    _symmetry_equiv_pos_as_xyz
+    1 '+x,+y,+z'
+    2 '-x,-y,-z'
+_cell_length_a     11.6150(4)
+_cell_length_b     11.6275(5)
+_cell_length_c     17.5751(6)
+_cell_angle_alpha     99.5472(12)
+_cell_angle_beta     105.7245(10)
+_cell_angle_gamma     89.9770(12)
+_cell_volume     2250.62(15)
+_cell_formula_units_Z     4
+_cell_measurement_reflns_used     15239
+_cell_measurement_theta_min     3.2
+_cell_measurement_theta_max     27.5
+_cell_measurement_temperature     296.1
+_exptl_crystal_description     platelet
+_exptl_crystal_colour     colourless
+_exptl_crystal_size_max     0.25
+_exptl_crystal_size_mid     0.20
+_exptl_crystal_size_min     0.03
+_exptl_crystal_density_diffrn     2.276
+_exptl_crystal_density_meas     ?
+_exptl_crystal_density_method     'not measured'
+_exptl_crystal_F_000     1424.00
+_exptl_absorpt_coefficient_mu     14.633
+_exptl_absorpt_correction_type     numerical
+_exptl_absorpt_process_details
+;
+see: Higashi (1999)
+;
+_exptl_absorpt_correction_T_min     0.106
+_exptl_absorpt_correction_T_max     0.645
+_diffrn_ambient_temperature     296
+_diffrn_radiation_type     'Mo K\a'
+_diffrn_radiation_wavelength     0.71075
+_diffrn_measurement_device_type     'Rigaku R-AXIS RAPID'
+_diffrn_measurement_method     \w
+_diffrn_detector_area_resol_mean     10.00
+_diffrn_reflns_number     20072
+_diffrn_reflns_av_R_equivalents     0.053
+_diffrn_reflns_theta_max     27.45
+_diffrn_reflns_theta_full     27.45
+_diffrn_measured_fraction_theta_max     0.979
+_diffrn_measured_fraction_theta_full     0.979
+_diffrn_reflns_limit_h_min     -15
+_diffrn_reflns_limit_h_max     12
+_diffrn_reflns_limit_k_min     -15
+_diffrn_reflns_limit_k_max     15
+_diffrn_reflns_limit_l_min     -22
+_diffrn_reflns_limit_l_max     22
+_refine_special_details
+;
+Refinement was performed using all reflections. The weighted <i>R</i>-factor
+(<i>wR</i>) and goodness of fit (<i>S</i>) are based on <i>F</i>^2^.
+<i>R</i>-factor (gt) are based on <i>F</i>. The threshold expression of
+<i>F</i>^2^ > 2.0 \s(<i>F</i>^2^) is used only for calculating <i>R</i>-factor
+(gt).
+;
+_reflns_number_total     10077
+_reflns_number_gt     7157
+_reflns_threshold_expression     I>2\s(I)
+_refine_ls_structure_factor_coef     Fsqd
+_refine_ls_R_factor_gt     0.0424
+_refine_ls_wR_factor_ref     0.1059
+_refine_ls_goodness_of_fit_ref     0.971
+_refine_ls_number_reflns     10077
+_refine_ls_number_parameters     416
+_refine_ls_number_restraints     0
+_refine_ls_hydrogen_treatment     constr
+_refine_ls_weighting_scheme     calc
+_refine_ls_weighting_details
+                    'w = 1/[\s^2^(Fo^2^)+(0.0442P)^2^] where P=(Fo^2^+2Fc^2^)/3'
+_refine_ls_shift/su_max     ?
+_refine_ls_shift/su_max_lt     0.001
+_refine_diff_density_max     3.26
+_refine_diff_density_min     -2.53
+_refine_ls_extinction_method     none
+_refine_ls_extinction_coef     ?
+loop_
+    _atom_type_symbol
+    _atom_type_description
+    _atom_type_scat_dispersion_real
+    _atom_type_scat_dispersion_imag
+    _atom_type_scat_source
+    'C' 'C' 0.003 0.002
+;
+International Tables for Crystallography
+(1992, Vol. C, Tables 4.2.6.8 and 6.1.1.4)
+;
+    'H' 'H' 0.000 0.000
+;
+International Tables for Crystallography
+(1992, Vol. C, Table 6.1.1.4)
+;
+    'N' 'N' 0.006 0.003
+;
+International Tables for Crystallography
+(1992, Vol. C, Tables 4.2.6.8 and 6.1.1.4)
+;
+    'Pb' 'Pb' -3.394 10.111
+;
+International Tables for Crystallography
+(1992, Vol. C, Tables 4.2.6.8 and 6.1.1.4)
+;
+    'Br' 'Br' -0.290 2.459
+;
+International Tables for Crystallography
+(1992, Vol. C, Tables 4.2.6.8 and 6.1.1.4)
+;
+_computing_data_collection     'PROCESS-AUTO (Rigaku Corporation, 1998)'
+_computing_cell_refinement     'PROCESS-AUTO (Rigaku Corporation, 1998)'
+_computing_data_reduction
+                 'CrystalStructure (Rigaku Americas & Rigaku Corporation, 2008)'
+_computing_structure_solution     'SIR2002 (Burla <i>et al.</i>,  2003)'
+_computing_structure_refinement     'SHELXL97 (Sheldrick, 2008)'
+_computing_molecular_graphics     'CrystalMaker (Palmer, 2009)'
+_computing_publication_material     'publCIF (Westrip, 2009)'
+loop_
+    _atom_site_type_symbol
+    _atom_site_label
+    _atom_site_fract_x
+    _atom_site_fract_y
+    _atom_site_fract_z
+    _atom_site_U_iso_or_equiv
+    _atom_site_adp_type
+    _atom_site_calc_flag
+    _atom_site_refinement_flags
+    _atom_site_occupancy
+    _atom_site_disorder_assembly
+    _atom_site_disorder_group
+    Pb Pb1 0.24494(2) 0.239633(18) -0.011473(16) 0.03270(15) Uani d . 1.00 . .
+    Pb Pb2 0.74492(2) 0.254601(18) -0.011604(16) 0.03274(15) Uani d . 1.00 . .
+    Br Br1 -0.00101(6) 0.18802(6) 0.00154(5) 0.04426(17) Uani d . 1.00 . .
+    Br Br2 0.31464(7) 0.27662(6) 0.18009(5) 0.04282(16) Uani d . 1.00 . .
+    Br Br3 0.18198(7) 0.20941(6) -0.18389(5) 0.04710(18) Uani d . 1.00 . .
+    Br Br4 0.18722(7) 0.49165(5) -0.00100(5) 0.04628(18) Uani d . 1.00 . .
+    Br Br5 0.31258(7) -0.00779(5) 0.00106(5) 0.04622(18) Uani d . 1.00 . .
+    Br Br6 0.49894(6) 0.31257(6) 0.00149(5) 0.04407(18) Uani d . 1.00 . .
+    Br Br7 0.81414(7) 0.31351(6) 0.18005(5) 0.04330(17) Uani d . 1.00 . .
+    Br Br8 0.68260(7) 0.19889(6) -0.18383(5) 0.04685(17) Uani d . 1.00 . .
+    N N1 0.1391(5) 0.0296(4) 0.1519(3) 0.0467(14) Uani d . 1.00 . .
+    N N2 0.6387(5) 0.5470(4) 0.1515(3) 0.0488(15) Uani d . 1.00 . .
+    N N3 0.5666(5) 0.1314(4) 0.1523(3) 0.0452(14) Uani d . 1.00 . .
+    N N4 0.0652(5) 0.4444(4) 0.1512(3) 0.0488(15) Uani d . 1.00 . .
+    C C1 0.0360(7) 0.0491(7) 0.1886(5) 0.057(2) Uani d . 1.00 . .
+    C C2 0.0764(7) 0.1128(6) 0.2729(5) 0.057(2) Uani d . 1.00 . .
+    C C3 0.1601(7) 0.0445(6) 0.3284(4) 0.0496(19) Uani d . 1.00 . .
+    C C4 

@@ -1,0 +1,56 @@
+##############################################################################
+###                                                                        ###
+###        Electronic paper (Acta Crystallographica Section E)             ###
+###                                                                        ###
+##############################################################################
+#                                                                            #
+# This CIF contains the data in a paper accepted for publication in Acta     #
+# Crystallographica Section E. It conforms to the requirements of Notes      #
+# for Authors for Section E, and has been peer reviewed under the auspices   #
+# of the IUCr Commission on Journals.                                        #
+#                                                                            #
+# Full details of the Crystallographic Information File format               #
+# are given in the paper "The Crystallographic Information File (CIF):       #
+# a New Standard Archive File for Crystallography" by S. R. Hall, F. H.      #
+# Allen and I. D. Brown [Acta Cryst. (1991), A47, 655-685].                  #
+#                                                                            #
+# The current version of the core CIF dictionary is obtainable from          #
+# ftp://ftp.iucr.org/pub/cif_core.dic. The current version number is 2.4.    #
+#                                                                            #
+# Software is freely available for graphical display of the structure(s) in  #
+# this CIF.  For information consult the CIF home page http://www.iucr.org/  #
+# cif/home.html                                                              #
+#                                                                            #
+# This file may be used for bona fide research purposes within the           #
+# scientific community so long as proper attribution is given to the journal # 
+# article from which it was obtained.                                        #
+#                                                                            #
+##############################################################################
+                                             
+data_global
+_audit_creation_method     'by CrystalStructure 4.0'
+_journal_date_recd_electronic     2009-08-12
+_journal_date_accepted     2009-09-14
+_journal_name_full     'Acta Crystallographica, Section E'
+_journal_year     2009
+_journal_volume     65
+_journal_issue     11
+_journal_page_first     m1323
+_journal_page_last     m1324
+_journal_paper_category     QM
+_journal_coeditor_code     ZQ2004
+_publ_contact_author_name     'Dr Kengo Shibuya'
+_publ_contact_author_address
+;
+Graduate School of Arts and Sciences
+University of Tokyo
+Komaba 3-8-1, Meguro-ku
+Tokyo 153-8902
+Japan
+;
+_publ_contact_author_email     shibuken@gakushikai.jp
+_publ_contact_author_fax     '+81-3-5454-6708'
+_publ_contact_author_phone     '+81-3-5454-6540'
+_publ_section_title
+;
+Poly[bis(phenethyl

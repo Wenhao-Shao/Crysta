@@ -1,0 +1,34 @@
+data_mono
+_cell_length_a 7.1
+_cell_length_b 9.3
+_cell_length_c 11.2
+_cell_angle_alpha 90
+_cell_angle_beta 104.3
+_cell_angle_gamma 90
+loop_
+_space_group_symop_operation_xyz
+'x,y,z'
+'-x+1/2,y+1/2,-z+1/2'
+'-x,-y,-z'
+'x-1/2,-y-1/2,z-1/2'
+loop_
+_atom_site_label
+_atom_site_type_symbol
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+_atom_site_occupancy
+Pb1 Pb 0.1 0.2 0.3 1
+Br1 Br 0.31 0.07 0.45 0.7
+C1 C 0.6 0.4 0.1 1
+loop_
+_atom_site_aniso_label
+_atom_site_aniso_B_11
+_atom_site_aniso_B_22
+_atom_site_aniso_B_33
+_atom_site_aniso_B_23
+_atom_site_aniso_B_13
+_atom_site_aniso_B_12
+Pb1 2.447662 1.737050 3.553058 0.315827 0.947482 -0.236871
+Br1 6.395504 2.763489 4.105755 -0.868525 1.579137 0.710612
+C1 3.947842 4.737410 5.526978 0.789568 1.579137 0.394784

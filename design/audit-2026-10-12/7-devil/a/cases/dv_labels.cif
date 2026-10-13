@@ -1,0 +1,38 @@
+data_lab
+_cell_length_a 20
+_cell_length_b 20
+_cell_length_c 20
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+loop_
+_symmetry_equiv_pos_as_xyz
+x,y,z
+loop_
+_atom_site_label
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+PB1 0.000 0.1 0.3
+BR2 0.040 0.5 0.3
+SN1 0.080 0.1 0.3
+BI1 0.120 0.5 0.3
+CL1 0.160 0.1 0.3
+CU1 0.200 0.5 0.3
+NA1 0.240 0.1 0.3
+CA1 0.280 0.5 0.3
+HG1 0.320 0.1 0.3
+Pb3 0.360 0.5 0.3
+Br4 0.400 0.1 0.3
+CD1 0.440 0.5 0.3
+HA1 0.480 0.1 0.3
+NB1 0.520 0.5 0.3
+OS1 0.560 0.1 0.3
+SI1 0.600 0.5 0.3
+CO1 0.640 0.1 0.3
+HO1 0.680 0.5 0.3
+HF1 0.720 0.1 0.3
+NI1 0.760 0.5 0.3
+C1A 0.800 0.1 0.3
+N1 0.840 0.5 0.3
+Cg1 0.880 0.1 0.3

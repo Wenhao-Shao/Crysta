@@ -1,0 +1,18 @@
+data_tri_p1bar
+_cell_length_a 7.123
+_cell_length_b 8.456
+_cell_length_c 9.789
+_cell_angle_alpha 73.21
+_cell_angle_beta 81.45
+_cell_angle_gamma 67.89
+_symmetry_space_group_name_H-M 'P -1'
+loop_
+_atom_site_label
+_atom_site_type_symbol
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+_atom_site_occupancy
+Fe1 Fe 0 0 0 1
+Cl1 Cl 0.2134 0.3456 0.1234 1
+O1 O 0.5 0.5 0 1

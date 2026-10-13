@@ -1,0 +1,27 @@
+data_zigzag_p0.6
+_symmetry_space_group_name_H-M 'P 1'
+loop_
+_symmetry_equiv_pos_as_xyz
+x,y,z
+_cell_length_a 6.000000
+_cell_length_b 12.000000
+_cell_length_c 16.278821
+_cell_angle_alpha 90.000000
+_cell_angle_beta 79.380345
+_cell_angle_gamma 90.000000
+loop_
+_atom_site_label
+_atom_site_type_symbol
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+Pb1 Pb 0.00000000 0.00000000 0.00000000
+Pb2 Pb 0.10000000 0.50000000 0.00000000
+Br1 Br 0.50000000 0.00000000 0.00000000
+Br2 Br 0.60000000 0.50000000 0.00000000
+Br3 Br 0.05000000 0.25000000 0.00000000
+Br4 Br 0.05000000 0.75000000 0.00000000
+Br5 Br 0.90625000 0.00000000 0.18750000
+Br6 Br 0.09375000 0.00000000 0.81250000
+Br7 Br 0.00625000 0.50000000 0.18750000
+Br8 Br 0.19375000 0.50000000 0.81250000

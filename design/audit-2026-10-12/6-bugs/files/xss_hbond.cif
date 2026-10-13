@@ -1,0 +1,17 @@
+data_hb
+_cell_length_a 10
+_cell_length_b 10
+_cell_length_c 10
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+loop_
+_atom_site_label
+_atom_site_type_symbol
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+'N<img src=x onerror=alert(18)>' N 0.0 0.0 0.0
+'H<img src=x onerror=alert(19)>' H 0.1 0.0 0.0
+'C<img src=x onerror=alert(20)>' C -0.148 0.0 0.0
+'Br<img src=x onerror=alert(21)>' Br 0.33 0.0 0.0

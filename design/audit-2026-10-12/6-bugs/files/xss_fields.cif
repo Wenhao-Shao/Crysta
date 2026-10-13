@@ -1,0 +1,28 @@
+data_<img/src=x/onerror=alert(1)>
+_symmetry_space_group_name_H-M '<img src=x onerror=alert(2)>'
+_symmetry_Int_Tables_number '<img src=x onerror=alert(3)>'
+_diffrn_ambient_temperature '<img src=x onerror=alert(4)>'
+_refine_ls_R_factor_gt '<img src=x onerror=alert(5)>'
+_database_code_depnum_ccdc_archive '<img src=x onerror=alert(6)>'
+_cell_length_a '5.9<img src=x onerror=alert(7)>'
+_cell_length_b 5.9
+_cell_length_c 5.9
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+loop_
+_symmetry_equiv_pos_as_xyz
+'x,y,z'
+loop_
+_atom_site_label
+_atom_site_type_symbol
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+'Pb<img src=x onerror=alert(8)>' 'Pb<img src=x onerror=alert(9)>' 0 0 0
+'Br<img src=x onerror=alert(10)>' Br 0.5 0 0
+'Br<img src=x onerror=alert(11)>' Br 0 0.5 0
+'Br"><svg/onload=alert(12)>' Br 0 0 0.5
+'Cs<img src=x onerror=alert(13)>' Cs 0.5 0.5 0.5
+'<img src=x onerror=alert(14)>' Qq 0.25 0.25 0.25
+'N<img src=x onerror=alert(15)>' N 0.5 0.5 '?'

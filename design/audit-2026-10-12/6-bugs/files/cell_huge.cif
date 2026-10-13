@@ -1,0 +1,15 @@
+data_huge
+_cell_length_a 1000000.0
+_cell_length_b 1000000.0
+_cell_length_c 1000000.0
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+loop_
+_atom_site_label
+_atom_site_type_symbol
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+C1 C 0 0 0
+C2 C 1.5e-06 0 0

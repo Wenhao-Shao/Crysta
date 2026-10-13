@@ -1,0 +1,11 @@
+#!/bin/sh
+# The info card in the built page (dist/Crysta.html) for the cases of A2-01..A2-11; prints Formula, mass, space group, V, Z, density, Symmetry, Disorder.
+cd /tmp/claude-0/-home-claude-crysta/91526d4c-a104-5cc3-9816-99087d3f4c17/scratchpad/audit/work/2-symmetry && NODE_PATH=/opt/npm-tools/node_modules node page_check.js /tmp/claude-0/-home-claude-crysta/91526d4c-a104-5cc3-9816-99087d3f4c17/scratchpad/audit/work/2-symmetry/page_repro.json \
+  /tmp/claude-0/-home-claude-crysta/91526d4c-a104-5cc3-9816-99087d3f4c17/scratchpad/audit/work/2-symmetry/t5_files/half_040_off.cif /tmp/claude-0/-home-claude-crysta/91526d4c-a104-5cc3-9816-99087d3f4c17/scratchpad/audit/corpus/hybrid3/structures/1259_1.cif /tmp/claude-0/-home-claude-crysta/91526d4c-a104-5cc3-9816-99087d3f4c17/scratchpad/audit/corpus/hybrid3/structures/1006_1.cif /tmp/claude-0/-home-claude-crysta/91526d4c-a104-5cc3-9816-99087d3f4c17/scratchpad/audit/work/2-symmetry/t5_files/bi2te3_rho_num.cif /tmp/claude-0/-home-claude-crysta/91526d4c-a104-5cc3-9816-99087d3f4c17/scratchpad/audit/work/2-symmetry/t5_files/spinel_fd3m_o2.cif \
+  /tmp/claude-0/-home-claude-crysta/91526d4c-a104-5cc3-9816-99087d3f4c17/scratchpad/audit/work/2-symmetry/t5_files/cscl.cif /tmp/claude-0/-home-claude-crysta/91526d4c-a104-5cc3-9816-99087d3f4c17/scratchpad/audit/work/2-symmetry/t5_files/cmce_only.cif /tmp/claude-0/-home-claude-crysta/91526d4c-a104-5cc3-9816-99087d3f4c17/scratchpad/audit/work/2-symmetry/t5_files/b2_only.cif /tmp/claude-0/-home-claude-crysta/91526d4c-a104-5cc3-9816-99087d3f4c17/scratchpad/audit/work/2-symmetry/t5_files/nd4cl.cif /tmp/claude-0/-home-claude-crysta/91526d4c-a104-5cc3-9816-99087d3f4c17/scratchpad/audit/work/2-symmetry/t5_files/benzene_like.cif /tmp/claude-0/-home-claude-crysta/91526d4c-a104-5cc3-9816-99087d3f4c17/scratchpad/audit/corpus/hybrid3/structures/1194_1.cif && python3 -I -c "
+import json; d=json.load(open('/tmp/claude-0/-home-claude-crysta/91526d4c-a104-5cc3-9816-99087d3f4c17/scratchpad/audit/work/2-symmetry/page_repro.json'))
+for r in d['out']:
+    print('==', r['file'], '| header:', r['sub'].replace(chr(10), ' / '))
+    print('   ', '; '.join(k + ': ' + repr(v) for k, v in r['card'] if k in ('Formula', 'Formula mass', 'Space group', 'V', 'Z', 'ρcalc', 'Symmetry', 'Disorder', 'Atoms per cell')))
+    print('    space-group HTML:', r.get('sgHtml'))
+print(d['tsv'])"

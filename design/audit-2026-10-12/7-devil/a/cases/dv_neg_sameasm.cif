@@ -1,0 +1,25 @@
+data_neg
+_cell_length_a 10
+_cell_length_b 10
+_cell_length_c 10
+_cell_angle_alpha 90
+_cell_angle_beta 90
+_cell_angle_gamma 90
+loop_
+_symmetry_equiv_pos_as_xyz
+x,y,z
+-x,-y,-z
+loop_
+_atom_site_label
+_atom_site_type_symbol
+_atom_site_fract_x
+_atom_site_fract_y
+_atom_site_fract_z
+_atom_site_occupancy
+_atom_site_disorder_assembly
+_atom_site_disorder_group
+Pb1 Pb 0 0 0 1 . .
+I1 I 0.3 0 0 0.8 A 1
+I2 I 0.3 0.05 0.08 0.2 A 2
+N1 N 0.52 0.45 0.5 0.5 A -1
+C1 C 0.62 0.45 0.5 0.5 A -1

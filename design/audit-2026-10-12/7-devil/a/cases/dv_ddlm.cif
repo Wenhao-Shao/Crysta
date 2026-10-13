@@ -1,0 +1,17 @@
+data_naclz
+_cell.length_a 5.6402
+_cell.length_b 5.6402
+_cell.length_c 5.6402
+_cell.angle_alpha 90
+_cell.angle_beta 90
+_cell.angle_gamma 90
+_space_group.name_H-M_alt 'F m -3 m'
+_cell.formula_units_Z 4
+loop_
+_atom_site.label
+_atom_site.type_symbol
+_atom_site.fract_x
+_atom_site.fract_y
+_atom_site.fract_z
+Na1 Na 0 0 0
+Cl1 Cl 0.5 0.5 0.5
