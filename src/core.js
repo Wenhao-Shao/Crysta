@@ -1019,11 +1019,10 @@
      the file says. */
   const SAME_POS = 0.05, SAME_EXACT = 0.01;
   /* The largest distance at which two non-H atoms of one element that the file does not flag are alternatives of
-     one site: 0.9 A; for an element with a covalent radius of 1.0 A or more, 1.5 times that radius (I 2.09 A).
-     Metals can have a short multiple bond (Mo-Mo 2.09 A, Re-Re 2.24 A, Cr-Cr 1.83 A): for them the limit is 1.2 times
-     the radius, below any such bond. Two partly occupied non-metals whose occupancies add up to 1.05 or less cannot
-     both be there: for them the limit is 1.8 times the radius (Cl 1.84 A, Br 2.16 A, I 2.50 A), below the X-X bond.
-     splitRadius is the largest limit. */
+     one site: 0.9 A; for a non-metal with a covalent radius of 1.0 A or more, 1.8 times that radius (Cl 1.84 A,
+     Br 2.16 A, I 2.50 A, S 1.89 A), below its shortest bond to itself (Cl2 1.99 A, I2 2.67 A, S-S 2.05 A). Metals can
+     have a short multiple bond (Mo-Mo 2.09 A, Re-Re 2.24 A, Cr-Cr 1.83 A): for them the limit is 1.2 times the
+     radius, below any such bond. splitRadius is the largest limit. */
   const splitRadius = (el) => ((RC[el] || 0) >= 1.0 ? 1.8 * RC[el] : 0.9);
   /* a single bond between two atoms: not shorter than the sum of their covalent radii - 0.1 A (C-N 1.37 A, C-O
      1.32 A). A C=O (1.22 A), C#N (1.14 A) or the C-N of an amidinium (1.32 A) is shorter. */
@@ -1032,11 +1031,10 @@
      1.14 A), and X bonded to no other N or O (the C of an amidinium, a guanidinium, an amide or a urea is). A C-N
      refined short (1.34 A) still counts. xOthers: the elements of the other neighbours of X. */
   const amineN = (d, xOthers) => d >= 1.31 && !xOthers.some((e) => e === 'N' || e === 'O');
-  const splitLimit = (a, b) => {
+  const splitLimit = (a) => {
     const r = RC[a.el] || 0;
     if (r < 1.0) return 0.9;
-    if (isMetal(a.el)) return Math.max(0.9, 1.2 * r);
-    return a.occ < 0.99 && b.occ < 0.99 && a.occ + b.occ <= 1.05 ? 1.8 * r : 1.5 * r;
+    return isMetal(a.el) ? Math.max(0.9, 1.2 * r) : 1.8 * r;
   };
 
   /* Every copy of every site, made by every operator and put in the cell, and the share w of each copy in the
@@ -1088,7 +1086,7 @@
         const b = copies[q];
         const same = a.dg === b.dg;
         const split = a.el !== 'H' && a.dg === '.' && b.dg === '.';
-        if ((same && d < 0.15) || (split && d < splitLimit(a, b))) pairs.push([d, p, q]);
+        if ((same && d < 0.15) || (split && d < splitLimit(a))) pairs.push([d, p, q]);
       }
     });
     pairs.sort((x, y) => x[0] - y[0] || x[1] - y[1] || x[2] - y[2]);
@@ -1186,8 +1184,8 @@
     }
 
     // 1b. alternatives that the file does not flag, for the picture and the geometry (the formula keeps them all):
-    //   - two non-H atoms of one element closer than splitLimit (0.9 A; 1.5 times the covalent radius for heavy
-    //     atoms; 1.2 times for two metals with full occupancy): they cannot both be there (two I 1.5 A apart);
+    //   - two non-H atoms of one element closer than splitLimit (0.9 A; 1.8 times the covalent radius for heavy
+    //     non-metals; 1.2 times for metals): they cannot both be there (two I 1.5 A apart);
     //   - partly occupied metals or halides of two elements on one site (closer than 0.3 A, occupancies adding up
     //     to 1.05 or less): the one with the higher occupancy is drawn.
     //   Of each split pair, the one with an occupancy 0.2 or more above the other is drawn; else the first listed.
@@ -1220,7 +1218,7 @@
           const b = atoms[j], d = best.get(j);
           if (b.dg !== '.' || b.el === 'H') continue;
           if (b.el === a.el) {
-            if (d < splitLimit(a, b)) hide(i, j, autoSplit);
+            if (d < splitLimit(a)) hide(i, j, autoSplit);
           } else if (d < 0.3 && partial(a) && partial(b) && a.occ + b.occ <= 1.05 && mixable(a.el) && mixable(b.el)) hide(i, j, mixed);
         }
       }

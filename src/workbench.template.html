@@ -3011,7 +3011,7 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
         });
         if (d.mplaneSel && !planeShift.has(d.mplaneSel)) d.mplaneSel = d.mplanes.length ? d.mplanes[d.mplanes.length - 1].id : null;
         const gone = (nM - d.measures.length) + (nP - d.mplanes.length);
-        st.notice = gone ? (gone === 1 ? '1 measurement or plane was removed: its atoms are' : gone + ' measurements and planes were removed: their atoms are') + ' not in the picture now.' : '';
+        st.notice = gone ? (gone === 1 ? '1 measurement or plane was removed: the picture no longer has its atoms' : gone + ' measurements and planes were removed: the picture no longer has their atoms') + ' at the same places. Measure again, or make the packing block larger.' : '';
       }
       drawHeader(); drawSheet(); drawChromos(); drawCompare();
       if (!d.mplanes.length && (st.measure === 'aplane' || st.measure === 'bplane' || st.measure === 'pangle')) setMeasure('dist'); else render(true);

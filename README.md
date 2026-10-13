@@ -167,14 +167,13 @@ These choices decide the numbers, so they are stated here. Changing any of them 
   fixed occupancy are one region. Two PARTs with different numbers whose non-H atoms come closer than
   1.6 Å (also through symmetry) are in one region, as with SUMP. Crysta shows the PART with the highest
   mean occupancy in each region.
-- Unflagged split sites: two non-H atoms of one element closer than 0.9 Å are alternates. For atoms
-  with a covalent radius of 1.0 Å or more, the limit is 1.5 times that radius (I 2.09 Å). For two
-  partly occupied non-metals whose occupancies add up to 1.05 or less, it is 1.8 times the radius
-  (Cl 1.84 Å, I 2.50 Å). For metals, it is 1.2 times the radius. Thus a short metal–metal bond
-  (Mo–Mo 2.09 Å) stays. "Partly occupied" is an occupancy below 0.99. Crysta shows the atom whose
+- Unflagged split sites: two non-H atoms of one element closer than 0.9 Å are alternates. For
+  non-metals with a covalent radius of 1.0 Å or more, the limit is 1.8 times that radius (Cl 1.84 Å,
+  I 2.50 Å, S 1.89 Å), below their shortest bond to themselves (Cl2 1.99 Å, S–S 2.05 Å). For metals,
+  it is 1.2 times the radius. Thus a short metal–metal bond (Mo–Mo 2.09 Å) stays. Crysta shows the atom whose
   occupancy is 0.2 or more above the other (0.9 against 0.1). Else it shows the first atom in the list,
   so that the atoms of one orientation stay together.
-- Mixed sites: partly occupied metals or halides of two elements closer than 0.3 Å, with occupancies
+- Mixed sites: partly occupied (occupancy below 0.99) metals or halides of two elements closer than 0.3 Å, with occupancies
   that add up to 1.05 or less, are alternates. Crysta shows the element with the higher occupancy.
   The C and N of a cation in two orientations (CH3NH3⁺) both stay.
 - Negative part numbers (disorder over a symmetry element): in a named CIF assembly, a negative group is
@@ -214,6 +213,8 @@ These choices decide the numbers, so they are stated here. Changing any of them 
 - A row whose atoms are not in the packing block glows nothing, and its note says so. This happens for
   hydrogen bonds near the block faces, and for layers that are not along a cell axis.
 - An ammonium N with only one or two of its H in the file is not found.
+- Unflagged split sites are chosen pair by pair. When the minor orientation of a molecule comes first in
+  the file and the occupancies of its pairs are close, the picture can mix the two orientations.
 - The stacking-offset and tilt descriptors assume corner-sharing layers. Slab, gallery and N penetration assume flat layers: for corrugated layers whose faces reach into each other, Crysta gives no gallery and no penetration.
 - Polyhedra you define use one distance for all their corner elements, and are not kept after the page is closed.
 - Appearance is set per element, not per atom or per site, and is not kept after the page is closed.

@@ -1241,6 +1241,9 @@ const formula = (info) => info.formula.map((e) => e.el + e.n).join(' ');
   // FX2a2-03: units of one kind with different numbers of H (NH3 and NH4) and whole cell contents: Z from the gcd
   r = run(cif(P1, [10, 10, 10, 90, 90, 90], full(['N1 N 0.2 0.2 0.2', 'H1 H 0.3 0.2 0.2', 'H2 H 0.2 0.3 0.2', 'H3 H 0.2 0.2 0.3', 'N2 N 0.7 0.7 0.7', 'H4 H 0.8 0.7 0.7', 'H5 H 0.7 0.8 0.7', 'H6 H 0.7 0.7 0.8', 'H7 H 0.6 0.7 0.7'])));
   check('audit FX2a2-03: no Z, units with different H: a whole formula', r.info.Z === 1 && fm(r.info) === 'H7 N2', fm(r.info) + ' Z ' + r.info.Z);
+  // FX2a3-01: a geometry.in-like file with both positions of a split I at full occupancy, 2.27 A apart: one site
+  r = run(cif(P1, [10, 10, 10, 90, 90, 90], 'Na1 Na 0 0 0 1\nI1 I 0.5 0.5 0.5 1\nI2 I 0.727 0.5 0.5 1'));
+  check('audit FX2a3-01: two full I 2.27 A apart are one site', r.uc.atoms.filter((a) => a.el === 'I').length === 1 && near(r.uc.counts.I, 1, 1e-9));
   // FX2b2-02: an edge-sharing NiF2 layer (CdI2 type) with a short F...F edge (2.48 A) is edge-sharing
   r = run(cif(hm('P -3 m 1'), [2.95, 2.95, 5.0, 90, 90, 120], 'Ni1 Ni 0 0 0 1\nF1 F 0.3333 0.6667 0.2097 1'));
   check('audit FX2b2-02: a fluoride edge of 2.48 A is an edge', r.info.layer && r.info.layer.sharing === 'edge', r.info.layer && r.info.layer.sharing);
