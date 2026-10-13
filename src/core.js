@@ -160,13 +160,12 @@
         if (mine.some((g) => norm(cell.toCart(minImage(sub(g, f)))) < SAME_POS)) continue;
         mine.push(f);
         pts.push({ f, r: RC[s.el] || 0.75 });
-        if (pts.length > 4000) return [0, 0];
       }
     }
+    // pairs closer than 0.6 x the sum of the covalent radii, from a binned neighbour search
     let n = 0;
-    for (let i = 0; i < pts.length; i++) for (let j = i + 1; j < pts.length; j++) {
-      if (norm(cell.toCart(minImage(sub(pts[i].f, pts[j].f)))) < 0.6 * (pts[i].r + pts[j].r)) n++;
-    }
+    const nb = neighbours(cell, pts.map((p) => p.f), 1.2 * Math.max(0.75, ...pts.map((p) => p.r)));
+    nb.forEach((list, i) => { for (const { j, d } of list) if (j > i && d < 0.6 * (pts[i].r + pts[j].r)) n++; });
     return [n, pts.length];
   }
   /* operators for a Hermann-Mauguin symbol or an IT number, through the symbol table. The symbol may have spaces,
@@ -178,8 +177,9 @@
      Returns { hall, ops, via, note } or null. */
   function symbolOps(hm, number, cell, sites) {
     const tryKey = (k) => (SG_TABLE[k] ? { hall: SG_TABLE[k], ops: hallOps(SG_TABLE[k]) } : null);
-    const rhombo = cell && Math.abs(cell.a - cell.b) < 1e-3 && Math.abs(cell.b - cell.c) < 1e-3 && Math.abs(cell.al - cell.be) < 0.05 &&
-      Math.abs(cell.be - cell.ga) < 0.05 && Math.abs(cell.al - 90) > 0.5;
+    // rhombohedral axes: a = b = c and alpha = beta = gamma (also near 90 deg, as in BaTiO3 R3m); hexagonal axes have gamma = 120
+    const rhombo = cell && Math.abs(cell.a - cell.b) < 1e-3 * cell.a && Math.abs(cell.b - cell.c) < 1e-3 * cell.a && Math.abs(cell.al - cell.be) < 0.05 &&
+      Math.abs(cell.be - cell.ga) < 0.05 && Math.abs(cell.ga - 120) > 0.05;
     const pickOrigin = (base, via) => {
       const o1 = tryKey(base + ':1'), o2 = tryKey(base + ':2');
       if (!o1 || !o2 || !o1.ops || !o2.ops) return null;
@@ -756,26 +756,48 @@
     }
     // major part of each disordered region. The atoms of a positive PART that refine their occupancy with free
     // variable m (sof 21, -21 for m = 2) are region m; the atoms of positive PARTs with a fixed occupancy are one
-    // region. In each region the PART with the highest mean occupancy is the major part. Negative PARTs
-    // (disorder over a symmetry element) are never a minor part: one orientation of them is kept elsewhere.
+    // region. Two PARTs with different numbers whose non-H atoms come closer than 1.6 A (also through symmetry) are
+    // alternatives of one place: their regions are one region (SUMP, one free variable for each PART). In each
+    // region the PART with the highest mean occupancy is the major part. Negative PARTs (disorder over a symmetry
+    // element) are never a minor part: one orientation of them is kept elsewhere.
     const stat = new Map();
-    const regionOf = (st) => (st.fv ? 'fv' + st.fv : 'fixed');
+    const keyOf = (st) => (st.fv ? 'fv' + st.fv : 'fixed') + '|' + parseInt(st.dg, 10);
     for (const st of sites) {
       const p = parseInt(st.dg, 10);
       if (!(p > 0)) continue;
-      const k = regionOf(st) + '|' + p;
-      const g = stat.get(k) || { r: regionOf(st), p, sum: 0, n: 0 };
+      const k = keyOf(st);
+      const g = stat.get(k) || { k, base: st.fv ? 'fv' + st.fv : 'fixed', p, sum: 0, n: 0, atoms: [] };
       g.sum += st.occ; g.n++;
+      if (st.el !== 'H') g.atoms.push(st.f);
       stat.set(k, g);
     }
+    const root = new Map();
+    const find = (k) => { while (root.get(k) !== k) k = root.get(k); return k; };
+    const join = (a, b) => { const ra = find(a), rb = find(b); if (ra !== rb) root.set(rb, ra); };
+    for (const g of stat.values()) root.set(g.k, g.k);
+    const byBase = new Map();
+    for (const g of stat.values()) { if (byBase.has(g.base)) join(byBase.get(g.base), g.k); else byBase.set(g.base, g.k); }
+    const groupsL = Array.from(stat.values());
+    const close = (P, Q) => {
+      for (const f of P) for (const q of Q) for (const op of full) {
+        const g = [0, 1, 2].map((r) => op.R[r][0] * q[0] + op.R[r][1] * q[1] + op.R[r][2] * q[2] + op.T[r]);
+        if (norm(cell.toCart([0, 1, 2].map((i) => { const d = g[i] - f[i]; return d - Math.round(d); }))) < 1.6) return true;
+      }
+      return false;
+    };
+    for (let i = 0; i < groupsL.length; i++) for (let j = i + 1; j < groupsL.length; j++) {
+      const A = groupsL[i], B = groupsL[j];
+      if (A.p === B.p || find(A.k) === find(B.k)) continue;
+      if (A.atoms.length * B.atoms.length * full.length <= 2e6 && close(A.atoms, B.atoms)) join(A.k, B.k);
+    }
     const bestOf = new Map();
-    for (const g of Array.from(stat.values()).sort((a, b) => a.p - b.p)) {
-      const mean = g.sum / g.n, b = bestOf.get(g.r);
-      if (!b || mean > b.mean + 1e-6) bestOf.set(g.r, { p: g.p, mean });
+    for (const g of groupsL.slice().sort((a, b) => a.p - b.p)) {
+      const r = find(g.k), mean = g.sum / g.n, b = bestOf.get(r);
+      if (!b || mean > b.mean + 1e-6) bestOf.set(r, { p: g.p, mean });
     }
     for (const st of sites) {
       const p = parseInt(st.dg, 10);
-      if (p > 0 && bestOf.get(regionOf(st)).p !== p) st.minor = true;
+      if (p > 0 && bestOf.get(find(keyOf(st))).p !== p) st.minor = true;
       delete st.fv;
     }
     const meta = plainMeta(title.split(/\s+/)[0] || 'shelx', cellNum, 'SHELX', { symSource: 'listed' });
@@ -996,15 +1018,22 @@
      also when the file gives its coordinates with few decimals. Below SAME_EXACT they are one position whatever
      the file says. */
   const SAME_POS = 0.05, SAME_EXACT = 0.01;
-  /* Two non-H atoms of one element closer than this (angstrom) cannot both be there: they are alternatives (a split
-     site). 0.9 A; for heavy atoms (covalent radius 1.0 A or more) 1.5 times the covalent radius (Cl 1.53 A, I 2.09 A,
-     Pb 2.19 A). Light atoms keep 0.9 A, because a strained C-C bond of a disordered part can be as short as 1.1 A. */
   /* The largest distance at which two non-H atoms of one element that the file does not flag are alternatives of
      one site: 0.9 A; for an element with a covalent radius of 1.0 A or more, 1.5 times that radius (I 2.09 A).
-     Two metals that both have full occupancy can have a short multiple bond (Mo-Mo 2.09 A, Re-Re 2.24 A, Cr-Cr
-     1.83 A): for them the limit is 1.2 times the radius, below any such bond. splitRadius is the largest limit. */
-  const splitRadius = (el) => ((RC[el] || 0) >= 1.0 ? 1.5 * RC[el] : 0.9);
-  const splitLimit = (a, b) => ((RC[a.el] || 0) >= 1.0 && isMetal(a.el) && a.occ >= 0.99 && b.occ >= 0.99 ? Math.max(0.9, 1.2 * RC[a.el]) : splitRadius(a.el));
+     Metals can have a short multiple bond (Mo-Mo 2.09 A, Re-Re 2.24 A, Cr-Cr 1.83 A): for them the limit is 1.2 times
+     the radius, below any such bond. Two partly occupied non-metals whose occupancies add up to 1.05 or less cannot
+     both be there: for them the limit is 1.8 times the radius (Cl 1.84 A, Br 2.16 A, I 2.50 A), below the X-X bond.
+     splitRadius is the largest limit. */
+  const splitRadius = (el) => ((RC[el] || 0) >= 1.0 ? 1.8 * RC[el] : 0.9);
+  /* a single bond between two atoms: not shorter than the sum of their covalent radii - 0.1 A (C-N 1.37 A, C-O
+     1.32 A). A C=O (1.22 A), C#N (1.14 A) or the C-N of an amidinium (1.32 A) is shorter. */
+  const singleBond = (e1, e2, d) => d >= (RC[e1] || 0.75) + (RC[e2] || 0.75) - 0.1;
+  const splitLimit = (a, b) => {
+    const r = RC[a.el] || 0;
+    if (r < 1.0) return 0.9;
+    if (isMetal(a.el)) return Math.max(0.9, 1.2 * r);
+    return a.occ < 0.99 && b.occ < 0.99 && a.occ + b.occ <= 1.05 ? 1.8 * r : 1.5 * r;
+  };
 
   /* Every copy of every site, made by every operator and put in the cell, and the share w of each copy in the
      cell contents. The formula, the density and the powder pattern use these shares.
@@ -1079,7 +1108,8 @@
   /* Disorder over a symmetry element (negative groups with no metal, and no halide unless with C): the operators
      make copies of the group that overlap. A copy is the atoms of one group made by one operator. In the order of
      the mean occupancy of the group, then the operator, a copy is kept when none of its non-H atoms is closer than
-     0.75 x the sum of the covalent radii to a non-H atom of a kept copy. Returns true for each copy of copies that
+     the sum of the covalent radii + 0.2 A to a non-H atom of a kept copy (the copies are alternatives: they do not
+     bond to each other). Returns true for each copy of copies that
      belongs to a hidden orientation. Metals and halides keep every copy (the card notes a polyhedron that mixes two
      orientations). */
   function symAlternates(struct, copies) {
@@ -1110,13 +1140,13 @@
     order.sort((p, q) => mean(q.g) - mean(p.g) || p.op - q.op || p.first - q.first);
     const heavy = idx.filter((i) => copies[i].el !== 'H');
     const r = (i) => RC[copies[i].el] || 0.75;
-    const nb = neighbours(cell, heavy.map((i) => copies[i].f), 1.5 * Math.max(0.5, ...heavy.map(r)));
+    const nb = neighbours(cell, heavy.map((i) => copies[i].f), 2 * Math.max(0.5, ...heavy.map(r)) + 0.2);
     const clash = new Map();
     heavy.forEach((i, p) => {
       for (const { j: q, d } of nb[p]) {
         const j = heavy[q];
         // two copies of one atom on the symmetry element (closer than 0.15 A) are one atom, not a clash
-        if (cid(i) === cid(j) || d < 0.15 || d >= 0.75 * (r(i) + r(j))) continue;
+        if (cid(i) === cid(j) || d < 0.15 || d >= r(i) + r(j) + 0.2) continue;
         if (!clash.has(cid(i))) clash.set(cid(i), new Set());
         clash.get(cid(i)).add(cid(j));
       }
@@ -1154,18 +1184,21 @@
     // 1b. alternatives that the file does not flag, for the picture and the geometry (the formula keeps them all):
     //   - two non-H atoms of one element closer than splitLimit (0.9 A; 1.5 times the covalent radius for heavy
     //     atoms; 1.2 times for two metals with full occupancy): they cannot both be there (two I 1.5 A apart);
-    //   - partly occupied atoms of two elements on one site (closer than 0.3 A, occupancies adding up to 1 or less):
-    //     the one with the higher occupancy is drawn.
-    //   The first listed of each pair is drawn.
+    //   - partly occupied metals or halides of two elements on one site (closer than 0.3 A, occupancies adding up
+    //     to 1.05 or less): the one with the higher occupancy is drawn.
+    //   Of each pair, the one with the higher occupancy is drawn; on a tie, the first listed.
     const dropSites = new Set();
     const dropAtoms = new Set();
     const autoSplit = [];
     const mixed = [];
     const partial = (a) => a.occ < 0.99;
+    // mixed sites of metals or halides (Ag/Bi, Cl/Br). C/N of a cation in two orientations (CH3NH3) keep both.
+    const mixable = (el) => isMetal(el) || HALIDE.has(el);
     const hide = (i, j, list) => {
       const a = atoms[i], b = atoms[j];
       if (a.site === b.site) { dropAtoms.add(j); return; }
-      const keepFirst = !(list === mixed && b.occ > a.occ + 1e-6) && (list === mixed || a.site < b.site);
+      // the one with the higher occupancy is drawn; on a tie, the first listed
+      const keepFirst = Math.abs(a.occ - b.occ) > 1e-6 ? a.occ > b.occ : a.site < b.site;
       const later = keepFirst ? b.site : a.site, first = keepFirst ? a.site : b.site;
       if (!dropSites.has(later) && !dropSites.has(first)) { dropSites.add(later); list.push(struct.sites[first].label + '/' + struct.sites[later].label); }
     };
@@ -1181,7 +1214,7 @@
           if (b.dg !== '.' || b.el === 'H') continue;
           if (b.el === a.el) {
             if (d < splitLimit(a, b)) hide(i, j, autoSplit);
-          } else if (d < 0.3 && partial(a) && partial(b) && a.occ + b.occ <= 1.05) hide(i, j, mixed);
+          } else if (d < 0.3 && partial(a) && partial(b) && a.occ + b.occ <= 1.05 && mixable(a.el) && mixable(b.el)) hide(i, j, mixed);
         }
       }
     }
@@ -1231,6 +1264,14 @@
     const adj = atoms.map(() => []);
     // a halide next to a metal can still be covalently bound to a non-metal centre (Cl of TeCl6 beside Cs)
     const noCovalent = (i) => isMetal(atoms[i].el);
+    // halides that may bond to a halide (a polyhalide anion, I3-): whole (occupancy 1), bound to no metal but an
+    // alkali or alkaline-earth ion (CsI3), and not bound to C or another non-metal (C-I...I- is a halogen bond)
+    const AE = new Set(['Be', 'Mg', 'Ca', 'Sr', 'Ba', 'Ra']);
+    const polyOk = atoms.map((a, i) => {
+      if (!HALIDE.has(a.el) || a.occ < 0.99) return false;
+      if (metalsOf[i].some((m) => !ALKALI.has(atoms[m.i].el) && !AE.has(atoms[m.i].el))) return false;
+      return !nearC[i].some(({ j, d }) => { const e = atoms[j].el; return !HALIDE.has(e) && e !== 'H' && !isMetal(e) && d > 0.4 && d < RC[a.el] + RC[e] + TOL_COVALENT; });
+    });
     for (let i = 0; i < N; i++) {
       const a = atoms[i];
       if (noCovalent(i)) continue;
@@ -1241,8 +1282,8 @@
         if (noCovalent(j)) continue;
         if (a.el === 'H' && b.el === 'H') continue;
         if (HALIDE.has(a.el) && b.el === 'H') continue;
-        // two halides bond only as a polyhalide anion: both whole (occupancy 1) and neither bound to a metal (I3-)
-        if (HALIDE.has(a.el) && HALIDE.has(b.el) && (a.occ < 0.99 || b.occ < 0.99 || metalsOf[i].length || metalsOf[j].length)) continue;
+        // two halides bond only as a polyhalide anion (polyOk)
+        if (HALIDE.has(a.el) && HALIDE.has(b.el) && (!polyOk[i] || !polyOk[j])) continue;
         if (HALIDE.has(b.el) && a.el === 'H') continue;
         if (!compatible(a, b)) continue;
         if (a.symdis && b.symdis && a.op !== b.op) continue;
@@ -1664,17 +1705,25 @@
     res.n = Math.max(...ns);
     res.nUniform = ns.every((x) => x === ns[0]);
     // how the polyhedra of the layer meet: the largest number of halides that two metals share (1 corner, 2 edge,
-    // 3 face). n counts perovskite layers, so it is given for corner-sharing layers only.
+    // 3 face). n counts perovskite layers, so it is given for corner-sharing layers only. Two shared halides closer
+    // than 2.5 A are two positions of one disordered corner (an edge of an octahedron is 3.5 A or more), and two
+    // metals closer than 0.75 x the sum of their covalent radii are two positions of one disordered metal.
     let share = 0;
     for (const sl of slabs) for (const o of sl.metals) {
-      const count = new Map();
+      const shared = new Map();
       for (const l of ligs[o.m]) for (const mm of metalsOf[l.j]) {
         const rel = sub(l.off, mm.off);
-        if (norm(rel) < 1e-6) continue;
-        const key = mm.i + ':' + cell.toCart(rel).map((x) => Math.round(x * 10)).join(',');
-        count.set(key, (count.get(key) || 0) + 1);
+        const rc = cell.toCart(rel);
+        if (norm(rc) < 0.75 * ((RC[atoms[o.m].el] || 1.5) + (RC[atoms[mm.i].el] || 1.5))) continue;
+        const key = mm.i + ':' + rc.map((x) => Math.round(x * 10)).join(',');
+        if (!shared.has(key)) shared.set(key, []);
+        shared.get(key).push(cell.toCart(l.off));
       }
-      for (const v of count.values()) share = Math.max(share, v);
+      for (const xs of shared.values()) {
+        const corners = [];
+        for (const x of xs) if (!corners.some((c) => norm(sub(c, x)) < 2.5)) corners.push(x);
+        share = Math.max(share, corners.length);
+      }
     }
     res.sharing = share >= 3 ? 'face' : share === 2 ? 'edge' : 'corner';
     if (res.sharing !== 'corner') { res.nPlanes = res.n; res.n = null; }
@@ -1732,8 +1781,9 @@
     });
     // each interface between a layer and the next: the distance between their centre planes, the gallery between
     // their faces (terminal-halide planes), and the shortest distance between a terminal halide of one face and
-    // one of the other. Interfaces that agree within 0.01 A share one entry.
-    res.interfaces = [];
+    // one of the other. The stacking offset of each interface is added below; interfaces that agree (0.01 A, and
+    // 0.02 in the offset) then share one entry.
+    const rawIfs = [];
     slabs.forEach((sa, si) => {
       const tg = nextOf(sa);
       if (!tg) return;
@@ -1746,16 +1796,11 @@
           if (it.xx === null || pr.d < it.xx - 1e-9) { it.xx = pr.d; it.xa = atoms[pr.a.j].label; it.xb = atoms[pr.b.j].label; }
         }
       }
-      const same = (p, q) => (p === null && q === null) || (p !== null && q !== null && Math.abs(p - q) < 0.01);
-      const twin = res.interfaces.find((q) => same(q.spacing, it.spacing) && same(q.gallery, it.gallery) && same(q.xx, it.xx));
-      if (!twin) res.interfaces.push(it);
+      rawIfs.push(it);
     });
-    res.interfaces.sort((p, q) => (p.gallery === null ? 1e9 : p.gallery) - (q.gallery === null ? 1e9 : q.gallery) || p.spacing - q.spacing);
     // faces that reach into each other (corrugated layers): the gallery and the N penetration have no meaning
-    res.corrugated = res.interfaces.some((q) => q.gallery !== null && q.gallery < 0.5);
+    res.corrugated = rawIfs.some((q) => q.gallery !== null && q.gallery < 0.5);
     if (s0.top !== null && s0.bot !== null) res.slabThickness = s0.top - s0.bot;
-    const g0 = res.interfaces.find((q) => q.gallery !== null);
-    if (g0 && !res.corrugated) res.gallery = g0.gallery;
 
     // M-X-M bridges, split into in-plane and out-of-plane components
     res.bridges = [];
@@ -1778,8 +1823,10 @@
           entry.thetaOut = angleDeg(strip(a), strip(b));
         }
         // one row for each distinct bridge: by site, or, in a file without symmetry (every atom its own site), by value
-        const key = (uc.ops && uc.ops.length > 1 ? atoms[j].site : atoms[j].el) + ':' + theta.toFixed(uc.ops && uc.ops.length > 1 ? 2 : 1) + ':' + (equatorial ? 'e' : 'a') +
-          (entry.thetaIn !== undefined && !(uc.ops && uc.ops.length > 1) ? ':' + entry.thetaIn.toFixed(1) : '');
+        // (theta, theta in and theta out to 0.1 deg, M...M to 0.01 A)
+        const p1 = !(uc.ops && uc.ops.length > 1);
+        const key = (p1 ? atoms[j].el : atoms[j].site) + ':' + theta.toFixed(p1 ? 1 : 2) + ':' + (equatorial ? 'e' : 'a') +
+          (p1 ? ':' + entry.mm.toFixed(2) + (entry.thetaIn !== undefined ? ':' + entry.thetaIn.toFixed(1) + ':' + entry.thetaOut.toFixed(1) : '') : '');
         if (seenB.has(key)) continue;
         seenB.add(key);
         res.bridges.push(entry);
@@ -1811,8 +1858,11 @@
         if (atoms[a.idx].el !== 'N') return;
         const nH = nb[k].filter((j) => atoms[mol.atoms[j].idx].el === 'H').length;
         const heavy = nb[k].length - nH;
-        // RNH3+ and R2NH2+; with no H on the N (not located) or with H in two orientations, an N with one heavy neighbour
-        const ammonium = hasH ? ((heavy + nH === 4 && nH >= 2) || (heavy === 1 && (nH === 0 || nH > 3))) : heavy === 1;
+        // RNH3+ and R2NH2+; with no H on the N (not located) or with H in two orientations, an N with one heavy
+        // neighbour by a single bond (C-N 1.47 A; not the C=N of an amidinium or guanidinium, not C#N)
+        const hv = nb[k].filter((j) => atoms[mol.atoms[j].idx].el !== 'H');
+        const single = hv.length === 1 && singleBond('N', atoms[mol.atoms[hv[0]].idx].el, norm(cell.toCart(sub(mol.atoms[hv[0]].f, a.f))));
+        const ammonium = hasH ? ((heavy + nH === 4 && nH >= 2) || (heavy === 1 && single && (nH === 0 || nH > 3))) : (heavy === 1 && single);
         if (!ammonium) return;
         const hN = height(a.f);
         let best = null;
@@ -1866,8 +1916,8 @@
       s2 = Math.abs(s2 - Math.round(s2));
       return [Math.max(s1, s2), Math.min(s1, s2)];
     };
-    res.offsets = [];
-    slabs.forEach((sa) => {
+    const offBy = new Map();
+    slabs.forEach((sa, si) => {
       if (!sa.metals.length) return;
       const topH = sa.planes[sa.planes.length - 1];
       let target = null;
@@ -1910,16 +1960,28 @@
       else if ((hf(s1) && z(s2)) || (z(s1) && hf(s2))) kind = 'near (½, 0)';
       const o = { s1, s2, kind, p1: norm(p1), p2: norm(p2), v1: p1, v2: p2,
         m0: c.A.m, m1: c.B.m, df: sub(c.fB, c.A.f), shift: c.len, dh: height(c.fB) - height(c.A.f) };
-      // interfaces whose offsets agree within 0.02 are alike: one row, with the smaller offset of the two
-      const twin = res.offsets.findIndex((q) => Math.abs(q.s1 - o.s1) < 0.02 && Math.abs(q.s2 - o.s2) < 0.02);
-      if (twin < 0) res.offsets.push(o);
-      else {
-        const q = res.offsets[twin];
-        if (o.s1 + o.s2 < q.s1 + q.s2 - 1e-4 || (Math.abs(o.s1 + o.s2 - q.s1 - q.s2) <= 1e-4 && o.s1 < q.s1 - 1e-4)) res.offsets[twin] = o;
-      }
+      offBy.set(si, o);
     });
-    res.offsets.sort((p, q) => p.s1 + p.s2 - q.s1 - q.s2 || p.s1 - q.s1);
-    res.offset = res.offsets[0] || null;
+    // the interfaces with their offsets. Interfaces whose spacing, gallery and X...X agree within 0.01 A and whose
+    // offsets agree within 0.02 are alike: one entry, with the smaller offset of the two. Order: gallery, spacing,
+    // offset. res.offsets[k] is the offset of res.interfaces[k] (null for a layer with no metals).
+    const same = (p, q) => (p === null && q === null) || (p !== null && q !== null && Math.abs(p - q) < 0.01);
+    const sameOff = (p, q) => (!p && !q) || (p && q && Math.abs(p.s1 - q.s1) < 0.02 && Math.abs(p.s2 - q.s2) < 0.02);
+    const smaller = (o, q) => o.s1 + o.s2 < q.s1 + q.s2 - 1e-4 || (Math.abs(o.s1 + o.s2 - q.s1 - q.s2) <= 1e-4 && o.s1 < q.s1 - 1e-4);
+    res.interfaces = [];
+    for (const it of rawIfs) {
+      it.offset = offBy.get(it.si) || null;
+      const twin = res.interfaces.find((q) => same(q.spacing, it.spacing) && same(q.gallery, it.gallery) && same(q.xx, it.xx) && sameOff(q.offset, it.offset));
+      if (!twin) res.interfaces.push(it);
+      else if (it.offset && twin.offset && smaller(it.offset, twin.offset)) twin.offset = it.offset;
+    }
+    const gv = (q) => (q.gallery === null ? 1e9 : q.gallery);
+    const ov = (q) => (q.offset ? q.offset.s1 + q.offset.s2 : 9);
+    res.interfaces.sort((p, q) => gv(p) - gv(q) || p.spacing - q.spacing || ov(p) - ov(q) || (p.offset && q.offset ? p.offset.s1 - q.offset.s1 : 0));
+    res.offsets = res.interfaces.map((q) => q.offset);
+    res.offset = res.offsets.find((o) => o) || null;
+    const g0 = res.interfaces.find((q) => q.gallery !== null);
+    if (g0 && !res.corrugated) res.gallery = g0.gallery;
     return res;
   }
 
@@ -1945,15 +2007,16 @@
     out.zFrom = Z > 0 ? 'file' : 'cell';
     if (!(Z > 0)) {
       // no Z in the file. When every atom is in a molecule, a complex or a free ion, the formula unit is the set of
-      // these units in the smallest whole ratio (four C6H6 molecules: C6H6, Z = 4). Otherwise the greatest common
-      // divisor of the element counts of the cell.
+      // these units in the smallest whole ratio (four C6H6 molecules: C6H6, Z = 4); units are of one kind when their
+      // atoms other than H agree. Otherwise the greatest common divisor of the element counts of the cell.
       const ms = uc.molecules || [];
       const inUnits = ms.reduce((s, m) => s + m.atoms.length, 0);
       if (ms.length && inUnits === uc.atoms.length && !(uc.networks && uc.networks.length)) {
         const kinds = new Map();
         for (const m of ms) {
           const c = {};
-          for (const a of m.atoms) { const el = atoms[a.idx].el; c[el] = (c[el] || 0) + 1; }
+          // a kind of unit by its atoms other than H: a water whose H the file does not give is still a water
+          for (const a of m.atoms) { const el = atoms[a.idx].el; if (el !== 'H') c[el] = (c[el] || 0) + 1; }
           const key = Object.keys(c).sort().map((e) => e + c[e]).join('');
           kinds.set(key, (kinds.get(key) || 0) + 1);
         }
@@ -2099,29 +2162,36 @@
         const nearM = K > 1 && term.length * allM.length > 1e6
           ? neighbours(cell, term.map((x) => x.fx).concat(allM.map((o) => posOf(o.m))), maxCut).slice(0, term.length).map((list) => list.filter(({ j }) => j >= term.length).map(({ j }) => allM[j - term.length]))
           : term.map(() => allM);
-        for (let q0 = 0; K > 1 && q0 < term.length; q0++) {
+        // A join that reaches a lattice copy of a layer of the same group closes on itself: every layer is then
+        // joined to the next (a 3D network with long bonds), and no join is made.
+        let closed = false;
+        for (let q0 = 0; !closed && q0 < term.length; q0++) {
           const { k, l, fx } = term[q0];
           const X = atoms[l.j];
           for (const { k: k2, m } of nearM[q0]) {
-            if (findR(k2) === findR(k)) continue;
-            {
-              const dfr = sub(fx, posOf(m));
-              const s = dfr.map(Math.round);
-              const v = cell.toCart(sub(dfr, s));
-              const d = norm(v);
-              const cut = RC[atoms[m].el] + RC[X.el] + TOL_HALIDE;
-              if (d < cut || d > cut + 0.25) continue;
-              const a1 = cell.toCart(l.off).map((x) => -x);
-              if (angleDeg(a1, v.map((x) => -x)) < 150) continue;
-              // move layer k2 (and its group) by s so that metal m sits next to X
-              const r1 = findR(k), r2 = findR(k2);
-              const t = add(sub(add(shiftOf[k], s), shiftOf[k2]), [0, 0, 0]);
-              for (let q = 0; q < K; q++) if (findR(q) === r2) shiftOf[q] = add(shiftOf[q], t);
-              root[r2] = r1;
-              joined++;
+            const dfr = sub(fx, posOf(m));
+            const s = dfr.map(Math.round);
+            const v = cell.toCart(sub(dfr, s));
+            const d = norm(v);
+            const cut = RC[atoms[m].el] + RC[X.el] + TOL_HALIDE;
+            if (d < cut || d > cut + 0.25) continue;
+            const a1 = cell.toCart(l.off).map((x) => -x);
+            if (angleDeg(a1, v.map((x) => -x)) < 150) continue;
+            const t = sub(add(shiftOf[k], s), shiftOf[k2]);
+            if (findR(k2) === findR(k)) {
+              // already one group: the bridge must agree with the shifts that the group has
+              // a shift in the layer plane (hkl . t = 0) is the same layer; a shift across the layers closes the join
+              if (Math.abs(t[0] * fw.hkl[0] + t[1] * fw.hkl[1] + t[2] * fw.hkl[2]) > 1e-9) { closed = true; break; }
+              continue;
             }
+            // move layer k2 (and its group) by t so that metal m sits next to X
+            const r1 = findR(k), r2 = findR(k2);
+            for (let q = 0; q < K; q++) if (findR(q) === r2) shiftOf[q] = add(shiftOf[q], t);
+            root[r2] = r1;
+            joined++;
           }
         }
+        if (closed) joined = 0;
         if (joined) {
           const roots = Array.from(new Set(fw.main.map((_, k) => findR(k))));
           fw.main.forEach((c, k) => { for (const i of metalsByComp[k]) { off.set(i, add(off.get(i), shiftOf[k])); compOf.set(i, roots.indexOf(findR(k))); } });
@@ -2370,11 +2440,13 @@
           hbonds.push({ d: id, h: ih, a: ia, dHA, dDA: d3(id, ia), angle: ang });
         }
       });
-      // an N or O whose H the file does not give (an ammonium N with one heavy neighbour and no H): the contact rule of
-      // files without H, D...A below the van der Waals sum + 0.15 A, for halide acceptors
+      // an N or O whose H the file does not give (an ammonium N or a hydroxyl O with one heavy neighbour by a single
+      // bond, and no H; not a C=O or C#N): the contact rule of files without H, D...A below the van der Waals sum
+      // + 0.15 A, for halide acceptors
       out.forEach((D, id) => {
         if (D.kind !== 'molecule' || (D.el !== 'N' && D.el !== 'O')) return;
         if (D.bonds.some((j) => out[j].el === 'H') || D.bonds.length !== 1) return;
+        if (!singleBond(D.el, out[D.bonds[0]].el, d3(id, D.bonds[0]))) return;
         for (const ia of accNear(D.xyz, 4.0)) {
           const A = out[ia];
           if (!HALIDE.has(A.el) || (A.group === D.group && A.group >= 0)) continue;
@@ -2726,7 +2798,12 @@
         let B = null;
         if (item.type === 'slab') {
           B = faces.find((f) => f.face === 'bot' && f.si === T.si && f.k === T.k);
-          if (B && sv && Math.abs(T.H - B.H - sv.value) > 0.02) B = null;
+          // the layers of this row: those whose slab is nearest to the value of this row (rows are 0.01 A apart or more)
+          if (B && sv) {
+            const v = T.H - B.H;
+            const nearest = L.slabList.reduce((p, q) => (Math.abs(q.value - v) < Math.abs(p.value - v) ? q : p));
+            if (nearest !== sv || Math.abs(v - sv.value) > 0.02) B = null;
+          }
         } else if (iface && T.si === iface.si && iface.gallery !== null) {
           B = faces.find((f) => f.face === 'bot' && f.si === iface.next && Math.abs(f.H - T.H - iface.gallery) < 0.05);
         }
@@ -2751,9 +2828,9 @@
         if (best) { atoms.add(best[0]); atoms.add(best[1]); lines.push([A[best[0]].xyz.slice(), A[best[1]].xyz.slice()]); }
       }
     }
-    if (item.type === 'offset' && L && L.offsets && L.offsets.length) {
+    if (item.type === 'offset' && L && L.offsets && L.offsets[item.k || 0]) {
       // the two metals of the row: the pair that the analysis used, or a pair at the same distance
-      const o = L.offsets[item.k || 0] || L.offsets[0];
+      const o = L.offsets[item.k || 0];
       const ms = A.map((a, i) => i).filter((i) => isM(A[i]));
       let mid = [0, 0, 0];
       for (const i of ms) mid = add(mid, A[i].xyz);
@@ -3338,16 +3415,21 @@
     const x = [], y = [];
     const head = [];
     const lines = String(text).replace(/^﻿/, '').split(/\r\n?|\n/).map((s) => s.trim()).filter(Boolean);
-    // decimal commas (10,02;120,5 or 10,02<tab>120,5): data lines with a digit-comma-digit and no point. With a
-    // semicolon, a tab or a space between the columns the commas are decimal points. With commas only, the file
-    // cannot be read without doubt.
+    // decimal commas (10,02;120,5 or 10,02<tab>120,5): rows whose first two numbers have a decimal comma and a
+    // semicolon, a tab or spaces between them. They are decimal-comma data when they are at least 3 and at least
+    // as many as the rows with decimal points (a header such as "2θ (deg.);Intensity" or one row written with a
+    // point does not change that). Rows of numbers with commas only (10,02,120,5) cannot be read without doubt.
     const data = lines.filter((s) => /^[-+]?[\d.,]/.test(s));
-    const commaDec = data.length >= 3 && data.every((s) => !/\./.test(s)) && data.filter((s) => /\d,\d/.test(s)).length >= data.length / 2;
-    if (commaDec && data.some((s) => !/[;\t ]/.test(s.replace(/^\s+|\s+$/g, '')) && (s.match(/,/g) || []).length > 1)) {
+    const decRow = /^[-+]?\d+,\d+([eE][-+]?\d+)?[;\t ]+[-+]?\d+(,\d+)?([eE][-+]?\d+)?([;\t ].*)?$/;
+    const ptRow = /^[-+]?(\d+\.?\d*|\.\d+)([eE][-+]?\d+)?[\s,;]+[-+]?(\d+\.?\d*|\.\d+)([eE][-+]?\d+)?/;
+    const nDec = data.filter((s) => decRow.test(s)).length;
+    const nPt = data.filter((s) => /\d\.\d/.test(s) && ptRow.test(s)).length;
+    const commaDec = nDec >= 3 && nDec >= nPt;
+    if (!commaDec && !nPt && data.filter((s) => /^[-+]?\d+(,\d+){2,}$/.test(s)).length >= 3) {
       throw new Error('This file has decimal commas and commas between the columns, so the numbers cannot be read without doubt. Save it with points as decimal marks, or with a semicolon or a tab between the columns.');
     }
     for (const line0 of lines) {
-      const line = commaDec && /[;\t ]/.test(line0) ? line0.replace(/,/g, '.') : line0;
+      const line = commaDec && decRow.test(line0) ? line0.replace(/,/g, '.') : line0;
       const t = line.split(/[\s,;]+/);
       const a = t.length >= 2 && /^[-+]?(\d+\.?\d*|\.\d+)([eE][-+]?\d+)?$/.test(t[0]) ? Number(t[0]) : NaN;
       const b = t.length >= 2 && /^[-+]?(\d+\.?\d*|\.\d+)([eE][-+]?\d+)?$/.test(t[1]) ? Number(t[1]) : NaN;

@@ -84,7 +84,7 @@ These choices decide the numbers, so they are stated here. Changing any of them 
 
 | Quantity | Definition |
 |---|---|
-| Covalent bond | two non-metals closer than the sum of Cordero covalent radii plus 0.45 Å. Two H, and H with a halide, never bond. Two halides bond only in a polyhalide anion: both with occupancy 1 and neither bound to a metal (I3⁻). |
+| Covalent bond | two non-metals closer than the sum of Cordero covalent radii plus 0.45 Å. Two H, and H with a halide, never bond. Two halides bond only in a polyhalide anion (I3⁻): both with occupancy 1, neither bound to C or to another non-metal, and neither bound to a metal other than an alkali or alkaline-earth ion. |
 | Metal-halide bond | distance below the sum of covalent radii plus 0.75 Å |
 | Metal-donor bond | metal to any other non-metal except H and the noble gases, below the sum of covalent radii plus 0.5 Å; an atom with four or more covalent bonds is not a donor |
 | Polyhedron centre | any metal except Li, Na, K, Rb, Cs, Fr, which are free ions unless they are the only metals with anions around them |
@@ -108,15 +108,15 @@ These choices decide the numbers, so they are stated here. Changing any of them 
 | θ in | M–X–M angle after projecting onto the layer plane |
 | θ out | M–X–M angle after projecting onto the plane holding M···M and the layer normal |
 | Axial tilt | acute angle between an axial M–X bond and the layer normal |
-| N penetration | depth of an ammonium N below the plane of terminal halides. Positive is inside the layer. Only N within 3 Å of a face. An ammonium N has four neighbours with at least two H. It can also have one heavy neighbour and no H (the file does not give the H) or more than three H (two orientations). In a file without H, it has one heavy neighbour. |
-| Stacking offset | The shortest in-plane shift from a metal of the top metal plane of one layer to a metal of the bottom metal plane of the next layer. Crysta takes the shortest over all metal pairs and lattice translations. It gives the shift in units of the two shortest in-plane M···M vectors, each from 0 to ½. Shifts and M···M vectors within 0.05 Å of each other are ties, and Crysta gives the smallest offset of the tied choices. Interfaces whose offsets agree within 0.02 share one row, with the smaller value. (½, ½) is ideal Ruddlesden–Popper, (0, 0) ideal Dion–Jacobson. Interfaces that are not alike each get a value. |
-| Hydrogen bond, no H given | N/O···halide contacts shorter than the van der Waals sum plus 0.15 Å. Crysta uses this rule in a file without H atoms, and for an N or O whose H the file does not give. An N with four bonds is never an acceptor. |
+| N penetration | depth of an ammonium N below the plane of terminal halides. Positive is inside the layer. Only N within 3 Å of a face. An ammonium N has four neighbours with at least two H. It can also have one heavy neighbour and no H (the file does not give the H) or more than three H (two orientations). In a file without H, it has one heavy neighbour. The bond to that heavy neighbour must be a single bond: not shorter than the sum of the covalent radii minus 0.1 Å (C–N 1.37 Å). Thus the N of an amidinium, a guanidinium or a nitrile is not an ammonium N. |
+| Stacking offset | The shortest in-plane shift from a metal of the top metal plane of one layer to a metal of the bottom metal plane of the next layer. Crysta takes the shortest over all metal pairs and lattice translations. It gives the shift in units of the two shortest in-plane M···M vectors, each from 0 to ½. Shifts and M···M vectors within 0.05 Å of each other are ties, and Crysta gives the smallest offset of the tied choices. (½, ½) is ideal Ruddlesden–Popper, (0, 0) ideal Dion–Jacobson. Interfaces that are not alike each get a value, and the rows of one interface have the same number. |
+| Hydrogen bond, no H given | N/O···halide contacts shorter than the van der Waals sum plus 0.15 Å. Crysta uses this rule in a file without H atoms. In a file with H atoms, Crysta uses it for an N or O with one heavy neighbour, no H and a single bond to that neighbour (not a C=O or a C≡N). An N with four bonds is never an acceptor. |
 | Hydrogen bond | N–H or O–H donor. H···A at least 0.15 Å inside the Bondi van der Waals sum, and D–H···A above 120°. Acceptors are O and N of another molecule, and halide, O, N or S anions. Anions bonded to a metal also count (a framework, or a complex such as [BiI6]³⁻), and so do the halides of a polyhalide (I3⁻). The search finds every contact of the molecules of one cell, also across the cell faces. |
 | Left-handed lattice vectors | Some geometry.in, POSCAR or extended XYZ files have **a** · (**b** × **c**) < 0. Crysta then uses the basis −**a**, −**b**, −**c**: the same lattice, lengths, angles and atoms, with fractional coordinates −*x*, −*y*, −*z*. The Crystal card tells you. |
-| Z | the file's `_cell_formula_units_Z` (or the SHELX ZERR line). A value within 0.02 of an integer is that integer. With no Z, and every atom in a molecule, a complex or a free ion: the smallest whole ratio of these units (four C6H6 molecules: C6H6, Z = 4). Else the greatest common divisor of the element counts. |
+| Z | the file's `_cell_formula_units_Z` (or the SHELX ZERR line). A value within 0.02 of an integer is that integer. With no Z, and every atom in a molecule, a complex or a free ion: the smallest whole ratio of these units (four C6H6 molecules: C6H6, Z = 4). Two units are of one kind when their atoms other than H agree. Else the greatest common divisor of the element counts. |
 | Element from a label | with no type symbol: Pb1, PB1 and pb1 are lead. An upper-case pair is the two-letter element when there is one (CL1, SN1). HO is an exception: it is H. |
 | Deuterium | D is H for the picture and every bond rule, and D (2.014 g/mol) in the formula and the density. |
-| Space-group symbol | Crysta reads spaces, the choices ":1", ":2", ":H", ":R" and the ICSD suffixes " Z" (origin 2), " S" (origin 1), " H", " R". It also reads the glide e (Cmce = Cmca, Aem2 = Abm2) and the old cubic form (Fm3m = Fm-3m). An R group with no choice gets its axes from the cell, also for a number alone. A group with two origin choices and no choice gets the origin with fewer impossible contacts (closer than 0.6 × the sum of covalent radii). Next, Crysta prefers fewer atoms, else origin 2. The Crystal card tells you which. |
+| Space-group symbol | Crysta reads spaces, the choices ":1", ":2", ":H", ":R" and the ICSD suffixes " Z" (origin 2), " S" (origin 1), " H", " R". It also reads the glide e (Cmce = Cmca, Aem2 = Abm2) and the old cubic form (Fm3m = Fm-3m). An R group with no choice gets its axes from the cell, also for a number alone: rhombohedral axes when a = b = c and α = β = γ (also near 90°), else hexagonal axes. A group with two origin choices and no choice gets the origin with fewer impossible contacts (closer than 0.6 × the sum of covalent radii). Next, Crysta prefers fewer atoms, else origin 2. The Crystal card tells you which. |
 | Torsion | −180° to 180°, positive when the far bond is clockwise from the near bond looking down the central bond |
 | Plane through atoms | The least-squares plane through the clicked atoms: it goes through their centroid, and its normal is the direction of least spread. The rms is the root-mean-square distance of these atoms from the plane. |
 | Lattice plane through an atom | The plane through the clicked atom with its normal along the reciprocal vector *h* **a**\* + *k* **b**\* + *l* **c**\*. For a layered structure, the *h*, *k*, *l* boxes start at the (*hkl*) of the layers. |
@@ -135,7 +135,7 @@ These choices decide the numbers, so they are stated here. Changing any of them 
 | \|*F*\| in the table | The root of the mean \|*F*\|² of the set. *F* (real) and *F* (imaginary) are for the reflection that the row names. |
 | Peak shape | Pseudo-Voigt with one width at every angle. The defaults are FWHM 0.1° and Lorentzian part 0.5. The area of a peak is its *I*. The highest point of the pattern is 100. |
 | Second wavelength | Every reflection occurs again at the angle of λ2. Its intensity is *I* × the intensity ratio × the ratio of the two Lorentz-polarisation factors. |
-| Measured data | Columns separated by spaces, tabs, commas or semicolons. Crysta reads decimal commas when a semicolon, a tab or a space separates the columns. Crysta refuses a file with commas for both. Crysta scales each data set so that its highest point in the 2θ range is 100. It subtracts nothing. It adds the 2θ shift to every point. |
+| Measured data | Columns separated by spaces, tabs, commas or semicolons. Crysta reads decimal commas when a semicolon, a tab or a space separates the columns, and at least 3 rows have them (and no fewer than the rows with decimal points). Crysta refuses a file with commas for both. Crysta scales each data set so that its highest point in the 2θ range is 100. It subtracts nothing. It adds the 2θ shift to every point. |
 | *d* axis of the PXRD plot | *d* = λ1 / (2 sin θ), for the first wavelength only. |
 | CSV of the PXRD plot | The 2θ column is the grid of the Pattern settings, for the full range. The values are as plotted. Crysta puts measured data on the grid by linear interpolation between the two nearest points. |
 | mol2 atom types | SYBYL types guessed from the element and the number of bonded neighbours; every bond written as single |
@@ -145,35 +145,45 @@ These choices decide the numbers, so they are stated here. Changing any of them 
 
 | Choice | Value |
 |---|---|
-| Metal–halide bond | below the sum of covalent radii plus 0.75 Å. Two layers that one stretched M–X–M bridge joins (up to 0.25 Å beyond this cut-off, angle above 150°) count as one layer. Mn, Fe and Co use the low-spin Cordero radii. |
+| Metal–halide bond | below the sum of covalent radii plus 0.75 Å. Two layers that one stretched M–X–M bridge joins (up to 0.25 Å beyond this cut-off, angle above 150°) count as one layer. When such bridges join each layer to the next (they reach a copy of the same layer), Crysta joins no layers. Mn, Fe and Co use the low-spin Cordero radii. |
 | Axial bond | within 45.6° of the layer normal (\|cos\| > 0.7) |
-| Equatorial bridge | M···M within 60° of the layer plane (\|cos\| < 0.5). Crysta gives θin and θout for these. |
+| Equatorial bridge | M···M within 30° of the layer plane: more than 60° from the layer normal (\|cos\| < 0.5). Crysta gives θin and θout for these. The other bridges are axial. |
 | Metal plane | metal heights within 1.5 Å |
 | Terminal halide of a face | bonded to one metal, more than 1.0 Å beyond the outer metal plane |
 | Stacking offset label | (0, 0), (½, 0), (½, ½) when each number is within 0.15 of it |
 | Octahedron values | none when two ligands of a metal are closer than 0.75 × the sum of their covalent radii. The polyhedron then mixes two disorder orientations. |
+| Corner, edge or face sharing | the largest number of halides that two metals share. Two shared halides closer than 2.5 Å are two positions of one disordered corner. Two metals closer than 0.75 × the sum of their covalent radii are two positions of one metal. |
+| Next layer | the nearest layer whose middle plane is more than 1.0 Å above |
+| One row for alike values | slabs, and interfaces whose spacing, gallery and X···X agree within 0.01 Å and whose offsets agree within 0.02 |
+| Bridges of a file without symmetry | one row for bridges of one element whose θ, θin and θout agree to 0.1° and M···M to 0.01 Å |
+| Axial tilt | from the first atom of each metal site in the list |
 
 ## Disorder
 
 - Flagged parts (CIF): Crysta shows the group with the highest mean occupancy in each disorder assembly.
   The rule trusts the assemblies of the file. If a file puts unrelated groups in one assembly, Crysta
   shows only one of them.
-- SHELX: the PARTs that refine their occupancy with one free variable are one region. Crysta shows
-  the PART with the highest mean occupancy in each region. PARTs with a fixed occupancy are one region.
-- Unflagged split sites: two non-H atoms of one element closer than 0.9 Å are alternates. For heavy
-  atoms with a covalent radius of 1.0 Å or more, the limit is 1.5 times that radius (I 2.09 Å).
-  For two such metals that both have full occupancy, the limit is 1.2 times the radius. Thus a short
-  metal–metal bond (Mo–Mo 2.09 Å) stays. Crysta shows the first atom in the list.
-- Mixed sites: partly occupied atoms of two elements closer than 0.3 Å, with occupancies that add up
-  to 1 or less, are alternates. Crysta shows the element with the higher occupancy.
+- SHELX: the PARTs that refine their occupancy with one free variable are one region. PARTs with a
+  fixed occupancy are one region. Two PARTs with different numbers whose non-H atoms come closer than
+  1.6 Å (also through symmetry) are in one region, as with SUMP. Crysta shows the PART with the highest
+  mean occupancy in each region.
+- Unflagged split sites: two non-H atoms of one element closer than 0.9 Å are alternates. For atoms
+  with a covalent radius of 1.0 Å or more, the limit is 1.5 times that radius (I 2.09 Å). For two
+  partly occupied non-metals whose occupancies add up to 1.05 or less, it is 1.8 times the radius
+  (Cl 1.84 Å, I 2.50 Å). For metals, it is 1.2 times the radius. Thus a short metal–metal bond
+  (Mo–Mo 2.09 Å) stays. "Partly occupied" is an occupancy below 0.99. Crysta shows the atom with the
+  higher occupancy. On a tie, it shows the first atom in the list.
+- Mixed sites: partly occupied metals or halides of two elements closer than 0.3 Å, with occupancies
+  that add up to 1.05 or less, are alternates. Crysta shows the element with the higher occupancy.
+  The C and N of a cation in two orientations (CH3NH3⁺) both stay.
 - Negative part numbers (disorder over a symmetry element): in a named CIF assembly, a negative group is
   an alternative of the other groups of that assembly. On a tie of the mean occupancy, a positive group
   is shown. With no assembly, and in SHELX files, the major-group rule never hides a negative group.
 - One orientation of a negative group: the operators make copies of the group that overlap. Crysta keeps
-  the copies of the first operator. It also keeps each copy that has no non-H atom closer than 0.75 × the
-  sum of the covalent radii to a kept copy. A halide of a group without C is not part of a molecule. Thus
-  metals and halides in a negative group keep both orientations. When their polyhedron mixes the two, the
-  card tells you and gives no octahedron values.
+  the copies of the first operator. It also keeps each copy that has no non-H atom closer than the sum of
+  the covalent radii plus 0.2 Å to a kept copy. A halide of a group without C is not part of a molecule.
+  Thus metals and halides in a negative group keep both orientations. When their polyhedron mixes the
+  two, the card tells you and gives no octahedron values.
 - All geometry is computed on the shown component.
 - The formula, the density and the powder pattern use every part and every copy, weighted by occupancy:
   - Copies of one site closer than 0.05 Å are one position (a special position, also with rounded
@@ -200,6 +210,9 @@ These choices decide the numbers, so they are stated here. Changing any of them 
 - There is no way yet to choose a disorder component other than the major one.
 - A chromophore follows crystallographic sites, so a structure with two independent cations needs one
   definition per cation.
+- A row whose atoms are not in the packing block glows nothing, and its note says so. This happens for
+  hydrogen bonds near the block faces, and for layers that are not along a cell axis.
+- An ammonium N with only one or two of its H in the file is not found.
 - The stacking-offset and tilt descriptors assume corner-sharing layers. Slab, gallery and N penetration assume flat layers: for corrugated layers whose faces reach into each other, Crysta gives no gallery and no penetration.
 - Polyhedra you define use one distance for all their corner elements, and are not kept after the page is closed.
 - Appearance is set per element, not per atom or per site, and is not kept after the page is closed.

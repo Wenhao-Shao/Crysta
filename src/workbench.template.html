@@ -733,6 +733,7 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
   const MPLANE_COLORS = ['#0077b6', '#d95f00', '#1a9a5a', '#7a3fb5', '#c2185b', '#8a6d00'];
   const GLOW_PERIOD = 1400;      // milliseconds for one glow in and out
   const GLOW_MAX_ATOMS = 4000;
+  const MAX_HB_ROWS = 60, MAX_SITE_ROWS = 24;    // rows listed before a "Show all" button
   const MAX_IMAGE_SIDE = 8000;   // pixels; larger canvases are cut or left black by many graphics cards
   const MEASURE = { dist: { n: 2, name: 'Distance', hint: 'Click two atoms in the picture.' }, angle: { n: 3, name: 'Angle', hint: 'Click three atoms; the angle is at the second.' }, tors: { n: 4, name: 'Torsion', hint: 'Click four atoms in a chain; the torsion is about the middle two.' },
     aplane: { n: 1, name: 'Atom to plane', hint: 'Click one atom. The value is its distance from the chosen plane.' },
@@ -1100,6 +1101,11 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
         '<dd data-glow="' + id + '"' + (txt ? ' class="txt"' : '') + '>' + v + '</dd>');
     };
     const L = info.layer;
+    // the interfaces between the layers: the rows of spacing, gallery, X···X and offset of interface k share one label
+    const ifs = L ? L.interfaces : [];
+    const many = ifs.length > 1;
+    const tag = (k) => (many ? ', interface ' + (k + 1) : '');
+    const unlike = many ? ' The layers of this structure meet at interfaces that are not alike; each interface has its own row.' : '';
     const notes = [];
     const fw0 = info.framework;
     if (fw0) {
@@ -1114,10 +1120,6 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
         else if (L) addF('Layer thickness <i>n</i>', 'not defined', false,
           { quiet: true, def: 'n counts the corner-sharing layers of a perovskite. In this structure the polyhedra of a layer share ' + (L.sharing === 'face' ? 'faces' : 'edges') + ', so n has no meaning. The layer has ' + L.nPlanes + ' metal heights more than 1.5 Å apart.' });
         if (fw0.stretched) notes.push('Two layers that one stretched M–X–M bridge joins (up to 0.25 Å beyond the metal–halide cut-off, angle above 150°) count as one layer.');
-        const ifs = L ? L.interfaces : [];
-        const many = ifs.length > 1;
-        const tag = (k) => (many ? ', interface ' + (k + 1) : '');
-        const unlike = many ? ' The layers of this structure meet at interfaces that are not alike; each interface has its own row.' : '';
         if (!ifs.length) addF('Layer spacing', fmt(fw0.spacing, 3) + ' Å', false,
           { quiet: true, def: 'The distance from the middle plane of one inorganic layer to the middle plane of the next layer, along the layer normal: d(hkl) divided by the number of layers per repeat.' });
         ifs.forEach((q, k) => addF('Layer spacing' + tag(k), fmt(q.spacing, 3) + ' Å', false,
@@ -1138,7 +1140,10 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
       }
     }
     if (info.metalSites.length) {
-      for (const s of info.metalSites) {
+      // a file without symmetry can have hundreds of metal sites: the first MAX_SITE_ROWS have rows, and a button gives all
+      const sitesShown = d.allSites ? info.metalSites : info.metalSites.slice(0, MAX_SITE_ROWS);
+      if (sitesShown.length < info.metalSites.length) notes.push('The rows of the first ' + sitesShown.length + ' of ' + info.metalSites.length + ' metal sites are listed. <button type="button" class="linkbtn" id="siteMore">Show all ' + info.metalSites.length + '</button>');
+      for (const s of sitesShown) {
         const groups = new Map();
         for (const b of s.bonds) {
           const key = b.label + '|' + b.d.toFixed(3);
@@ -1168,9 +1173,11 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
           def: 'The angle between an axial M–X bond and the layer normal. 0° means that the bond is perpendicular to the layer. The picture shows the axial bonds and, at each metal, the layer normal (the line), the layer plane (the disc) and the mark of each angle.' });
         for (const p of L.penetration) addF('N penetration, ' + esc(p.label), (p.depth >= 0 ? '+' : '−') + fmt(Math.abs(p.depth), 3) + ' Å', false, { type: 'penetration', label: p.label,
           def: 'How deep the ammonium N is below the mean plane of the terminal (axial) halides of the nearest layer face, along the layer normal. + means that the N is inside the layer. The picture shows ' + p.label + ', that plane with its halides around the N, and the line from the N to the plane.' });
+        // offsets[k] is the offset of interface k, as in the rows of spacing, gallery and X···X above
         const offs = L.offsets || [];
         offs.forEach((o, k) => {
-          const name = offs.length > 1 ? 'Stacking offset, interface ' + (k + 1) : 'Stacking offset';
+          if (!o) return;
+          const name = 'Stacking offset' + tag(k);
           addF(name, '(' + fmt(o.s1, 2) + ', ' + fmt(o.s2, 2) + ')', false, { type: 'offset', k,
             def: 'The shift between two adjacent layers, seen along the layer normal: the shortest in-plane shift from a metal of one layer to a metal of the next layer, over all metal pairs. The two numbers are this shift in units of the two in-plane M···M vectors, each from 0 to ½, the larger first. (½, ½) is the ideal Ruddlesden–Popper stacking, (0, 0) the ideal Dion–Jacobson stacking.' + (offs.length > 1 ? ' The layers of this structure meet at interfaces that are not alike; each interface has its own row.' : '') + ' The picture shows the two metals, the normal from the first metal, the shift, and the two M···M vectors.' });
           addF('', esc(o.kind), true);
@@ -1202,15 +1209,19 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
     if (info.metalSites.some((s) => s.cn > C.MAX_POLY_CN)) notes.push('Sites with more than ' + C.MAX_POLY_CN + ' neighbours are drawn with bonds but without a polyhedron.');
     $('fwNote').innerHTML = notes.join(' ');
     if ($('brMore')) $('brMore').onclick = () => { d.allBridges = true; drawSheet(); };
+    if ($('siteMore')) $('siteMore').onclick = () => { d.allSites = true; drawSheet(); };
     const allOct = info.metalSites.length && info.metalSites.every((s) => s.octahedral);
     $('polyName').textContent = allOct ? 'Octahedra' : 'Polyhedra';
 
     // hydrogen bonds: a row has a box that shows or hides that bond in the picture, and it is a button as the
     // rows of the framework card are (its definition under the picture, and its atoms glow)
-    const hb = d.hbRows;
+    // a large cell can have thousands of contacts: the first MAX_HB_ROWS are listed, and a button lists them all
+    const hbAll = d.hbRows;
+    const hb = d.allHB ? hbAll : hbAll.slice(0, MAX_HB_ROWS);
+    const hbMore = hbAll.length > hb.length ? ' The first ' + hb.length + ' of ' + hbAll.length + ' contacts are listed. <button type="button" class="linkbtn" id="hbMore">Show all ' + hbAll.length + '</button>' : '';
     $('cardHB').hidden = !hb.length;
     if (hb.length) {
-      const some = hb.some((r) => !d.hbHide.has(r.key));
+      const some = hbAll.some((r) => !d.hbHide.has(r.key));
       const head = (text) => '<th><label title="Show or hide all of them in the picture"><input type="checkbox" id="hbAll"' + (some ? ' checked' : '') + '>' + text + '</label></th>';
       const first = (r, name, item) => {
         const id = glowId(name, item);
@@ -1227,15 +1238,16 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
             : first(r, esc(r.D) + '···' + esc(r.A), { type: 'hbond', D: r.D, H: null, A: r.A, dDA: r.dDA,
               def: 'A short contact between the donor ' + r.D + ' and the halide ' + r.A + '. The file gives no H on ' + r.D + ', so ' + NAME + ' lists the contact when D···A is shorter than the van der Waals sum plus 0.15 Å. The picture shows the two atoms and the line between them.' }) +
             '<td></td><td>' + fmt(r.dDA, 3) + '</td><td></td></tr>')).join('') + '</tbody>';
-        $('hbNote').textContent = 'Distances in Å. Criteria: H···A at least 0.15 Å inside the van der Waals sum and D–H···A above 120°. H positions are as given in the file.' +
-          (hb.some((r) => !r.H) ? ' A row with no H is a donor whose H the file does not give: D···A shorter than the van der Waals sum plus 0.15 Å.' : '') + boxes;
+        $('hbNote').innerHTML = 'Distances in Å. Criteria: H···A at least 0.15 Å inside the van der Waals sum and D–H···A above 120°. H positions are as given in the file.' +
+          (hb.some((r) => !r.H) ? ' A row with no H is a donor whose H the file does not give: D···A shorter than the van der Waals sum plus 0.15 Å.' : '') + boxes + hbMore;
       } else {
         $('tblHB').innerHTML = '<thead><tr>' + head('D···A') + '<th>distance</th></tr></thead><tbody>' +
           hb.map((r) => first(r, esc(r.D) + '···' + esc(r.A), { type: 'hbond', D: r.D, H: null, A: r.A, dDA: r.dDA,
             def: 'A short contact between the donor ' + r.D + ' and the halide ' + r.A + '. The file has no H atoms, so ' + NAME + ' lists the contacts that are shorter than the van der Waals sum plus 0.15 Å. The picture shows the two atoms and the line between them.' }) +
             '<td>' + fmt(r.dDA, 3) + '</td></tr>').join('') + '</tbody>';
-        $('hbNote').textContent = 'No H atoms in this file, so short N/O···halide contacts are listed instead (Å).' + boxes;
+        $('hbNote').innerHTML = 'No H atoms in this file, so short N/O···halide contacts are listed instead (Å).' + boxes + hbMore;
       }
+      if ($('hbMore')) $('hbMore').onclick = () => { d.allHB = true; drawSheet(); };
     }
     $('hbTitle').textContent = d.hbFromH ? 'Hydrogen bonds' : 'Short donor–halide contacts';
 
@@ -1525,7 +1537,7 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
       ['Layer spacing (Å)', fw && fw.dim === 2 ? num(fw.spacing, 3) : ''],
       ['Slab (Å)', L && L.slabList ? L.slabList.map((s) => num(s.value, 3)).join(' ') : ''],
       ['Gallery (Å)', L && !L.corrugated && L.interfaces ? L.interfaces.filter((q) => q.gallery !== null).map((q) => num(q.gallery, 3)).join(' ') : ''],
-      ['X···X (Å)', L && L.interfaces ? L.interfaces.filter((q) => q.xx !== null).map((q) => num(q.xx, 3)).join(' ') : ''],
+      ['X···X (Å)', L && !L.corrugated && L.interfaces ? L.interfaces.filter((q) => q.xx !== null).map((q) => num(q.xx, 3)).join(' ') : ''],
       ['Mean M–X (Å)', ms.length ? num(mean(ms.map((s) => s.mean)), 3) : ''],
       ['Δd (10⁻⁴)', six.length ? num(mean(six.map((s) => s.deltaD)) * 1e4, 2) : ''],
       ['σ² (deg²)', six.length ? num(mean(six.map((s) => s.sigma2)), 1) : ''],
@@ -1534,7 +1546,7 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
       ['θ out (°)', eq.length ? num(mean(eq.map((b) => b.thetaOut)), 2) : ''],
       ['Axial tilt (°)', L && L.axialTilt ? num(L.axialTilt.mean, 1) : ''],
       ['N penetration (Å)', L && L.penetration.length ? num(mean(L.penetration.map((p) => p.depth)), 3) : ''],
-      ['Stacking offset', L && L.offsets && L.offsets.length ? L.offsets.map((o) => '(' + fmt(o.s1, 2) + ', ' + fmt(o.s2, 2) + ')').join(' ') : ''],
+      ['Stacking offset', L && L.offsets && L.offsets.some((o) => o) ? L.offsets.filter((o) => o).map((o) => '(' + fmt(o.s1, 2) + ', ' + fmt(o.s2, 2) + ')').join(' ') : ''],
       ['__NAME__ version', '__VERSION__']
     ];
   }
@@ -2445,12 +2457,17 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
     let uri = null;
     // the drawing buffer that the browser gives can be smaller than the canvas (a limit of the graphics card); the
     // picture is then magnified and cut. Make the scale smaller until the buffer holds the whole canvas.
+    // the WebGL context of the renderer: 3Dmol draws into an OffscreenCanvas where the browser has one, and the
+    // visible canvas then holds no WebGL context
+    const glContext = () => {
+      try { const r = viewer.getRenderer && viewer.getRenderer(); if (r && r.context && r.context.drawingBufferWidth) return r.context; } catch (err) { /* try the canvas */ }
+      try { const cv = viewer.getCanvas(); return cv.getContext('webgl2') || cv.getContext('webgl'); } catch (err) { return null; }
+    };
     const bufferShort = () => {
-      try {
-        const cv = viewer.getCanvas();
-        const ctx = cv.getContext('webgl2') || cv.getContext('webgl');
-        return ctx && (ctx.drawingBufferWidth < cv.width - 1 || ctx.drawingBufferHeight < cv.height - 1) ? Math.min(ctx.drawingBufferWidth / cv.width, ctx.drawingBufferHeight / cv.height) : 0;
-      } catch (err) { return 0; }
+      const ctx = glContext();
+      if (!ctx || !ctx.canvas) return 0;
+      const W = ctx.canvas.width, H = ctx.canvas.height;
+      return ctx.drawingBufferWidth < W - 1 || ctx.drawingBufferHeight < H - 1 ? Math.min(ctx.drawingBufferWidth / W, ctx.drawingBufferHeight / H) : 0;
     };
     const setSize = (kk) => {
       if (kk > 1) { gl.style.inset = 'auto'; gl.style.left = '0'; gl.style.top = '0'; gl.style.width = (w * kk) + 'px'; gl.style.height = (h * kk) + 'px'; }
@@ -2693,10 +2710,13 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
     if (!arr.length) return;
     // a large file takes some seconds: say so first, and let the page show it before the work starts
     const bytes = arr.reduce((s, f) => s + (f.size || 0), 0);
+    const slow = () => { drawReadout(); return new Promise((r) => requestAnimationFrame(() => setTimeout(r, 0))); };
+    const what = arr.length === 1 ? arr[0].name : arr.length + ' files';
+    let told = false;
     if (bytes > 400000) {
-      st.notice = 'Reading ' + (arr.length === 1 ? arr[0].name : arr.length + ' files') + ' (' + (bytes / 1e6).toFixed(1) + ' MB). A large cell can take some seconds.';
-      drawReadout();
-      await new Promise((r) => requestAnimationFrame(() => setTimeout(r, 0)));
+      st.notice = 'Reading ' + what + ' (' + (bytes / 1e6).toFixed(1) + ' MB). A large cell can take some seconds.';
+      told = true;
+      await slow();
     }
     const out = [], problems = [];
     for (const file of arr) {
@@ -2708,6 +2728,12 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
       } catch (err) {
         problems.push('Could not read ' + file.name + '. ' + (err && err.message ? err.message : ''));
       }
+    }
+    // a small file can hold a large cell (many atoms, or many symmetry operators): count the atoms of the cell
+    if (!told) {
+      let n = 0;
+      for (const f of out) { try { for (const x of C.readStructures(f.text, f.name).structures) n += x.sites.length * Math.max(1, x.ops.length); } catch (err) { /* the reader says why later */ } }
+      if (n > 4000) { st.notice = 'Reading ' + what + ': about ' + n + ' atoms in the cell. A large cell can take some seconds.'; await slow(); }
     }
     addFiles(out, problems);
   }
@@ -2931,8 +2957,29 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
       // the measurements and planes are points in space: they stay. Only a pick that is not finished is dropped.
       d.minor = e.target.checked; d.picks = []; st.planePick = null;
       rebuildCell(d);
+      // measurements and planes stay when their atoms are still in the picture; the others go, with a note
+      {
+        const blk = C.assemble(d.uc, d.lo, d.hi, d.polyRules);
+        const grid = new Map();
+        const cellKey = (p) => p.map((x) => Math.floor(x / 0.5)).join(',');
+        for (const a of blk.atoms) { const k = cellKey(a.xyz); if (!grid.has(k)) grid.set(k, []); grid.get(k).push(a.xyz); }
+        const onAtom = (p) => {
+          const c = p.map((x) => Math.floor(x / 0.5));
+          for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) for (let k = -1; k <= 1; k++) {
+            for (const q of grid.get([c[0] + i, c[1] + j, c[2] + k].join(',')) || []) if (Math.hypot(q[0] - p[0], q[1] - p[1], q[2] - p[2]) < 0.01) return true;
+          }
+          return false;
+        };
+        const nP = d.mplanes.length, nM = d.measures.length;
+        d.mplanes = d.mplanes.filter((pl) => pl.pts.every(onAtom));
+        const ids = new Set(d.mplanes.map((pl) => pl.id));
+        d.measures = d.measures.filter((m) => m.pts.slice(0, m.labels.length).every(onAtom) && (!m.plane || ids.has(m.plane)));
+        if (d.mplaneSel && !ids.has(d.mplaneSel)) d.mplaneSel = d.mplanes.length ? d.mplanes[d.mplanes.length - 1].id : null;
+        const gone = (nM - d.measures.length) + (nP - d.mplanes.length);
+        st.notice = gone ? (gone === 1 ? '1 measurement or plane was removed: its atoms are' : gone + ' measurements and planes were removed: their atoms are') + ' not in the picture now.' : '';
+      }
       drawHeader(); drawSheet(); drawChromos(); drawCompare();
-      render(true);
+      if (!d.mplanes.length && (st.measure === 'aplane' || st.measure === 'bplane' || st.measure === 'pangle')) setMeasure('dist'); else render(true);
     };
     $('arrowLen').onchange = (e) => { const v = parseFloat(e.target.value); if (isFinite(v) && v > 0) { st.arrow = v; render(true); } };
 

@@ -988,8 +988,16 @@ const formula = (info) => info.formula.map((e) => e.el + e.n).join(' ');
     // a Mo-Mo quadruple bond (2.09 A) with full occupancy is two atoms; with half occupancy, one site
     r = run(cif(P1, [12, 12, 12, 90, 90, 90], 'Mo1 Mo 0.5 0.5 0.5 1\nMo2 Mo 0.674 0.5 0.5 1'));
     check('audit A1-04: a Mo-Mo bond of 2.09 A keeps both Mo', r.uc.atoms.length === 2 && Math.abs(r.uc.counts.Mo - 2) < 1e-9);
-    r = run(cif(P1, [12, 12, 12, 90, 90, 90], 'Mo1 Mo 0.5 0.5 0.5 0.5\nMo2 Mo 0.674 0.5 0.5 0.5'));
-    check('audit A1-04: two half Mo 2.09 A apart are one site', r.uc.atoms.length === 1 && Math.abs(r.uc.counts.Mo - 1) < 1e-9);
+    r = run(cif(P1, [12, 12, 12, 90, 90, 90], 'Mo1 Mo 0.5 0.5 0.5 0.9\nMo2 Mo 0.6783 0.5 0.5 0.9'));
+    check('audit FX2a-01: a Mo-Mo bond of 2.14 A with occupancy 0.9 keeps both Mo', r.uc.atoms.length === 2 && Math.abs(r.uc.counts.Mo - 1.8) < 1e-9);
+    r = run(cif(P1, [12, 12, 12, 90, 90, 90], 'Mo1 Mo 0.5 0.5 0.5 0.5\nMo2 Mo 0.625 0.5 0.5 0.5'));
+    check('audit A1-04: two half Mo 1.5 A apart are one site', r.uc.atoms.length === 1 && Math.abs(r.uc.counts.Mo - 1) < 1e-9);
+    // two half Cl 1.72 A apart (occupancies add up to 1): one site; two full Cl 1.72 A apart: two atoms
+    r = run(cif(P1, [10, 10, 10, 90, 90, 90], 'Na1 Na 0 0 0 1\nCl1 Cl 0.5 0.5 0.5 0.5\nCl2 Cl 0.672 0.5 0.5 0.5'));
+    check('audit A1-04: two half Cl 1.72 A apart are one site', r.uc.atoms.filter((a) => a.el === 'Cl').length === 1);
+    // C/N of a cation in two orientations at one site keep both elements
+    r = run(cif(P1, [10, 10, 10, 90, 90, 90], 'C1 C 0.5 0.5 0.5 0.5\nN1 N 0.5 0.5 0.5 0.5\nC2 C 0.648 0.5 0.5 0.5\nN2 N 0.648 0.5 0.5 0.5\nI1 I 0 0 0 1'));
+    check('audit FX2a-04: C/N mixed ends of a cation keep both elements', r.uc.atoms.filter((a) => a.el === 'N').length === 2 && r.uc.atoms.filter((a) => a.el === 'C').length === 2);
   }
   // DA-a06: a metal whose ligands hold two orientations of a negative group gets no octahedron values
   {
@@ -1136,6 +1144,96 @@ const formula = (info) => info.formula.map((e) => e.el + e.n).join(' ');
   }
   // A4-04: the note under the reflection table
   check('audit A4-04: the |F| note says root of the mean |F|^2', /root of the mean \|F\|² of the M reflections/.test(fs.readFileSync(path.join(__dirname, '../src/pxrd.js'), 'utf8')));
+}
+
+// Devil's-advocate audit of the S2/S3 fixes (FX2a, FX2b). Made-up cells with known answers.
+{
+  const head = (sg, cell) => 'data_t\n' + ['a', 'b', 'c'].map((k, i) => '_cell_length_' + k + ' ' + cell[i]).join('\n') + '\n' +
+    ['alpha', 'beta', 'gamma'].map((k, i) => '_cell_angle_' + k + ' ' + cell[3 + i]).join('\n') + '\n' + sg + '\n';
+  const cif = (sg, cell, rows) => head(sg, cell) + 'loop_\n_atom_site_label\n_atom_site_type_symbol\n_atom_site_fract_x\n_atom_site_fract_y\n_atom_site_fract_z\n_atom_site_occupancy\n' + rows + '\n';
+  const hm = (s) => "_symmetry_space_group_name_H-M '" + s + "'";
+  const P1 = hm('P 1');
+  const run = (text, name) => { const s = X.readStructures(text, name || 't.cif').structures[0]; const uc = X.buildCell(s, {}); return { s, uc, info: X.analyse(uc) }; };
+  const fm = (info) => info.formula.map((e) => e.el + e.n).join(' ');
+  const full = (rows) => rows.map((x) => x + ' 1').join('\n');
+
+  // FX2a-02: an R group in rhombohedral axes with alpha near 90 (BaTiO3 R3m, alpha 89.839), by symbol and by number
+  const bto = 'Ba1 Ba 0 0 0 1\nTi1 Ti 0.487 0.487 0.487 1\nO1 O 0.511 0.511 0.018 1';
+  const cr = [4.0036, 4.0036, 4.0036, 89.839, 89.839, 89.839];
+  let r = run(cif(hm('R 3 m'), cr, bto)), rn = run(cif('_symmetry_Int_Tables_number 160', cr, bto));
+  check('audit FX2a-02: R3m in rhombohedral axes near 90 deg: 6 operators, BaO3Ti, 6.034', r.s.ops.length === 6 && fm(r.info) === 'Ba1 O3 Ti1' && near(r.info.density, 6.034, 0.002) &&
+    rn.s.ops.length === 6 && fm(rn.info) === 'Ba1 O3 Ti1', fm(r.info) + ' ' + r.s.ops.length);
+  // FX2a-03: SHELX SUMP, one free variable for each of three PARTs at one place: one region, PART 1 shown
+  r = run('TITL t\nCELL 0.71073 10 10 10 90 90 90\nLATT -1\nSFAC C Cl\nFVAR 1.0 0.5 0.3 0.2\nCl1 2 0 0 0 11.0 0.03\nPART 1\nC1A 1 0.30 0.30 0.30 21.0 0.03\n' +
+    'PART 2\nC1B 1 0.33 0.30 0.30 31.0 0.03\nPART 3\nC1C 1 0.30 0.33 0.30 41.0 0.03\nPART 0\nHKLF 4\nEND\n', 't.res');
+  check('audit FX2a-03: SHELX PARTs with one free variable each at one place are one region', r.s.sites.filter((x) => x.minor).map((x) => x.label).join(' ') === 'C1B C1C');
+  // FX2a-05, FX2b-07: in a file with H, a C=O (1.25 A) is no donor; a C-O (1.43 A) with no H is
+  const ket = (dO) => ['N1 N 0.30 0.50 0.50', 'H1A H 0.22 0.50 0.50', 'H1B H 0.33 0.58 0.50', 'H1C H 0.33 0.46 0.57', 'C1 C 0.447 0.50 0.50', 'C2 C 0.52 0.50 0.65',
+    'O1 O ' + (0.52 - 0.6 / 1.253 * dO / 10) + ' 0.50 ' + (0.65 + 1.1 / 1.253 * dO / 10), 'C3 C 0.67 0.50 0.65', 'H3A H 0.70 0.50 0.75', 'Br1 Br 0.20 0.50 0.20', 'Br2 Br 0.46 0.50 1.08'];
+  const oRows = (dO) => X.hbondList(run(cif(P1, [10, 10, 10, 90, 90, 90], full(ket(dO)))).uc).rows.filter((h) => h.D === 'O1');
+  check('audit FX2a-05: a C=O is not a donor, a C-O with no H is', oRows(1.25).length === 0 && oRows(1.43).length === 1, oRows(1.25).length + ' ' + oRows(1.43).length);
+  // FX2a-06, FX2b-01: a corner-sharing layer whose bridging Cl is split +-0.86 A (half each) stays corner-sharing, n = 1
+  const c0 = 20, a0 = 5.6;
+  r = run(cif(P1, [a0, a0, c0, 90, 90, 90], ['Pb1 Pb 0 0 0.5 1', 'Cl1 Cl 0.5 0 ' + (0.5 + 0.86 / c0) + ' 0.5', 'Cl2 Cl 0.5 0 ' + (0.5 - 0.86 / c0) + ' 0.5', 'Cl3 Cl 0 0.5 0.5 1',
+    'Cl4 Cl 0 0 ' + (0.5 + 2.85 / c0) + ' 1', 'Cl5 Cl 0 0 ' + (0.5 - 2.85 / c0) + ' 1'].join('\n')));
+  check('audit FX2b-01: a split bridging halide is one corner: corner-sharing, n = 1', r.info.layer && r.info.layer.sharing === 'corner' && r.info.layer.n === 1);
+  // FX2a-07: C-I...I- at 3.20 A is a halogen bond: I2 stays an iodide ion and accepts N-H...I
+  r = run(cif(P1, [12, 12, 12, 90, 90, 90], full(['C1 C 0.30 0.50 0.50', 'I1 I 0.4783 0.50 0.50', 'I2 I 0.745 0.50 0.50', 'N2 N 0.745 0.50 0.7958', 'H2A H 0.745 0.50 0.7108',
+    'H2B H 0.745 0.5763 0.82', 'H2C H 0.68 0.46 0.82', 'C4 C 0.745 0.50 0.92'])));
+  check('audit FX2a-07: C-I...I- is no bond; the iodide accepts N-H...I', r.uc.molecules.some((m) => m.atoms.length === 1 && r.uc.atoms[m.atoms[0].idx].label === 'I2') &&
+    X.hbondList(r.uc).rows.some((h) => h.H === 'H2A' && h.A === 'I2'));
+  // FX2a-08: no Z; four benzene, one water and one water O without H: Z 2, as the gcd
+  {
+    const rows = [];
+    let n = 0;
+    for (const [cx, cy] of [[0.25, 0.25], [0.75, 0.25], [0.25, 0.75], [0.75, 0.75]]) for (let k = 0; k < 6; k++) {
+      const an = k * Math.PI / 3;
+      n++;
+      rows.push('C' + n + ' C ' + (cx + 1.39 * Math.cos(an) / 14) + ' ' + (cy + 1.39 * Math.sin(an) / 14) + ' 0.5', 'H' + n + ' H ' + (cx + 2.47 * Math.cos(an) / 14) + ' ' + (cy + 2.47 * Math.sin(an) / 14) + ' 0.5');
+    }
+    rows.push('O1 O 0.5 0.5 0.1', 'H91 H 0.55 0.5 0.13', 'H92 H 0.45 0.5 0.13', 'O2 O 0.5 0.5 0.9');
+    r = run(cif(P1, [14, 14, 14, 90, 90, 90], full(rows)));
+    check('audit FX2a-08: a water without H is still a water for Z', r.info.Z === 2 && fm(r.info) === 'C12 H13 O1', fm(r.info) + ' Z ' + r.info.Z);
+  }
+  // FX2b-02: three layers with offsets (0,0) -> (1/2,0) -> (1/2,1/2): the offset of interface k is the offset of that interface
+  {
+    const c = 40, a = 6.3, f = (x) => ((x % 1) + 1) % 1;
+    const lay = (t, z, sx, sy) => ['Pb' + t + ' Pb ' + f(sx) + ' ' + f(sy) + ' ' + z / c, 'Ia' + t + ' I ' + f(sx + 0.5) + ' ' + f(sy) + ' ' + z / c, 'Ib' + t + ' I ' + f(sx) + ' ' + f(sy + 0.5) + ' ' + z / c,
+      'It' + t + ' I ' + f(sx) + ' ' + f(sy) + ' ' + (z + 3.2) / c, 'Id' + t + ' I ' + f(sx) + ' ' + f(sy) + ' ' + (z - 3.2) / c];
+    const L = run(cif(P1, [a, a, c, 90, 90, 90], full(lay('1', 6, 0, 0).concat(lay('2', 16, 0.5, 0), lay('3', 29, 0.5, 0.5))))).info.layer;
+    const want = [[10, 0.5, 0], [13, 0.5, 0], [17, 0.5, 0.5]];
+    check('audit FX2b-02: offsets[k] belongs to interfaces[k]', L.interfaces.length === 3 && L.offsets.length === 3 &&
+      want.every(([sp, s1, s2], k) => near(L.interfaces[k].spacing, sp, 1e-6) && near(L.offsets[k].s1, s1, 1e-6) && near(L.offsets[k].s2, s2, 1e-6)));
+  }
+  // FX2b-03: a layer joined to the next by a stretched bridge in every cell (a 3D network): the same answer for 1, 2 and 3 cells
+  {
+    const res3 = [1, 2, 3].map((m) => {
+      const c = 6.9 * m, rows = [];
+      for (let q = 0; q < m; q++) { const z = q * 6.9 + 1.0; rows.push('Pb' + q + ' Pb 0 0 ' + z / c, 'Ia' + q + ' I 0.5 0 ' + z / c, 'Ib' + q + ' I 0 0.5 ' + z / c, 'It' + q + ' I 0 0 ' + ((z + 3.7) % c) / c); }
+      const info = run(cif(P1, [6.3, 6.3, c, 90, 90, 90], full(rows))).info;
+      return info.layer.n + '/' + info.framework.spacing.toFixed(2);
+    });
+    check('audit FX2b-03: stretched bridges to every next layer: no join, the same n and spacing for 1, 2 and 3 cells', res3.every((x) => x === '1/6.90'), res3.join(' '));
+  }
+  // FX2b-06: the N of a C=N (1.30 A) is not an ammonium N; the N of a C-N (1.48 A) is (a file without H)
+  {
+    const c = 30, a = 6.3;
+    const pen = (dCN) => {
+      const rows = ['Pb1 Pb 0 0 ' + 10 / c, 'Ia1 I 0.5 0 ' + 10 / c, 'Ib1 I 0 0.5 ' + 10 / c, 'It1 I 0 0 ' + 13.2 / c, 'Id1 I 0 0 ' + 6.8 / c,
+        'N1 N 0.5 0.5 ' + 12.7 / c, 'C1 C 0.5 0.5 ' + (12.7 + dCN) / c, 'C2 C 0.5 0.5 ' + (12.7 + dCN + 1.5) / c];
+      return run(cif(P1, [a, a, c, 90, 90, 90], full(rows))).info.layer.penetration.length;
+    };
+    check('audit FX2b-06: no N penetration for a C=N, one for a C-N', pen(1.30) === 0 && pen(1.48) === 1, pen(1.30) + ' ' + pen(1.48));
+  }
+  // a split pair listed minor first: the picture shows the atom with the higher occupancy
+  r = run(cif(P1, [10, 10, 10, 90, 90, 90], 'Na1 Na 0 0 0 1\nI1 I 0.5 0.5 0.5 0.1\nI2 I 0.62 0.5 0.5 0.9'));
+  check('audit (order): of a split pair the picture shows the higher occupancy', r.uc.atoms.filter((a) => a.el === 'I').map((a) => a.label).join() === 'I2');
+  // A4-02 (second pass): a header with a point, a number line and a row with a point do not stop decimal commas
+  {
+    const a = X.readXY('2θ (deg.);Intensity (a.u.)\n10,00;100,5\n10,02;101,25\n10,04;99,0\n');
+    const b = X.readXY('1.54056\n10,00;100,5\n10,02;101,25\n10,04;99,0\n10.06;98\n');
+    check('audit A4-02: decimal commas with a header that holds a point', a.x.join() === '10,10.02,10.04' && a.y.join() === '100.5,101.25,99' && b.x.join() === '10,10.02,10.04,10.06');
+  }
 }
 
 // How to cite: CITATION.cff and the built page have the version of package.json
