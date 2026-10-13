@@ -2,6 +2,21 @@
 
 Any change to how a number is defined gets a new version and a line here.
 
+## v0.5.3
+
+Fixes for the six S1 findings of the independent audit of v0.5.2 (`design/2026-10-12-audit-design.md`). These are numbers that were wrong for their stated definition.
+
+- **Formula, density and powder pattern count every part of a disordered site.** (A2-01, A2-02, A1-01, A4-01, DA-a02)
+  - Before, two kinds of atoms lost their occupancy: a site that the 0.9 Å split rule hid, and a copy near another atom (closer than 0.15 Å). A CsSnI3 structure with split Cs and I sites showed Cs0.77I2.26Sn and ρ 3.631 g cm⁻³ instead of CsI3Sn and 4.521.
+  - Now copies of one site are one position only when they are closer than 0.02 Å. When the file gives `_atom_site_symmetry_multiplicity`, that number decides. Atoms of one element at one position are alternatives: Crysta adds their occupancies, and one position holds at most one atom. The powder pattern uses the same cell contents. The picture is not changed.
+  - The density changed in 62 of the 528 HybriD3 CIF blocks, each time nearer to the file's own value. 27 more blocks now agree with the file within 0.5 %.
+- **Stacking offset.** (A3-01, A5-03) Before, the offset used the first metal of the next layer in the file. The same crystal gave different values for a different order of atoms. It is now the shortest in-plane shift over all metal pairs. When the interfaces between the layers of a cell are not alike, each interface has its own row. The two metals in the picture give the number of the row.
+- **Hydrogen bonds to metal complexes.** (A3-02) The halides of a 0D complex anion ([BiI6]³⁻, [Sb2I10]⁴⁻, [CuCl4]²⁻) are now acceptors. Before, these structures showed no hydrogen bonds.
+- **Hydrogen bonds in large cells.** (A3-03) For a cell of more than 400 atoms, Crysta searched one cell only. It lost the contacts across the cell faces (up to 37 %). The search now holds the cell and a margin around it, at every cell size.
+- **Left-handed lattice vectors.** (A3-04) Crysta drew a geometry.in, POSCAR or extended XYZ file with left-handed vectors as its mirror image. Every torsion had the wrong sign. Crysta now reads it in the basis −**a**, −**b**, −**c**, and the Crystal card says so.
+
+Changed definitions (see the README): the cell contents for the formula, the density and the powder pattern, the stacking offset, and the hydrogen-bond acceptors. Other numbers are identical to v0.5.2.
+
 ## v0.5.2
 
 - **Angle in plane.** A new mode of the Measure card. Choose a plane, for example the lattice plane (001), (010) or (100), or a plane through atoms. Then click three atoms, with the vertex second, as for an angle. Crysta projects both bonds onto the plane and gives the angle between the projections: the angle that you see when you look along the plane normal. The list also gives the angle in space.

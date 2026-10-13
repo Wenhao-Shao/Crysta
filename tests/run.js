@@ -762,6 +762,110 @@ const formula = (info) => info.formula.map((e) => e.el + e.n).join(' ');
   check('glow: a bridge with one metal outside the box shows the part that is there', part.bonds.length > 0 && part.bonds.every(([i, j]) => A[i].label === cutB.x || A[j].label === cutB.x));
 }
 
+// Audit of v0.5.2, S1 findings (design/2026-10-12-audit-design.md). Made-up cells with known answers.
+{
+  const cif = (sg, cell, rows, extra) => 'data_t\n' + ['a', 'b', 'c'].map((k, i) => '_cell_length_' + k + ' ' + cell[i]).join('\n') + '\n' +
+    ['alpha', 'beta', 'gamma'].map((k, i) => '_cell_angle_' + k + ' ' + cell[3 + i]).join('\n') + '\n' + sg + '\n' + (extra || '') +
+    'loop_\n_atom_site_label\n_atom_site_type_symbol\n_atom_site_fract_x\n_atom_site_fract_y\n_atom_site_fract_z\n_atom_site_occupancy\n' + rows + '\n';
+  const P1 = "_symmetry_space_group_name_H-M 'P 1'";
+  const PM1 = "_symmetry_space_group_name_H-M 'P -1'";
+  const run = (text, name) => { const s = X.readStructures(text, name || 't.cif').structures[0]; const uc = X.buildCell(s, {}); return { s, uc, info: X.analyse(uc) }; };
+  const cnt = (r, el) => r.uc.counts[el] || 0;
+  const pxSum = (r, el) => X.powderAtoms(r.s, 1).atoms.filter((a) => a.el === el).reduce((t, a) => t + a.occ, 0);
+  const box = [10, 10, 10, 90, 90, 90];
+
+  // A2-01: an unflagged split pair (0.6 + 0.4, 0.5 A apart) is one Cl; the second is hidden in the picture only
+  let r = run(cif(P1, box, 'Na1 Na 0 0 0 1\nCl1 Cl 0.5 0.5 0.5 0.6\nCl2 Cl 0.55 0.5 0.5 0.4'));
+  check('audit A2-01: unflagged split pair counts as one atom', near(cnt(r, 'Cl'), 1, 1e-9) && r.uc.atoms.filter((a) => a.el === 'Cl').length === 1, cnt(r, 'Cl'));
+  check('audit A2-01: the powder pattern has the same cell contents', near(pxSum(r, 'Cl'), 1, 1e-9));
+  // A2-01: a half-occupied Cl 0.2 A from an inversion centre: two copies 0.4 A apart, 0.5 each
+  r = run(cif(PM1, box, 'Na1 Na 0 0 0 1\nCl1 Cl 0.52 0.5 0.5 0.5'));
+  check('audit A2-01: half site next to an inversion centre counts 1', near(cnt(r, 'Cl'), 1, 1e-9), cnt(r, 'Cl'));
+  // A2-02: copies 0.05 A apart (closer than 0.15 A): both count
+  r = run(cif(PM1, box, 'Na1 Na 0 0 0 1\nCl1 Cl 0.5025 0.5 0.5 0.5'));
+  check('audit A2-02: half site 0.025 A from a centre counts 1', near(cnt(r, 'Cl'), 1, 1e-9), cnt(r, 'Cl'));
+  check('audit A2-02: same for the powder pattern', near(pxSum(r, 'Cl'), 1, 1e-9));
+  // A2-02: two sites 0.05 A apart with 0.5 each
+  r = run(cif(P1, box, 'Na1 Na 0 0 0 1\nCl1 Cl 0.5 0.5 0.5 0.5\nCl2 Cl 0.505 0.5 0.5 0.5'));
+  check('audit A2-02: two coincident half sites count 1', near(cnt(r, 'Cl'), 1, 1e-9), cnt(r, 'Cl'));
+  // controls: an atom exactly on a centre counts once; a half-occupied atom on a centre counts 0.5
+  r = run(cif(PM1, box, 'Na1 Na 0 0 0 1\nCl1 Cl 0.5 0.5 0.5 1'));
+  check('audit A2-02 control: atom on a centre counts 1', near(cnt(r, 'Cl'), 1, 1e-9) && near(cnt(r, 'Na'), 1, 1e-9));
+  r = run(cif(PM1, box, 'Na1 Na 0 0 0 1\nCl1 Cl 0.5 0.5 0.5 0.5'));
+  check('audit A2-02 control: half atom on a centre counts 0.5', near(cnt(r, 'Cl'), 0.5, 1e-9));
+  // the multiplicity of the file decides: a general position (2 of 2) 0.01 A from the centre has two copies
+  const multRows = 'Na1 Na 0 0 0 1 1\nCl1 Cl 0.5005 0.5 0.5 0.5 2';
+  const multCif = cif(PM1, box, multRows).replace('_atom_site_occupancy\n', '_atom_site_occupancy\n_atom_site_symmetry_multiplicity\n');
+  r = run(multCif);
+  check('audit A2-02: _atom_site_symmetry_multiplicity 2 keeps both copies', near(cnt(r, 'Cl'), 1, 1e-9), cnt(r, 'Cl'));
+  // a geometry.in with both parts of a split site at occupancy 1: one atom in the formula and in the pattern
+  const gi = 'lattice_vector 10 0 0\nlattice_vector 0 10 0\nlattice_vector 0 0 10\natom 0 0 0 Na\natom 5 5 5 Cl\natom 5.5 5 5 Cl\n';
+  r = run(gi, 'x_geometry.in');
+  check('audit DA-a02: geometry.in split pair counts one Cl in the formula and in the pattern', near(cnt(r, 'Cl'), 1, 1e-9) && near(pxSum(r, 'Cl'), 1, 1e-9));
+  // the samples keep their contents
+  const pea = load('examples/PEA2PbBr4.cif');
+  const fca = load('examples/FCA3_2PbBr4_294K.cif');
+  check('audit: the samples keep their density and formula mass', near(pea.info.density, 2.27600, 1e-5) && near(fca.info.density, 2.27189, 1e-5) && near(fca.info.formulaMass, 929.806, 1e-3), [pea.info.density, fca.info.density, fca.info.formulaMass].join(' '));
+
+  // A3-04: left-handed lattice vectors give the same structure, not its mirror image
+  const four = [[1, 1, 1], [2.5, 1, 1], [3, 2.4, 1], [3.5, 2.6, 2.3]];
+  const torsionOf = (s) => { const uc = X.buildCell(s, {}); const P = uc.atoms.map((a) => uc.cell.toCart(a.f)); return X.torsion(P[0], P[1], P[2], P[3]); };
+  const vecR = [[12, 0, 0], [3, 11, 0], [1, 2, 12]], vecL = [[12, 0, 0], [3, 11, 0], [1, 2, -12]];
+  const aims = (v) => v.map((u) => 'lattice_vector ' + u.join(' ')).join('\n') + '\n' + four.map((p) => 'atom ' + p.join(' ') + ' C').join('\n') + '\n';
+  const tR = torsionOf(X.readStructure(aims(vecR), 'r_geometry.in'));
+  const sL = X.readStructure(aims(vecL), 'l_geometry.in');
+  check('audit A3-04: geometry.in with left-handed vectors keeps the torsion sign', near(torsionOf(sL), tR, 1e-6) && near(tR, 107.248, 1e-3) && sL.meta.leftHanded === true, torsionOf(sL));
+  const poscar = (v) => 'test\n1.0\n' + v.map((u) => u.join(' ')).join('\n') + '\nC\n4\nCartesian\n' + four.map((p) => p.join(' ')).join('\n') + '\n';
+  check('audit A3-04: POSCAR with left-handed vectors keeps the torsion sign', near(torsionOf(X.readStructure(poscar(vecL), 'POSCAR')), tR, 1e-6));
+  const exyz = (v) => '4\nLattice="' + v.map((u) => u.join(' ')).join(' ') + '" Properties=species:S:1:pos:R:3\n' + four.map((p) => 'C ' + p.join(' ')).join('\n') + '\n';
+  check('audit A3-04: extended XYZ with left-handed vectors keeps the torsion sign', near(torsionOf(X.readStructure(exyz(vecL), 't.xyz')), tR, 1e-6));
+  check('audit A3-04: right-handed files are not changed', X.readStructure(aims(vecR), 'r_geometry.in').meta.leftHanded === false);
+
+  // A3-01: stacking offset of two n = 1 layers with a zigzag metal net; the second layer is shifted by half the
+  // Pb...Pb vector along a. The answer is (0.50, 0.00) whatever the order of the atoms in the file.
+  const layer = (tag, dx, z) => {
+    const r0 = [['Pb', 0, 0, 0], ['Pb', 0.1, 0.5, 0], ['Br', 0.5, 0, 0], ['Br', 0.6, 0.5, 0], ['Br', 0.05, 0.25, 0], ['Br', 0.05, 0.75, 0],
+      ['Br', 0, 0, 0.09375], ['Br', 0, 0, -0.09375], ['Br', 0.1, 0.5, 0.09375], ['Br', 0.1, 0.5, -0.09375]];
+    return r0.map((q, i) => q[0] + tag + (i + 1) + ' ' + q[0] + ' ' + (q[1] + dx) + ' ' + q[2] + ' ' + (q[3] + z) + ' 1');
+  };
+  const zz = layer('A', 0, 0).concat(layer('B', 0.5, 0.5));
+  const zcell = [6, 12, 32, 90, 90, 90];
+  const o1 = run(cif(P1, zcell, zz.join('\n'))).info.layer.offsets;
+  const o2 = run(cif(P1, zcell, zz.slice().reverse().join('\n'))).info.layer.offsets;
+  const o3 = run(cif(P1, zcell, layer('B', 0.5, 0.5).concat(layer('A', 0, 0)).join('\n'))).info.layer.offsets;
+  const isHalf = (o) => o.length === 1 && near(o[0].s1, 0.5, 1e-6) && near(o[0].s2, 0, 1e-6);
+  check('audit A3-01: stacking offset does not depend on the order of the atoms', isHalf(o1) && isHalf(o2) && isHalf(o3), JSON.stringify([o1, o2, o3].map((o) => o.map((x) => [x.s1.toFixed(3), x.s2.toFixed(3)]))));
+  // the PEA sample with its sites in reverse order gives the same offset
+  const peaR = X.readStructure(fs.readFileSync(path.join(__dirname, '../examples/PEA2PbBr4.cif'), 'utf8'), 'PEA2PbBr4.cif');
+  peaR.sites.reverse();
+  const oR = X.analyse(X.buildCell(peaR, {})).layer.offset;
+  check('audit A3-01: PEA2PbBr4 offset is the same with the sites in reverse order', near(oR.s1, pea.info.layer.offset.s1, 0.005) && near(oR.s2, pea.info.layer.offset.s2, 0.005));
+  // the drawn pair of the offset row gives the number of the row
+  {
+    const blk = X.assemble(pea.uc, [-0.1, -0.1, -0.1], [2.1, 2.1, 1.1]);
+    const hs = X.highlightSet(blk, pea.uc, pea.info, { type: 'offset', k: 0 });
+    check('audit A5-03: the offset row glows two metals', hs.atoms.length === 2);
+  }
+
+  // A3-02: halides of a 0D complex anion are acceptors. Made-up: [CuCl4]2- and NH4+ with one N-H pointing at Cl.
+  const cuRows = ['Cu1 Cu 0.5 0.5 0.5 1', 'Cl1 Cl 0.6299 0.6299 0.6299 1', 'Cl2 Cl 0.3701 0.3701 0.6299 1', 'Cl3 Cl 0.3701 0.6299 0.3701 1', 'Cl4 Cl 0.6299 0.3701 0.3701 1',
+    'N1 N 0.8204 0.8204 0.8204 1', 'H1 H 0.7621 0.7621 0.7621 1', 'H2 H 0.8787 0.8787 0.7621 1', 'H3 H 0.8787 0.7621 0.8787 1', 'H4 H 0.7621 0.8787 0.8787 1'];
+  r = run(cif(P1, [10, 10, 10, 90, 90, 90], cuRows.join('\n')));
+  const hb0 = X.hbondList(r.uc);
+  check('audit A3-02: a halide of a 0D complex is a hydrogen-bond acceptor', hb0.rows.some((h) => h.D === 'N1' && h.H === 'H1' && h.A === 'Cl1'), JSON.stringify(hb0.rows.map((h) => h.key)));
+
+  // A3-03: a cell of more than 400 atoms keeps the contacts across the cell faces. PEA2PbBr4 as a P1 cell three
+  // times longer along c (564 atoms) has the same distinct contacts as the sample.
+  {
+    const c3 = pea.uc.cell;
+    const rows3 = [];
+    for (let k = 0; k < 3; k++) for (const a of pea.uc.atoms) rows3.push(a.label + ' ' + a.el + ' ' + a.f[0] + ' ' + a.f[1] + ' ' + (a.f[2] + k) / 3 + ' 1');
+    const big = run(cif(P1, [c3.a, c3.b, 3 * c3.c, c3.al, c3.be, c3.ga], rows3.join('\n')));
+    const keys = (h) => h.rows.map((x) => x.key).sort().join(';');
+    check('audit A3-03: hydrogen bonds of a 564-atom cell = those of the 188-atom cell', big.uc.atoms.length === 564 && keys(X.hbondList(big.uc)) === keys(X.hbondList(pea.uc)), X.hbondList(big.uc).rows.length);
+  }
+}
+
 // How to cite: CITATION.cff and the built page have the version of package.json
 {
   const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, '../package.json'), 'utf8'));
