@@ -812,6 +812,9 @@ const formula = (info) => info.formula.map((e) => e.el + e.n).join(' ');
   // FX1-02: a half-occupied atom on a 3-fold axis, written with 3 decimals in a large cell: 0.5, not 1
   r = run(cif("_symmetry_space_group_name_H-M 'P 3'", [40, 40, 10, 90, 90, 120], 'Na1 Na 0 0 0 1\nI1 I 0.333 0.667 0.2 0.5'));
   check('audit FX1-02: half atom on a special position with rounded coordinates counts 0.5', near(cnt(r, 'I'), 0.5, 1e-9), cnt(r, 'I'));
+  // FX1-09: an atom split across a centre with refined occupancy 0.52, copies 0.1 A apart: about one atom (capped at 1)
+  r = run(cif(PM1, box, 'Na1 Na 0 0 0 1\nCl1 Cl 0.505 0.5 0.5 0.52'));
+  check('audit FX1-09: split across a centre with occupancy 0.52 counts 1', near(cnt(r, 'Cl'), 1, 1e-9), cnt(r, 'Cl'));
   // a geometry.in with both parts of a split site at occupancy 1: one atom in the formula and in the pattern
   const gi = 'lattice_vector 10 0 0\nlattice_vector 0 10 0\nlattice_vector 0 0 10\natom 0 0 0 Na\natom 5 5 5 Cl\natom 5.5 5 5 Cl\n';
   r = run(gi, 'x_geometry.in');
@@ -891,6 +894,16 @@ const formula = (info) => info.formula.map((e) => e.el + e.n).join(' ');
     const rpCell = [6, 6, 30, 90, 90, 90];
     const outs = [rp, rp.slice().reverse(), rp.slice(5).concat(rp.slice(0, 5))].map((rows) => run(cif(P1, rpCell, rows.join('\n'))).info.layer.offsets);
     check('audit A3-01: tied metals and tied M...M vectors give (0.50, 0.50) in every order', outs.every((o) => o.length === 1 && near(o[0].s1, 0.5, 1e-6) && near(o[0].s2, 0.5, 1e-6)), JSON.stringify(outs.map((o) => o.map((x) => [x.s1, x.s2]))));
+  }
+
+  // FX1-11: a 4 x 4 P1 supercell of PEA2PbBr4 (3008 atoms) keeps its layer rows and its offset
+  {
+    const n = 4, c0 = pea.uc.cell, rows4 = [];
+    for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) for (const a of pea.uc.atoms) rows4.push(a.label + ' ' + a.el + ' ' + (a.f[0] + i) / n + ' ' + (a.f[1] + j) / n + ' ' + a.f[2] + ' 1');
+    const sup = run(cif(P1, [n * c0.a, n * c0.b, c0.c, c0.al, c0.be, c0.ga], rows4.join('\n')));
+    const L4 = sup.info.layer, o4 = L4 && L4.offsets[0], o1 = pea.info.layer.offsets[0];
+    check('audit FX1-11: 3008-atom supercell keeps n, gallery and the stacking offset', sup.uc.atoms.length === 3008 && L4 && L4.n === 1 && near(L4.gallery, pea.info.layer.gallery, 1e-3) &&
+      o4 && near(o4.s1, o1.s1, 1e-3) && near(o4.s2, o1.s2, 1e-3));
   }
 
   // A3-02: halides of a 0D complex anion are acceptors. Made-up: [CuCl4]2- and NH4+ with one N-H pointing at Cl.

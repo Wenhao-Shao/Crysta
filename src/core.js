@@ -820,7 +820,7 @@
      cell contents. The formula, the density and the powder pattern use these shares.
      1. Copies of one site: one copy when closer than SAME_POS (not when the file's _atom_site_symmetry_multiplicity
         is the number of operators: a general position; then only below SAME_EXACT). Copies 0.05 to 0.15 A apart
-        are one copy too when their occupancies add up to more than 1 (a special position, rounded coordinates).
+        are one copy too when their occupancies add up to 1.5 or more (a special position, rounded coordinates).
      2. Alternatives at one position: copies of one element closer than 0.15 A in one disorder group, or closer
         than 0.9 A for non-H atoms that the file does not flag. A group is a set of copies that are all that close
         to each other (closest pairs first), so two bonded atoms are never one position. When the occupancies of
@@ -837,13 +837,13 @@
         if (mine.some((g) => dist(g.f, f) < (general ? SAME_EXACT : SAME_POS))) return;
         mine.push({ f, oi });
       });
-      // copies 0.05 to 0.15 A apart whose occupancies add up to more than 1: one copy (a special position)
+      // copies 0.05 to 0.15 A apart whose occupancies add up to 1.5 or more: one copy (a special position)
       let keep = mine;
       if (!general && mine.length > 1 && s.occ > 0) {
         keep = [];
         for (const g of mine) {
           const near = keep.filter((k) => dist(k.f, g.f) < 0.15);
-          if (near.length && s.occ * (near.length + 1) > 1 + 1e-2) continue;
+          if (near.length && s.occ * (near.length + 1) >= 1.5) continue;
           keep.push(g);
         }
       }
@@ -1531,17 +1531,15 @@
       for (let i = -3; i <= 3; i++) for (let j = -3; j <= 3; j++) for (let k = -3; k <= 3; k++) {
         if (i * fw.hkl[0] + j * fw.hkl[1] + k * fw.hkl[2] === target.k) trans.push([i, j, k]);
       }
+      // two passes over all pairs, so that a large cell keeps no long list: the shortest shift, then the ties
+      let minLen = Infinity;
+      const each = (fn) => { for (const A of tops) for (const B of bots) for (const tr of trans) { const fB = add(B.f, tr); fn(A, B, fB, inPlane(sub(cell.toCart(fB), cell.toCart(A.f)))); } };
+      each((A, B, fB, v) => { const l = norm(v); if (l < minLen) minLen = l; });
+      if (!isFinite(minLen)) return;
       const cands = [];
-      for (const A of tops) for (const B of bots) for (const tr of trans) {
-        const fB = add(B.f, tr);
-        const v = inPlane(sub(cell.toCart(fB), cell.toCart(A.f)));
-        cands.push({ d: v, len: norm(v), A, B, fB });
-      }
-      if (!cands.length) return;
-      const minLen = Math.min(...cands.map((c) => c.len));
+      each((A, B, fB, v) => { const l = norm(v); if (l <= minLen + 0.05) cands.push({ d: v, len: l, A, B, fB }); });
       let best = null;
       for (const c of cands) {
-        if (c.len > minLen + 0.05) continue;
         for (const net of netVecs(c.A.m) || layerNet) {
           const [s1, s2] = fold(c.d, net[0], net[1]);
           const key = [s1 + s2, s1, s2];
@@ -1559,8 +1557,15 @@
       else if ((hf(s1) && z(s2)) || (z(s1) && hf(s2))) kind = 'near (½, 0)';
       const o = { s1, s2, kind, p1: norm(p1), p2: norm(p2), v1: p1, v2: p2,
         m0: c.A.m, m1: c.B.m, df: sub(c.fB, c.A.f), shift: c.len, dh: height(c.fB) - height(c.A.f) };
-      if (!res.offsets.some((q) => Math.abs(q.s1 - o.s1) < 0.02 && Math.abs(q.s2 - o.s2) < 0.02)) res.offsets.push(o);
+      // interfaces whose offsets agree within 0.02 are alike: one row, with the smaller offset of the two
+      const twin = res.offsets.findIndex((q) => Math.abs(q.s1 - o.s1) < 0.02 && Math.abs(q.s2 - o.s2) < 0.02);
+      if (twin < 0) res.offsets.push(o);
+      else {
+        const q = res.offsets[twin];
+        if (o.s1 + o.s2 < q.s1 + q.s2 - 1e-4 || (Math.abs(o.s1 + o.s2 - q.s1 - q.s2) <= 1e-4 && o.s1 < q.s1 - 1e-4)) res.offsets[twin] = o;
+      }
     });
+    res.offsets.sort((p, q) => p.s1 + p.s2 - q.s1 - q.s2 || p.s1 - q.s1);
     res.offset = res.offsets[0] || null;
     return res;
   }

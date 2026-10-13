@@ -108,7 +108,7 @@ These choices decide the numbers, so they are stated here. Changing any of them 
 | θ out | M–X–M angle after projecting onto the plane holding M···M and the layer normal |
 | Axial tilt | acute angle between an axial M–X bond and the layer normal |
 | N penetration | depth of an ammonium N below the plane of terminal halides; positive is inside the layer |
-| Stacking offset | The shortest in-plane shift from a metal of the top metal plane of one layer to a metal of the bottom metal plane of the next layer. Crysta takes the shortest over all metal pairs and lattice translations. It gives the shift in units of the two shortest in-plane M···M vectors, each from 0 to ½. Shifts and M···M vectors within 0.05 Å of each other are ties, and Crysta gives the smallest offset of the tied choices. (½, ½) is ideal Ruddlesden–Popper, (0, 0) ideal Dion–Jacobson. Interfaces that are not alike each get a value. |
+| Stacking offset | The shortest in-plane shift from a metal of the top metal plane of one layer to a metal of the bottom metal plane of the next layer. Crysta takes the shortest over all metal pairs and lattice translations. It gives the shift in units of the two shortest in-plane M···M vectors, each from 0 to ½. Shifts and M···M vectors within 0.05 Å of each other are ties, and Crysta gives the smallest offset of the tied choices. Interfaces whose offsets agree within 0.02 share one row, with the smaller value. (½, ½) is ideal Ruddlesden–Popper, (0, 0) ideal Dion–Jacobson. Interfaces that are not alike each get a value. |
 | Hydrogen bond | N–H or O–H donor. H···A at least 0.15 Å inside the Bondi van der Waals sum, and D–H···A above 120°. Acceptors are O and N of another molecule, and halide, O, N or S anions. Anions bonded to a metal also count (a framework, or a complex such as [BiI6]³⁻). The search finds every contact of the molecules of one cell, also across the cell faces. |
 | Left-handed lattice vectors | Some geometry.in, POSCAR or extended XYZ files have **a** · (**b** × **c**) < 0. Crysta then uses the basis −**a**, −**b**, −**c**: the same lattice, lengths, angles and atoms, with fractional coordinates −*x*, −*y*, −*z*. The Crystal card tells you. |
 | Torsion | −180° to 180°, positive when the far bond is clockwise from the near bond looking down the central bond |
@@ -144,8 +144,8 @@ These choices decide the numbers, so they are stated here. Changing any of them 
 - All geometry is computed on the shown component.
 - The formula, the density and the powder pattern use every part and every copy, weighted by occupancy:
   - Copies of one site closer than 0.05 Å are one position (a special position, also with rounded
-    coordinates). Copies 0.05 to 0.15 Å apart are one position too when their occupancies add up to more
-    than 1. When `_atom_site_symmetry_multiplicity` equals the number of operators (a general position),
+    coordinates). Copies 0.05 to 0.15 Å apart are one position too when their occupancies add up to 1.5
+    or more. When `_atom_site_symmetry_multiplicity` equals the number of operators (a general position),
     only copies closer than 0.01 Å are one position.
   - Atoms of one element at one position are alternatives: closer than 0.15 Å in one disorder group,
     or, for non-H atoms with no flag, closer than 0.9 Å. A group holds only atoms that are all this close
