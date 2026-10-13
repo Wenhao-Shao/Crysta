@@ -812,6 +812,9 @@ const formula = (info) => info.formula.map((e) => e.el + e.n).join(' ');
   // FX1-02: a half-occupied atom on a 3-fold axis, written with 3 decimals in a large cell: 0.5, not 1
   r = run(cif("_symmetry_space_group_name_H-M 'P 3'", [40, 40, 10, 90, 90, 120], 'Na1 Na 0 0 0 1\nI1 I 0.333 0.667 0.2 0.5'));
   check('audit FX1-02: half atom on a special position with rounded coordinates counts 0.5', near(cnt(r, 'I'), 0.5, 1e-9), cnt(r, 'I'));
+  // FX1-12: a half atom on a 3-fold axis with 2-decimal coordinates (copies 0.1 A apart): 0.5
+  r = run(cif("_symmetry_space_group_name_H-M 'P 3'", [10, 10, 10, 90, 90, 120], 'Na1 Na 0 0 0 1\nI1 I 0.33 0.67 0.2 0.5'));
+  check('audit FX1-12: half atom on a 3-fold axis with rounded coordinates counts 0.5', near(cnt(r, 'I'), 0.5, 1e-9), cnt(r, 'I'));
   // FX1-09: an atom split across a centre with refined occupancy 0.52, copies 0.1 A apart: about one atom (capped at 1)
   r = run(cif(PM1, box, 'Na1 Na 0 0 0 1\nCl1 Cl 0.505 0.5 0.5 0.52'));
   check('audit FX1-09: split across a centre with occupancy 0.52 counts 1', near(cnt(r, 'Cl'), 1, 1e-9), cnt(r, 'Cl'));

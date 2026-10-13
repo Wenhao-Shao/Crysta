@@ -1566,12 +1566,17 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
       // copies 0.05 to 0.15 A apart whose occupancies add up to 1.5 or more: one copy (a special position)
       let keep = mine;
       if (!general && mine.length > 1 && s.occ > 0) {
+        // clusters of copies around one point (closer than 0.15 A): one copy when the cluster holds 1.5 atoms or more
         keep = [];
-        for (const g of mine) {
-          const near = keep.filter((k) => dist(k.f, g.f) < 0.15);
-          if (near.length && s.occ * (near.length + 1) >= 1.5) continue;
-          keep.push(g);
-        }
+        const done = new Set();
+        mine.forEach((g, a) => {
+          if (done.has(a)) return;
+          const cl = [a];
+          done.add(a);
+          for (let q = 0; q < cl.length; q++) mine.forEach((h, b) => { if (!done.has(b) && dist(mine[cl[q]].f, h.f) < 0.15) { done.add(b); cl.push(b); } });
+          if (cl.length > 1 && s.occ * cl.length >= 1.5) keep.push(mine[cl[0]]);
+          else for (const k of cl) keep.push(mine[k]);
+        });
       }
       for (const g of keep) copies.push({ el: s.el, label: s.label, f: g.f, occ: s.occ, dg: s.dg, site: si, op: g.oi, symdis: s.symdis, minor: s.minor });
     });
