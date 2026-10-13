@@ -1028,6 +1028,10 @@
   /* a single bond between two atoms: not shorter than the sum of their covalent radii - 0.1 A (C-N 1.37 A, C-O
      1.32 A). A C=O (1.22 A), C#N (1.14 A) or the C-N of an amidinium (1.32 A) is shorter. */
   const singleBond = (e1, e2, d) => d >= (RC[e1] || 0.75) + (RC[e2] || 0.75) - 0.1;
+  /* an N with one heavy neighbour X that can be an ammonium N (R-NH3+): X-N not shorter than 1.31 A (a C#N is
+     1.14 A), and X bonded to no other N or O (the C of an amidinium, a guanidinium, an amide or a urea is). A C-N
+     refined short (1.34 A) still counts. xOthers: the elements of the other neighbours of X. */
+  const amineN = (d, xOthers) => d >= 1.31 && !xOthers.some((e) => e === 'N' || e === 'O');
   const splitLimit = (a, b) => {
     const r = RC[a.el] || 0;
     if (r < 1.0) return 0.9;
@@ -1186,7 +1190,7 @@
     //     atoms; 1.2 times for two metals with full occupancy): they cannot both be there (two I 1.5 A apart);
     //   - partly occupied metals or halides of two elements on one site (closer than 0.3 A, occupancies adding up
     //     to 1.05 or less): the one with the higher occupancy is drawn.
-    //   Of each pair, the one with the higher occupancy is drawn; on a tie, the first listed.
+    //   Of each split pair, the one with an occupancy 0.2 or more above the other is drawn; else the first listed.
     const dropSites = new Set();
     const dropAtoms = new Set();
     const autoSplit = [];
@@ -1197,8 +1201,11 @@
     const hide = (i, j, list) => {
       const a = atoms[i], b = atoms[j];
       if (a.site === b.site) { dropAtoms.add(j); return; }
-      // the one with the higher occupancy is drawn; on a tie, the first listed
-      const keepFirst = Math.abs(a.occ - b.occ) > 1e-6 ? a.occ > b.occ : a.site < b.site;
+      // a mixed site: the element with the higher occupancy. A split site: the alternate with the clearly higher
+      // occupancy (0.2 or more above the other, as 0.9/0.1); else the first listed, so that the atoms of one
+      // orientation, listed together, stay together when free refinement gives them 0.52 and 0.48
+      const gap = list === mixed ? 1e-6 : 0.2 - 1e-9;
+      const keepFirst = Math.abs(a.occ - b.occ) >= gap ? a.occ > b.occ : a.site < b.site;
       const later = keepFirst ? b.site : a.site, first = keepFirst ? a.site : b.site;
       if (!dropSites.has(later) && !dropSites.has(first)) { dropSites.add(later); list.push(struct.sites[first].label + '/' + struct.sites[later].label); }
     };
@@ -1706,8 +1713,9 @@
     res.nUniform = ns.every((x) => x === ns[0]);
     // how the polyhedra of the layer meet: the largest number of halides that two metals share (1 corner, 2 edge,
     // 3 face). n counts perovskite layers, so it is given for corner-sharing layers only. Two shared halides closer
-    // than 2.5 A are two positions of one disordered corner (an edge of an octahedron is 3.5 A or more), and two
-    // metals closer than 0.75 x the sum of their covalent radii are two positions of one disordered metal.
+    // than 2.5 A, one of them partly occupied, are two positions of one disordered corner (an edge of a chloride,
+    // bromide or iodide octahedron is 3.4 A or more; of a fluoride, 2.5 A), and two metals closer than 0.75 x the sum
+    // of their covalent radii are two positions of one disordered metal.
     let share = 0;
     for (const sl of slabs) for (const o of sl.metals) {
       const shared = new Map();
@@ -1717,11 +1725,11 @@
         if (norm(rc) < 0.75 * ((RC[atoms[o.m].el] || 1.5) + (RC[atoms[mm.i].el] || 1.5))) continue;
         const key = mm.i + ':' + rc.map((x) => Math.round(x * 10)).join(',');
         if (!shared.has(key)) shared.set(key, []);
-        shared.get(key).push(cell.toCart(l.off));
+        shared.get(key).push({ p: cell.toCart(l.off), occ: atoms[l.j].occ });
       }
       for (const xs of shared.values()) {
         const corners = [];
-        for (const x of xs) if (!corners.some((c) => norm(sub(c, x)) < 2.5)) corners.push(x);
+        for (const x of xs) if (!corners.some((c) => norm(sub(c.p, x.p)) < 2.5 && (c.occ < 0.99 || x.occ < 0.99))) corners.push(x);
         share = Math.max(share, corners.length);
       }
     }
@@ -1773,12 +1781,11 @@
       return out;
     };
     // each layer: its slab thickness; layers whose thickness agrees within 0.01 A share one value
+    // (the smallest value of each such group, so that the order of the atoms does not matter; rows by value)
     res.slabList = [];
-    slabs.forEach((sl, si) => {
-      if (sl.top === null || sl.bot === null) return;
-      const v = sl.top - sl.bot;
-      if (!res.slabList.some((q) => Math.abs(q.value - v) < 0.01)) res.slabList.push({ si, value: v });
-    });
+    slabs.map((sl, si) => ({ si, value: sl.top !== null && sl.bot !== null ? sl.top - sl.bot : null }))
+      .filter((q) => q.value !== null).sort((p, q) => p.value - q.value || p.si - q.si)
+      .forEach((q) => { if (!res.slabList.some((r) => Math.abs(r.value - q.value) < 0.01)) res.slabList.push(q); });
     // each interface between a layer and the next: the distance between their centre planes, the gallery between
     // their faces (terminal-halide planes), and the shortest distance between a terminal halide of one face and
     // one of the other. The stacking offset of each interface is added below; interfaces that agree (0.01 A, and
@@ -1859,9 +1866,10 @@
         const nH = nb[k].filter((j) => atoms[mol.atoms[j].idx].el === 'H').length;
         const heavy = nb[k].length - nH;
         // RNH3+ and R2NH2+; with no H on the N (not located) or with H in two orientations, an N with one heavy
-        // neighbour by a single bond (C-N 1.47 A; not the C=N of an amidinium or guanidinium, not C#N)
+        // neighbour that can be an ammonium N (amineN: not the N of an amidinium, a guanidinium or a nitrile)
         const hv = nb[k].filter((j) => atoms[mol.atoms[j].idx].el !== 'H');
-        const single = hv.length === 1 && singleBond('N', atoms[mol.atoms[hv[0]].idx].el, norm(cell.toCart(sub(mol.atoms[hv[0]].f, a.f))));
+        const single = hv.length === 1 && amineN(norm(cell.toCart(sub(mol.atoms[hv[0]].f, a.f))),
+          nb[hv[0]].filter((j) => j !== k).map((j) => atoms[mol.atoms[j].idx].el));
         const ammonium = hasH ? ((heavy + nH === 4 && nH >= 2) || (heavy === 1 && single && (nH === 0 || nH > 3))) : (heavy === 1 && single);
         if (!ammonium) return;
         const hN = height(a.f);
@@ -1968,16 +1976,19 @@
     const same = (p, q) => (p === null && q === null) || (p !== null && q !== null && Math.abs(p - q) < 0.01);
     const sameOff = (p, q) => (!p && !q) || (p && q && Math.abs(p.s1 - q.s1) < 0.02 && Math.abs(p.s2 - q.s2) < 0.02);
     const smaller = (o, q) => o.s1 + o.s2 < q.s1 + q.s2 - 1e-4 || (Math.abs(o.s1 + o.s2 - q.s1 - q.s2) <= 1e-4 && o.s1 < q.s1 - 1e-4);
+    // the smallest of alike values stands for them, so the raw list is sorted first (values rounded to 0.001)
+    const r3 = (x) => (x === null ? 1e9 : Math.round(x * 1000));
+    const ifKey = (q) => [r3(q.gallery), r3(q.spacing), q.offset ? Math.round((q.offset.s1 + q.offset.s2) * 1000) : 9e3, q.offset ? Math.round(q.offset.s1 * 1000) : 9e3, r3(q.xx)];
+    const byKey = (p, q) => { const a = ifKey(p), b = ifKey(q); for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return a[i] - b[i]; return 0; };
+    for (const it of rawIfs) it.offset = offBy.get(it.si) || null;
+    rawIfs.sort(byKey);
     res.interfaces = [];
     for (const it of rawIfs) {
-      it.offset = offBy.get(it.si) || null;
       const twin = res.interfaces.find((q) => same(q.spacing, it.spacing) && same(q.gallery, it.gallery) && same(q.xx, it.xx) && sameOff(q.offset, it.offset));
       if (!twin) res.interfaces.push(it);
       else if (it.offset && twin.offset && smaller(it.offset, twin.offset)) twin.offset = it.offset;
     }
-    const gv = (q) => (q.gallery === null ? 1e9 : q.gallery);
-    const ov = (q) => (q.offset ? q.offset.s1 + q.offset.s2 : 9);
-    res.interfaces.sort((p, q) => gv(p) - gv(q) || p.spacing - q.spacing || ov(p) - ov(q) || (p.offset && q.offset ? p.offset.s1 - q.offset.s1 : 0));
+    res.interfaces.sort(byKey);
     res.offsets = res.interfaces.map((q) => q.offset);
     res.offset = res.offsets.find((o) => o) || null;
     const g0 = res.interfaces.find((q) => q.gallery !== null);
@@ -2021,7 +2032,8 @@
           kinds.set(key, (kinds.get(key) || 0) + 1);
         }
         Z = Array.from(kinds.values()).reduce((g, n) => gcd(g, n), 0);
-        if (!els.every((e) => Math.abs(counts[e] / Z - Math.round(counts[e] / Z * 100) / 100) < 0.02)) Z = 0;
+        // with whole cell contents, the formula unit must be whole too (units of one kind with different H: the gcd)
+        if (integral && !els.every((e) => Math.abs(counts[e] / Z - Math.round(counts[e] / Z)) < 0.02)) Z = 0;
       }
       if (!(Z > 0)) Z = integral ? els.reduce((g, e) => gcd(g, Math.round(counts[e])), 0) : 1;
     }
@@ -2440,13 +2452,14 @@
           hbonds.push({ d: id, h: ih, a: ia, dHA, dDA: d3(id, ia), angle: ang });
         }
       });
-      // an N or O whose H the file does not give (an ammonium N or a hydroxyl O with one heavy neighbour by a single
-      // bond, and no H; not a C=O or C#N): the contact rule of files without H, D...A below the van der Waals sum
-      // + 0.15 A, for halide acceptors
+      // an N or O whose H the file does not give (an ammonium N, amineN, or a hydroxyl O with one heavy neighbour by
+      // a single bond, and no H; not a C=O or a C#N): the contact rule of files without H, D...A below the van der
+      // Waals sum + 0.15 A, for halide acceptors
       out.forEach((D, id) => {
         if (D.kind !== 'molecule' || (D.el !== 'N' && D.el !== 'O')) return;
         if (D.bonds.some((j) => out[j].el === 'H') || D.bonds.length !== 1) return;
-        if (!singleBond(D.el, out[D.bonds[0]].el, d3(id, D.bonds[0]))) return;
+        const x = D.bonds[0];
+        if (D.el === 'O' ? !singleBond('O', out[x].el, d3(id, x)) : !amineN(d3(id, x), out[x].bonds.filter((j) => j !== id).map((j) => out[j].el))) return;
         for (const ia of accNear(D.xyz, 4.0)) {
           const A = out[ia];
           if (!HALIDE.has(A.el) || (A.group === D.group && A.group >= 0)) continue;

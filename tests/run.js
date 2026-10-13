@@ -1224,10 +1224,34 @@ const formula = (info) => info.formula.map((e) => e.el + e.n).join(' ');
       return run(cif(P1, [a, a, c, 90, 90, 90], full(rows))).info.layer.penetration.length;
     };
     check('audit FX2b-06: no N penetration for a C=N, one for a C-N', pen(1.30) === 0 && pen(1.48) === 1, pen(1.30) + ' ' + pen(1.48));
+    check('audit FX2a2-01: a C-N refined short (1.35 A) still gives an ammonium N', pen(1.35) === 1);
   }
   // a split pair listed minor first: the picture shows the atom with the higher occupancy
   r = run(cif(P1, [10, 10, 10, 90, 90, 90], 'Na1 Na 0 0 0 1\nI1 I 0.5 0.5 0.5 0.1\nI2 I 0.62 0.5 0.5 0.9'));
   check('audit (order): of a split pair the picture shows the higher occupancy', r.uc.atoms.filter((a) => a.el === 'I').map((a) => a.label).join() === 'I2');
+  // FX2a2-02: two unflagged orientations of a chain with occupancies near 0.5 that cross 0.5: the first-listed chain
+  {
+    const A = [['N1A', 'N', 0.30], ['C2A', 'C', 0.45], ['C3A', 'C', 0.60], ['C4A', 'C', 0.75]], occA = [0.52, 0.47, 0.55, 0.46];
+    const rows = ['I1 I 0 0 0 1'];
+    A.forEach(([l, e, x], k) => { rows.push(l + ' ' + e + ' ' + x + ' 0.5 0.5 ' + occA[k]); rows.push(l.replace('A', 'B') + ' ' + e + ' ' + x + ' 0.57 0.5 ' + (1 - occA[k]).toFixed(2)); });
+    r = run(cif(P1, [10, 10, 10, 90, 90, 90], rows.join('\n')));
+    const shown = r.uc.atoms.filter((a) => a.el !== 'I').map((a) => a.label).sort().join(' ');
+    check('audit FX2a2-02: occupancies near 0.5: one orientation, the first listed', shown === 'C2A C3A C4A N1A', shown);
+  }
+  // FX2a2-03: units of one kind with different numbers of H (NH3 and NH4) and whole cell contents: Z from the gcd
+  r = run(cif(P1, [10, 10, 10, 90, 90, 90], full(['N1 N 0.2 0.2 0.2', 'H1 H 0.3 0.2 0.2', 'H2 H 0.2 0.3 0.2', 'H3 H 0.2 0.2 0.3', 'N2 N 0.7 0.7 0.7', 'H4 H 0.8 0.7 0.7', 'H5 H 0.7 0.8 0.7', 'H6 H 0.7 0.7 0.8', 'H7 H 0.6 0.7 0.7'])));
+  check('audit FX2a2-03: no Z, units with different H: a whole formula', r.info.Z === 1 && fm(r.info) === 'H7 N2', fm(r.info) + ' Z ' + r.info.Z);
+  // FX2b2-02: an edge-sharing NiF2 layer (CdI2 type) with a short F...F edge (2.48 A) is edge-sharing
+  r = run(cif(hm('P -3 m 1'), [2.95, 2.95, 5.0, 90, 90, 120], 'Ni1 Ni 0 0 0 1\nF1 F 0.3333 0.6667 0.2097 1'));
+  check('audit FX2b2-02: a fluoride edge of 2.48 A is an edge', r.info.layer && r.info.layer.sharing === 'edge', r.info.layer && r.info.layer.sharing);
+  // FX2b2-03: two layers whose slabs differ by 0.005 A: one slab row, the same value for both orders of the atoms
+  {
+    const c = 30, a = 6.3;
+    const lay = (t, z, up) => ['Pb' + t + ' Pb 0 0 ' + z / c, 'Ia' + t + ' I 0.5 0 ' + z / c, 'Ib' + t + ' I 0 0.5 ' + z / c, 'It' + t + ' I 0 0 ' + (z + up) / c, 'Id' + t + ' I 0 0 ' + (z - 3.2) / c];
+    const rows = lay('1', 7.5, 3.2).concat(lay('2', 21, 3.205));
+    const sl = (rs) => run(cif(P1, [a, a, c, 90, 90, 90], full(rs))).info.layer.slabList.map((q) => q.value.toFixed(3)).join();
+    check('audit FX2b2-03: alike slabs give one row that does not depend on the order of the atoms', sl(rows) === '6.400' && sl(rows.slice().reverse()) === '6.400', sl(rows) + ' / ' + sl(rows.slice().reverse()));
+  }
   // A4-02 (second pass): a header with a point, a number line and a row with a point do not stop decimal commas
   {
     const a = X.readXY('2θ (deg.);Intensity (a.u.)\n10,00;100,5\n10,02;101,25\n10,04;99,0\n');

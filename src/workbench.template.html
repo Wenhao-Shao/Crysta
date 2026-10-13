@@ -1171,7 +1171,9 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
       if (L) {
         if (L.axialTilt) addF('Axial M–X to layer normal', (L.axialTilt.max - L.axialTilt.min < 0.05 ? fmt(L.axialTilt.mean, 1) : fmt(L.axialTilt.min, 1) + '–' + fmt(L.axialTilt.max, 1)) + '°', false, { type: 'axial',
           def: 'The angle between an axial M–X bond and the layer normal. 0° means that the bond is perpendicular to the layer. The picture shows the axial bonds and, at each metal, the layer normal (the line), the layer plane (the disc) and the mark of each angle.' });
-        for (const p of L.penetration) addF('N penetration, ' + esc(p.label), (p.depth >= 0 ? '+' : '−') + fmt(Math.abs(p.depth), 3) + ' Å', false, { type: 'penetration', label: p.label,
+        const pens = d.allPen ? L.penetration : L.penetration.slice(0, MAX_SITE_ROWS);
+        if (pens.length < L.penetration.length) notes.push('The first ' + pens.length + ' of ' + L.penetration.length + ' N penetration rows are listed. <button type="button" class="linkbtn" id="penMore">Show all ' + L.penetration.length + '</button>');
+        for (const p of pens) addF('N penetration, ' + esc(p.label), (p.depth >= 0 ? '+' : '−') + fmt(Math.abs(p.depth), 3) + ' Å', false, { type: 'penetration', label: p.label,
           def: 'How deep the ammonium N is below the mean plane of the terminal (axial) halides of the nearest layer face, along the layer normal. + means that the N is inside the layer. The picture shows ' + p.label + ', that plane with its halides around the N, and the line from the N to the plane.' });
         // offsets[k] is the offset of interface k, as in the rows of spacing, gallery and X···X above
         const offs = L.offsets || [];
@@ -1210,6 +1212,7 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
     $('fwNote').innerHTML = notes.join(' ');
     if ($('brMore')) $('brMore').onclick = () => { d.allBridges = true; drawSheet(); };
     if ($('siteMore')) $('siteMore').onclick = () => { d.allSites = true; drawSheet(); };
+    if ($('penMore')) $('penMore').onclick = () => { d.allPen = true; drawSheet(); };
     const allOct = info.metalSites.length && info.metalSites.every((s) => s.octahedral);
     $('polyName').textContent = allOct ? 'Octahedra' : 'Polyhedra';
 
@@ -2957,7 +2960,9 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
       // the measurements and planes are points in space: they stay. Only a pick that is not finished is dropped.
       d.minor = e.target.checked; d.picks = []; st.planePick = null;
       rebuildCell(d);
-      // measurements and planes stay when their atoms are still in the picture; the others go, with a note
+      // measurements and planes stay when their atoms are still in the picture. A molecule whose atoms change can
+      // be drawn at another lattice copy: then the measurement moves with it (the same atoms, the same value).
+      // The others go, with a note.
       {
         const blk = C.assemble(d.uc, d.lo, d.hi, d.polyRules);
         const grid = new Map();
@@ -2970,11 +2975,41 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
           }
           return false;
         };
+        const plus = (p, t) => [p[0] + t[0], p[1] + t[1], p[2] + t[2]];
+        // the shift that puts every point on an atom: none, or a lattice translation (from the copies of the first atom)
+        const shiftOf = (pts) => {
+          if (pts.every(onAtom)) return [0, 0, 0];
+          const cell = d.uc.cell;
+          for (const a of blk.atoms) {
+            const t = [a.xyz[0] - pts[0][0], a.xyz[1] - pts[0][1], a.xyz[2] - pts[0][2]];
+            const f = cell.recip.map((r) => r[0] * t[0] + r[1] * t[1] + r[2] * t[2]);
+            if (f.some((x) => Math.abs(x - Math.round(x)) > 1e-3)) continue;
+            if (pts.every((p) => onAtom(plus(p, t)))) return t;
+          }
+          return null;
+        };
         const nP = d.mplanes.length, nM = d.measures.length;
-        d.mplanes = d.mplanes.filter((pl) => pl.pts.every(onAtom));
-        const ids = new Set(d.mplanes.map((pl) => pl.id));
-        d.measures = d.measures.filter((m) => m.pts.slice(0, m.labels.length).every(onAtom) && (!m.plane || ids.has(m.plane)));
-        if (d.mplaneSel && !ids.has(d.mplaneSel)) d.mplaneSel = d.mplanes.length ? d.mplanes[d.mplanes.length - 1].id : null;
+        const planeShift = new Map();
+        d.mplanes = d.mplanes.filter((pl) => {
+          const t = shiftOf(pl.pts);
+          if (!t) return false;
+          if (t.some((x) => x)) { pl.pts = pl.pts.map((p) => plus(p, t)); pl.plane = Object.assign({}, pl.plane, { c: plus(pl.plane.c, t) }); }
+          planeShift.set(pl.id, t);
+          return true;
+        });
+        d.measures = d.measures.filter((m) => {
+          const n = m.labels.length;
+          const t = shiftOf(m.pts.slice(0, n));
+          if (!t) return false;
+          if (m.plane) { const tp = planeShift.get(m.plane); if (!tp || tp.some((x, k) => Math.abs(x - t[k]) > 1e-6)) return false; }
+          if (t.some((x) => x)) {
+            m.pts = m.pts.map((p) => plus(p, t));
+            if (m.proj) m.proj = plus(m.proj, t);
+            if (m.arms) m.arms = m.arms.map((p) => plus(p, t));
+          }
+          return true;
+        });
+        if (d.mplaneSel && !planeShift.has(d.mplaneSel)) d.mplaneSel = d.mplanes.length ? d.mplanes[d.mplanes.length - 1].id : null;
         const gone = (nM - d.measures.length) + (nP - d.mplanes.length);
         st.notice = gone ? (gone === 1 ? '1 measurement or plane was removed: its atoms are' : gone + ' measurements and planes were removed: their atoms are') + ' not in the picture now.' : '';
       }
