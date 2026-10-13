@@ -532,6 +532,7 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
         <div class="seg" role="group" aria-label="What a click on atoms measures against the chosen plane">
           <button type="button" id="measAPlane" aria-pressed="false" disabled>Atom to plane</button>
           <button type="button" id="measBPlane" aria-pressed="false" disabled>Bond to plane</button>
+          <button type="button" id="measPAngle" aria-pressed="false" disabled title="An angle of three atoms, seen along the normal of the chosen plane: both bonds are projected onto the plane">Angle in plane</button>
         </div>
         <div class="small" id="measHint">Click two atoms in the picture.</div>
         <div class="mlist" id="measList"></div>
@@ -641,7 +642,7 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
         <div class="small" id="hbNote"></div>
       </section>
 
-      <div class="foot">Crysta v0.5.1. Drawn with 3Dmol.js. Symmetry expansion, bonding, molecule assembly and every distance and angle are computed in this page from the file. Nothing is uploaded.</div>
+      <div class="foot">Crysta v0.5.2. Drawn with 3Dmol.js. Symmetry expansion, bonding, molecule assembly and every distance and angle are computed in this page from the file. Nothing is uploaded.</div>
     </aside>
   </div>
 </div>
@@ -652,11 +653,11 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
   <div class="citebody">
     <h2 id="citeTitle">How to cite Crysta</h2>
     <p>Use this citation. Give the version: the definition of a number can change between versions, and the changelog lists each change.</p>
-    <div class="citebox" id="citeText">W. Shao, Crysta: a crystal structure workbench in the browser, version 0.5.1 (2026). https://wenhao-shao.github.io/Crysta/</div>
+    <div class="citebox" id="citeText">W. Shao, Crysta: a crystal structure workbench in the browser, version 0.5.2 (2026). https://wenhao-shao.github.io/Crysta/</div>
     <pre class="citebox" id="citeBib" hidden>@software{crysta,
   author  = {Shao, Wenhao},
   title   = {Crysta: a crystal structure workbench in the browser},
-  version = {0.5.1},
+  version = {0.5.2},
   year    = {2026},
   url     = {https://wenhao-shao.github.io/Crysta/}
 }</pre>
@@ -2605,6 +2606,19 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     if (!(L > 1e-9)) return NaN;
     return Math.asin(Math.min(1, Math.abs(dot(v, plane.n)) / L)) * 180 / Math.PI;
   }
+  /* The angle p-q-r at q after both bonds are projected onto a plane: the angle seen along the plane normal.
+     { angle, full, u, v }: angle is the projected angle and full the angle in space (degrees, 0 to 180). u and v
+     are the projected bonds q->p and q->r (vectors in the plane). angle is NaN when a bond is within 2 degrees
+     of the normal: its projection then has almost no length, and the angle has no meaning. */
+  function projectedAngle(plane, p, q, r) {
+    const n = plane.n;
+    const flat = (w) => { const k = dot(w, n); return sub(w, n.map((x) => x * k)); };
+    const a = sub(p, q), b = sub(r, q);
+    const u = flat(a), v = flat(b);
+    const full = angleDeg(a, b);
+    const short = (w, f) => !(norm(f) > Math.sin(2 * Math.PI / 180) * norm(w));
+    return { angle: short(a, u) || short(b, v) ? NaN : angleDeg(u, v), full, u, v };
+  }
   /* the angle between two planes, 0 to 90 degrees */
   const planePlaneAngle = (a, b) => Math.acos(Math.min(1, Math.abs(dot(a.n, b.n)))) * 180 / Math.PI;
 
@@ -3474,7 +3488,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     return rows.join('\n') + '\n';
   }
 
-  root.XtalCore = { readStructure, readStructures, readCif, readCifAll, readPoscar, readXyz, readShelx, readAims, zipEntries, zipStructureNames, hybridInfo, STRUCTURE_NAME, buildCell, analyse, assemble, hullFaces, planePolys, tetrazineDefs, chromoInstances, stateDir, orientReport, hallOps, symbolOps, setSgTable, isMetal, isCenter, isDonor, HALIDE, RC, MASS, parseSymop, MAX_POLY_CN, planeOfPoints, planeOfHkl, planeDistance, planeFoot, linePlaneAngle, planePlaneAngle, nearestHkl, planeDisc, arcPoints, ballMesh, highlightSet, distance, bondAngle, torsion, toMol2, toSvg, visibleParts, hullPolygons, bondTubes, polyhedraFor, polyhedraStats, suggestPolyMax,
+  root.XtalCore = { readStructure, readStructures, readCif, readCifAll, readPoscar, readXyz, readShelx, readAims, zipEntries, zipStructureNames, hybridInfo, STRUCTURE_NAME, buildCell, analyse, assemble, hullFaces, planePolys, tetrazineDefs, chromoInstances, stateDir, orientReport, hallOps, symbolOps, setSgTable, isMetal, isCenter, isDonor, HALIDE, RC, MASS, parseSymop, MAX_POLY_CN, planeOfPoints, planeOfHkl, planeDistance, planeFoot, linePlaneAngle, planePlaneAngle, projectedAngle, nearestHkl, planeDisc, arcPoints, ballMesh, highlightSet, distance, bondAngle, torsion, toMol2, toSvg, visibleParts, hullPolygons, bondTubes, polyhedraFor, polyhedraStats, suggestPolyMax,
     powderAtoms, powderPattern, powderProfile, readXY, toXY, patternsCsv, ANODES, anodeOf, XRAY_F0, uEquiv };
   if (typeof module !== 'undefined' && module.exports) module.exports = root.XtalCore;
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -4687,7 +4701,8 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
   const MAX_IMAGE_SIDE = 8000;   // pixels; larger canvases are cut or left black by many graphics cards
   const MEASURE = { dist: { n: 2, name: 'Distance', hint: 'Click two atoms in the picture.' }, angle: { n: 3, name: 'Angle', hint: 'Click three atoms; the angle is at the second.' }, tors: { n: 4, name: 'Torsion', hint: 'Click four atoms in a chain; the torsion is about the middle two.' },
     aplane: { n: 1, name: 'Atom to plane', hint: 'Click one atom. The value is its distance from the chosen plane.' },
-    bplane: { n: 2, name: 'Bond to plane', hint: 'Click two atoms. The value is the angle between their line and the chosen plane.' } };
+    bplane: { n: 2, name: 'Bond to plane', hint: 'Click two atoms. The value is the angle between their line and the chosen plane.' },
+    pangle: { n: 3, name: 'Angle in plane', hint: 'Click three atoms; the angle is at the second. The value is the angle after both bonds are projected onto the chosen plane.' } };
   const PLANE_COLORS = ['#8a63ff', '#d1a800', '#00a3a3', '#d4577b'];
   const STATE_COLORS = ['#d95f00', '#0077b6', '#7a3fb5', '#1a9a5a', '#c2185b', '#8a6d00'];
   const MODES = [['normal', 'perpendicular to the plane'], ['along', 'in plane, along the axis'], ['perp', 'in plane, perpendicular to the axis'], ['angle', 'in plane, at an angle to the axis']];
@@ -4706,11 +4721,11 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
   let hoverLabel = null;
   const D = () => st.docs[st.cur] || null;
   /* the PXRD window: simulated powder patterns of the open structures, and measured data (src/pxrd.js) */
-  const pxrd = window.CrystaPxrd ? window.CrystaPxrd.create({ docs: () => st.docs, current: () => D(), addFiles: (list) => addFiles(list), name: NAME, version: 'v0.5.1' }) : null;
+  const pxrd = window.CrystaPxrd ? window.CrystaPxrd.create({ docs: () => st.docs, current: () => D(), addFiles: (list) => addFiles(list), name: NAME, version: 'v0.5.2' }) : null;
   /* the Databases window: find a structure in an outside database and open it here (src/dbs.js) */
   let dbCopy = null;
   try { dbCopy = JSON.parse($('db-hybrid3').textContent); } catch (err) { /* no database copy in this page */ }
-  const dbs = window.CrystaDatabases ? window.CrystaDatabases.create({ data: dbCopy, name: NAME, version: 'v0.5.1' }) : null;
+  const dbs = window.CrystaDatabases ? window.CrystaDatabases.create({ data: dbCopy, name: NAME, version: 'v0.5.2' }) : null;
   const safeUrl = (u) => (/^https?:\/\//i.test(String(u || '')) ? String(u) : '#');
   /* a file that is not a structure but holds two columns of numbers is taken as measured powder data */
   const isPowderData = (text) => { try { return C.readXY(text).x.length >= 20; } catch (err) { return false; } };
@@ -5409,7 +5424,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
       ['Axial tilt (°)', L && L.axialTilt ? num(L.axialTilt.mean, 1) : ''],
       ['N penetration (Å)', L && L.penetration.length ? num(mean(L.penetration.map((p) => p.depth)), 3) : ''],
       ['Stacking offset', L && L.offset ? '(' + fmt(L.offset.s1, 2) + ', ' + fmt(L.offset.s2, 2) + ')' : ''],
-      ['Crysta version', 'v0.5.1']
+      ['Crysta version', 'v0.5.2']
     ];
   }
   /* columns of the table that hold a mean over the independent sites of a structure */
@@ -5450,23 +5465,25 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     return [rows[0].map((c) => c[0]).join('\t')].concat(rows.map((r) => r.map((c) => c[1]).join('\t'))).join('\n');
   }
 
-  /* one measurement as text: A···B 3.012 Å, A–B–C 109.5°, A–B–C–D −60.2°, A to plane P +0.123 Å, A–B to plane P 12.34° */
+  /* one measurement as text: A···B 3.012 Å, A–B–C 109.5°, A–B–C–D −60.2°, A to plane P +0.123 Å, A–B to plane P 12.34°,
+     A–B–C in plane P 151.96° (3D 150.77°) */
   const signedText = (x, dp) => (x < 0 ? '−' : '+') + fmt(Math.abs(x), dp);
   function measureValueText(m) {
     if (m.type === 'dist') return fmt(m.value, 3) + ' Å';
     if (m.type === 'aplane') return signedText(m.value, 3) + ' Å';
-    if (m.type === 'bplane') return fmt(m.value, 2) + '°';
+    if (m.type === 'bplane' || m.type === 'pangle') return fmt(m.value, 2) + '°';
     return (m.value < 0 ? '−' : '') + fmt(Math.abs(m.value), m.type === 'angle' ? 2 : 1) + '°';
   }
   function measureText(m) {
     if (m.type === 'dist') return m.labels.join('···') + ' ' + measureValueText(m);
     if (m.type === 'aplane' || m.type === 'bplane') return m.labels.join('–') + ' to plane ' + m.plane + ' ' + measureValueText(m);
+    if (m.type === 'pangle') return m.labels.join('–') + ' in plane ' + m.plane + ' ' + measureValueText(m) + ' (3D ' + fmt(m.full, 2) + '°)';
     return m.labels.join('–') + ' ' + measureValueText(m);
   }
   /* where the value of a measurement sits: on the line, at the vertex of the angle, or on the central bond of the torsion */
   const measureAnchor = (m) => {
     const mid = (p, q) => [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2, (p[2] + q[2]) / 2];
-    return m.type === 'angle' ? m.pts[1] : m.type === 'tors' ? mid(m.pts[1], m.pts[2]) : mid(m.pts[0], m.pts[1]);
+    return m.type === 'angle' || m.type === 'pangle' ? m.pts[1] : m.type === 'tors' ? mid(m.pts[1], m.pts[2]) : mid(m.pts[0], m.pts[1]);
   };
 
   /* ---------- planes for measurements ----------
@@ -5490,7 +5507,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     // a measurement against the plane goes with it
     d.measures = d.measures.filter((m) => m.plane !== id);
     if (d.mplaneSel === id) d.mplaneSel = d.mplanes.length ? d.mplanes[d.mplanes.length - 1].id : null;
-    if (!d.mplanes.length && (st.measure === 'aplane' || st.measure === 'bplane')) { setMeasure('dist'); return; }
+    if (!d.mplanes.length && (st.measure === 'aplane' || st.measure === 'bplane' || st.measure === 'pangle')) { setMeasure('dist'); return; }
     render(true);
   }
   function startPlanePick(kind) {
@@ -5548,6 +5565,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     const planes = d ? d.mplanes : [];
     $('measAPlane').disabled = !planes.length;
     $('measBPlane').disabled = !planes.length;
+    $('measPAngle').disabled = !planes.length;
     const rows = planes.map((p) => '<div class="mrow"><label title="Measure against plane ' + p.id + '"><input type="radio" name="mpSel" value="' + p.id + '"' + (p.id === d.mplaneSel ? ' checked' : '') + '>' +
       '<i class="sw" style="background:' + p.color + '"></i><b>' + p.id + '</b></label><span title="' + esc(mplaneTip(p)) + '">' + esc(mplaneText(p)) + '</span>' + cross('data-mprm="' + p.id + '"', 'plane ' + p.id) + '</div>' +
       (p.near ? '<div class="mrow"><span title="The lattice plane with the smallest indexes that is within 1° of plane ' + p.id + '. If no plane is that near, the nearest plane with indexes up to 6.">Plane ' + p.id + ' is ' +
@@ -5557,8 +5575,8 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     }
     $('mpList').innerHTML = rows.join('');
     $('mpNote').textContent = planes.length
-      ? 'The marked plane is the one that Atom to plane and Bond to plane use. A distance is + on the side of the short line that the plane shows in the picture.'
-      : 'Make a plane, then measure against it: the distance of an atom from the plane, or the angle between a bond and the plane. ' + NAME + ' gives the angle between each two planes.';
+      ? 'The marked plane is the one that Atom to plane, Bond to plane and Angle in plane use. A distance is + on the side of the short line that the plane shows in the picture.'
+      : 'Make a plane, then measure against it: the distance of an atom from the plane, the angle between a bond and the plane, or an angle of three atoms projected onto the plane. ' + NAME + ' gives the angle between each two planes.';
   }
   function removeMeasure(i) {
     const d = D();
@@ -6007,6 +6025,13 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
       for (let k = 0; k + 1 < m.pts.length; k++) dashed(m.pts[k], m.pts[k + 1]);
       // bond to plane: the line of the bond as the plane sees it, from the first atom
       if (m.proj) dashed(m.pts[0], m.proj);
+      if (m.arms) {
+        const P = mplaneOf(d, m.plane);
+        const col = P ? P.color : ink;
+        for (const q of m.arms) viewer.addCylinder({ start: V3(m.pts[1]), end: V3(q), radius: 0.045, color: col, fromCap: 1, toCap: 1 });
+        const arc = C.arcPoints(m.pts[1], m.arms[0], m.arms[1], 0.8, 16);
+        for (let k = 0; k + 1 < arc.length; k++) viewer.addCylinder({ start: V3(arc[k]), end: V3(arc[k + 1]), radius: 0.035, color: col, fromCap: 1, toCap: 1 });
+      }
       addText(measureValueText(m), {
         position: V3(measureAnchor(m)),
         font: 'IBM Plex Mono, monospace', fontSize: 13 * px, fontColor: panel, backgroundColor: ink, backgroundOpacity: 0.9, borderThickness: 0, inFront: true, alignment: 'center'
@@ -6149,6 +6174,15 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
           entry.plane = P.id;
           const f0 = C.planeFoot(P.plane, pts[0]), f1 = C.planeFoot(P.plane, pts[1]);
           entry.proj = [0, 1, 2].map((k) => pts[0][k] + f1[k] - f0[k]);
+        } else if (P && st.measure === 'pangle') {
+          // both bonds projected onto the plane; the picture draws them from the vertex, in the colour of the plane
+          const r = C.projectedAngle(P.plane, pts[0], pts[1], pts[2]);
+          entry.value = r.angle;
+          entry.full = r.full;
+          entry.plane = P.id;
+          entry.arms = [r.u, r.v].map((w) => [0, 1, 2].map((k) => pts[1][k] + w[k]));
+          const why = 'A bond of this angle is almost along the normal of plane ' + P.id + '. Its projection onto the plane has almost no length, so the angle in the plane has no value.';
+          if (!isFinite(r.angle)) st.notice = why; else if (st.notice.startsWith('A bond of this angle')) st.notice = '';
         }
         if (isFinite(entry.value)) {
           d.measures.push(entry);
@@ -6268,6 +6302,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     $('measTors').setAttribute('aria-pressed', String(kind === 'tors'));
     $('measAPlane').setAttribute('aria-pressed', String(kind === 'aplane'));
     $('measBPlane').setAttribute('aria-pressed', String(kind === 'bplane'));
+    $('measPAngle').setAttribute('aria-pressed', String(kind === 'pangle'));
     $('measHint').textContent = MEASURE[kind].hint;
     const d = D();
     if (d) { d.picks = []; render(true); }
@@ -6441,6 +6476,10 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
       const segs = [];
       for (let k = 0; k + 1 < m.pts.length; k++) segs.push([m.pts[k], m.pts[k + 1]]);
       if (m.proj) segs.push([m.pts[0], m.proj]);
+      if (m.arms) {
+        const P = mplaneOf(d, m.plane);
+        for (const q of m.arms) items.push({ t: 'line', p: m.pts[1], q, w: Math.max(0.8, 0.09 * scale), color: P ? P.color : ink, cls: 'measure' });
+      }
       for (const sg of segs) {
         if (Math.hypot(sg[0][0] - sg[1][0], sg[0][1] - sg[1][1], sg[0][2] - sg[1][2]) < 1e-3) continue;
         items.push({ t: 'line', p: sg[0], q: sg[1], w: Math.max(0.6, 0.056 * scale), color: ink, dash: [0.12 * scale, 0.18 * scale], cls: 'measure' });
@@ -6557,6 +6596,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     $('measTors').onclick = () => setMeasure('tors');
     $('measAPlane').onclick = () => setMeasure('aplane');
     $('measBPlane').onclick = () => setMeasure('bplane');
+    $('measPAngle').onclick = () => setMeasure('pangle');
     $('mpAtoms').onclick = () => startPlanePick('atoms');
     $('mpHkl').onclick = () => startPlanePick('hkl');
     $('mpList').onclick = (e) => { const b = e.target.closest('button[data-mprm]'); if (b) removeMplane(b.dataset.mprm); };
@@ -6723,7 +6763,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     $('chkMinor').onchange = (e) => {
       const d = D();
       d.minor = e.target.checked; d.measures = []; d.picks = []; d.mplanes = []; d.mplaneSel = null; st.planePick = null;
-      if (st.measure === 'aplane' || st.measure === 'bplane') setMeasure('dist');
+      if (st.measure === 'aplane' || st.measure === 'bplane' || st.measure === 'pangle') setMeasure('dist');
       rebuildCell(d);
       drawHeader(); drawSheet(); drawChromos(); drawCompare();
       render(true);
@@ -6964,7 +7004,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
     const ISSUES = 'https://github.com/Wenhao-Shao/Crysta/issues/new';
     const fbUrl = () => {
       const title = '[' + $('fbKind').value + '] ' + $('fbSummary').value.trim();
-      const tail = '\n\n---\nSent from the Crysta feedback box\nCrysta v0.5.1\nBrowser: ' + navigator.userAgent;
+      const tail = '\n\n---\nSent from the Crysta feedback box\nCrysta v0.5.2\nBrowser: ' + navigator.userAgent;
       let details = $('fbDetails').value.trim() || '(no details given)';
       const make = (d) => ISSUES + '?title=' + encodeURIComponent(title) + '&body=' + encodeURIComponent(d + tail);
       let url = make(details);
@@ -7013,7 +7053,7 @@ var root,factory;root=this,factory=()=>(()=>{var __webpack_modules__={3(e,t,i){v
       data.append('summary', summary);
       data.append('details', $('fbDetails').value.trim() || '(no details given)');
       if (email) data.append('email', email);
-      data.append('workbench', 'v0.5.1');
+      data.append('workbench', 'v0.5.2');
       data.append('browser', navigator.userAgent);
       const buttons = [$('fbDirect'), $('fbGithub')];
       buttons.forEach((b) => { b.disabled = true; });

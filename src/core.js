@@ -1887,6 +1887,19 @@
     if (!(L > 1e-9)) return NaN;
     return Math.asin(Math.min(1, Math.abs(dot(v, plane.n)) / L)) * 180 / Math.PI;
   }
+  /* The angle p-q-r at q after both bonds are projected onto a plane: the angle seen along the plane normal.
+     { angle, full, u, v }: angle is the projected angle and full the angle in space (degrees, 0 to 180). u and v
+     are the projected bonds q->p and q->r (vectors in the plane). angle is NaN when a bond is within 2 degrees
+     of the normal: its projection then has almost no length, and the angle has no meaning. */
+  function projectedAngle(plane, p, q, r) {
+    const n = plane.n;
+    const flat = (w) => { const k = dot(w, n); return sub(w, n.map((x) => x * k)); };
+    const a = sub(p, q), b = sub(r, q);
+    const u = flat(a), v = flat(b);
+    const full = angleDeg(a, b);
+    const short = (w, f) => !(norm(f) > Math.sin(2 * Math.PI / 180) * norm(w));
+    return { angle: short(a, u) || short(b, v) ? NaN : angleDeg(u, v), full, u, v };
+  }
   /* the angle between two planes, 0 to 90 degrees */
   const planePlaneAngle = (a, b) => Math.acos(Math.min(1, Math.abs(dot(a.n, b.n)))) * 180 / Math.PI;
 
@@ -2756,7 +2769,7 @@
     return rows.join('\n') + '\n';
   }
 
-  root.XtalCore = { readStructure, readStructures, readCif, readCifAll, readPoscar, readXyz, readShelx, readAims, zipEntries, zipStructureNames, hybridInfo, STRUCTURE_NAME, buildCell, analyse, assemble, hullFaces, planePolys, tetrazineDefs, chromoInstances, stateDir, orientReport, hallOps, symbolOps, setSgTable, isMetal, isCenter, isDonor, HALIDE, RC, MASS, parseSymop, MAX_POLY_CN, planeOfPoints, planeOfHkl, planeDistance, planeFoot, linePlaneAngle, planePlaneAngle, nearestHkl, planeDisc, arcPoints, ballMesh, highlightSet, distance, bondAngle, torsion, toMol2, toSvg, visibleParts, hullPolygons, bondTubes, polyhedraFor, polyhedraStats, suggestPolyMax,
+  root.XtalCore = { readStructure, readStructures, readCif, readCifAll, readPoscar, readXyz, readShelx, readAims, zipEntries, zipStructureNames, hybridInfo, STRUCTURE_NAME, buildCell, analyse, assemble, hullFaces, planePolys, tetrazineDefs, chromoInstances, stateDir, orientReport, hallOps, symbolOps, setSgTable, isMetal, isCenter, isDonor, HALIDE, RC, MASS, parseSymop, MAX_POLY_CN, planeOfPoints, planeOfHkl, planeDistance, planeFoot, linePlaneAngle, planePlaneAngle, projectedAngle, nearestHkl, planeDisc, arcPoints, ballMesh, highlightSet, distance, bondAngle, torsion, toMol2, toSvg, visibleParts, hullPolygons, bondTubes, polyhedraFor, polyhedraStats, suggestPolyMax,
     powderAtoms, powderPattern, powderProfile, readXY, toXY, patternsCsv, ANODES, anodeOf, XRAY_F0, uEquiv };
   if (typeof module !== 'undefined' && module.exports) module.exports = root.XtalCore;
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -610,6 +610,20 @@ const formula = (info) => info.formula.map((e) => e.el + e.n).join(' ');
   check('(hkl) plane through an atom: normal to a and b for (001)', near(dotp(p001.n, aVec), 0, 1e-9) && near(dotp(p001.n, bVec), 0, 1e-9) && near(X.planeDistance(p001, [1, 2, 3]), 0, 1e-12) && p001.rms === 0);
   check('(hkl) plane: the c axis of a monoclinic cell is 20 degrees from the (001) normal', near(X.linePlaneAngle(p001, [0, 0, 0], cVec), 70, 1e-6) && near(Math.abs(X.planeDistance(p001, [1 + cVec[0], 2 + cVec[1], 3 + cVec[2]])), 7 * Math.sin(110 * Math.PI / 180), 1e-6));
   check('(0 0 0) sets no plane', X.planeOfHkl(mono.cell, [0, 0, 0], [0, 0, 0]) === null);
+  // the angle in a plane: both bonds projected onto the plane, then the angle between them
+  const pa = X.projectedAngle(flat, [1, 0, 0.7], [0, 0, 0.2], [0, 2, -1.3]);
+  check('angle in plane: the bonds lose their part along the normal', near(pa.angle, 90, 1e-9) && near(pa.full, X.bondAngle([1, 0, 0.7], [0, 0, 0.2], [0, 2, -1.3]), 1e-12) && pa.full > 90 &&
+    near(pa.u[2], 0, 1e-12) && near(pa.v[2], 0, 1e-12));
+  check('angle in plane: an angle that lies in the plane does not change', near(X.projectedAngle(flat, [1, 0, 0], [0, 0, 0], [Math.cos(2), Math.sin(2), 0]).angle, 2 * 180 / Math.PI, 1e-9));
+  check('angle in plane: a bond along the normal gives no value', isNaN(X.projectedAngle(flat, [0, 0, 3], [0, 0, 0], [1, 0, 0]).angle) &&
+    isNaN(X.projectedAngle(flat, [0.03, 0, 3], [0, 0, 0], [1, 0, 0]).angle) && !isNaN(X.projectedAngle(flat, [0.2, 0, 3], [0, 0, 0], [1, 0, 0]).angle));
+  // monoclinic cell: projected onto (001) (along c*) is not the same as seen down the c axis
+  const ma = [0, 1, 2].map((k) => 1.3 * mono.cell.toCart([1, 0, 0])[k] / 5), mb = mono.cell.toCart([0, 0.4, 0]);
+  const pA = ma.map((x, k) => x + 3 * p001.n[k]), pC = mb.map((x, k) => x - 2 * p001.n[k]);   // a and b lie in (001); the rest is along its normal
+  const on001 = X.projectedAngle(p001, pA, [0, 0, 0], pC).angle;
+  const cAxis = mono.cell.toCart([0, 0, 1]).map((x) => x / 7);
+  const downC = X.projectedAngle({ n: cAxis, c: [0, 0, 0] }, pA, [0, 0, 0], pC).angle;
+  check('angle in plane: (001) of a monoclinic cell is along c*, not along c', near(on001, 90, 1e-9) && Math.abs(downC - on001) > 1);
   // the lattice plane nearest to a plane
   const back = (hkl) => X.nearestHkl(mono.cell, X.planeOfHkl(mono.cell, hkl, [0, 0, 0]).n);
   check('nearest (hkl): a lattice plane gives its own indexes', [[1, 0, 0], [0, 0, 1], [1, -2, 3], [5, -6, 1], [-1, 1, 0]].every((h) => { const r = back(h); return r.hkl.join() === h.join() && r.angle < 1e-4; }));
@@ -721,6 +735,20 @@ const formula = (info) => info.formula.map((e) => e.el + e.n).join(' ');
   const nLab = info.layer.penetration[0].label;
   check('glow: a label row gives the atoms with that label, and an unknown row gives nothing', labels(set({ type: 'label', label: nLab })) === nLab && set({ type: 'label', label: 'Zz9' }).atoms.length === 0 && set({ type: 'other' }).atoms.length === 0);
   // a hydrogen bond row: D, H and A, the D-H bond, the H...A line and the mark of the angle at H
+  // the projected M-X-M angle onto the layer plane is the θin of the layer analysis
+  const layerPlane = { n: info.layer.normal, c: [0, 0, 0] };
+  const inPlane = info.layer.bridges.filter((x) => x.equatorial).every((x) => {
+    for (const a of A) {
+      if (a.label !== x.x) continue;
+      const ms = a.bonds.filter((j) => uc.center[A[j].src]);
+      for (let p = 0; p < ms.length; p++) for (let q = p + 1; q < ms.length; q++) {
+        if (Math.abs(X.bondAngle(A[ms[p]].xyz, a.xyz, A[ms[q]].xyz) - x.theta) > 0.02) continue;
+        return near(X.projectedAngle(layerPlane, A[ms[p]].xyz, a.xyz, A[ms[q]].xyz).angle, x.thetaIn, 1e-6);
+      }
+    }
+    return true;
+  });
+  check('angle in plane: an M-X-M angle projected onto the layer plane is θin of the framework card', inPlane);
   const hb0 = blk.hbonds[0];
   const hbItem = { type: 'hbond', D: A[hb0.d].label, H: A[hb0.h].label, A: A[hb0.a].label, dDA: hb0.dDA };
   const hbSet = set(hbItem);
