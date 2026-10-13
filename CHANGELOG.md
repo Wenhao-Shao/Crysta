@@ -2,6 +2,16 @@
 
 Any change to how a number is defined gets a new version and a line here.
 
+## v0.5.2
+
+- **Angle in plane.** A new mode of the Measure card. Choose a plane, for example the lattice plane (001), (010) or (100), or a plane through atoms. Then click three atoms, with the vertex second, as for an angle. Crysta projects both bonds onto the plane and gives the angle between the projections: the angle that you see when you look along the plane normal. The list also gives the angle in space.
+  - The picture draws the two projected bonds and the mark of the angle at the vertex, in the colour of the plane. The SVG drawing has the projected bonds.
+  - The normal of a lattice plane (*hkl*) is the reciprocal vector *h* **a**\* + *k* **b**\* + *l* **c**\*. In a monoclinic or triclinic cell, the projection onto (001) is along **c**\*, not along the **c** axis.
+  - If a bond is within 2° of the plane normal, its projection has almost no length. Crysta then gives no value, and says why.
+  - The θin column of the M–X–M table is the same measurement with the layer plane. A test checks that the two agree.
+
+New definition (see the README): angle in plane. No other definition changed: every other number is identical to v0.5.1.
+
 ## v0.5.1
 
 - **The picture keeps its height.** In v0.5.0 the strip under the picture became higher when it showed the definition of a row, and the picture became smaller. The strip now keeps its one row and its own text.
