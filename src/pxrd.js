@@ -683,7 +683,7 @@
         shown.map((r, i) => '<tr data-row="' + i + '"' + (px.mark && px.mark.r === r ? ' class="on"' : '') + '><td>' + r.h + '</td><td>' + r.k + '</td><td>' + r.l + '</td><td>' + r.d.toFixed(4) + '</td><td>' + r.fre.toFixed(3) + '</td><td>' + r.fim.toFixed(3) + '</td><td>' + r.f.toFixed(3) + '</td><td>' + r.tth.toFixed(3) + '</td><td>' + r.rel.toFixed(2) + '</td><td>' + r.m + '</td></tr>').join('') + '</tbody>';
       const bits = [t.rows.length === t.total ? t.total + ' reflections.' : 'The table lists ' + t.rows.length + ' of ' + t.total + ' reflections: those with I of ' + px.minRel + ' or more. Set 0 to list all.'];
       if (t.rows.length > MAX_ROWS) bits.push('The table shows the first ' + MAX_ROWS + '. The copied and the saved table hold all of them.');
-      bits.push('I is on a scale where the strongest reflection in the range is 100. M is the multiplicity. |F| is for one reflection of the set. Press a row to mark that reflection in the plot.');
+      bits.push('I is on a scale where the strongest reflection in the range is 100. M is the multiplicity. |F| is the root of the mean |F|² of the M reflections of the set; F(real) and F(imag) are for the reflection that the row names. Press a row to mark that reflection in the plot.');
       q('#pxTblNote').textContent = bits.join(' ');
     }
     function selectReflection(r, scroll) {

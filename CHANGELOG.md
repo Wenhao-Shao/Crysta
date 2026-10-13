@@ -2,6 +2,37 @@
 
 Any change to how a number is defined gets a new version and a line here.
 
+## v0.6.0
+
+Fixes for the 26 S2 and the 3 S3 findings of the independent audit of v0.5.2 (`design/2026-10-12-audit-design.md`). S2 findings are numbers that are right only for some structures, or rules that the README did not state. S3 findings are errors with no message.
+
+- **Layer spacing, organic gallery and slab for each interface.** (A3-05, A5-02) Before, the spacing was d(hkl) divided by the number of layers. The gallery was that mean minus the slab of the first layer. When the layers of a cell are not alike, the card now gives the spacing and the gallery of each interface. It gives the slab of each layer. A new row gives the shortest X···X across the gallery of each interface.
+- **Corrugated layers.** (DA-b04) When the faces of two layers reach into each other (gallery below 0.5 Å), the gallery and the N penetration are "not defined". Before, the card gave a negative gallery.
+- **Layer thickness n.** (A3-07) n is now given for corner-sharing layers only. For layers with shared edges or faces, n is "not defined" and the header gives the type of sharing.
+- **A stretched bridge.** (DA-b01) Two layers that one M–X–M bridge joins (bond up to 0.25 Å beyond the cut-off, angle above 150°) are one layer. IPA3Sn2I7 now gives n = 2 and the same spacing at 120 K, 293 K and 400 K.
+- **Ammonium N without H.** (DA-b02) In a file that has H atoms but none on an N, the N penetration and the N/O···halide contacts now include that N.
+- **Polyhalide anions.** (DA-b05) Two halides with occupancy 1 and no bond to a metal can now bond (I3⁻). Their halides are hydrogen-bond acceptors. H–halide pairs never bond, as before.
+- **SHELX disorder.** (A1-03, A1-06, DA-a01) Each free variable is one region, and Crysta shows the major PART of each region. Negative PARTs are never the minor part. Difference peaks (Q1, Q2, ...) are not atoms. Crysta reads Z from the ZERR line.
+- **Negative disorder groups.** (DA-a01, DA-a06) A negative group with no assembly is never hidden by the major-group rule. In a named assembly, it is an alternative of the other groups, as the file says. Crysta now draws one orientation of each negative group of a molecule. Before, both orientations overlapped, or the group was hidden. In 10 HybriD3 blocks, the picture had overlapping atoms of two orientations. Now it has none.
+- **CIF disorder.** (A1-04) Heavy atoms of one element closer than 1.5 × their covalent radius are split sites (I 2.09 Å). For two metals with full occupancy, the limit is 1.2 × the radius, so a short metal–metal bond stays (Mo–Mo 2.09 Å). Partly occupied atoms of two elements closer than 0.3 Å are a mixed site. When the polyhedron of a metal mixes two orientations, the card tells you and gives no octahedron values.
+- **Element from a label.** (A1-05) PB1 is Pb, CL1 is Cl, SN1 is Sn. Before, it was the one-letter element.
+- **Deuterium.** (A1-07, A2-08) D has its own mass in the formula and the density.
+- **Z.** (A2-03, A2-09) A Z of 3.9999 is 4. With no Z in a file, a molecular crystal gets Z from its molecules (four C6H6: Z = 4), not from the gcd of the element counts.
+- **Space-group symbols.** (A2-04, A2-05, A6-03, A6-04, A6-05) Crysta now reads the e-glide symbols (Cmce, Aem2, Aea2, Cmme, Ccce), the ICSD suffixes and the old cubic form. An R group given by its number or symbol gets its axes from the cell. A group with two origin choices and no choice gets the origin with fewer impossible contacts, and the Crystal card tells you which.
+- **Broken loops.** (A1-10, A6-02) A loop with a missing value or a short last row now stops the load with a message.
+- **|F| note.** (A4-04) The note under the reflection table now says that |F| is the root of the mean |F|² of the set.
+- **Default packing block.** (A5-01) The block now holds whole layers along the directions that are not periodic. Along the stacking axis, it holds a copy of each interface between two layers. The glow of every framework row now shows its atoms.
+- **Bridges.** (A3-06) The bridge table has a "Show all" button when it holds more than 16 bridges.
+- **PNG and SVG.** (A5-04, A5-05) The 4× PNG is now the screen view: Crysta makes the picture smaller until it fits the drawing buffer. The SVG now holds the glow, the highlight of measured atoms, the arc of an angle in plane and the normal of a plane. Labels no longer cover the values.
+- **Decimal commas.** (A4-02) Crysta reads decimal commas in measured data when a semicolon, a tab or a space separates the columns. A file with commas for both stops with a message.
+- **Large cells.** (A6-01) The neighbour searches now use bins. A cell of 48,128 atoms opens in about 3 s (before: about 4 min). A note tells you when a large file is read.
+- **Minor parts.** (A6-10) The "Minor disorder parts" box keeps the measurements and the planes.
+- **README.** (A3-10) A new table gives the thresholds of the layer descriptors. The Disorder section gives every rule.
+
+The density changed in 5 of the 528 HybriD3 CIF blocks. Four are nearer to the file's own value. None is farther.
+
+Changed definitions (see the README): layer spacing, organic gallery, slab, layer thickness n, N penetration and covalent bond. Also Z, the element from a label, deuterium, the space-group symbol, the disorder rules and measured data. New: shortest X···X across the gallery.
+
 ## v0.5.3
 
 Fixes for the six S1 findings of the independent audit of v0.5.2 (`design/2026-10-12-audit-design.md`). These are numbers that were wrong for their stated definition.

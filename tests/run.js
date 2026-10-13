@@ -931,6 +931,213 @@ const formula = (info) => info.formula.map((e) => e.el + e.n).join(' ');
   }
 }
 
+// Audit of v0.5.2, S2 and S3 findings (design/2026-10-12-audit-design.md). Made-up cells with known answers.
+{
+  const head = (sg, cell) => 'data_t\n' + ['a', 'b', 'c'].map((k, i) => '_cell_length_' + k + ' ' + cell[i]).join('\n') + '\n' +
+    ['alpha', 'beta', 'gamma'].map((k, i) => '_cell_angle_' + k + ' ' + cell[3 + i]).join('\n') + '\n' + sg + '\n';
+  const cif = (sg, cell, rows, extra) => head(sg, cell) + (extra || '') +
+    'loop_\n_atom_site_label\n_atom_site_type_symbol\n_atom_site_fract_x\n_atom_site_fract_y\n_atom_site_fract_z\n_atom_site_occupancy\n' + rows + '\n';
+  const cifDg = (sg, cell, rows) => head(sg, cell) +
+    'loop_\n_atom_site_label\n_atom_site_type_symbol\n_atom_site_fract_x\n_atom_site_fract_y\n_atom_site_fract_z\n_atom_site_occupancy\n_atom_site_disorder_assembly\n_atom_site_disorder_group\n' + rows + '\n';
+  const hm = (s) => "_symmetry_space_group_name_H-M '" + s + "'";
+  const P1 = hm('P 1');
+  const run = (text, name) => { const s = X.readStructures(text, name || 't.cif').structures[0]; const uc = X.buildCell(s, {}); return { s, uc, info: X.analyse(uc) }; };
+  const fm = (info) => info.formula.map((e) => e.el + e.n).join(' ');
+  const throwsWith = (f, re) => { try { f(); return false; } catch (e) { return re.test(e.message); } };
+
+  // SHELX (A1-03, A1-06, DA-a01): each free variable is one region with its own major PART; Q peaks are not atoms;
+  // ZERR gives Z. Region FV 2: PART 1 at 0.7. Region FV 3: PART 2 at 0.7.
+  {
+    const res = 'TITL t\nCELL 0.71073 10 10 10 90 90 90\nZERR 4.00 0.001 0.001 0.001 0 0 0\nLATT -1\nSFAC C N Cl\nFVAR 1.0 0.7 0.3\n' +
+      'Cl1 3 0.0 0.0 0.0 11.0 0.03\nPART 1\nC1 1 0.30 0.30 0.30 21.0 0.03\nPART 2\nC2 1 0.33 0.30 0.30 -21.0 0.03\n' +
+      'PART 1\nN1 2 0.70 0.70 0.70 31.0 0.03\nPART 2\nN2 2 0.73 0.70 0.70 -31.0 0.03\nPART 0\nQ1 1 0.5 0.5 0.5 11.0 0.05 1.2\nHKLF 4\nEND\n';
+    const r = run(res, 't.res');
+    const minor = r.s.sites.filter((x) => x.minor).map((x) => x.label).sort().join(' ');
+    check('audit A1-03: SHELX, each free variable is a region with its own major PART', minor === 'C2 N1', minor);
+    check('audit A1-06: SHELX difference peaks are not atoms', !r.s.sites.some((x) => /^Q/.test(x.label)) && r.s.sites.length === 5);
+    check('audit A2-03: SHELX ZERR gives Z', r.info.Z === 4 && r.info.zFrom === 'file', r.info.Z);
+  }
+  // DA-a01: a negative group with no assembly is never the hidden minor group; in a named assembly it is an
+  // alternative of the other groups of that assembly
+  {
+    let rows = 'Na1 Na 0 0 0 1 . .\nC1 C 0.3 0.3 0.3 0.6 A 1\nC2 C 0.35 0.3 0.3 0.4 A 2\nC3 C 0.6 0.6 0.6 0.4 . -3';
+    let r = run(cifDg(P1, [10, 10, 10, 90, 90, 90], rows));
+    check('audit DA-a01: a negative group with no assembly is not hidden by the major-group rule', r.s.sites.filter((x) => x.minor).map((x) => x.label).join() === 'C2');
+    rows = 'Na1 Na 0 0 0 1 . .\nI1 I 0.3 0.3 0.3 0.75 A 1\nS1 S 0.33 0.3 0.3 0.25 A -2';
+    r = run(cifDg(P1, [10, 10, 10, 90, 90, 90], rows));
+    check('audit DA-a01: in a named assembly a negative group is an alternative of the positive groups', r.s.sites.filter((x) => x.minor).map((x) => x.label).join() === 'S1');
+    // one orientation of a C-N unit disordered over the inversion centre at (1/2, 1/2, 1/2): C1 and N1 0.5 each,
+    // with C1 0.2 A from the centre. Two copies of each atom; the picture keeps one C-N, the formula counts C1 N1.
+    const pm1 = hm('P -1');
+    rows = 'Na1 Na 0 0 0 1 . .\nC1 C 0.52 0.5 0.5 0.5 . -1\nN1 N 0.385 0.5 0.5 0.5 . -1';
+    r = run(cifDg(pm1, [10, 10, 10, 90, 90, 90], rows));
+    const shown = r.uc.atoms.filter((a) => a.el !== 'Na').map((a) => a.el).sort().join('');
+    check('audit DA-a01: a negative group keeps one orientation in the picture', shown === 'CN' && r.uc.hasMinor && near(r.uc.counts.C, 1, 1e-9) && near(r.uc.counts.N, 1, 1e-9), shown);
+    // the file lists both N of an N-C-N unit; the copy of N1 by the inversion is N2: the kept orientation keeps both N
+    rows = 'Na1 Na 0 0 0 1 . .\nN1 N 0.385 0.5 0.5 0.5 . -1\nC1 C 0.52 0.5 0.5 0.5 . -1\nN2 N 0.615 0.5 0.5 0.5 . -1';
+    r = run(cifDg(pm1, [10, 10, 10, 90, 90, 90], rows));
+    const shown2 = r.uc.atoms.filter((a) => a.el !== 'Na').map((a) => a.label).sort().join(' ');
+    check('audit DA-a01: an atom whose copy is another listed atom is kept with its orientation', shown2 === 'C1 N1 N2', shown2);
+  }
+  // A1-04: partly occupied sites of one heavy element 1.2 A apart, and a mixed Na/K site
+  {
+    let r = run(cif(P1, [10, 10, 10, 90, 90, 90], 'Na1 Na 0 0 0 1\nI1 I 0.5 0.5 0.5 0.5\nI2 I 0.62 0.5 0.5 0.5'));
+    check('audit A1-04: two half I 1.2 A apart are one site in the picture and one I in the formula', r.uc.atoms.filter((a) => a.el === 'I').length === 1 && Math.abs(r.uc.counts.I - 1) < 1e-9);
+    r = run(cif(P1, [10, 10, 10, 90, 90, 90], 'Na1 Na 0 0 0 0.6\nK1 K 0.01 0 0 0.4\nCl1 Cl 0.5 0.5 0.5 1'));
+    check('audit A1-04: a mixed Na/K site draws the Na and counts both', r.uc.atoms.map((a) => a.el).sort().join('') === 'ClNa' && r.uc.mixed.join() === 'Na1/K1' && fm(r.info) === 'Cl1 K0.4 Na0.6', fm(r.info));
+    // a Mo-Mo quadruple bond (2.09 A) with full occupancy is two atoms; with half occupancy, one site
+    r = run(cif(P1, [12, 12, 12, 90, 90, 90], 'Mo1 Mo 0.5 0.5 0.5 1\nMo2 Mo 0.674 0.5 0.5 1'));
+    check('audit A1-04: a Mo-Mo bond of 2.09 A keeps both Mo', r.uc.atoms.length === 2 && Math.abs(r.uc.counts.Mo - 2) < 1e-9);
+    r = run(cif(P1, [12, 12, 12, 90, 90, 90], 'Mo1 Mo 0.5 0.5 0.5 0.5\nMo2 Mo 0.674 0.5 0.5 0.5'));
+    check('audit A1-04: two half Mo 2.09 A apart are one site', r.uc.atoms.length === 1 && Math.abs(r.uc.counts.Mo - 1) < 1e-9);
+  }
+  // DA-a06: a metal whose ligands hold two orientations of a negative group gets no octahedron values
+  {
+    const t = 12, sn = Math.sin(25 * Math.PI / 180) * 3 / t, cs = Math.cos(25 * Math.PI / 180) * 3 / t;
+    const rows = ['Pb1 Pb 0.5 0.5 0.5 1 . .', 'Br1 Br 0.75 0.5 0.5 1 . .', 'Br2 Br 0.25 0.5 0.5 1 . .', 'Br3 Br 0.5 0.75 0.5 1 . .', 'Br4 Br 0.5 0.25 0.5 1 . .',
+      'Br5 Br 0.5 0.5 0.75 0.5 . -1', 'Br6 Br ' + (0.5 + sn) + ' 0.5 ' + (0.5 + cs) + ' 0.5 . -1'];
+    const m = run(cifDg(P1, [t, t, t, 90, 90, 90], rows.join('\n'))).info.metalSites[0];
+    check('audit DA-a06: two orientations in one polyhedron: overlap, no octahedron values', m.cn === 6 && m.overlap === true && m.sigma2 === undefined && m.deltaD === undefined);
+  }
+  // A1-05: elements from upper-case labels when the file gives no type symbol
+  {
+    const rows = 'PB1 0 0 0\nCL1 0.3 0 0\nSN1 0 0.5 0.5\nHO1 0.7 0.7 0.7\nBR2 0.5 0 0\nN1 0.5 0.5 0';
+    const s = X.readStructures(head(P1, [10, 10, 10, 90, 90, 90]) + 'loop_\n_atom_site_label\n_atom_site_fract_x\n_atom_site_fract_y\n_atom_site_fract_z\n' + rows + '\n', 't.cif').structures[0];
+    check('audit A1-05: PB1 CL1 SN1 BR2 are Pb Cl Sn Br; HO1 is H', s.sites.map((x) => x.el).join(' ') === 'Pb Cl Sn H Br N', s.sites.map((x) => x.el).join(' '));
+  }
+  // A1-07, A2-08: deuterium in the formula and the density
+  {
+    const rows = 'N1 N 0.5 0.5 0.5 1\nD1 D 0.6 0.5 0.5 1\nD2 D 0.47 0.6 0.5 1\nD3 D 0.47 0.45 0.59 1\nD4 D 0.47 0.45 0.41 1\nCl1 Cl 0 0 0 1';
+    const r = run(cif(P1, [10, 10, 10, 90, 90, 90], rows));
+    const mass = 14.007 + 4 * 2.014 + 35.45;
+    check('audit A1-07: D is D in the formula and in the density, H in the picture', fm(r.info) === 'Cl1 D4 N1' && near(r.info.density, mass / (0.602214076 * 1000), 2e-4) &&
+      r.uc.atoms.filter((a) => a.el === 'H').length === 4, fm(r.info) + ' ' + r.info.density);
+  }
+  // A2-03, A2-09: Z
+  {
+    let r = run(cif(hm('F m -3 m'), [5.64, 5.64, 5.64, 90, 90, 90], 'Na1 Na 0 0 0 1\nCl1 Cl 0.5 0.5 0.5 1', '_cell_formula_units_Z 3.9999\n'));
+    check('audit A2-03: Z 3.9999 is 4', r.info.Z === 4 && fm(r.info) === 'Cl1 Na1');
+    const ring = [];
+    for (const [cx, tag] of [[0.25, 'a'], [0.75, 'b']]) for (let k = 0; k < 6; k++) {
+      const ang = k * Math.PI / 3;
+      ring.push('C' + tag + k + ' C ' + (cx + 1.39 * Math.cos(ang) / 12) + ' ' + (0.5 + 1.39 * Math.sin(ang) / 12) + ' 0.5 1');
+      ring.push('H' + tag + k + ' H ' + (cx + 2.47 * Math.cos(ang) / 12) + ' ' + (0.5 + 2.47 * Math.sin(ang) / 12) + ' 0.5 1');
+    }
+    r = run(cif(P1, [12, 12, 12, 90, 90, 90], ring.join('\n')));
+    check('audit A2-09: no Z in the file, two benzene molecules: C6H6, Z = 2', fm(r.info) === 'C6 H6' && r.info.Z === 2 && r.info.zFrom === 'cell', fm(r.info) + ' Z ' + r.info.Z);
+  }
+  // A6-03: e-glide symbols. A2-04, A6-04: R groups by number take their axes from the cell.
+  {
+    const one = 'Na1 Na 0.1 0.2 0.3 1';
+    check('audit A6-03: Cmce and Aem2 have the operators of Cmca and Abm2', run(cif(hm('C m c e'), [6, 7, 8, 90, 90, 90], one)).s.ops.length === 16 &&
+      run(cif(hm('A e m 2'), [6, 7, 8, 90, 90, 90], one)).s.ops.length === 8 && run(cif(hm('C c c e'), [6, 7, 8, 90, 90, 90], one)).s.ops.length === 16);
+    check('audit A2-04: R-3c by number: 12 operators in a rhombohedral cell, 36 in a hexagonal cell',
+      run(cif('_symmetry_Int_Tables_number 167', [9, 9, 9, 46, 46, 46], one)).s.ops.length === 12 && run(cif('_symmetry_Int_Tables_number 167', [5, 5, 17, 90, 90, 120], one)).s.ops.length === 36);
+    const r = run(cif(hm('F m 3 m'), [5.64, 5.64, 5.64, 90, 90, 90], 'Na1 Na 0 0 0 1\nCl1 Cl 0.5 0.5 0.5 1'));
+    check('audit A2-04: the old cubic symbol Fm3m is Fm-3m', r.s.ops.length === 192 && r.uc.atoms.length === 8);
+  }
+  // A2-05, A6-05: two origin choices and no choice in the file: the origin that fits the atoms, and a note
+  {
+    const dia = (xyz, sym) => run(cif(hm(sym || 'F d -3 m'), [3.567, 3.567, 3.567, 90, 90, 90], 'C1 C ' + xyz + ' 1'));
+    const o1 = dia('0 0 0'), o2 = dia('0.125 0.125 0.125'), z = dia('0.125 0.125 0.125', 'F d -3 m Z');
+    check('audit A2-05: diamond in origin 1 and in origin 2 coordinates: 8 C each', o1.uc.atoms.length === 8 && o2.uc.atoms.length === 8 && near(o1.info.density, 3.516, 0.002) && near(o2.info.density, 3.516, 0.002));
+    check('audit A2-05: the Crystal card says which origin', /origin choice 1/.test(o1.s.meta.symNote) && /origin choice 2/.test(o2.s.meta.symNote));
+    check('audit A2-05: the ICSD suffix Z is origin 2', z.uc.atoms.length === 8);
+  }
+  // A1-10, A6-02: a loop with a missing value stops the load with a message
+  check('audit A6-02: a loop with a missing value is refused', throwsWith(() => X.readStructures(cif(P1, [10, 10, 10, 90, 90, 90], 'Na1 Na 0 0 0 1\nCl1 Cl 0.5 0.5 0.5'), 't.cif'), /not a whole number of rows/));
+  // A4-02: decimal commas in measured data
+  {
+    const a = X.readXY('10,00;100,5\n10,02;101,25\n10,04;99,0\n'), b = X.readXY('10,00\t100,5\n10,02\t101,25\n10,04\t99,0\n'), c = X.readXY('10,100\n11,130\n12,140\n');
+    check('audit A4-02: decimal commas with a semicolon or a tab between the columns', a.x.join() === '10,10.02,10.04' && b.y.join() === '100.5,101.25,99');
+    check('audit A4-02: commas between columns of integers are still columns', c.x.join() === '10,11,12' && c.y.join() === '100,130,140');
+    check('audit A4-02: commas for both are refused', throwsWith(() => X.readXY('10,00,100,5\n10,02,101,25\n10,04,99,0\n'), /decimal commas and commas between the columns/));
+  }
+  // DA-b05: a free I3- anion is one unit with two I-I bonds
+  {
+    const r = run(cif(P1, [10, 10, 10, 90, 90, 90], 'Cs1 Cs 0 0 0 1\nI1 I 0.5 0.5 0.5 1\nI2 I 0.79 0.5 0.5 1\nI3 I 0.21 0.5 0.5 1'));
+    const m = r.uc.molecules.find((x) => x.atoms.length === 3);
+    check('audit DA-b05: I3- is one unit with two I-I bonds', !!m && m.bonds.length === 2);
+  }
+  // Layer descriptors on made-up lead iodide layers (a = b = 6.3 A, Pb-I 3.15 A in the plane, 3.2 A apical)
+  const a0 = 6.3;
+  const layer = (tag, z, c, sx, sy) => {
+    const f = (x) => ((x % 1) + 1) % 1;
+    return ['Pb' + tag + ' Pb ' + f(sx) + ' ' + f(sy) + ' ' + z / c + ' 1', 'Ia' + tag + ' I ' + f(sx + 0.5) + ' ' + f(sy) + ' ' + z / c + ' 1',
+      'Ib' + tag + ' I ' + f(sx) + ' ' + f(sy + 0.5) + ' ' + z / c + ' 1', 'It' + tag + ' I ' + f(sx) + ' ' + f(sy) + ' ' + (z + 3.2) / c + ' 1',
+      'Id' + tag + ' I ' + f(sx) + ' ' + f(sy) + ' ' + (z - 3.2) / c + ' 1'];
+  };
+  // A3-05, A5-02: two interfaces that are not alike (10.5 and 19.5 A); the second layer is shifted by (1/2, 1/2)
+  {
+    const c = 30;
+    const r = run(cif(P1, [a0, a0, c, 90, 90, 90], layer('1', 7.5, c, 0, 0).concat(layer('2', 18, c, 0.5, 0.5)).join('\n')));
+    const L = r.info.layer, I = L.interfaces;
+    const lat = Math.hypot(a0 / 2, a0 / 2);
+    check('audit A3-05: one row per interface: spacing 10.5 and 19.5 A, gallery 4.1 and 13.1 A', I.length === 2 && near(I[0].spacing, 10.5, 1e-6) && near(I[1].spacing, 19.5, 1e-6) &&
+      near(I[0].gallery, 4.1, 1e-6) && near(I[1].gallery, 13.1, 1e-6) && L.slabList.length === 1 && near(L.slabList[0].value, 6.4, 1e-6), JSON.stringify(I));
+    check('audit A3-05: shortest X···X across each gallery', near(I[0].xx, Math.hypot(4.1, lat), 1e-6) && near(I[1].xx, Math.hypot(13.1, lat), 1e-6));
+    const blk = X.assemble(r.uc, [0, 0, -1], [1, 1, 2], []);
+    const g = X.highlightSet(blk, r.uc, r.info, { type: 'gallery', k: 1 }), xx = X.highlightSet(blk, r.uc, r.info, { type: 'xx', k: 0 });
+    const hOf = (q) => X.distance([0, 0, q[2]], [0, 0, 0]) * Math.sign(q[2]);
+    check('audit A5-02: the glow of a gallery row is the distance of that interface', g.lines.length > 0 && g.lines.every((ln) => near(Math.abs(hOf(ln[1]) - hOf(ln[0])), 13.1, 1e-6)));
+    check('audit A3-05: the glow of an X···X row is two halides at that distance', xx.atoms.length === 2 && near(X.distance(blk.atoms[xx.atoms[0]].xyz, blk.atoms[xx.atoms[1]].xyz), I[0].xx, 0.002));
+  }
+  // DA-b04: faces that reach into each other: no gallery, no N penetration
+  {
+    const c = 12;
+    const L = run(cif(P1, [a0, a0, c, 90, 90, 90], layer('1', 3, c, 0, 0).concat(layer('2', 9, c, 0.5, 0.5)).join('\n'))).info.layer;
+    check('audit DA-b04: corrugated faces: gallery and penetration not defined', L.corrugated === true && L.gallery === undefined && L.penetration.length === 0);
+  }
+  // DA-b01: an n = 2 layer with one apical Pb-I of 3.70 A (0.10 A beyond the cut-off) is one layer, n = 2
+  {
+    const c = 30, z = (h) => h / c;
+    const rows = ['Pb1 Pb 0 0 ' + z(10), 'Ia1 I 0.5 0 ' + z(10), 'Ib1 I 0 0.5 ' + z(10), 'Id1 I 0 0 ' + z(6.8), 'Im1 I 0 0 ' + z(13.2),
+      'Pb2 Pb 0 0 ' + z(16.9), 'Ia2 I 0.5 0 ' + z(16.9), 'Ib2 I 0 0.5 ' + z(16.9), 'It2 I 0 0 ' + z(20.1)].map((x) => x + ' 1');
+    const r = run(cif(P1, [a0, a0, c, 90, 90, 90], rows.join('\n')));
+    check('audit DA-b01: a stretched bridge joins two layers: n = 2, one layer per cell', r.info.layer.n === 2 && r.info.framework.components === 1 && r.info.framework.stretched === true && near(r.info.framework.spacing, 30, 1e-6));
+  }
+  // A3-07: an edge-sharing CdI2 layer has no n
+  {
+    const r = run(cif(hm('P -3 m 1'), [4.24, 4.24, 6.84, 90, 90, 120], 'Cd1 Cd 0 0 0 1\nI1 I 0.3333 0.6667 0.25 1'));
+    check('audit A3-07: edge-sharing layer: n not defined', r.info.framework.dim === 2 && r.info.layer.sharing === 'edge' && r.info.layer.n === null);
+  }
+  // DA-b02: PEA2PbBr4 without the H atoms of N: the N penetration and the N···Br contacts stay
+  {
+    const txt = fs.readFileSync(path.join(__dirname, '../examples/PEA2PbBr4.cif'), 'utf8');
+    const p = run(txt, 'PEA2PbBr4.cif');
+    const cell = p.s.cell, Ns = p.s.sites.filter((x) => x.el === 'N');
+    const dd = (f, g) => X.distance(cell.toCart(f.map((x, k) => { const t = x - g[k]; return t - Math.round(t); })), [0, 0, 0]);
+    const nh = new Set(p.s.sites.filter((x) => x.el === 'H' && Ns.some((n) => dd(n.f, x.f) < 1.15)).map((x) => x.label));
+    const q = run(txt.split('\n').filter((l) => { const t = l.trim().split(/\s+/); return !(t[0] === 'H' && nh.has(t[1]) && t.length > 8); }).join('\n'), 'x.cif');
+    const hb = X.hbondList(q.uc).rows;
+    check('audit DA-b02: no H on N: four N penetration rows', nh.size === 12 && q.info.layer.penetration.length === 4 && q.info.layer.penetration.every((x) => near(x.depth, 0.50, 0.02)));
+    check('audit DA-b02: no H on N: N···Br contacts', hb.length > 0 && hb.every((h) => h.H === null && /^N/.test(h.D) && /^Br/.test(h.A)), hb.length);
+  }
+  // A6-01: the binned neighbour search gives the same pairs as a search over every pair and the 27 cells
+  {
+    const cell = X.readStructures(cif(P1, [5.1, 6.3, 7.2, 71, 83, 104], 'Na1 Na 0 0 0 1'), 't.cif').structures[0].cell;
+    let seed = 3;
+    const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+    const F = [];
+    for (let i = 0; i < 60; i++) F.push([rnd(), rnd(), rnd()]);
+    const nb = X.neighbours(cell, F, 4.0);
+    let bad = 0, tot = 0;
+    for (let i = 0; i < F.length; i++) {
+      const ref = [];
+      for (let j = 0; j < F.length; j++) for (let sx = -1; sx <= 1; sx++) for (let sy = -1; sy <= 1; sy++) for (let sz = -1; sz <= 1; sz++) {
+        if (i === j && !sx && !sy && !sz) continue;
+        if (X.distance(cell.toCart([F[j][0] + sx - F[i][0], F[j][1] + sy - F[i][1], F[j][2] + sz - F[i][2]]), [0, 0, 0]) <= 4.0) ref.push(j + ':' + [sx, sy, sz].join());
+      }
+      const mine = new Set(nb[i].map((q) => q.j + ':' + q.s.join()));
+      tot += ref.length;
+      if (ref.length !== mine.size || !ref.every((k) => mine.has(k))) bad++;
+    }
+    check('audit A6-01: binned neighbour search = search over all pairs (triclinic cell)', bad === 0 && tot > 1000, bad + ' / ' + tot);
+  }
+  // A4-04: the note under the reflection table
+  check('audit A4-04: the |F| note says root of the mean |F|^2', /root of the mean \|F\|² of the M reflections/.test(fs.readFileSync(path.join(__dirname, '../src/pxrd.js'), 'utf8')));
+}
+
 // How to cite: CITATION.cff and the built page have the version of package.json
 {
   const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, '../package.json'), 'utf8'));
