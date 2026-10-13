@@ -108,8 +108,9 @@ These choices decide the numbers, so they are stated here. Changing any of them 
 | θ out | M–X–M angle after projecting onto the plane holding M···M and the layer normal |
 | Axial tilt | acute angle between an axial M–X bond and the layer normal |
 | N penetration | depth of an ammonium N below the plane of terminal halides; positive is inside the layer |
-| Stacking offset | in-plane shift between adjacent layers in units of the two in-plane M···M vectors; (½, ½) is ideal Ruddlesden–Popper, (0, 0) ideal Dion–Jacobson |
-| Hydrogen bond | N–H or O–H donor; H···A at least 0.15 Å inside the Bondi van der Waals sum and D–H···A above 120°; acceptors are O and N of another molecule and halide, O, N or S anions |
+| Stacking offset | The shortest in-plane shift from a metal of the top metal plane of one layer to a metal of the bottom metal plane of the next layer. Crysta takes the shortest over all metal pairs and lattice translations. It gives the shift in units of the two shortest in-plane M···M vectors, each from 0 to ½. Shifts and M···M vectors within 0.05 Å of each other are ties, and Crysta gives the smallest offset of the tied choices. Interfaces whose offsets agree within 0.02 share one row, with the smaller value. (½, ½) is ideal Ruddlesden–Popper, (0, 0) ideal Dion–Jacobson. Interfaces that are not alike each get a value. |
+| Hydrogen bond | N–H or O–H donor. H···A at least 0.15 Å inside the Bondi van der Waals sum, and D–H···A above 120°. Acceptors are O and N of another molecule, and halide, O, N or S anions. Anions bonded to a metal also count (a framework, or a complex such as [BiI6]³⁻). The search finds every contact of the molecules of one cell, also across the cell faces. |
+| Left-handed lattice vectors | Some geometry.in, POSCAR or extended XYZ files have **a** · (**b** × **c**) < 0. Crysta then uses the basis −**a**, −**b**, −**c**: the same lattice, lengths, angles and atoms, with fractional coordinates −*x*, −*y*, −*z*. The Crystal card tells you. |
 | Torsion | −180° to 180°, positive when the far bond is clockwise from the near bond looking down the central bond |
 | Plane through atoms | The least-squares plane through the clicked atoms: it goes through their centroid, and its normal is the direction of least spread. The rms is the root-mean-square distance of these atoms from the plane. |
 | Lattice plane through an atom | The plane through the clicked atom with its normal along the reciprocal vector *h* **a**\* + *k* **b**\* + *l* **c**\*. For a layered structure, the *h*, *k*, *l* boxes start at the (*hkl*) of the layers. |
@@ -118,7 +119,7 @@ These choices decide the numbers, so they are stated here. Changing any of them 
 | Plane to plane | The angle between the two normals, 0° to 90° |
 | Angle in plane | The angle A–B–C after both bonds are projected onto the plane: the angle between (A − B) − [(A − B)·**n**]**n** and (C − B) − [(C − B)·**n**]**n**, with **n** the unit normal of the plane. 0° to 180°. No value when a bond is within 2° of **n**. With the layer plane this is θ in. |
 | Nearest lattice plane | For a plane through atoms: the (*hkl*) with the smallest largest index that is within 1° of the plane. If no plane is that near, the nearest plane with indexes up to 6. Crysta gives the angle between the two planes. |
-| Powder pattern: atoms | Every site and every disorder part, each with its occupancy. Copies of one site that coincide count once. |
+| Powder pattern: atoms | The same cell contents as the formula (see Disorder): every copy of every site and every disorder part, each with its share. |
 | Scattering factor | Neutral atoms. *f*0(*s*) = Σ *a*i exp(−*b*i *s*²) + *c* with *s* = sin θ / λ. The coefficients are from International Tables C, table 6.1.1.4. Charges in the file are not used. |
 | Dispersion | *f*′ and *f*″ (Cromer–Liberman, as computed by gemmi) for the Kα lines of Cu, Mo, Co, Fe, Cr and Ag. They are zero at any other wavelength. |
 | Displacement | Isotropic: exp(−*B* *s*²) with *B* = 8π²*U*. The file gives *U*iso, *B*iso or *U*eq. Anisotropic values enter as *U*eq. An atom with no value gets *B* = 1 Å², and you can change that value. |
@@ -140,8 +141,17 @@ These choices decide the numbers, so they are stated here. Changing any of them 
 - Unflagged split sites: two non-H atoms of one element closer than 0.9 Å are treated as alternates
   and the first listed is shown.
 - Negative part numbers (disorder over a symmetry element): one orientation is kept.
-- All geometry is computed on the shown component. The formula and density use every part, weighted
-  by occupancy.
+- All geometry is computed on the shown component.
+- The formula, the density and the powder pattern use every part and every copy, weighted by occupancy:
+  - Copies of one site closer than 0.05 Å are one position (a special position, also with rounded
+    coordinates). Copies 0.05 to 0.15 Å apart are one position too when their occupancies add up to 1.5
+    or more. When `_atom_site_symmetry_multiplicity` equals the number of operators (a general position),
+    only copies closer than 0.01 Å are one position.
+  - Atoms of one element at one position are alternatives: closer than 0.15 Å in one disorder group,
+    or, for non-H atoms with no flag, closer than 0.9 Å. A group holds only atoms that are all this close
+    to each other, so two bonded atoms are never one position. When the occupancies of a group add up to
+    more than 1, Crysta scales them to 1. Thus a pair with occupancy 1 each (a geometry.in or POSCAR
+    file with both parts of a split site) counts as one atom.
 - A file that holds a single component and no flags is treated as ordered.
 
 ## Known limits

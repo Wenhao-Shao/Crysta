@@ -378,6 +378,7 @@
     const cX = col('_atom_site_fract_x'), cY = col('_atom_site_fract_y'), cZ = col('_atom_site_fract_z');
     const cO = col('_atom_site_occupancy'), cD = col('_atom_site_disorder_group'), cA = col('_atom_site_disorder_assembly');
     const cU = col('_atom_site_u_iso_or_equiv'), cB = col('_atom_site_b_iso_or_equiv');
+    const cM = col('_atom_site_symmetry_multiplicity');
     // anisotropic displacement parameters, for sites that list no isotropic or equivalent value
     const aniso = new Map();
     for (const l of chosen.loops) {
@@ -409,7 +410,8 @@
       let u = cU >= 0 ? parseFloat(r[cU]) : NaN;
       if (!isFinite(u) && cB >= 0) u = parseFloat(r[cB]) / B_PER_U;
       if (!isFinite(u) && aniso.has(label)) u = aniso.get(label);
-      sites.push({ label, el, f, occ, dg, asm, u: isFinite(u) ? u : null, minor: false, symdis: dg !== '.' && /^-/.test(dg) });
+      const mult = cM >= 0 ? parseInt(r[cM], 10) : NaN;
+      sites.push({ label, el, f, occ, dg, asm, u: isFinite(u) ? u : null, minor: false, symdis: dg !== '.' && /^-/.test(dg), mult: mult > 0 ? mult : 0 });
     }
     // within each disorder assembly, the group with the highest mean occupancy is the major part
     const groups = new Map();
@@ -461,6 +463,14 @@
     block, spaceGroup: null, sgNumber: null, crystalSystem: null, temperature: null, R1: null, Z: null, ccdc: null,
     symSource: 'p1', cellRaw: cellNum.map((x, i) => (i < 3 ? x.toFixed(4) : x.toFixed(3))), skipped: [], format
   }, extra || {});
+  /* A left-handed set of lattice vectors (a . (b x c) < 0) gives the mirror image when the cell is rebuilt from
+     its lengths and angles. -a, -b, -c is the same lattice, right-handed, with the same lengths and angles; the
+     fractional coordinates in it are -x, -y, -z. Returns true when the sites were changed. */
+  const rightHanded = (vec, sites) => {
+    if (dot(vec[0], cross(vec[1], vec[2])) >= 0) return false;
+    for (const s of sites) s.f = s.f.map((x) => -x);
+    return true;
+  };
   const plainSite = (label, el, f, occ) => ({ label, el, f, occ: occ === undefined ? 1 : occ, dg: '.', asm: '.', u: null, minor: false, symdis: false });
 
   /* VASP POSCAR / CONTCAR (version 5: with a line of element symbols) */
@@ -499,6 +509,7 @@
     if (!sites.length) throw new Error('No atoms were found in this POSCAR file.');
     const meta = plainMeta(L[0].trim() || 'POSCAR', cellNum, 'POSCAR');
     meta.skipped = skipped;
+    meta.leftHanded = rightHanded(vec, sites);
     return { cell, ops: [parseSymop('x,y,z')], sites, meta };
   }
 
@@ -545,6 +556,7 @@
     });
     const meta = plainMeta('xyz', cellNum, 'XYZ', { molecular });
     meta.skipped = skipped;
+    meta.leftHanded = rightHanded(vec, sites);
     return { cell, ops: [parseSymop('x,y,z')], sites, meta };
   }
 
@@ -636,7 +648,7 @@
       const seen = [];
       for (const op of full) {
         const g = [0, 1, 2].map((r) => mod1(op.R[r][0] * st.f[0] + op.R[r][1] * st.f[1] + op.R[r][2] * st.f[2] + op.T[r]));
-        if (!seen.some((h) => norm(cell.toCart([0, 1, 2].map((i) => { const d = h[i] - g[i]; return d - Math.round(d); }))) < 0.15)) { seen.push(g); copies++; }
+        if (!seen.some((h) => norm(cell.toCart([0, 1, 2].map((i) => { const d = h[i] - g[i]; return d - Math.round(d); }))) < SAME_POS)) { seen.push(g); copies++; }
       }
       st.occ = Math.min(1, st.occ * full.length / copies);
       delete st.siteOcc;
@@ -702,6 +714,7 @@
     });
     const meta = plainMeta('geometry.in', cellNum, 'FHI-aims', { molecular });
     meta.skipped = skipped;
+    meta.leftHanded = rightHanded(cellVec, sites);
     return { cell, ops: [parseSymop('x,y,z')], sites, meta };
   }
 
@@ -795,25 +808,100 @@
 
   /* ---------- structure -> unit cell contents, molecules, framework ---------- */
   const compatible = (a, b) => a.dg === '.' || b.dg === '.' || a.dg === b.dg;
+  const wrap1 = (x) => { let y = x - Math.floor(x); if (y > 1 - 1e-6) y = 0; return y; };
+  const minImage = (d) => [d[0] - Math.round(d[0]), d[1] - Math.round(d[1]), d[2] - Math.round(d[2])];
+
+  /* Copies of one site closer than SAME_POS (angstrom) are one position: the site is on a special position,
+     also when the file gives its coordinates with few decimals. Below SAME_EXACT they are one position whatever
+     the file says. */
+  const SAME_POS = 0.05, SAME_EXACT = 0.01;
+
+  /* Every copy of every site, made by every operator and put in the cell, and the share w of each copy in the
+     cell contents. The formula, the density and the powder pattern use these shares.
+     1. Copies of one site: one copy when closer than SAME_POS (not when the file's _atom_site_symmetry_multiplicity
+        is the number of operators: a general position; then only below SAME_EXACT). Copies 0.05 to 0.15 A apart
+        are one copy too when their occupancies add up to 1.5 or more (a special position, rounded coordinates).
+     2. Alternatives at one position: copies of one element closer than 0.15 A in one disorder group, or closer
+        than 0.9 A for non-H atoms that the file does not flag. A group is a set of copies that are all that close
+        to each other (closest pairs first), so two bonded atoms are never one position. When the occupancies of
+        a group of two or more add up to more than 1, they are scaled to 1: one position holds one atom. */
+  function siteCopies(struct) {
+    const { cell, ops } = struct;
+    const dist = (p, q) => norm(cell.toCart(minImage(sub(p, q))));
+    const copies = [];
+    struct.sites.forEach((s, si) => {
+      const general = s.mult > 0 && s.mult === ops.length;
+      const mine = [];
+      ops.forEach((op, oi) => {
+        const f = [0, 1, 2].map((r) => wrap1(op.R[r][0] * s.f[0] + op.R[r][1] * s.f[1] + op.R[r][2] * s.f[2] + op.T[r]));
+        if (mine.some((g) => dist(g.f, f) < (general ? SAME_EXACT : SAME_POS))) return;
+        mine.push({ f, oi });
+      });
+      // copies 0.05 to 0.15 A apart whose occupancies add up to 1.5 or more: one copy (a special position)
+      let keep = mine;
+      if (!general && mine.length > 1 && s.occ > 0) {
+        // clusters of copies around one point (closer than 0.15 A): one copy when the cluster holds 1.5 atoms or more
+        keep = [];
+        const done = new Set();
+        mine.forEach((g, a) => {
+          if (done.has(a)) return;
+          const cl = [a];
+          done.add(a);
+          for (let q = 0; q < cl.length; q++) mine.forEach((h, b) => { if (!done.has(b) && dist(mine[cl[q]].f, h.f) < 0.15) { done.add(b); cl.push(b); } });
+          if (cl.length > 1 && s.occ * cl.length >= 1.5) keep.push(mine[cl[0]]);
+          else for (const k of cl) keep.push(mine[k]);
+        });
+      }
+      for (const g of keep) copies.push({ el: s.el, label: s.label, f: g.f, occ: s.occ, dg: s.dg, site: si, op: g.oi, symdis: s.symdis, minor: s.minor });
+    });
+    // alternatives at one position: complete-linkage groups, closest pairs first
+    const pairs = [];
+    const byEl = new Map();
+    copies.forEach((c, i) => { if (!byEl.has(c.el)) byEl.set(c.el, []); byEl.get(c.el).push(i); });
+    for (const list of byEl.values()) {
+      for (let p = 0; p < list.length; p++) {
+        const a = copies[list[p]];
+        for (let q = p + 1; q < list.length; q++) {
+          const b = copies[list[q]];
+          const same = a.dg === b.dg;
+          const split = a.el !== 'H' && a.dg === '.' && b.dg === '.';
+          if (!same && !split) continue;
+          const d = dist(a.f, b.f);
+          if ((same && d < 0.15) || (split && d < 0.9)) pairs.push([d, list[p], list[q]]);
+        }
+      }
+    }
+    pairs.sort((x, y) => x[0] - y[0] || x[1] - y[1] || x[2] - y[2]);
+    const close = new Set(pairs.map(([, i, j]) => i + ':' + j));
+    const isClose = (i, j) => close.has(Math.min(i, j) + ':' + Math.max(i, j));
+    const group = copies.map((_, i) => [i]);
+    for (const [, i, j] of pairs) {
+      const gi = group[i], gj = group[j];
+      if (gi === gj) continue;
+      if (!gi.every((x) => gj.every((y) => isClose(x, y)))) continue;
+      for (const y of gj) { gi.push(y); group[y] = gi; }
+    }
+    const w = copies.map((c, i) => {
+      const g = group[i];
+      const t = g.reduce((s, k) => s + Math.max(0, copies[k].occ), 0);
+      return Math.max(0, c.occ) * (g.length > 1 && t > 1 + 1e-3 ? 1 / t : 1);
+    });
+    return { copies, w };
+  }
 
   function buildCell(struct, opts) {
     const showMinor = !!(opts && opts.minor);
-    const { cell, ops } = struct;
-    const wrap = (x) => { let y = x - Math.floor(x); if (y > 1 - 1e-6) y = 0; return y; };
-    const mi = (d) => [d[0] - Math.round(d[0]), d[1] - Math.round(d[1]), d[2] - Math.round(d[2])];
+    const { cell } = struct;
+    const mi = minImage;
 
-    // 1. apply every operator, wrap into the cell, drop coincident copies
+    // 1. every copy of every site in the cell; for the picture, copies of one element closer than 0.15 A in one
+    //    disorder group are drawn once (the first)
+    const sc = siteCopies(struct);
     let atoms = [];
-    struct.sites.forEach((s, si) => {
-      ops.forEach((op, oi) => {
-        const f = [0, 1, 2].map((r) => wrap(op.R[r][0] * s.f[0] + op.R[r][1] * s.f[1] + op.R[r][2] * s.f[2] + op.T[r]));
-        for (const a of atoms) {
-          if (a.el !== s.el || a.dg !== s.dg) continue;
-          if (norm(cell.toCart(mi(sub(a.f, f)))) < 0.15) return;
-        }
-        atoms.push({ el: s.el, label: s.label, f, occ: s.occ, dg: s.dg, site: si, op: oi, symdis: s.symdis, minor: s.minor });
-      });
-    });
+    for (const c of sc.copies) {
+      if (atoms.some((a) => a.el === c.el && a.dg === c.dg && norm(cell.toCart(mi(sub(a.f, c.f)))) < 0.15)) continue;
+      atoms.push(Object.assign({}, c));
+    }
 
     // 1b. split positions that the file does not flag: two non-H atoms of one element closer than 0.9 A
     const dropSites = new Set();
@@ -834,9 +922,9 @@
       }
     }
     const hasMinor = struct.sites.some((s) => s.minor) || dropSites.size > 0 || dropAtoms.size > 0;
-    // cell contents for the formula: every part, weighted by occupancy; unflagged split copies counted once
+    // cell contents for the formula: every copy of every part, by its share (siteCopies)
     const counts = {};
-    atoms.forEach((a, i) => { if (!dropSites.has(a.site) && !dropAtoms.has(i)) counts[a.el] = (counts[a.el] || 0) + a.occ; });
+    sc.copies.forEach((c, i) => { if (sc.w[i] > 0) counts[c.el] = (counts[c.el] || 0) + sc.w[i]; });
     const hiddenMinor = atoms.filter((a, i) => a.minor || dropSites.has(a.site) || dropAtoms.has(i)).length;
     if (!showMinor) atoms = atoms.filter((a, i) => !a.minor && !dropSites.has(a.site) && !dropAtoms.has(i));
     const N = atoms.length;
@@ -1390,53 +1478,100 @@
     }
     res.penetration = Array.from(pens.entries()).map(([label, v]) => ({ label, depth: mean(v) }));
 
-    // in-plane offset between adjacent layers, in units of the in-plane M...M vectors
-    res.offset = null;
-    if (slabs.length && s0.metals.length) {
-      const topH = s0.planes[s0.planes.length - 1];
-      const M0 = s0.metals.find((o) => Math.abs(o.h - topH) < 1.5);
+    // in-plane offset between adjacent layers, in units of the in-plane M...M vectors. For each layer of the
+    // cell and the layer just above it: the shortest in-plane shift from a metal of the top metal plane of the
+    // layer to a metal of the bottom metal plane of the next layer, over all such pairs and lattice
+    // translations. Shifts within 0.05 A of the shortest are ties, and so are M...M vectors within 0.05 A of each
+    // other; of all these choices the one with the smallest offset (s1 + s2, then s1) is taken. The result does not depend on the order of the atoms in the file. Each
+    // interface that is not alike gets its own entry.
+    // the pairs of in-plane M...M vectors of a metal: the shortest vector and the shortest one not parallel to
+    // it, with every choice that ties within 0.05 A
+    const netVecs = (m) => {
       const ps = [];
-      for (const l of ligs[M0.m]) for (const mm of metalsOf[l.j]) {
+      for (const l of ligs[m]) for (const mm of metalsOf[l.j]) {
         const d = sub(l.off, mm.off);
         if (norm(d) < 1e-6) continue;
         const v = cell.toCart(d);
         if (Math.abs(dot(v, nh)) / norm(v) < 0.5) ps.push(inPlane(v));
       }
+      if (!ps.length) return null;
       ps.sort((u, v) => norm(u) - norm(v));
-      const p1 = ps[0];
-      const p2 = p1 ? ps.find((v) => norm(cross(p1, v)) > 0.3 * norm(p1) * norm(v)) : null;
+      const bases = [];
+      for (const p1 of ps.filter((v) => norm(v) <= norm(ps[0]) + 0.05)) {
+        const others = ps.filter((v) => norm(cross(p1, v)) > 0.3 * norm(p1) * norm(v));
+        if (!others.length) continue;
+        for (const p2 of others.filter((v) => norm(v) <= norm(others[0]) + 0.05)) bases.push([p1, p2]);
+      }
+      return bases.length ? bases : null;
+    };
+    const fold = (d, p1, p2) => {
+      const e1 = p1.map((x) => x / norm(p1));
+      const e2 = cross(nh, e1);
+      const a11 = dot(p1, e1), a12 = dot(p2, e1), a21 = dot(p1, e2), a22 = dot(p2, e2);
+      const det = a11 * a22 - a12 * a21;
+      const b1 = dot(d, e1), b2 = dot(d, e2);
+      let s1 = (b1 * a22 - a12 * b2) / det, s2 = (a11 * b2 - a21 * b1) / det;
+      s1 = Math.abs(s1 - Math.round(s1));
+      s2 = Math.abs(s2 - Math.round(s2));
+      return [Math.max(s1, s2), Math.min(s1, s2)];
+    };
+    res.offsets = [];
+    slabs.forEach((sa) => {
+      if (!sa.metals.length) return;
+      const topH = sa.planes[sa.planes.length - 1];
       let target = null;
-      for (let c = 0; c < slabs.length && !target; c++) for (let k = -2; k <= 2 && !target; k++) {
-        if (Math.abs(slabs[c].centre + k * fw.dhkl - s0.centre - fw.spacing) < 0.25 * fw.spacing) target = { c, k };
+      for (let c = 0; c < slabs.length; c++) for (let k = -2; k <= 2; k++) {
+        const dz = slabs[c].centre + k * fw.dhkl - sa.centre;
+        if (dz > 1.0 && (!target || dz < target.dz - 1e-6)) target = { c, k, dz };
       }
-      if (p1 && p2 && target) {
-        let t = null;
-        for (let i = -2; i <= 2; i++) for (let j = -2; j <= 2; j++) for (let k = -2; k <= 2; k++) {
-          if (i * fw.hkl[0] + j * fw.hkl[1] + k * fw.hkl[2] !== target.k) continue;
-          if (!t || norm(cell.toCart([i, j, k])) < norm(cell.toCart(t))) t = [i, j, k];
-        }
-        const sb = slabs[target.c];
-        const M1 = sb.metals.find((o) => Math.abs(o.h - sb.planes[0]) < 1.5);
-        if (t && M1) {
-          const d = inPlane(sub(cell.toCart(add(M1.f, t)), cell.toCart(M0.f)));
-          const e1 = p1.map((x) => x / norm(p1));
-          const e2 = cross(nh, e1);
-          const a11 = dot(p1, e1), a12 = dot(p2, e1), a21 = dot(p1, e2), a22 = dot(p2, e2);
-          const det = a11 * a22 - a12 * a21;
-          const b1 = dot(d, e1), b2 = dot(d, e2);
-          let s1 = (b1 * a22 - a12 * b2) / det, s2 = (a11 * b2 - a21 * b1) / det;
-          s1 = Math.abs(s1 - Math.round(s1));
-          s2 = Math.abs(s2 - Math.round(s2));
-          const tol = 0.15;
-          const z = (x) => x < tol, hf = (x) => x > 0.5 - tol;
-          let kind = 'intermediate';
-          if (z(s1) && z(s2)) kind = 'near (0, 0), eclipsed';
-          else if (hf(s1) && hf(s2)) kind = 'near (½, ½), staggered';
-          else if ((hf(s1) && z(s2)) || (z(s1) && hf(s2))) kind = 'near (½, 0)';
-          res.offset = { s1: Math.max(s1, s2), s2: Math.min(s1, s2), kind, p1: norm(p1), p2: norm(p2), v1: p1, v2: p2, m0: M0.m, m1: M1.m };
+      if (!target) return;
+      const sb = slabs[target.c];
+      const tops = sa.metals.filter((o) => Math.abs(o.h - topH) < 1.5);
+      const bots = sb.metals.filter((o) => Math.abs(o.h - sb.planes[0]) < 1.5);
+      // the net of the layer, for a metal with no in-plane neighbours of its own
+      let layerNet = null;
+      for (const A of tops.slice().sort((x, y) => (atoms[x.m].label < atoms[y.m].label ? -1 : 1))) { layerNet = netVecs(A.m); if (layerNet) break; }
+      if (!layerNet) return;
+      const trans = [];
+      for (let i = -3; i <= 3; i++) for (let j = -3; j <= 3; j++) for (let k = -3; k <= 3; k++) {
+        if (i * fw.hkl[0] + j * fw.hkl[1] + k * fw.hkl[2] === target.k) trans.push([i, j, k]);
+      }
+      // two passes over all pairs, so that a large cell keeps no long list: the shortest shift, then the ties
+      let minLen = Infinity;
+      const each = (fn) => { for (const A of tops) for (const B of bots) for (const tr of trans) { const fB = add(B.f, tr); fn(A, B, fB, inPlane(sub(cell.toCart(fB), cell.toCart(A.f)))); } };
+      each((A, B, fB, v) => { const l = norm(v); if (l < minLen) minLen = l; });
+      if (!isFinite(minLen)) return;
+      const cands = [];
+      each((A, B, fB, v) => { const l = norm(v); if (l <= minLen + 0.05) cands.push({ d: v, len: l, A, B, fB }); });
+      let best = null;
+      for (const c of cands) {
+        for (const net of netVecs(c.A.m) || layerNet) {
+          const [s1, s2] = fold(c.d, net[0], net[1]);
+          const key = [s1 + s2, s1, s2];
+          if (!best || key[0] < best.key[0] - 1e-4 || (Math.abs(key[0] - best.key[0]) <= 1e-4 && (key[1] < best.key[1] - 1e-4 ||
+            (Math.abs(key[1] - best.key[1]) <= 1e-4 && c.len < best.c.len - 1e-6)))) best = { c, key, s1, s2, net };
         }
       }
-    }
+      const { c, s1, s2, net } = best;
+      const [p1, p2] = net;
+      const tol = 0.15;
+      const z = (x) => x < tol, hf = (x) => x > 0.5 - tol;
+      let kind = 'intermediate';
+      if (z(s1) && z(s2)) kind = 'near (0, 0), eclipsed';
+      else if (hf(s1) && hf(s2)) kind = 'near (½, ½), staggered';
+      else if ((hf(s1) && z(s2)) || (z(s1) && hf(s2))) kind = 'near (½, 0)';
+      const o = { s1, s2, kind, p1: norm(p1), p2: norm(p2), v1: p1, v2: p2,
+        m0: c.A.m, m1: c.B.m, df: sub(c.fB, c.A.f), shift: c.len, dh: height(c.fB) - height(c.A.f) };
+      // interfaces whose offsets agree within 0.02 are alike: one row, with the smaller offset of the two
+      const twin = res.offsets.findIndex((q) => Math.abs(q.s1 - o.s1) < 0.02 && Math.abs(q.s2 - o.s2) < 0.02);
+      if (twin < 0) res.offsets.push(o);
+      else {
+        const q = res.offsets[twin];
+        if (o.s1 + o.s2 < q.s1 + q.s2 - 1e-4 || (Math.abs(o.s1 + o.s2 - q.s1 - q.s2) <= 1e-4 && o.s1 < q.s1 - 1e-4)) res.offsets[twin] = o;
+      }
+    });
+    res.offsets.sort((p, q) => p.s1 + p.s2 - q.s1 - q.s2 || p.s1 - q.s1);
+    res.offset = res.offsets[0] || null;
     return res;
   }
 
@@ -1775,12 +1910,12 @@
     }
 
     // hydrogen bonds: N-H...A / O-H...A. Acceptors are O and N of another molecule, and the anions
-    // of a framework or free ions (halide, O, N, S)
+    // of a framework, of a metal complex (the halides of [BiI6]3-, [CuCl4]2-) or free ions (halide, O, N, S)
     const hbonds = [];
     const hasH = out.some((a) => a.el === 'H');
     const acceptors = [];
     out.forEach((a, i) => {
-      const anion = a.kind === 'ligand' || a.kind === 'ion' || a.kind === 'network';
+      const anion = a.kind === 'ligand' || a.kind === 'ion' || a.kind === 'network' || (uc.metalsOf[a.src] && uc.metalsOf[a.src].length > 0);
       if ((anion && (HALIDE.has(a.el) || a.el === 'O' || a.el === 'N' || a.el === 'S')) || (a.kind === 'molecule' && (a.el === 'O' || a.el === 'N'))) acceptors.push(i);
     });
     const d3 = (p, q) => norm(sub(out[p].xyz, out[q].xyz));
@@ -1814,6 +1949,25 @@
       });
     }
     return { atoms: out, polyhedra, hbonds, hasH, mols };
+  }
+
+  /* The hydrogen bonds of a cell, one row for each distinct contact: { key, D, H, A, dHA, dDA, angle }, sorted by
+     D...A. The search block holds every molecule whose centroid is in the cell, and every atom within the
+     largest molecule radius + 4 A of the cell, so that each contact is found once with its donor molecule in
+     the cell, also across the faces of the cell. */
+  function hbondList(uc) {
+    const { cell, molecules } = uc;
+    let R = 0;
+    for (const mol of molecules) for (const a of mol.atoms) R = Math.max(R, norm(cell.toCart(sub(a.f, mol.cen))));
+    const m = cell.recip.map((r) => Math.min(1, (R + 4) * norm(r)));
+    const big = assemble(uc, m.map((x) => -x), m.map((x) => 1 + x));
+    const seen = new Map();
+    const A = big.atoms;
+    for (const h of big.hbonds) {
+      const key = A[h.d].label + '|' + (h.h >= 0 ? A[h.h].label : '') + '|' + A[h.a].label + '|' + h.dDA.toFixed(2);
+      if (!seen.has(key)) seen.set(key, { key, D: A[h.d].label, H: h.h >= 0 ? A[h.h].label : null, A: A[h.a].label, dHA: h.dHA, dDA: h.dDA, angle: h.angle });
+    }
+    return { rows: Array.from(seen.values()).sort((p, q) => p.dDA - q.dDA), hasH: big.hasH, big };
   }
 
   /* ---------- measurements ---------- */
@@ -2129,30 +2283,43 @@
       }
       for (const f of use) { disc(f.c, f.r); for (const i of f.atoms) atoms.add(i); }
     }
-    if (item.type === 'offset' && L && L.slabs && L.slabs.length) {
-      // a metal near the middle of the picture, and the nearest metal (seen along the normal) of the next layer
+    if (item.type === 'offset' && L && L.offsets && L.offsets.length) {
+      // the two metals of the row: the pair that the analysis used, or a pair at the same distance
+      const o = L.offsets[item.k || 0] || L.offsets[0];
       const ms = A.map((a, i) => i).filter((i) => isM(A[i]));
-      const ph = L.slabs[0].planes;
-      const step = L.spacing - (ph[ph.length - 1] - ph[0]);
       let mid = [0, 0, 0];
       for (const i of ms) mid = add(mid, A[i].xyz);
       mid = mid.map((x) => x / Math.max(1, ms.length));
       const order = ms.slice().sort((u, v) => distance(A[u].xyz, mid) - distance(A[v].xyz, mid));
-      // the two metal sites that the analysis used give the offset of the row exactly: use them if they are in the picture
-      const o = L.offset || {};
-      const pairs = [[(i) => A[i].src === o.m0, (j) => A[j].src === o.m1], [() => true, () => true]];
-      for (const [isFrom, isTo] of pairs) {
+      const sameShift = (i, j) => { const d = sub(A[j].f, A[i].f); return o.df && d.every((x, k) => Math.abs(x - o.df[k]) < 1e-3); };
+      // any pair of metals one layer apart whose shift gives the same two numbers
+      const sameOffset = (i, j) => {
+        const v = sub(A[j].xyz, A[i].xyz);
+        const dh = dot(v, nh);
+        if (Math.abs(dh - o.dh) > 0.3) return false;
+        const d = sub(v, nh.map((x) => x * dh));
+        if (norm(d) > o.shift + 0.06) return false;
+        const p1 = o.v1, p2 = o.v2;
+        const e1 = p1.map((x) => x / norm(p1));
+        const e2 = cross(nh, e1);
+        const a11 = dot(p1, e1), a12 = dot(p2, e1), a21 = dot(p1, e2), a22 = dot(p2, e2);
+        const det = a11 * a22 - a12 * a21;
+        const b1 = dot(d, e1), b2 = dot(d, e2);
+        let s1 = (b1 * a22 - a12 * b2) / det, s2 = (a11 * b2 - a21 * b1) / det;
+        s1 = Math.abs(s1 - Math.round(s1)); s2 = Math.abs(s2 - Math.round(s2));
+        return Math.abs(Math.max(s1, s2) - o.s1) < 0.006 && Math.abs(Math.min(s1, s2) - o.s2) < 0.006;
+      };
+      const tests = [(i, j) => A[i].src === o.m0 && A[j].src === o.m1 && sameShift(i, j), sameShift, sameOffset];
+      for (const ok of tests) {
         if (atoms.size) break;
-        for (const i of order.filter(isFrom)) {
-        const up = ms.filter((j) => isTo(j) && Math.abs(hOf(A[j].xyz) - hOf(A[i].xyz) - step) < 1.5);
-        if (!up.length) continue;
-        const foot = (j) => lift(A[i].xyz, hOf(A[j].xyz));
-        up.sort((u, v) => distance(foot(u), A[u].xyz) - distance(foot(v), A[v].xyz));
-        const j = up[0], F = foot(j);
-        atoms.add(i); atoms.add(j);
-        lines.push([A[i].xyz.slice(), F], [F, A[j].xyz.slice()]);
-        if (L.offset && L.offset.v1) lines.push([F, add(F, L.offset.v1)], [F, add(F, L.offset.v2)]);
-        break;
+        for (const i of order) {
+          const j = ms.find((jj) => jj !== i && ok(i, jj));
+          if (j === undefined) continue;
+          const F = lift(A[i].xyz, hOf(A[j].xyz));
+          atoms.add(i); atoms.add(j);
+          lines.push([A[i].xyz.slice(), F], [F, A[j].xyz.slice()]);
+          if (o.v1) lines.push([F, add(F, o.v1)], [F, add(F, o.v2)]);
+          break;
         }
       }
     }
@@ -2513,26 +2680,20 @@
   /* Lorentz and polarisation factor of a flat powder sample in reflection, beam not polarised, no monochromator */
   const lorentzPol = (theta) => (1 + Math.cos(2 * theta) ** 2) / (Math.sin(theta) ** 2 * Math.cos(theta));
 
-  /* Every atom of the cell for diffraction: all sites and all disorder parts with their occupancy, expanded by
-     every operator; copies of one site that coincide (a special position) count once. B in square angstrom. */
+  /* Every atom of the cell for diffraction: every copy of every site and every disorder part, with its share
+     of the cell contents as occupancy (siteCopies: the same cell contents as the formula). B in square angstrom. */
   function powderAtoms(struct, bDefault) {
-    const { cell, ops } = struct;
     const bd = isFinite(bDefault) ? bDefault : 1;
     const out = [];
     let noU = 0;
-    for (const s of struct.sites) {
-      if (!(s.occ > 0)) continue;
+    struct.sites.forEach((s) => { if (s.occ > 0 && !(s.u !== null && s.u !== undefined && isFinite(s.u))) noU++; });
+    const sc = siteCopies(struct);
+    sc.copies.forEach((c, i) => {
+      if (!(sc.w[i] > 0)) return;
+      const s = struct.sites[c.site];
       const hasU = s.u !== null && s.u !== undefined && isFinite(s.u);
-      if (!hasU) noU++;
-      const B = hasU ? Math.max(0, s.u) * B_PER_U : bd;
-      const mine = [];
-      for (const op of ops) {
-        const f = [0, 1, 2].map((r) => mod1(op.R[r][0] * s.f[0] + op.R[r][1] * s.f[1] + op.R[r][2] * s.f[2] + op.T[r]));
-        if (mine.some((g) => norm(cell.toCart([0, 1, 2].map((i) => { const d = g[i] - f[i]; return d - Math.round(d); }))) < 0.15)) continue;
-        mine.push(f);
-        out.push({ el: s.el, f, occ: s.occ, B });
-      }
-    }
+      out.push({ el: c.el, f: c.f, occ: sc.w[i], B: hasU ? Math.max(0, s.u) * B_PER_U : bd });
+    });
     return { atoms: out, noU };
   }
 
@@ -2769,7 +2930,7 @@
     return rows.join('\n') + '\n';
   }
 
-  root.XtalCore = { readStructure, readStructures, readCif, readCifAll, readPoscar, readXyz, readShelx, readAims, zipEntries, zipStructureNames, hybridInfo, STRUCTURE_NAME, buildCell, analyse, assemble, hullFaces, planePolys, tetrazineDefs, chromoInstances, stateDir, orientReport, hallOps, symbolOps, setSgTable, isMetal, isCenter, isDonor, HALIDE, RC, MASS, parseSymop, MAX_POLY_CN, planeOfPoints, planeOfHkl, planeDistance, planeFoot, linePlaneAngle, planePlaneAngle, projectedAngle, nearestHkl, planeDisc, arcPoints, ballMesh, highlightSet, distance, bondAngle, torsion, toMol2, toSvg, visibleParts, hullPolygons, bondTubes, polyhedraFor, polyhedraStats, suggestPolyMax,
+  root.XtalCore = { readStructure, readStructures, readCif, readCifAll, readPoscar, readXyz, readShelx, readAims, zipEntries, zipStructureNames, hybridInfo, STRUCTURE_NAME, buildCell, analyse, assemble, hbondList, hullFaces, planePolys, tetrazineDefs, chromoInstances, stateDir, orientReport, hallOps, symbolOps, setSgTable, isMetal, isCenter, isDonor, HALIDE, RC, MASS, parseSymop, MAX_POLY_CN, planeOfPoints, planeOfHkl, planeDistance, planeFoot, linePlaneAngle, planePlaneAngle, projectedAngle, nearestHkl, planeDisc, arcPoints, ballMesh, highlightSet, distance, bondAngle, torsion, toMol2, toSvg, visibleParts, hullPolygons, bondTubes, polyhedraFor, polyhedraStats, suggestPolyMax,
     powderAtoms, powderPattern, powderProfile, readXY, toXY, patternsCsv, ANODES, anodeOf, XRAY_F0, uEquiv };
   if (typeof module !== 'undefined' && module.exports) module.exports = root.XtalCore;
 })(typeof window !== 'undefined' ? window : globalThis);

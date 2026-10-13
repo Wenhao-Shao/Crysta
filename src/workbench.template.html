@@ -856,16 +856,11 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
   function rebuildCell(d) {
     d.uc = C.buildCell(d.struct, { minor: d.minor });
     d.info = C.analyse(d.uc);
-    // unique hydrogen bonds, searched in a 3x3x3 block so every acceptor is present
-    const big = d.uc.atoms.length <= 400 ? C.assemble(d.uc, [-1, -1, -1], [2, 2, 2]) : C.assemble(d.uc, [0, 0, 0], [1, 1, 1]);
-    const seen = new Map();
-    for (const h of big.hbonds) {
-      const A = big.atoms;
-      const key = A[h.d].label + '|' + (h.h >= 0 ? A[h.h].label : '') + '|' + A[h.a].label + '|' + h.dDA.toFixed(2);
-      if (!seen.has(key)) seen.set(key, { key, D: A[h.d].label, H: h.h >= 0 ? A[h.h].label : null, A: A[h.a].label, dHA: h.dHA, dDA: h.dDA, angle: h.angle });
-    }
-    d.hbRows = Array.from(seen.values()).sort((p, q) => p.dDA - q.dDA);
-    d.hbFromH = big.hasH;
+    // unique hydrogen bonds, searched in a block around the cell so that contacts across the faces are found
+    const hb = C.hbondList(d.uc);
+    const big = hb.big;
+    d.hbRows = hb.rows;
+    d.hbFromH = hb.hasH;
     // automatic polyhedra of this structure: centre element, and what sits at the corners
     d.autoPoly = [];
     for (const pl of big.polyhedra) {
@@ -1015,6 +1010,7 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
     }
     add(m.molecular ? 'Atoms' : 'Atoms per cell', String(info.nAtoms));
     if (m.format !== 'CIF') add('File format', esc(m.format), true);
+    if (m.leftHanded) add('Lattice', 'the lattice vectors of the file are left-handed; they are read as −<i>a</i>, −<i>b</i>, −<i>c</i>, the same lattice and the same atoms', true);
     const symText = {
       listed: struct.ops.length + ' operators listed in the file',
       hall: struct.ops.length + ' operators generated from the Hall symbol',
@@ -1100,11 +1096,13 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
           def: 'The angle between an axial M–X bond and the layer normal. 0° means that the bond is perpendicular to the layer. The picture shows the axial bonds and, at each metal, the layer normal (the line), the layer plane (the disc) and the mark of each angle.' });
         for (const p of L.penetration) addF('N penetration, ' + esc(p.label), (p.depth >= 0 ? '+' : '−') + fmt(Math.abs(p.depth), 3) + ' Å', false, { type: 'penetration', label: p.label,
           def: 'How deep the ammonium N is below the mean plane of the terminal (axial) halides of the nearest layer face, along the layer normal. + means that the N is inside the layer. The picture shows ' + p.label + ', that plane with its halides around the N, and the line from the N to the plane.' });
-        if (L.offset) {
-          addF('Stacking offset', '(' + fmt(L.offset.s1, 2) + ', ' + fmt(L.offset.s2, 2) + ')', false, { type: 'offset',
-            def: 'The shift between two adjacent layers, seen along the layer normal: from a metal of one layer to the nearest metal of the next layer. The two numbers are this shift in units of the two in-plane M···M vectors, each from 0 to ½, the larger first. (½, ½) is the ideal Ruddlesden–Popper stacking, (0, 0) the ideal Dion–Jacobson stacking. The picture shows the two metals, the normal from the first metal, the shift, and the two M···M vectors.' });
-          addF('', esc(L.offset.kind), true);
-        }
+        const offs = L.offsets || [];
+        offs.forEach((o, k) => {
+          const name = offs.length > 1 ? 'Stacking offset, interface ' + (k + 1) : 'Stacking offset';
+          addF(name, '(' + fmt(o.s1, 2) + ', ' + fmt(o.s2, 2) + ')', false, { type: 'offset', k,
+            def: 'The shift between two adjacent layers, seen along the layer normal: the shortest in-plane shift from a metal of one layer to a metal of the next layer, over all metal pairs. The two numbers are this shift in units of the two in-plane M···M vectors, each from 0 to ½, the larger first. (½, ½) is the ideal Ruddlesden–Popper stacking, (0, 0) the ideal Dion–Jacobson stacking.' + (offs.length > 1 ? ' The layers of this structure meet at interfaces that are not alike; each interface has its own row.' : '') + ' The picture shows the two metals, the normal from the first metal, the shift, and the two M···M vectors.' });
+          addF('', esc(o.kind), true);
+        });
       }
     }
     $('cardFw').hidden = !fwRows.length;
@@ -1458,7 +1456,7 @@ body.pxbody { margin: 0; height: 100vh; overflow: hidden; }
       ['θ out (°)', eq.length ? num(mean(eq.map((b) => b.thetaOut)), 2) : ''],
       ['Axial tilt (°)', L && L.axialTilt ? num(L.axialTilt.mean, 1) : ''],
       ['N penetration (Å)', L && L.penetration.length ? num(mean(L.penetration.map((p) => p.depth)), 3) : ''],
-      ['Stacking offset', L && L.offset ? '(' + fmt(L.offset.s1, 2) + ', ' + fmt(L.offset.s2, 2) + ')' : ''],
+      ['Stacking offset', L && L.offsets && L.offsets.length ? L.offsets.map((o) => '(' + fmt(o.s1, 2) + ', ' + fmt(o.s2, 2) + ')').join(' ') : ''],
       ['__NAME__ version', '__VERSION__']
     ];
   }
